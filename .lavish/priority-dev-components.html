@@ -1,0 +1,401 @@
+<title>priority.dev component choices</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=Public+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column on a cool grey ground. A dispatch-board look: priority classes carry the only strong colour. */
+:root {
+  --page: #eef1f4;
+  --surface: #ffffff;
+  --surface-2: #f5f7f9;
+  --ink: #14202c;
+  --muted: #566373;
+  --line: #d3dae1;
+  --line-strong: #8f9bab;
+  --accent: #0b6b7a;
+  --accent-soft: #dcecef;
+  --pending: #f1c25e;
+  --urgent: #b8323a;
+  --high: #b86a12;
+  --medium: #2a62a8;
+  --low: #5f6b79;
+  --ok: #2c7a4b;
+  --code-bg: #e7ebef;
+  --focus: #0b6b7a;
+  --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Public Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --svg-ink: var(--ink);
+  --svg-muted: var(--muted);
+  --svg-node: var(--surface);
+  --svg-page: var(--surface);
+  --svg-bd-line: var(--line-strong);
+  --svg-pending: var(--pending);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --page: #0d141b;
+    --surface: #151e27;
+    --surface-2: #1a2531;
+    --ink: #e3e8ed;
+    --muted: #92a0af;
+    --line: #2a3745;
+    --line-strong: #5b6b7c;
+    --accent: #55bccc;
+    --accent-soft: #15303a;
+    --pending: #dcae4d;
+    --urgent: #ee7b80;
+    --high: #e8a050;
+    --medium: #7aaae6;
+    --low: #97a3b0;
+    --ok: #6cc08b;
+    --code-bg: #1d2935;
+    --focus: #55bccc;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --page: #0d141b;
+  --surface: #151e27;
+  --surface-2: #1a2531;
+  --ink: #e3e8ed;
+  --muted: #92a0af;
+  --line: #2a3745;
+  --line-strong: #5b6b7c;
+  --accent: #55bccc;
+  --accent-soft: #15303a;
+  --pending: #dcae4d;
+  --urgent: #ee7b80;
+  --high: #e8a050;
+  --medium: #7aaae6;
+  --low: #97a3b0;
+  --ok: #6cc08b;
+  --code-bg: #1d2935;
+  --focus: #55bccc;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--page);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.6;
+  padding-block: 0 72px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 1180px; margin: 0 auto; }
+a { color: var(--accent); }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; line-height: 1.15; margin: 0; }
+h1 { font-size: clamp(2.4rem, 7vw, 4rem); letter-spacing: -0.02em; font-weight: 700; }
+h2 { font-size: clamp(1.5rem, 3.4vw, 2rem); font-weight: 700; letter-spacing: -0.01em; }
+h3 { font-size: 1.15rem; font-weight: 600; }
+p { margin: 0; max-width: 68ch; }
+code, .mono { font-family: var(--font-mono); font-size: 0.86em; background: var(--code-bg); padding: 0.1em 0.35em; border-radius: 4px; }
+.eyebrow { font-size: 0.74rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+
+/* Header */
+header.top { padding-block: 40px 28px; display: grid; gap: 14px; }
+.lede { font-size: 1.2rem; max-width: 56ch; color: var(--ink); }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { font-size: 0.8rem; font-weight: 500; padding: 4px 10px; border: 1px solid var(--line-strong); border-radius: 999px; background: var(--surface); }
+.chip.warn { border-color: var(--high); color: var(--high); }
+nav.toc { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--page); border-block: 1px solid var(--line); padding: 8px 0; display: flex; gap: 4px 16px; flex-wrap: wrap; font-size: 0.86rem; }
+nav.toc a { text-decoration: none; padding: 2px 0; color: var(--muted); }
+nav.toc a:hover { color: var(--accent); }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--page); }
+
+/* Sections */
+section { padding-block: 48px 8px; display: grid; gap: 18px; scroll-margin-top: 48px; }
+section > header { display: grid; gap: 6px; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 16px; }
+.box { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 18px 20px; display: grid; gap: 10px; min-width: 0; align-content: start; }
+.box.flat { background: var(--surface-2); }
+ul.plain { margin: 0; padding-left: 1.2em; display: grid; gap: 6px; }
+ul.plain li { max-width: 68ch; }
+.scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 0.92rem; }
+th, td { text-align: left; padding: 10px 14px; vertical-align: top; border-bottom: 1px solid var(--line); }
+th { font-size: 0.74rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); background: var(--surface-2); font-weight: 600; white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+td.k { font-weight: 600; white-space: nowrap; }
+.tag { display: inline-block; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; padding: 2px 8px; border-radius: 4px; border: 1px solid currentColor; white-space: nowrap; }
+.tag.urgent { color: var(--urgent); } .tag.high { color: var(--high); } .tag.medium { color: var(--medium); } .tag.low { color: var(--low); }
+.tag.ok { color: var(--ok); } .tag.reshape { color: var(--high); } .tag.reject { color: var(--urgent); } .tag.unverified { color: var(--high); }
+.status-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.status-row span { font-family: var(--font-mono); font-size: 0.8rem; padding: 3px 8px; background: var(--code-bg); border-radius: 4px; }
+.label-line { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 12px; }
+
+/* Diagrams */
+figure.dia { margin: 0; display: grid; gap: 10px; }
+figure.dia figcaption { color: var(--muted); font-size: 0.9rem; max-width: 72ch; }
+.dia-scroll { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 12px; }
+.dia-scroll svg { display: block; width: 100%; height: auto; min-width: var(--min, 760px); max-width: var(--max, none); margin-inline: auto; }
+.only-dark { display: none; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .only-light { display: none; }
+  :root:not([data-theme="light"]) .only-dark { display: block; }
+}
+:root[data-theme="dark"] .only-light { display: none; }
+:root[data-theme="dark"] .only-dark { display: block; }
+details.src { font-size: 0.88rem; }
+details.src summary { cursor: pointer; color: var(--accent); width: fit-content; }
+details.src pre { margin: 8px 0 0; padding: 14px; background: var(--code-bg); border-radius: 8px; overflow-x: auto; font-family: var(--font-mono); font-size: 0.78rem; line-height: 1.5; }
+
+/* Pipeline chain */
+.chain { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 6px; }
+.chain .st { font-family: var(--font-display); font-weight: 600; font-size: 0.98rem; padding: 8px 12px; background: var(--surface); border: 1.5px solid var(--ink); border-radius: 10px; white-space: nowrap; }
+.chain .st.ev { border-style: dashed; border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+.chain .st.later { border-color: var(--line-strong); color: var(--muted); font-weight: 500; }
+.chain .ar { color: var(--muted); font-size: 1.1rem; }
+.bus { margin-top: 6px; padding: 8px 12px; border: 1.5px dashed var(--accent); border-radius: 10px; background: var(--accent-soft); color: var(--ink); font-size: 0.9rem; }
+blockquote { margin: 0; padding: 14px 18px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; max-width: 72ch; }
+blockquote p { max-width: none; }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 16px; }
+/* Doubt block */
+.doubt { display: grid; gap: 16px; }
+.doubt .box { border-color: var(--high); }
+
+/* Decision */
+section.decide { margin-top: 24px; padding: 28px clamp(16px, 4vw, 36px) 32px; background: var(--surface); border: 2px solid var(--accent); border-radius: 10px; }
+.q { font-family: var(--font-display); font-size: clamp(1.4rem, 3.4vw, 2rem); line-height: 1.2; font-weight: 700; max-width: 30ch; }
+fieldset { border: 0; border-top: 1px solid var(--line); margin: 0; padding: 16px 0 4px; display: grid; gap: 8px; min-width: 0; }
+legend { font-weight: 600; padding: 0; float: left; width: 100%; margin-bottom: 8px; }
+legend + * { clear: both; }
+.opt { display: flex; gap: 10px; align-items: flex-start; max-width: 70ch; }
+.opt input { margin-top: 5px; accent-color: var(--accent); }
+.opt .rec { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); margin-left: 6px; }
+.default-note { color: var(--muted); font-size: 0.86rem; }
+textarea { width: 100%; font: inherit; font-size: 0.9rem; padding: 8px 10px; background: var(--surface-2); color: var(--ink); border: 1px solid var(--line-strong); border-radius: 6px; min-height: 64px; }
+button.go { font: inherit; font-weight: 600; background: var(--accent); color: var(--surface); border: 0; border-radius: 6px; padding: 10px 18px; cursor: pointer; width: fit-content; }
+button.go:hover { filter: brightness(1.1); }
+#answers-out { display: none; margin-top: 8px; font-family: var(--font-mono); font-size: 0.82rem; min-height: 180px; }
+#copy-status { font-size: 0.86rem; color: var(--muted); }
+footer.end { padding-top: 28px; color: var(--muted); font-size: 0.82rem; max-width: 72ch; }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+</style>
+
+<div class="wrap">
+<header class="top">
+  <div class="eyebrow">CoBuilder · architect:design · round 4</div>
+  <h1>priority.dev component choices</h1>
+  <p class="lede">Who proposes, who decides, and who acts, and one technology for each component.</p>
+  <div class="chips">
+    <span class="chip warn">Draft for decision</span>
+    <span class="chip">Round 4: your answers applied</span>
+    <span class="chip">Nothing is built</span>
+    <span class="chip">23 October 2026</span>
+  </div>
+</header>
+
+<nav class="toc" aria-label="Sections">
+  <a href="#answers">Answers</a><a href="#roles">Roles</a><a href="#choices">Technology</a><a href="#tests">Tests</a><a href="#labels">Labels</a><a href="#doubt">Doubt</a><a href="#decide">Decision</a>
+</nav>
+
+<section id="answers">
+  <header><div class="eyebrow">Round 3, applied</div><h2>Your answers and what they changed</h2></header>
+<div class="scroll"><table><thead><tr><th>Point</th><th>Answer</th><th>Effect</th></tr></thead><tbody><tr><td class="k">v0.1 scope</td><td>Approve the transcript lab</td><td>The lab is v0.1.</td></tr><tr><td class="k">Thresholds</td><td>Accept: false auto-answer at most 1%, interruption reduction at least 50%, status accuracy at least 90%, needs_human recall at least 95%</td><td>Used by the lab report.</td></tr><tr><td class="k">Transcripts</td><td>All projects, last 4 weeks, read-only</td><td>The lab reads <code>~/.claude/projects</code>.</td></tr><tr><td class="k">Labels</td><td>Model-assisted, with your spot-check</td><td>Needs safeguards. See section 5.</td></tr><tr><td class="k">Storage</td><td>Postgres from v0.2, plain files in the lab</td><td>As planned.</td></tr><tr><td class="k">Attaching</td><td>Attach to all running sessions by default</td><td>As planned.</td></tr><tr><td class="k">Event log</td><td>Postgres, no RabbitMQ or Redis</td><td>As planned.</td></tr><tr><td class="k">OpenRouter model</td><td><code>anthropic/claude-haiku-5.5</code></td><td><strong>Verified.</strong> The public OpenRouter list shows it at $0.10 per million input tokens and $0.50 per million output tokens, with a 1,000,000-token context. A <code>:batch</code> variant costs half.</td></tr><tr><td class="k">Action loop</td><td>Your note describes a relay (see section 2)</td><td>Settled in section 2.</td></tr></tbody></table></div>
+</section>
+
+<section id="roles">
+  <header><div class="eyebrow">Your question</div><h2>Interpreter, policy, and actuator</h2></header>
+<p>You asked whether the interpreter has the smarts and proposes, the policy enforces the configured allowed actions, and the actuator takes the accepted action in a programmatic way. <strong>Yes. That is the design.</strong> The standard names are a policy decision point (the policy) and a policy enforcement point (the actuator).</p>
+<figure class="dia" id="fig-loop-wrap" style="--min: 1000px"><div class="dia-scroll"><svg id="figloop2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1300 430" role="img" aria-labelledby="loop2-t loop2-d">
+<title id="loop2-t">priority.dev roles and action loop</title><desc id="loop2-d">The interpreter proposes, the policy decides, and the actuator re-checks and sends. A deny, an ask, or a failed re-check goes to the human through the attention queue.</desc>
+<style>
+#figloop2 .bd{fill:var(--svg-bd,none);stroke:var(--svg-bd-line,#9aa4b2);stroke-width:1.2;stroke-dasharray:6 4}
+#figloop2 .bt{font:600 12px system-ui,sans-serif;fill:var(--svg-muted,#5b6575);letter-spacing:.06em;text-transform:uppercase}
+#figloop2 .nr{fill:var(--svg-node,#ffffff);stroke:var(--svg-ink,#1f2937);stroke-width:1.4}
+#figloop2 .nh{fill:var(--svg-hi,#dcecef);stroke:var(--svg-ink,#1f2937);stroke-width:1.8}
+#figloop2 .nx{fill:var(--svg-node,#ffffff);stroke:var(--svg-ink,#1f2937);stroke-width:1.4;stroke-dasharray:5 3}
+#figloop2 .nt{font:600 13px system-ui,sans-serif;fill:var(--svg-ink,#1f2937)}
+#figloop2 .ns{font:400 11px system-ui,sans-serif;fill:var(--svg-muted,#5b6575)}
+#figloop2 .ed{fill:none;stroke:var(--svg-ink,#1f2937);stroke-width:1.4;marker-end:url(#arr-figloop2)}
+#figloop2 .el{font:400 11px system-ui,sans-serif;fill:var(--svg-ink,#1f2937);paint-order:stroke;stroke:var(--svg-page,#ffffff);stroke-width:3.5px;stroke-linejoin:round}
+#figloop2 .ar{fill:var(--svg-ink,#1f2937)}
+</style>
+<defs><marker id="arr-figloop2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ar" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+<g id="n-int"><title>Interpreter: proposes (uses a model)</title><rect class="nr" x="30" y="150" width="200" height="64" rx="12"/><text class="nt" x="130.0" y="177" text-anchor="middle">Interpreter</text><text class="ns" x="130.0" y="195" text-anchor="middle">proposes (uses a model)</text></g>
+<g id="n-pol"><title>Policy: decides: ALLOW, DENY, or ASK</title><rect class="nh" x="310" y="150" width="230" height="64" rx="12"/><text class="nt" x="425.0" y="177" text-anchor="middle">Policy</text><text class="ns" x="425.0" y="195" text-anchor="middle">decides: ALLOW, DENY, or ASK</text></g>
+<g id="n-act"><title>Actuator: re-checks, then sends</title><rect class="nh" x="650" y="50" width="210" height="64" rx="12"/><text class="nt" x="755.0" y="77" text-anchor="middle">Actuator</text><text class="ns" x="755.0" y="95" text-anchor="middle">re-checks, then sends</text></g>
+<g id="n-ses"><title>Session: tmux pane</title><rect class="nx" x="1020" y="50" width="150" height="64" rx="12"/><text class="nt" x="1095.0" y="77" text-anchor="middle">Session</text><text class="ns" x="1095.0" y="95" text-anchor="middle">tmux pane</text></g>
+<g id="n-que"><title>Attention queue: item with the reason</title><rect class="nr" x="650" y="260" width="210" height="64" rx="12"/><text class="nt" x="755.0" y="287" text-anchor="middle">Attention queue</text><text class="ns" x="755.0" y="305" text-anchor="middle">item with the reason</text></g>
+<g id="n-hum"><title>You: answer in the inbox</title><rect class="nx" x="1020" y="260" width="150" height="64" rx="12"/><text class="nt" x="1095.0" y="287" text-anchor="middle">You</text><text class="ns" x="1095.0" y="305" text-anchor="middle">answer in the inbox</text></g>
+<path class="ed" d="M230,182 H310"/>
+<text class="el" x="270" y="174" text-anchor="middle">proposal</text>
+<path class="ed" d="M540,166 L650,96"/>
+<text class="el" x="612" y="122" text-anchor="end">ALLOW</text>
+<path class="ed" d="M540,198 L650,284"/>
+<text class="el" x="612" y="262" text-anchor="end">DENY or ASK</text>
+<path class="ed" d="M860,82 H1020"/>
+<text class="el" x="940" y="74" text-anchor="middle">send</text>
+<path class="ed" d="M755,114 V260"/>
+<text class="el" x="763" y="196" text-anchor="start">re-check fails</text>
+<path class="ed" d="M860,292 H1020"/>
+<path class="ed" d="M1095,324 V386 H425 V214"/>
+<text class="el" x="760" y="378" text-anchor="middle">your answer is a human proposal, and the policy allows it by rule</text>
+<text class="ns" x="30" y="420" text-anchor="start">One function, evaluate(action, state), runs in the policy and again in the actuator. Only the actuator can send.</text>
+</svg>
+</div><figcaption>The three roles and the action loop. The policy and the actuator run the same function, so the actuator can refuse a decision that has gone stale.</figcaption></figure>
+<p>Your two descriptions are not quite the same design:</p>
+<ul class="plain"><li><strong>Description A:</strong> the actuator attempts to send, and the policy sits in the path as a relay that forwards or rejects. The actuator holds the power to send and asks for permission. If any code path skips the relay, the send still works.</li><li><strong>Description B:</strong> the interpreter proposes, the policy decides, and the actuator takes only an accepted action.</li></ul>
+<p><strong>Recommendation: B, with the check of A kept.</strong> The actuator is the enforcement point. It asks the same policy function again just before it acts. This keeps your word "attempt": the actuator attempts, and the attempt succeeds only when the policy says yes at that moment.</p>
+<div class="scroll"><table><thead><tr><th>Role</th><th>Verb</th><th>Uses a model</th><th>Has side effects</th><th>Holds</th></tr></thead><tbody><tr><td class="k">Interpreter</td><td>Proposes</td><td>Yes, the only part that does</td><td>No</td><td>Model keys (TypeSafe, OpenRouter). No power to send.</td></tr><tr><td class="k">Policy</td><td>Decides</td><td>No</td><td>No</td><td>The rules and the deny list. A pure function <code>evaluate(action, state)</code>.</td></tr><tr><td class="k">Actuator</td><td>Executes</td><td>No</td><td>Yes, the only part</td><td>The signing key and the power to send through the adapter host.</td></tr></tbody></table></div>
+<p><strong>The flow.</strong></p>
+<ol class="plain"><li>The interpreter writes a proposal event: a reply, an approval, or "ask a human".</li><li>The policy stage runs <code>evaluate</code> and writes a decision event: ALLOW, DENY, or ASK, with a rule id, a policy hash, and the hash of the exact action.</li><li>For ALLOW, the actuator checks that the decision matches the action hash. It runs <code>evaluate</code> again with fresh state, because the state may have changed. If it still says ALLOW, the actuator writes an intent, sends, and writes the effect.</li><li>For DENY or ASK, or when the re-check fails, the actuator opens an attention item with the reason.</li><li>Your answer becomes a human-authored proposal. A policy rule allows it, and it follows the same path.</li></ol>
+<p><strong>What must be true so that no path sends input without an accepted decision</strong> (inferred, not tested):</p>
+<ol class="plain"><li>Only one module, <code>actuator/tmux.py</code>, calls tmux. A test searches the repository for other uses.</li><li>The send function accepts only a <code>Decision</code> object that only <code>evaluate</code> can build. A raw string is a type error.</li><li>The send function checks the action hash and runs <code>evaluate</code> again.</li><li>The adapter host on your Mac accepts a command only if it carries a signature (HMAC) that it can verify. The interpreter does not hold the key.</li><li>Every send writes the intent first. A test asserts that no effect exists without an intent and an ALLOW decision.</li></ol>
+<p><strong>A conflict between two reports.</strong> One report says the interpreter must not hold the signing key. Another recommends one Python process with one task for each stage. In one process, the interpreter code can reach the key in memory. The fix is to split by credential in v0.3. See section 3, process split.</p>
+</section>
+
+<section id="choices">
+  <header><div class="eyebrow">One choice for each component</div><h2>Technology</h2></header>
+<p>Marks: v0.1 is the lab. v0.2 and later is the service.</p>
+<h3>3.1 The lab and the interpreter</h3>
+<div class="scroll"><table><thead><tr><th>Part</th><th>Choice</th><th>Why, and what loses</th><th>Main risk</th></tr></thead><tbody><tr><td class="k">DSPy</td><td><code>dspy[typesafe]==3.4.1</code></td><td><strong>Read in the PyPI wheels:</strong> 3.3.1 has only an empty <code>experimental</code> module. 3.4.0 (2026-09-25) and 3.4.1 (2026-10-12) add <code>decision.py</code> and <code>typesafe.py</code>. Loses: raw LiteLLM and Pydantic (no <code>Noul</code>, no <code>Evaluate</code>), Instructor or PydanticAI (no calibrated confidence from Jev).</td><td><code>dspy.experimental</code> has no stability promise. A live call to Jev is untested.</td></tr><tr><td class="k">Classifier stage</td><td>One <code>dspy.Module</code> with <code>dspy.Predict(Classify)</code> and <code>lm=TypeSafe("jev-latest")</code>. Outputs <code>needs_human</code> (<code>Noul</code>), <code>status</code> (<code>Choice</code>), <code>risk</code> (<code>Score</code>).</td><td>Clip the slice before the call because of the 64k limit.</td><td>The names come from the PR page, not a run.</td></tr><tr><td class="k">Forwarding rule</td><td>Plain Python function, not a module. Forward when the confidence is below the threshold or the status is <code>waiting_answer</code>. It returns a reason for the log.</td><td>A model never decides this.</td><td>Threshold needs shadow data.</td></tr><tr><td class="k">Advisor stage</td><td><code>dspy.Predict(Advise)</code> with <code>dspy.LM("openrouter/anthropic/claude-haiku-5.5", temperature=0)</code>. Output is a Pydantic <code>Proposal</code> with <code>kind</code>, <code>text</code>, and <code>evidence_quote</code>.</td><td>A code check requires the quote to appear in the slice as an exact substring. If not, the proposal becomes <code>ask_human</code>. LiteLLM routes <code>openrouter/&lt;id&gt;</code> (read in its docs).</td><td>No live call yet.</td></tr><tr><td class="k">Baseline</td><td>The same <code>Advise</code> signature on every slice, with no Jev. One <code>Interpreter</code> module with a <code>mode</code> flag (<code>cascade</code> or <code>llm_only</code>).</td><td>Both modes score the same way.</td><td>None.</td></tr><tr><td class="k">Tooling</td><td><code>program.save</code> and <code>load</code>, <code>dspy.Evaluate</code>, DSPy cache, <code>track_usage</code>, async calls</td><td><strong>Inferred</strong> from DSPy 3.x. Verify the names against 3.4.1.</td><td>Names may differ.</td></tr><tr><td class="k">Transcript parser</td><td>Plain dicts with small typed views. Count unknown records. Skip a truncated last line.</td><td>A strict Pydantic union breaks on a new record type.</td><td>Sources disagree on sidechain records.</td></tr><tr><td class="k">Slicing</td><td>Cut at each <code>assistant</code> record with <code>stop_reason == "end_turn"</code>. Keep the last user message and the final assistant text whole. Fill backwards. Clip tool results first. Target about 56k tokens.</td><td>Jev's tokenizer is unknown, so use an estimate and test a real input above 64k.</td><td>Clipping loses context.</td></tr><tr><td class="k">Redaction</td><td><code>detect-secrets</code> plus a short regex list (home paths, emails, <code>.env</code> lines, URLs with credentials). <code>gitleaks</code> as a second pass later.</td><td>Presidio is heavy and aimed at personal data.</td><td>Split or encoded secrets slip through.</td></tr><tr><td class="k">Lab storage</td><td>JSONL files, with DuckDB for analysis</td><td>SQLite adds nothing that JSONL lacks.</td><td>None.</td></tr><tr><td class="k">Labelling tool</td><td>A <code>rich</code> command line tool. It hides the model labels and shows the history label after you answer. Keys <code>y</code>, <code>n</code>, <code>u</code>, <code>s</code>.</td><td>Textual is more than the lab needs.</td><td>None.</td></tr></tbody></table></div>
+<h3>3.2 Policy and actuator</h3>
+<div class="scroll"><table><thead><tr><th>Part</th><th>Choice</th><th>Why, and what loses</th><th>Main risk</th></tr></thead><tbody><tr><td class="k">Policy engine</td><td>Typed Python rule functions plus one TOML file. <code>Rule = Callable[[Action, State], Verdict or None]</code>. Fixed order: the first DENY wins, then ASK, then ALLOW. No match gives ASK.</td><td>The rules need state (counts for each session, time since last human input, project opt-outs), and the deny list needs a parser. Both are code. Loses: <strong>OPA/Rego</strong> (a new language, poor state, a binary or sidecar), <strong>Cedar</strong> (<code>cedarpy</code> 4.12.2, read on PyPI: readable and has a validator, but no state by design).</td><td>A rule bug allows an action. A rule can raise or read the clock.</td></tr><tr><td class="k">Policy mitigation</td><td>Wrap each rule so an exception becomes DENY with the rule id. Rules are pure functions of <code>(action, state)</code>.</td><td></td><td></td></tr><tr><td class="k">Policy version</td><td>SHA-256 over the rule source files, the TOML, and the deny-list data. Each decision records <code>rule_id</code>, <code>policy_hash</code>, <code>action_hash</code>, and <code>state_digest</code>.</td><td></td><td></td></tr><tr><td class="k">When to move</td><td>To Cedar, when someone other than you edits the policy, or when you need static checks. Keep it a pure <code>is_authorized</code> call.</td><td>CEL (<code>cel-python</code> 0.5.0, <code>common-expression-language</code> 0.10.0), Casbin (1.43.0, 17 months old), and decision-table libraries (dead) lose.</td><td></td></tr><tr><td class="k">Shell parser</td><td><code>tree-sitter</code> 0.26.0 with <code>tree-sitter-bash</code> 0.25.1</td><td><strong>Ran by an agent on 21 commands.</strong> It parses <code>time</code>, <code>coproc</code>, <code>[[ ]]</code>, and quoted here-docs. <code>bashlex</code> 0.18 raises on all four. Neither stops <code>x=rm; $x -rf /</code>, so rule 3 below carries the weight. Go parsers were not tested.</td><td>Indirection passes the parse.</td></tr><tr><td class="k">Unparseable rule</td><td>Any one of these gives ASK, or DENY for the deny-list category: (1) invalid UTF-8, over the size cap, or a NUL byte. (2) any <code>ERROR</code> or missing node. (3) the command name of any simple command is not a plain literal word (a variable, a substitution, an ANSI-C string, or a concatenation). (4) the command is <code>eval</code>, <code>source</code>, <code>.</code>, <code>exec</code>, <code>bash -c</code>, <code>sh -c</code>, <code>xargs</code>, <code>env</code> with a command, <code>sudo</code>, or a pipe into a shell. Recurse only into a single-quoted literal. (5) the parser raises, times out, or recurses too deep.</td><td>The verdict is the strictest over all simple commands.</td><td></td></tr><tr><td class="k">Corpus</td><td>About 200 commands in JSONL <code>{cmd, expected, why}</code>: about 80 from your transcripts (every Bash <code>tool_use</code> input, de-duplicated and labelled by hand), 60 hand-written evasions, 40 from public lists (check each licence), and 20 malformed inputs. A test asserts that no <code>must_not_allow</code> command is ALLOW, and a fuzzer mutates each command.</td><td>The honest claim is "zero allows on the corpus and its mutants". It does not prove the parser.</td><td></td></tr><tr><td class="k">Hook</td><td>A <code>PreToolUse</code> hook with <code>onFailure: "block"</code> (Claude Code 2.1.295 or later), a timeout of about 5 seconds, and exit code 2 on any error. It evaluates the same policy function in-process from the installed files. It needs no network. Stale counters fail toward ASK or DENY.</td><td><strong>Read in the hooks docs:</strong> only exit 2 blocks, a timeout does not block, and the default timeout is 600 seconds. An HTTP hook to the service loses, because the service may be down.</td><td>Whether the hook runs in <code>-p</code> mode and in bypass mode is unknown. Test it.</td></tr><tr><td class="k">Actuator</td><td>Intent, re-check, send, effect. The idempotency key is the action hash. A unique key stops a second try. If the process dies between intent and effect, the actuator never resends. It marks the action <code>unknown</code>, checks the pane, and a human decides.</td><td>At-most-once is the right default for text into a terminal.</td><td>A lost send needs a human.</td></tr><tr><td class="k">Send method</td><td><code>tmux load-buffer</code>, then <code>paste-buffer -p -r</code>, then a separate <code>send-keys Enter</code>. Prefer single-line replies. Check that the pane sits at an empty prompt first.</td><td><strong>Read:</strong> <code>paste-buffer</code> turns a line feed into a carriage return unless <code>-r</code> is set. Reports from March and April 2026 say <code>send-keys -l</code> stopped working after an interrupted paste, and that multi-line input can lose newlines.</td><td>Newlines and paste behaviour.</td></tr><tr><td class="k">Confirm a send</td><td>Tail the transcript for a user record that matches the text, within a timeout. <code>capture-pane</code> is the fallback.</td><td>The transcript may lag.</td><td>Lag unknown.</td></tr><tr><td class="k">Layout</td><td><code>policy/evaluate.py</code> (pure), <code>policy/rules/*.py</code>, <code>policy/denylist.py</code>, <code>policy/version.py</code>, <code>state/snapshot.py</code>, <code>actuator/attempt.py</code>, <code>actuator/tmux.py</code></td><td>Both the policy stage and the actuator import <code>evaluate</code>.</td><td></td></tr><tr><td class="k">Process split (v0.3)</td><td>Two processes. The <code>interpreter</code> holds the model keys and no signing key. The <code>control</code> process holds the policy, the actuator, and the signing key, and no model key.</td><td>Least privilege by credential. A model call that follows a poisoned transcript then cannot reach the power to send. This also answers the conflict in section 2.</td><td>One more process to run.</td></tr></tbody></table></div>
+<h3>3.3 The service and the data</h3>
+<div class="scroll"><table><thead><tr><th>Part</th><th>Choice</th><th>Why, and what loses</th><th>Main risk</th></tr></thead><tbody><tr><td class="k">Web framework</td><td>FastAPI 0.135.0 or later, with its own server-sent events</td><td><strong>Read:</strong> <code>fastapi.sse</code> offers <code>EventSourceResponse</code> and <code>ServerSentEvent</code> with <code>id</code>, <code>event</code>, and <code>retry</code>. Loses: Litestar, bare Starlette.</td><td>The module is new. Pin the version.</td></tr><tr><td class="k">Database driver</td><td>psycopg 3, async, with plain SQL</td><td><code>AsyncConnection.notifies()</code> handles LISTEN, and 3.2 added a timeout (read). Loses: asyncpg (speed is not the limit), SQLAlchemy (too much for about six tables).</td><td>Hand-written SQL.</td></tr><tr><td class="k">Migrations</td><td>A 40-line runner over <code>migrations/NNNN_name.sql</code> with a <code>schema_migrations</code> table, run at start inside a transaction</td><td>Alembic needs models to pay off.</td><td>Low.</td></tr><tr><td class="k">Postgres image</td><td><code>postgres:17</code> on a named volume</td><td><strong>Inferred.</strong> Pin the major version, because version 18 images moved the data directory.</td><td>Version pin.</td></tr><tr><td class="k">Event table</td><td><code>events(seq identity, event_id, idem_key unique, kind, session_id, stream, payload jsonb, created_at)</code> and <code>cursors(consumer, last_seq)</code></td><td>Idempotency key such as <code>transcript:&lt;session&gt;:&lt;byte offset&gt;</code> or <code>action:&lt;action hash&gt;</code>.</td><td>Untested.</td></tr><tr><td class="k">Append</td><td>One function in one transaction: <code>pg_advisory_xact_lock(1)</code>, then <code>INSERT ... ON CONFLICT (idem_key) DO NOTHING RETURNING seq</code>, then <code>pg_notify('events', max_seq)</code></td><td>The lock makes writers take turns, so <code>seq</code> order equals commit order and a reader at <code>seq &gt; cursor</code> cannot skip a row. Cost: one writer at a time.</td><td>Writer throughput. Fine for one developer.</td></tr><tr><td class="k">Readers</td><td><code>LISTEN events</code>, then read from the cursor. Re-read on every notify and on a 30-second timer, because a notify is not stored. The SSE <code>id</code> is <code>seq</code>, and <code>Last-Event-ID</code> is the cursor.</td><td></td><td></td></tr><tr><td class="k">Stages</td><td>One Python process with one asyncio task for each stage (v0.2). Each stage reads past its cursor, writes outputs, and advances the cursor in one transaction. A crash replays at most one batch, and the idempotency keys make that harmless. Model and Jev calls use async <code>httpx</code> with timeouts.</td><td>Loses: one container for each stage, and Celery (Postgres is the queue).</td><td>A blocking call stalls other stages. v0.3 splits the process (see 3.2).</td></tr><tr><td class="k">Batching windows</td><td>A Postgres sweeper task every 5 seconds, with <code>FOR UPDATE SKIP LOCKED</code></td><td>APScheduler adds a job store and a second source of truth (inferred).</td><td>Clock drift.</td></tr><tr><td class="k">Configuration</td><td><code>pydantic-settings</code> with the prefix <code>PRIORITY_</code>. The policy file is mounted read-only. The service hashes it at load. A bad file stops the start.</td><td></td><td>A bad policy file.</td></tr><tr><td class="k">Logging and tracing</td><td><code>structlog</code> as JSON, bound with <code>session_id</code> and <code>seq</code>. No OpenTelemetry in v0.2. The event table is the trace.</td><td></td><td></td></tr><tr><td class="k">Compose</td><td>Two services, <code>db</code> and <code>service</code>, a named volume, both published on <code>127.0.0.1</code> only.</td><td><strong>Inferred:</strong> the adapter host reaches it at <code>localhost:8080</code>.</td><td></td></tr><tr><td class="k">Secrets</td><td>Compose <code>secrets:</code> from files in <code>~/.config/priority/secrets/</code> (mode 600, outside Git). <code>.env</code> only in v0.1. Redaction runs before any outside call.</td><td></td><td>Keys in logs. Test with a planted fake key.</td></tr></tbody></table></div>
+<h3>3.4 The adapter host and the desktop notifier (macOS)</h3>
+<div class="scroll"><table><thead><tr><th>Part</th><th>Choice</th><th>Why, and what loses</th><th>Main risk</th></tr></thead><tbody><tr><td class="k">Tailing</td><td><code>watchfiles</code> with a byte offset for each file, only complete lines, and a 2-second rescan. The idempotency key is <code>file:offset</code>.</td><td><strong>Read:</strong> it uses FSEvents on macOS. <code>watchdog</code> and polling lose.</td><td>FSEvents can merge events.</td></tr><tr><td class="k">tmux discovery</td><td>A subprocess: <code>tmux list-panes -a -F '#{pane_id}\t#{pane_pid}\t#{pane_current_path}\t#{session_name}'</code></td><td><code>libtmux</code> adds a dependency for no gain (inferred).</td><td>Pane mapping.</td></tr><tr><td class="k">Pane to session</td><td>Primary: hook data (<code>session_id</code>, <code>cwd</code>, <code>transcript_path</code>) plus <code>$TMUX_PANE</code> (inferred). Fallback: <code>psutil</code> process tree, then the working directory and the newest transcript.</td><td>Sessions with no hook stay read-only until the link is proven.</td><td>Test with three sessions in one directory.</td></tr><tr><td class="k">Hooks to the host</td><td>A tiny script posts to a Unix socket, <code>~/.priority/hook.sock</code> (mode 600), so no TCP port opens. Observation hooks fail open. The blocking hook fails closed.</td><td>Your rule says the host opens no inbound port.</td><td>Hook timeout unknown.</td></tr><tr><td class="k">Commands</td><td>The host pulls by long poll, <code>GET /commands?cursor=N&amp;wait=25</code>. A command carries its key. The host records the key before it sends.</td><td>SSE also works. Long polling is simpler to retry.</td><td></td></tr><tr><td class="k">Start at login</td><td>A launchd LaunchAgent, <code>dev.priority.adapter.plist</code>, with <code>KeepAlive</code></td><td><strong>Inferred, not tested.</strong></td><td></td></tr><tr><td class="k">Hook installer</td><td>Edit <code>~/.claude/settings.json</code> with a marker on each entry, a <code>--dry-run</code> diff, a timestamped backup, an atomic write, and an uninstall that removes only marked entries</td><td>I did not read the current settings schema. The harness flagged this agent's report for "settings-json" wording. The text describes our installer and is not an instruction to me. I changed no settings.</td><td>The schema may differ.</td></tr><tr><td class="k">Desktop notifier</td><td><code>terminal-notifier</code>: a banner and a click that runs a command</td><td><strong>Read:</strong> since 2.0.0 it has no action buttons, and its README points to <code>alerter</code> for those. <code>osascript</code> has no click action. <code>rumps</code> is more code and suits a badge later.</td><td>Focus modes hide banners. First run needs permission.</td></tr></tbody></table></div>
+<h3>3.5 The queues, the clients, and the exposure</h3>
+<div class="scroll"><table><thead><tr><th>Part</th><th>Choice</th><th>Why, and what loses</th><th>Main risk</th></tr></thead><tbody><tr><td class="k">Attention queue</td><td>Rank at read time with the sort key: priority class, then project rank, then wait time. Class 0 is a policy ASK on a destructive action. Class 1 is a blocked session. Class 2 is a question. Class 3 is an FYI. One escalation: an item open for 30 minutes moves up one class, once.</td><td>A stored score goes stale. A weighted sum is hard to explain and to test. The 30 minutes is a guess.</td><td>The item goes stale while you type. The version check catches it.</td></tr><tr><td class="k">Attention schema</td><td><code>attention_item(id, session_id, project_id, dedupe_key, kind, priority_class, state, version, question_event_seq, proposal jsonb, opened_at, wait_since, snooze_until, expires_at, resolved_at, resolution)</code>, <code>attention_answer(item_id, version, idempotency_key, answer_hash, proposal_event_seq)</code>, and <code>project(id, rank)</code></td><td>States: <code>open</code>, <code>snoozed</code>, <code>answering</code>, <code>resolved</code>, <code>expired</code>, <code>superseded</code>. A partial unique index stops duplicates. Expiry is 24 hours, or at once when the session ends. A class 0 item can snooze once, for 15 minutes.</td><td></td></tr><tr><td class="k">Answer post</td><td><code>POST /items/{id}/answer</code> with <code>If-Match: &lt;version&gt;</code> and an <code>Idempotency-Key</code>. A stale version returns 409.</td><td></td><td></td></tr><tr><td class="k">Notification queue</td><td>A <code>notification</code> table with one row for each item version and channel. A planner function writes rows. Workers claim them with <code>FOR UPDATE SKIP LOCKED</code>.</td><td></td><td>An away check that is wrong.</td></tr><tr><td class="k">Notification plan</td><td>Class 0: at once, no limit, ignores quiet hours. Class 1: at once, at most 6 an hour, then a digest. Class 2: a 10-minute window with one summary. Class 3: an hourly digest or no push. Quiet hours 22:00 to 07:00 allow only class 0. The desktop is the first channel. If the desktop is idle for more than 3 minutes, or no client has been seen for 3 minutes, the phone gets the push.</td><td><strong>Inferred.</strong> Tune on lab data. The two-toast window is not closed.</td><td></td></tr><tr><td class="k">Notifier plugin</td><td>A Python <code>Protocol</code> with <code>deliver</code>, <code>ack</code>, and <code>caps</code> (push, actions, content_ok, ack_back, batch). A plugin gets content only if <code>content_ok</code>. A plugin never decides timing.</td><td></td><td></td></tr><tr><td class="k">Web client</td><td>React, Vite, and TanStack Query, with <code>fetch</code> streaming for SSE</td><td><strong>Read:</strong> <code>EventSource</code> cannot set headers. HTMX needs a query-string token or cookie and gives no path to mobile. SvelteKit reuses nothing from the repository viewer.</td><td>iOS push through a PWA.</td></tr><tr><td class="k">Keys</td><td><code>j</code> and <code>k</code> move, <code>a</code> approve, <code>r</code> reply, <code>s</code> snooze, <code>?</code> help</td><td></td><td></td></tr><tr><td class="k">Command line client</td><td>Typer for commands and Textual for a live triage view: <code>pri</code> and <code>pri triage</code></td><td>Click adds boilerplate. Rich alone has no input.</td><td>Two clients may drift. Both use one generated API client.</td></tr><tr><td class="k">iPhone push</td><td>ntfy, self-hosted, with <code>upstream-base-url: https://ntfy.sh</code></td><td><strong>Read in the ntfy docs:</strong> a self-hosted server sends the upstream only a message id and a topic hash, and the real text stays on your server. The cost is time metadata. Use a dedicated write-only ntfy user. Pushover ($4.99 once for each platform, read) is the second plugin. Web push (VAPID) is the free third channel.</td><td>Late delivery if the upstream setting is wrong.</td></tr><tr><td class="k">Authentication</td><td>Bind to <code>127.0.0.1</code>. One bearer token for each client, hashed, scoped, and revocable. The adapter host token can only pull commands and post events. Phone access over Tailscale (<code>tailscale serve</code>). The web client keeps the token in memory or an <code>HttpOnly</code>, <code>SameSite=Strict</code> cookie.</td><td>Skip passkeys in v0.4. Skip query-string tokens. Tailscale details are <strong>inferred</strong>.</td><td>A stolen token. Revoking must close the stream within seconds.</td></tr></tbody></table></div>
+</section>
+
+<section id="tests">
+  <header><div class="eyebrow">Settle the doubts first</div><h2>One-day tests, by risk</h2></header>
+<div class="scroll"><table><thead><tr><th>Test</th><th>Settles</th></tr></thead><tbody><tr><td class="k">Import gate: <code>from dspy.experimental import Noul, Score, Choice, TypeSafe</code>, plus one live call through <code>openrouter/anthropic/claude-haiku-5.5</code> and one through Jev</td><td>The interpreter stack runs at all.</td></tr><tr><td class="k">Parse every local transcript and count unknown records</td><td>The parser is tolerant enough.</td></tr><tr><td class="k">Plant 30 known secrets in a fixture slice and print the misses</td><td>What redaction misses.</td></tr><tr><td class="k">Label 50 slices with both labellers and compute Cohen's kappa</td><td>Whether the labels are usable.</td></tr><tr><td class="k"><code>PreToolUse</code> hooks that exit 1 or sleep past the timeout, with <code>onFailure: "block"</code>, in interactive, <code>-p</code>, and bypass mode</td><td>Whether the hook fails closed.</td></tr><tr><td class="k">The 200-command corpus with mutants</td><td>Zero allows on the corpus.</td></tr><tr><td class="k">Kill the actuator between intent and send, and between send and effect</td><td>A send happens zero or one time, never two.</td></tr><tr><td class="k">Property test with Hypothesis: 10,000 random actions evaluate the same twice, a raising rule gives DENY, and an empty rule set gives ASK</td><td>The policy function is pure.</td></tr><tr><td class="k">20 concurrent writers and 3 readers for a minute</td><td>No reader skips or repeats a <code>seq</code>.</td></tr><tr><td class="k">Three sessions in one directory</td><td>Pane mapping is right.</td></tr><tr><td class="k">A two-line text with a quote, <code>$</code>, and a trailing newline through <code>paste-buffer</code></td><td>The transcript record equals the input.</td></tr><tr><td class="k">100 concurrent answers with two keys and two versions</td><td>Exactly one <code>answering</code> row.</td></tr></tbody></table></div>
+</section>
+
+<section id="labels">
+  <header><div class="eyebrow">A correction to my estimate</div><h2>The lab labels</h2></header>
+<p>You chose model-assisted labels with your spot-check. The risk is that the labels share the bias of the model under test. This procedure limits it:</p>
+<ol class="plain"><li>Write a rubric with you before any model runs. Include a list of reasons that a human is needed and 10 worked examples.</li><li><strong>History</strong> is an independent signal: what the next record was.</li><li><strong>Labeller B</strong> is <code>anthropic/claude-sonnet-5.5</code> (batch) with the rubric. <strong>Labeller C</strong> is a non-Anthropic model, <code>deepseek/deepseek-v4.1-flash</code> (cheap) or <code>openai/gpt-5.6-terra</code> (stronger). Both exist on OpenRouter (read in the public list).</li><li>Report Cohen's kappa for B against C, and for each against history. Keep a label where B, C, and history agree. Send disagreements to you first.</li><li>Your subset is a stratified random sample from the agreed labels, to catch shared bias, plus every disagreement. The tool hides the model output.</li></ol>
+<p><strong>My earlier estimate was too low.</strong> I said 150 slices, about 75 minutes. A one-sided 95% bound of 1% on the false auto-answer rate needs about <strong>299 slices with no errors, 473 with one error, and 628 with two</strong> (standard values, inferred, not run here). The sample must come from slices that the cascade would answer alone, because that is the denominator. If it answers 30% of 5,000 slices, that is about 1,500 slices, and you would check 300 to 500 of them. At 30 seconds each that is about 2.5 to 4 hours. Start with 150 and extend if the bound needs it.</p>
+<p>For the needs_human recall of 95%: zero misses in 60 true positives bounds the miss rate at 5%. Aim for at least 100 positives.</p>
+<p>When your subset is too small, the report shows n, the errors, and the upper bound. It says "not proven" for that criterion, not "pass".</p>
+<p><strong>Cost for 5,000 slices of 10,000 input tokens</strong> (50 million tokens, 300 output tokens each, no caching, every slice to every model, OpenRouter list prices):</p>
+<div class="scroll"><table><thead><tr><th>Model</th><th>Cost</th></tr></thead><tbody><tr><td class="k">Jev (vendor claim of $0.042 per million input tokens, output cost unknown)</td><td>about $2.10</td></tr><tr><td class="k">Haiku 5.5</td><td>about $5.75 (about $1.70 if the cascade forwards 30%)</td></tr><tr><td class="k">Sonnet 5.5</td><td>about $115 (about $57.50 on batch)</td></tr><tr><td class="k">Opus 5.5</td><td>about $230 (about $115 on batch)</td></tr><tr><td class="k">DeepSeek v4.1 flash</td><td>about $9.25 (about $2.70 on batch)</td></tr></tbody></table></div>
+<p>My recommendation is Sonnet 5.5 on batch for labeller B and DeepSeek on batch for labeller C, about $60 together. Opus costs twice as much for a gain that I cannot measure.</p>
+</section>
+
+<section id="doubt">
+  <header><div class="eyebrow">Honesty record</div><h2>Risks, unverified claims, and deviations</h2></header>
+<ul class="plain"><li>The agents did not run the DSPy types or reach Jev. The import gate test does.</li><li>The dspy.ai pages returned only redirect stubs, so the <code>Evaluate</code>, save and load, and async names are inferred.</li><li>Whether <code>PreToolUse</code> fires in <code>-p</code> mode, whether a hook deny overrides bypass mode, and the hook timeout are unknown.</li><li><code>tmux</code> newline behaviour comes from user reports and the tmux source. Nobody tested it on your Mac.</li><li>The transcript structure for sidechain records comes from community docs. Sources disagree. Check your own files.</li><li>The launchd, FSEvents, and <code>$TMUX_PANE</code> claims are inferred.</li><li>The policy rule order, the 30-minute escalation, and the notification windows are proposals with no data.</li><li>The Postgres append design is untested.</li><li>I did not test any code in this round.</li></ul>
+<h3>Deviations from the /architect:design procedure</h3>
+<ol class="plain"><li>The skill is not registered in this session. I followed <code>SKILL.md</code> and <code>design-mode.md</code> by reading them.</li><li>Four Sonnet agents explored this round from one shared fact sheet. A separate critic agent did not run.</li><li>Files sit in <code>priority-dev/docs/design/</code>. No <code>goal.json</code> exists.</li><li>The action loop figure changed. The target diagrams (level 1 and level 4) are not redrawn.</li></ol>
+</section>
+
+<section id="decide" class="decide">
+  <div class="eyebrow">Decision</div>
+  <p class="q">Do you approve the three roles and this technology for each component?</p>
+  <p class="default-note">Your earlier answers stand. If you do not answer a point, the draft uses the default marked under it. Nothing leaves this machine until you say so.</p>
+
+  <form id="decision-form" onsubmit="return false">
+    <fieldset id="f-d0"><legend>0. The roles</legend>
+      <label class="opt"><input type="radio" name="d0" value="Interpreter proposes, policy decides, actuator executes and re-checks"><span>The interpreter proposes, the policy decides, and the actuator executes and re-checks<span class="rec">Recommended</span></span></label>
+      <label class="opt"><input type="radio" name="d0" value="Actuator holds the power and the policy only relays"><span>The actuator holds the power to send and the policy only relays</span></label>
+      <p class="default-note">Default: the first.</p>
+    </fieldset>
+    <fieldset id="f-d1"><legend>1. Processes in v0.3</legend>
+      <label class="opt"><input type="radio" name="d1" value="Two processes split by credential"><span>Two processes: the interpreter holds the model keys, and the control process holds the signing key<span class="rec">Recommended</span></span></label>
+      <label class="opt"><input type="radio" name="d1" value="One process"><span>One process for all stages</span></label>
+      <p class="default-note">Default: two processes in v0.3. v0.2 has one process, because it cannot send.</p>
+    </fieldset>
+    <fieldset id="f-d2"><legend>2. The policy stack</legend>
+      <label class="opt"><input type="radio" name="d2" value="Python rules and TOML, tree-sitter-bash, local fail-closed hook"><span>Typed Python rules with a TOML file, <code>tree-sitter-bash</code> with the five unparseable rules, and a hook that evaluates locally and fails closed<span class="rec">Recommended</span></span></label>
+      <label class="opt"><input type="radio" name="d2" value="Cedar now"><span>Cedar from the start</span></label>
+      <label class="opt"><input type="radio" name="d2" value="Other, see notes"><span>Other. I describe it in the notes</span></label>
+      <p class="default-note">Default: the first.</p>
+    </fieldset>
+    <fieldset id="f-d3"><legend>3. The lab labellers</legend>
+      <label class="opt"><input type="radio" name="d3" value="Sonnet 5.5 batch, DeepSeek v4.1 flash, history, rubric first"><span>A rubric first, then Sonnet 5.5 on batch, DeepSeek v4.1 flash, and the history signal, for about $60<span class="rec">Recommended</span></span></label>
+      <label class="opt"><input type="radio" name="d3" value="Opus 5.5 instead of Sonnet"><span>Opus 5.5 instead of Sonnet, for about twice the cost</span></label>
+      <label class="opt"><input type="radio" name="d3" value="Other, see notes"><span>Other. I describe it in the notes</span></label>
+      <p class="default-note">Default: the first.</p>
+    </fieldset>
+    <fieldset id="f-d4"><legend>4. Your labelling effort</legend>
+      <label class="opt"><input type="radio" name="d4" value="Staged: 150 first, extend to 300 to 500 if the bound needs it"><span>Staged: you label 150 first, and extend to 300 to 500 if the bound needs it<span class="rec">Recommended</span></span></label>
+      <label class="opt"><input type="radio" name="d4" value="Commit to 300 to 500 now"><span>Commit to 300 to 500 slices now (2.5 to 4 hours)</span></label>
+      <label class="opt"><input type="radio" name="d4" value="150 only, accept not proven"><span>150 only, and accept "not proven" for the 1% limit</span></label>
+      <p class="default-note">Default: staged.</p>
+    </fieldset>
+    <fieldset id="f-d5"><legend>5. The service stack</legend>
+      <label class="opt"><input type="radio" name="d5" value="Accept the service stack"><span>FastAPI with its own SSE, psycopg 3, plain SQL, a SQL migration runner, <code>postgres:17</code>, and the advisory-lock append<span class="rec">Recommended</span></span></label>
+      <label class="opt"><input type="radio" name="d5" value="Change, see notes"><span>Change it. I describe the change in the notes</span></label>
+      <p class="default-note">Default: accept.</p>
+    </fieldset>
+    <fieldset id="f-d6"><legend>6. The adapter host stack</legend>
+      <label class="opt"><input type="radio" name="d6" value="Accept the adapter host stack"><span><code>watchfiles</code>, tmux through a subprocess, a Unix socket for hooks, long poll for commands, launchd, and a marked, reversible hook installer<span class="rec">Recommended</span></span></label>
+      <label class="opt"><input type="radio" name="d6" value="Change, see notes"><span>Change it. I describe the change in the notes</span></label>
+      <p class="default-note">Default: accept.</p>
+    </fieldset>
+    <fieldset id="f-d7"><legend>7. Queues, clients, and exposure</legend>
+      <label class="opt"><input type="radio" name="d7" value="Accept queues, clients, and exposure"><span>Read-time ranking, planner rows, React with Vite, Typer with Textual, self-hosted ntfy, and Tailscale with bearer tokens<span class="rec">Recommended</span></span></label>
+      <label class="opt"><input type="radio" name="d7" value="Change, see notes"><span>Change it. I describe the change in the notes</span></label>
+      <p class="default-note">Default: accept.</p>
+    </fieldset>
+    <fieldset id="f-d8"><legend>8. The notification defaults</legend>
+      <label class="opt"><input type="radio" name="d8" value="Accept the defaults"><span>Class 1 at most 6 an hour, class 2 in 10-minute windows, class 3 hourly, quiet hours 22:00 to 07:00, and a 3-minute away check<span class="rec">Recommended</span></span></label>
+      <label class="opt"><input type="radio" name="d8" value="Change, see notes"><span>Change the numbers. I give them in the notes</span></label>
+      <p class="default-note">Default: accept, marked as starting values with no data.</p>
+    </fieldset>
+    <fieldset id="f-d9"><legend>9. Pushing the design branch</legend>
+      <label class="opt"><input type="radio" name="d9" value="Push design/priority-dev after each round without asking"><span>Push <code>design/priority-dev</code> after each round without asking<span class="rec">Recommended</span></span></label>
+      <label class="opt"><input type="radio" name="d9" value="Ask each time"><span>Ask me each time</span></label>
+      <p class="default-note">Default: ask each time. The repository is private and nothing else is affected.</p>
+    </fieldset>
+    <fieldset id="f-notes"><legend><label for="notes">Notes</label></legend>
+      <textarea id="notes" placeholder="Changes, extra rules, or a different name for any part"></textarea>
+    </fieldset>
+    <div style="display:flex; flex-wrap:wrap; gap:12px; align-items:center; padding-top:12px">
+      <button class="go" id="copy-btn" type="button">Copy my answers</button>
+      <span id="copy-status" role="status"></span>
+    </div>
+    <textarea id="answers-out" readonly aria-label="Your answers, ready to paste into the session"></textarea>
+    <p class="default-note" style="padding-top:8px">Paste the copied text into the session. I read it and plan the lab slices.</p>
+  </form>
+</section>
+
+<footer class="end">Source of record: <code>priority-dev/docs/design/components.md</code>. The scope and the lab are in <code>priority-dev/docs/design/v0.1-scope.md</code>, and the role models are in <code>priority-dev/docs/role-models.md</code>. This page renders the file. If they differ, the file wins.</footer>
+</div>
+
+<script>
+(function () {
+  var form = document.getElementById('decision-form');
+  var out = document.getElementById('answers-out');
+  var status = document.getElementById('copy-status');
+  function legendText(fs) { var l = fs.querySelector('legend'); return l ? l.textContent.trim() : ''; }
+  function val(id) { var e = document.getElementById(id); return e ? e.value.trim() : ''; }
+  function collect() {
+    var lines = ['priority.dev component choices, round 4: my answers'];
+    ['d0','d1','d2','d3','d4','d5','d6','d7','d8','d9'].forEach(function (n) {
+      var fs = document.getElementById('f-' + n);
+      var c = form.querySelector('input[name="' + n + '"]:checked');
+      lines.push(legendText(fs) + ' -> ' + (c ? c.value : 'no answer (use the default)'));
+    });
+    lines.push('Notes: ' + (val('notes') || 'none'));
+    return lines.join('\n');
+  }
+  document.getElementById('copy-btn').addEventListener('click', function () {
+    var text = collect();
+    out.value = text;
+    function fallback() {
+      out.style.display = 'block';
+      out.focus();
+      out.select();
+      status.textContent = 'Copy is blocked here. Select the text below and copy it.';
+    }
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function () {
+          status.textContent = 'Copied. Paste it into the session.';
+        }, fallback);
+      } else { fallback(); }
+    } catch (e) { fallback(); }
+  });
+})();
+</script>

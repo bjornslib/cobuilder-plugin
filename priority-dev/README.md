@@ -14,8 +14,9 @@ priority-dev/
     design/
       design-overview.md        the high-level design (version 2, partly superseded)
       v0.1-scope.md             the riskiest assumption, the v0.1 lab, and the release ladder
-      options-research.md       the technology research behind the choices
-      diagrams/                 level-1.mmd, runtime-architecture.svg, v0.1-lab-flow.svg, action-loop.svg
+      components.md             the roles (interpreter, policy, actuator) and the technology for each component
+      options-research.md       the earlier technology research
+      diagrams/                 level-1.mmd, runtime-architecture.svg, v0.1-lab-flow.svg, action-loop.svg, v2/
       history/                  the round 2 scope file
       v1/                       the first version, kept as a record
 ```
@@ -25,5 +26,5 @@ The code layout waits for the v0.1 scope decision. The first build is a transcri
 ## Where to start
 
 1. Read `docs/design/design-overview.md` for the pipeline and the parts.
-2. Read `docs/design/v0.1-scope.md` for the riskiest assumption and the proposed first build.
+2. Read `docs/design/v0.1-scope.md` for the riskiest assumption and the first build, and `docs/design/components.md` for the roles and the technology.
 3. Read `docs/role-models.md` before you borrow an idea or copy a line from another project.

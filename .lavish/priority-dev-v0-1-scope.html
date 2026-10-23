@@ -187,6 +187,7 @@ footer.end { padding-top: 28px; color: var(--muted); font-size: 0.82rem; max-wid
     <span class="chip">Round 3: your answers applied</span>
     <span class="chip">Nothing is built</span>
     <span class="chip">23 October 2026</span>
+    <a class="chip warn" href="https://claude.ai/artifact/YBjvCRCyZchtiMNXDbW2BL">Continued on the components page</a>
   </div>
 </header>
 
@@ -201,13 +202,13 @@ footer.end { padding-top: 28px; color: var(--muted); font-size: 0.82rem; max-wid
     <tbody>
       <tr><td class="k">Harness</td><td>Local Claude Code sessions in tmux.</td></tr>
       <tr><td class="k">Interpreter</td><td>A cascade. Jev decides first. A case goes to a language model when the confidence is below a threshold, or when the status is <code>waiting_answer</code>. A language-model-only baseline runs on a sample in shadow mode.</td></tr>
-      <tr><td class="k">Runtime and advisor</td><td>A Python service. The advisor is Haiku 5.5 through OpenRouter. I do not know the exact OpenRouter model name.</td></tr>
+      <tr><td class="k">Runtime and advisor</td><td>A Python service. The advisor is Haiku 5.5 through OpenRouter. The name <code>anthropic/claude-haiku-5.5</code> is verified on the public OpenRouter list.</td></tr>
       <tr><td class="k">Data policy</td><td>Redact secrets, allow all projects, with a per-project opt-out.</td></tr>
       <tr><td class="k">Advisor on day one</td><td>Shadow mode first.</td></tr>
       <tr><td class="k">Notifier pattern</td><td>One stream with a cursor, pull on the same endpoint, plugins for other targets.</td></tr>
       <tr><td class="k">Omnigent spike</td><td>After v0.1.</td></tr>
       <tr><td class="k"><code>CLAUDE.md</code></td><td>Not edited now. The principle 2 rewording becomes an implementation slice.</td></tr>
-      <tr><td class="k">Action order</td><td>The actuator attempts an action and the policy accepts or rejects it. My reading is in the action loop section. Please confirm it.</td></tr>
+      <tr><td class="k">Action order</td><td>Settled in round 4: the interpreter proposes, the policy decides, and the actuator executes and re-checks. See the action loop section and the components page.</td></tr>
       <tr><td class="k">Scope</td><td>You approved the round 2 scope, then asked for a smaller first build that tests the riskiest assumption. The round 2 scope is now the target of v0.4.</td></tr>
     </tbody>
   </table></div>
@@ -363,13 +364,13 @@ footer.end { padding-top: 28px; color: var(--muted); font-size: 0.82rem; max-wid
       <h3>Labels</h3>
       <ul class="plain">
         <li><strong>From history, free.</strong> What followed the turn end: a human or automation. For a human, the length and kind of the reply: an approval or continue, or new content. Ambiguous replies go to you.</li>
-        <li><strong>By hand.</strong> You label a sample with a small terminal tool: did a human need to answer, could an agent have answered, and which answer class. My proposal is 100 random slices plus every slice where the cascade and the history disagree. I estimate 30 seconds for each, so about 75 minutes for 150 slices (my estimate).</li>
+        <li><strong>By hand.</strong> You label a sample with a small terminal tool: did a human need to answer, could an agent have answered, and which answer class. My proposal is 100 random slices plus every slice where the cascade and the history disagree. <strong>Correction:</strong> 150 slices cannot bound a rate of 1%. That needs about 299 slices with no errors, 473 with one, and 628 with two (inferred, not run). At 30 seconds each, 300 to 500 slices take 2.5 to 4 hours. Start with 150 and extend if the bound needs it. The components page has the full label plan.</li>
         <li><strong>Permission prompts.</strong> The <code>permissionDecision</code> source, where it exists.</li>
       </ul>
     </div>
     <div class="box">
       <h3>If the lab fails</h3>
-      <p>If the false auto-answer rate stays above its limit at every threshold that gives 50% fewer interruptions, auto-answer is a no-go. The product then continues as triage: typed status, ranking, and notifications.</p>
+      <p>If the false auto-answer rate stays above its limit at every threshold that gives 50% fewer interruptions, auto-answer is a no-go. The product then continues as triage: typed status, ranking, and notifications. The lab tells us this in weeks, not months.</p>
     </div>
   </div>
   <div class="scroll"><table>
@@ -455,11 +456,10 @@ footer.end { padding-top: 28px; color: var(--muted); font-size: 0.82rem; max-wid
 </section>
 
 <section id="loop">
-  <header><div class="eyebrow">Your ruling, with my reading</div><h2>The action loop</h2></header>
-  <p>You ruled that the actuator attempts an action and the policy accepts or rejects it. This is how I read it.</p>
+  <header><div class="eyebrow">Settled in round 4</div><h2>The action loop: three roles</h2></header>
   <figure class="dia" id="fig-loop-wrap" style="--min: 1000px">
-    <div class="dia-scroll"><svg id="figloop" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1300 420" role="img" aria-labelledby="loop-t loop-d">
-<title id="loop-t">priority.dev action loop</title><desc id="loop-d">The interpreter proposes, the actuator attempts, the policy accepts or rejects, and a rejection goes to the human through the attention queue.</desc>
+    <div class="dia-scroll"><svg id="figloop" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1300 430" role="img" aria-labelledby="loop2-t loop2-d">
+<title id="loop2-t">priority.dev roles and action loop</title><desc id="loop2-d">The interpreter proposes, the policy decides, and the actuator re-checks and sends. A deny, an ask, or a failed re-check goes to the human through the attention queue.</desc>
 <style>
 #figloop .bd{fill:var(--svg-bd,none);stroke:var(--svg-bd-line,#9aa4b2);stroke-width:1.2;stroke-dasharray:6 4}
 #figloop .bt{font:600 12px system-ui,sans-serif;fill:var(--svg-muted,#5b6575);letter-spacing:.06em;text-transform:uppercase}
@@ -473,39 +473,37 @@ footer.end { padding-top: 28px; color: var(--muted); font-size: 0.82rem; max-wid
 #figloop .ar{fill:var(--svg-ink,#1f2937)}
 </style>
 <defs><marker id="arr-figloop" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ar" d="M0,0 L10,5 L0,10 z"/></marker></defs>
-<g id="n-int"><title>Interpreter: writes a proposal</title><rect class="nr" x="30" y="150" width="190" height="64" rx="12"/><text class="nt" x="125.0" y="177" text-anchor="middle">Interpreter</text><text class="ns" x="125.0" y="195" text-anchor="middle">writes a proposal</text></g>
-<g id="n-att"><title>Actuator: makes an attempt, sends nothing</title><rect class="nh" x="290" y="150" width="220" height="64" rx="12"/><text class="nt" x="400.0" y="177" text-anchor="middle">Actuator</text><text class="ns" x="400.0" y="195" text-anchor="middle">makes an attempt, sends nothing</text></g>
-<g id="n-pol"><title>Policy engine: accept or reject, deny list inside</title><rect class="nh" x="580" y="150" width="230" height="64" rx="12"/><text class="nt" x="695.0" y="177" text-anchor="middle">Policy engine</text><text class="ns" x="695.0" y="195" text-anchor="middle">accept or reject, deny list inside</text></g>
-<g id="n-exe"><title>Actuator: sends, records the effect</title><rect class="nr" x="880" y="50" width="200" height="64" rx="12"/><text class="nt" x="980.0" y="77" text-anchor="middle">Actuator</text><text class="ns" x="980.0" y="95" text-anchor="middle">sends, records the effect</text></g>
-<g id="n-ses"><title>Session: tmux pane</title><rect class="nx" x="1130" y="50" width="140" height="64" rx="12"/><text class="nt" x="1200.0" y="77" text-anchor="middle">Session</text><text class="ns" x="1200.0" y="95" text-anchor="middle">tmux pane</text></g>
-<g id="n-que"><title>Attention queue: item with the reason</title><rect class="nr" x="880" y="250" width="200" height="64" rx="12"/><text class="nt" x="980.0" y="277" text-anchor="middle">Attention queue</text><text class="ns" x="980.0" y="295" text-anchor="middle">item with the reason</text></g>
-<g id="n-hum"><title>You: answer in the inbox</title><rect class="nx" x="1130" y="250" width="140" height="64" rx="12"/><text class="nt" x="1200.0" y="277" text-anchor="middle">You</text><text class="ns" x="1200.0" y="295" text-anchor="middle">answer in the inbox</text></g>
-<path class="ed" d="M220,182 H290"/>
-<text class="el" x="255" y="174" text-anchor="middle">proposal</text>
-<path class="ed" d="M510,182 H580"/>
-<text class="el" x="545" y="174" text-anchor="middle">attempt</text>
-<path class="ed" d="M810,170 L880,90"/>
-<text class="el" x="856" y="142" text-anchor="end">accept</text>
-<path class="ed" d="M810,194 L880,274"/>
-<text class="el" x="856" y="246" text-anchor="end">reject</text>
-<path class="ed" d="M1080,82 H1130"/>
-<text class="el" x="1105" y="74" text-anchor="middle">send</text>
-<path class="ed" d="M1080,282 H1130"/>
-<path class="ed" d="M1200,314 V372 H400 V214"/>
-<text class="el" x="800" y="364" text-anchor="middle">your answer becomes a new attempt</text>
-<text class="ns" x="30" y="410" text-anchor="start">The policy decides before any send. Each step writes an event, so the log shows the attempt, the decision, and the effect.</text>
+<g id="n-int"><title>Interpreter: proposes (uses a model)</title><rect class="nr" x="30" y="150" width="200" height="64" rx="12"/><text class="nt" x="130.0" y="177" text-anchor="middle">Interpreter</text><text class="ns" x="130.0" y="195" text-anchor="middle">proposes (uses a model)</text></g>
+<g id="n-pol"><title>Policy: decides: ALLOW, DENY, or ASK</title><rect class="nh" x="310" y="150" width="230" height="64" rx="12"/><text class="nt" x="425.0" y="177" text-anchor="middle">Policy</text><text class="ns" x="425.0" y="195" text-anchor="middle">decides: ALLOW, DENY, or ASK</text></g>
+<g id="n-act"><title>Actuator: re-checks, then sends</title><rect class="nh" x="650" y="50" width="210" height="64" rx="12"/><text class="nt" x="755.0" y="77" text-anchor="middle">Actuator</text><text class="ns" x="755.0" y="95" text-anchor="middle">re-checks, then sends</text></g>
+<g id="n-ses"><title>Session: tmux pane</title><rect class="nx" x="1020" y="50" width="150" height="64" rx="12"/><text class="nt" x="1095.0" y="77" text-anchor="middle">Session</text><text class="ns" x="1095.0" y="95" text-anchor="middle">tmux pane</text></g>
+<g id="n-que"><title>Attention queue: item with the reason</title><rect class="nr" x="650" y="260" width="210" height="64" rx="12"/><text class="nt" x="755.0" y="287" text-anchor="middle">Attention queue</text><text class="ns" x="755.0" y="305" text-anchor="middle">item with the reason</text></g>
+<g id="n-hum"><title>You: answer in the inbox</title><rect class="nx" x="1020" y="260" width="150" height="64" rx="12"/><text class="nt" x="1095.0" y="287" text-anchor="middle">You</text><text class="ns" x="1095.0" y="305" text-anchor="middle">answer in the inbox</text></g>
+<path class="ed" d="M230,182 H310"/>
+<text class="el" x="270" y="174" text-anchor="middle">proposal</text>
+<path class="ed" d="M540,166 L650,96"/>
+<text class="el" x="612" y="122" text-anchor="end">ALLOW</text>
+<path class="ed" d="M540,198 L650,284"/>
+<text class="el" x="612" y="262" text-anchor="end">DENY or ASK</text>
+<path class="ed" d="M860,82 H1020"/>
+<text class="el" x="940" y="74" text-anchor="middle">send</text>
+<path class="ed" d="M755,114 V260"/>
+<text class="el" x="763" y="196" text-anchor="start">re-check fails</text>
+<path class="ed" d="M860,292 H1020"/>
+<path class="ed" d="M1095,324 V386 H425 V214"/>
+<text class="el" x="760" y="378" text-anchor="middle">your answer is a human proposal, and the policy allows it by rule</text>
+<text class="ns" x="30" y="420" text-anchor="start">One function, evaluate(action, state), runs in the policy and again in the actuator. Only the actuator can send.</text>
 </svg>
 </div>
-    <figcaption>The action loop. The actuator makes an attempt and sends nothing. The policy decides. Only an accepted attempt is sent.</figcaption>
+    <figcaption>The three roles and the action loop. The policy and the actuator run the same function, so the actuator can refuse a decision that has gone stale.</figcaption>
   </figure>
   <ol class="plain">
-    <li>The interpreter writes a proposal, such as a proposed reply.</li>
-    <li>The actuator turns it into an <strong>attempt</strong>: an intent with an idempotency key. Nothing is sent.</li>
-    <li>The policy engine accepts or rejects the attempt. The deny list is inside it. It writes a decision with the rule and the policy version.</li>
-    <li>If it accepts, the actuator sends the input and records the effect. If it rejects, the actuator opens an attention item with the reason.</li>
-    <li>Your answer becomes a new attempt. The policy accepts it by a rule for human answers.</li>
+    <li>The <strong>interpreter</strong> proposes. It is the only part that uses a model, and it has no power to send.</li>
+    <li>The <strong>policy</strong> decides. It is one pure function, <code>evaluate(action, state)</code>, with no model. It returns ALLOW, DENY, or ASK with a rule id, a policy hash, and the hash of the exact action.</li>
+    <li>The <strong>actuator</strong> executes. It is the only part with side effects. It checks the decision, runs <code>evaluate</code> again with fresh state, writes an intent, sends, and writes the effect. A DENY, an ASK, or a failed re-check opens an attention item.</li>
+    <li>Your answer is a human-authored proposal. A policy rule allows it, and it follows the same path.</li>
   </ol>
-  <p>This reading keeps one property: the policy decides before any send. A different reading, where the actuator sends first and the policy judges afterwards, cannot prevent harm. Please confirm the first reading (decision 1).</p>
+  <p>The components page has the five guarantees that stop any path from sending without an accepted decision, and the process split for v0.3.</p>
 </section>
 
 <section id="technology">
@@ -777,7 +775,7 @@ footer.end { padding-top: 28px; color: var(--muted); font-size: 0.82rem; max-wid
       <li>The history labels measure what you did, not what an agent could have done. Hand labels correct this.</li>
       <li>A sample of 100 cannot prove a 1% error rate.</li>
       <li>Pro plan limits for parallel sessions are unknown.</li>
-      <li>The exact OpenRouter model name and the OpenRouter data policy are unchecked. DSPy's reach to OpenRouter through LiteLLM is my inference.</li>
+      <li>The OpenRouter data policy is unchecked. The model name is verified. DSPy's reach to OpenRouter through LiteLLM is read in the LiteLLM docs and not yet run.</li>
       <li>TypeSafe does not state its data retention.</li>
       <li>The RabbitMQ, Redis, and Postgres statements come from my own knowledge.</li>
       <li>The billing change of 15 June 2026 comes from one secondary source.</li>
@@ -797,107 +795,11 @@ footer.end { padding-top: 28px; color: var(--muted); font-size: 0.82rem; max-wid
 
 <section id="decide" class="decide">
   <div class="eyebrow">Decision</div>
-  <p class="q">Is the transcript lab the right v0.1, and do you confirm the action loop?</p>
-  <p class="default-note">Your earlier answers stand. If you do not answer a point, the draft uses the default marked under it. Nothing leaves this machine until you say so.</p>
-
-  <form id="decision-form" onsubmit="return false">
-    <fieldset id="f-d0"><legend>0. The v0.1 scope</legend>
-      <label class="opt"><input type="radio" name="d0" value="Approve the transcript lab as v0.1"><span>Approve the transcript lab as v0.1<span class="rec">Recommended</span></span></label>
-      <label class="opt"><input type="radio" name="d0" value="Keep the round 2 scope as v0.1"><span>Keep the round 2 scope as v0.1</span></label>
-      <label class="opt"><input type="radio" name="d0" value="Other, see notes"><span>Other. I describe it in the notes</span></label>
-      <p class="default-note">Default: nothing is built.</p>
-    </fieldset>
-    <fieldset id="f-d1"><legend>1. The action loop</legend>
-      <label class="opt"><input type="radio" name="d1" value="Policy decides before any send"><span>The actuator attempts, the policy decides before any send, and only an accepted attempt is sent<span class="rec">Recommended</span></span></label>
-      <label class="opt"><input type="radio" name="d1" value="Send first, policy judges afterwards"><span>The actuator sends first and the policy judges afterwards</span></label>
-      <p class="default-note">Default: the policy decides before any send.</p>
-    </fieldset>
-    <fieldset id="f-d2"><legend>2. The go thresholds for the lab</legend>
-      <label class="opt"><input type="radio" name="d2" value="Accept: false auto-answer 1%, reduction 50%, status 90%, recall 95%"><span>Accept: false auto-answer at most 1%, interruption reduction at least 50%, status accuracy at least 90%, needs_human recall at least 95%<span class="rec">Recommended</span></span></label>
-      <label class="opt"><input type="radio" name="d2" value="Change the numbers, see notes"><span>Change the numbers. I give them in the notes</span></label>
-      <p class="default-note">Default: these numbers, marked as proposals.</p>
-    </fieldset>
-    <fieldset id="f-d3"><legend>3. Which transcripts the lab reads on your Mac</legend>
-      <label class="opt"><input type="radio" name="d3" value="All projects, last 4 weeks, read-only"><span>All projects in <code>~/.claude/projects</code> from the last 4 weeks, read-only<span class="rec">Recommended</span></span></label>
-      <label class="opt"><input type="radio" name="d3" value="Selected projects only, see notes"><span>Selected projects only. I list them in the notes</span></label>
-      <label class="opt"><input type="radio" name="d3" value="Another window, see notes"><span>Another window. I give it in the notes</span></label>
-      <p class="default-note">Default: the lab does not read anything until you choose.</p>
-    </fieldset>
-    <fieldset id="f-d4"><legend>4. How the lab gets its labels</legend>
-      <label class="opt"><input type="radio" name="d4" value="History labels, you label 100 random and all disagreements"><span>History labels, plus you label 100 random slices and every disagreement<span class="rec">Recommended</span></span></label>
-      <label class="opt"><input type="radio" name="d4" value="You label 150 only"><span>You label 150 slices only</span></label>
-      <label class="opt"><input type="radio" name="d4" value="Model-assisted labels, you spot-check"><span>Model-assisted labels that you spot-check (risk: the labels share the bias of the model that they test)</span></label>
-      <p class="default-note">Default: history labels plus your hand labels.</p>
-    </fieldset>
-    <fieldset id="f-d5"><legend>5. Storage for the service</legend>
-      <label class="opt"><input type="radio" name="d5" value="Postgres from v0.2, plain files in the lab"><span>Postgres from v0.2, plain files in the lab<span class="rec">Recommended</span></span></label>
-      <label class="opt"><input type="radio" name="d5" value="SQLite for the service"><span>SQLite for the service</span></label>
-      <p class="default-note">Default: Postgres from v0.2.</p>
-    </fieldset>
-    <fieldset id="f-d6"><legend>6. Attaching to sessions</legend>
-      <label class="opt"><input type="radio" name="d6" value="Attach to all running sessions by default"><span>Attach to every running session by default<span class="rec">Recommended</span></span></label>
-      <label class="opt"><input type="radio" name="d6" value="Only sessions launched from priority.dev"><span>Only sessions that you launch from priority.dev</span></label>
-      <p class="default-note">Default: attach to all.</p>
-    </fieldset>
-    <fieldset id="f-d7"><legend>7. The event log and queues</legend>
-      <label class="opt"><input type="radio" name="d7" value="Postgres log, no RabbitMQ or Redis"><span>The log lives in Postgres, with no RabbitMQ or Redis<span class="rec">Recommended</span></span></label>
-      <label class="opt"><input type="radio" name="d7" value="Redis Streams"><span>Redis Streams</span></label>
-      <label class="opt"><input type="radio" name="d7" value="RabbitMQ"><span>RabbitMQ</span></label>
-      <p class="default-note">Default: Postgres.</p>
-    </fieldset>
-    <fieldset id="f-d8"><legend>8. The OpenRouter model name for Haiku 5.5</legend>
-      <label class="opt" style="align-items:center"><span>Exact model name:</span><input id="orname" type="text" placeholder="the name on OpenRouter" style="font:inherit; padding:4px 8px; background:var(--surface-2); color:var(--ink); border:1px solid var(--line-strong); border-radius:6px; min-width:0; width:22em"></label>
-      <p class="default-note">Default: I look it up in the first lab step and I mark it as unverified.</p>
-    </fieldset>
-    <fieldset id="f-notes"><legend><label for="notes">Notes</label></legend>
-      <textarea id="notes" placeholder="Changes, extra rules, or a different name for any part"></textarea>
-    </fieldset>
-    <div style="display:flex; flex-wrap:wrap; gap:12px; align-items:center; padding-top:12px">
-      <button class="go" id="copy-btn" type="button">Copy my answers</button>
-      <span id="copy-status" role="status"></span>
-    </div>
-    <textarea id="answers-out" readonly aria-label="Your answers, ready to paste into the session"></textarea>
-    <p class="default-note" style="padding-top:8px">Paste the copied text into the session. I read it and plan the lab slices.</p>
-  </form>
+  <p class="q">Your round 3 answers are applied. The open decisions are on the components page.</p>
+  <p>The form that stood here is answered, so I removed it. The next decisions are the three roles, the processes in v0.3, the policy stack, the lab labellers, and the technology for each component.</p>
+  <p><a href="https://claude.ai/artifact/YBjvCRCyZchtiMNXDbW2BL">Open the components page</a></p>
 </section>
 
 <footer class="end">Source of record: <code>priority-dev/docs/design/v0.1-scope.md</code>. The research is in <code>priority-dev/docs/design/options-research.md</code>, the role models are in <code>priority-dev/docs/role-models.md</code>, and the round 2 version is in <code>priority-dev/docs/design/history/</code>. This page presents those files. If they differ, the files win.</footer>
 </div>
 
-<script>
-(function () {
-  var form = document.getElementById('decision-form');
-  var out = document.getElementById('answers-out');
-  var status = document.getElementById('copy-status');
-  function legendText(fs) { var l = fs.querySelector('legend'); return l ? l.textContent.trim() : ''; }
-  function val(id) { var e = document.getElementById(id); return e ? e.value.trim() : ''; }
-  function collect() {
-    var lines = ['priority.dev v0.1 scope, round 3: my answers'];
-    ['d0','d1','d2','d3','d4','d5','d6','d7'].forEach(function (n) {
-      var fs = document.getElementById('f-' + n);
-      var c = form.querySelector('input[name="' + n + '"]:checked');
-      lines.push(legendText(fs) + ' -> ' + (c ? c.value : 'no answer (use the default)'));
-    });
-    lines.push('OpenRouter model name for Haiku 5.5: ' + (val('orname') || 'not given'));
-    lines.push('Notes: ' + (val('notes') || 'none'));
-    return lines.join('\n');
-  }
-  document.getElementById('copy-btn').addEventListener('click', function () {
-    var text = collect();
-    out.value = text;
-    function fallback() {
-      out.style.display = 'block';
-      out.focus();
-      out.select();
-      status.textContent = 'Copy is blocked here. Select the text below and copy it.';
-    }
-    try {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(text).then(function () {
-          status.textContent = 'Copied. Paste it into the session.';
-        }, fallback);
-      } else { fallback(); }
-    } catch (e) { fallback(); }
-  });
-})();
-</script>
