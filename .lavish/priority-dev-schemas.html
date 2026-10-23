@@ -1,0 +1,527 @@
+<title>priority.dev interpreter schemas</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=Public+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column on a cool grey ground. A dispatch-board look: priority classes carry the only strong colour. */
+:root {
+  --page: #eef1f4;
+  --surface: #ffffff;
+  --surface-2: #f5f7f9;
+  --ink: #14202c;
+  --muted: #566373;
+  --line: #d3dae1;
+  --line-strong: #8f9bab;
+  --accent: #0b6b7a;
+  --accent-soft: #dcecef;
+  --pending: #f1c25e;
+  --urgent: #b8323a;
+  --high: #b86a12;
+  --medium: #2a62a8;
+  --low: #5f6b79;
+  --ok: #2c7a4b;
+  --code-bg: #e7ebef;
+  --focus: #0b6b7a;
+  --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Public Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --svg-ink: var(--ink);
+  --svg-muted: var(--muted);
+  --svg-node: var(--surface);
+  --svg-page: var(--surface);
+  --svg-bd-line: var(--line-strong);
+  --svg-pending: var(--pending);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --page: #0d141b;
+    --surface: #151e27;
+    --surface-2: #1a2531;
+    --ink: #e3e8ed;
+    --muted: #92a0af;
+    --line: #2a3745;
+    --line-strong: #5b6b7c;
+    --accent: #55bccc;
+    --accent-soft: #15303a;
+    --pending: #dcae4d;
+    --urgent: #ee7b80;
+    --high: #e8a050;
+    --medium: #7aaae6;
+    --low: #97a3b0;
+    --ok: #6cc08b;
+    --code-bg: #1d2935;
+    --focus: #55bccc;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --page: #0d141b;
+  --surface: #151e27;
+  --surface-2: #1a2531;
+  --ink: #e3e8ed;
+  --muted: #92a0af;
+  --line: #2a3745;
+  --line-strong: #5b6b7c;
+  --accent: #55bccc;
+  --accent-soft: #15303a;
+  --pending: #dcae4d;
+  --urgent: #ee7b80;
+  --high: #e8a050;
+  --medium: #7aaae6;
+  --low: #97a3b0;
+  --ok: #6cc08b;
+  --code-bg: #1d2935;
+  --focus: #55bccc;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--page);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.6;
+  padding-block: 0 72px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 1180px; margin: 0 auto; }
+a { color: var(--accent); }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; line-height: 1.15; margin: 0; }
+h1 { font-size: clamp(2.4rem, 7vw, 4rem); letter-spacing: -0.02em; font-weight: 700; }
+h2 { font-size: clamp(1.5rem, 3.4vw, 2rem); font-weight: 700; letter-spacing: -0.01em; }
+h3 { font-size: 1.15rem; font-weight: 600; }
+p { margin: 0; max-width: 68ch; }
+code, .mono { font-family: var(--font-mono); font-size: 0.86em; background: var(--code-bg); padding: 0.1em 0.35em; border-radius: 4px; }
+.eyebrow { font-size: 0.74rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+
+/* Header */
+header.top { padding-block: 40px 28px; display: grid; gap: 14px; }
+.lede { font-size: 1.2rem; max-width: 56ch; color: var(--ink); }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { font-size: 0.8rem; font-weight: 500; padding: 4px 10px; border: 1px solid var(--line-strong); border-radius: 999px; background: var(--surface); }
+.chip.warn { border-color: var(--high); color: var(--high); }
+nav.toc { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--page); border-block: 1px solid var(--line); padding: 8px 0; display: flex; gap: 4px 16px; flex-wrap: wrap; font-size: 0.86rem; }
+nav.toc a { text-decoration: none; padding: 2px 0; color: var(--muted); }
+nav.toc a:hover { color: var(--accent); }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--page); }
+
+/* Sections */
+section { padding-block: 48px 8px; display: grid; gap: 18px; scroll-margin-top: 48px; }
+section > header { display: grid; gap: 6px; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 16px; }
+.box { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 18px 20px; display: grid; gap: 10px; min-width: 0; align-content: start; }
+.box.flat { background: var(--surface-2); }
+ul.plain { margin: 0; padding-left: 1.2em; display: grid; gap: 6px; }
+ul.plain li { max-width: 68ch; }
+.scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 0.92rem; }
+th, td { text-align: left; padding: 10px 14px; vertical-align: top; border-bottom: 1px solid var(--line); }
+th { font-size: 0.74rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); background: var(--surface-2); font-weight: 600; white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+td.k { font-weight: 600; white-space: nowrap; }
+.tag { display: inline-block; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; padding: 2px 8px; border-radius: 4px; border: 1px solid currentColor; white-space: nowrap; }
+.tag.urgent { color: var(--urgent); } .tag.high { color: var(--high); } .tag.medium { color: var(--medium); } .tag.low { color: var(--low); }
+.tag.ok { color: var(--ok); } .tag.reshape { color: var(--high); } .tag.reject { color: var(--urgent); } .tag.unverified { color: var(--high); }
+.status-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.status-row span { font-family: var(--font-mono); font-size: 0.8rem; padding: 3px 8px; background: var(--code-bg); border-radius: 4px; }
+.label-line { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 12px; }
+
+/* Diagrams */
+figure.dia { margin: 0; display: grid; gap: 10px; }
+figure.dia figcaption { color: var(--muted); font-size: 0.9rem; max-width: 72ch; }
+.dia-scroll { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 12px; }
+.dia-scroll svg { display: block; width: 100%; height: auto; min-width: var(--min, 760px); max-width: var(--max, none); margin-inline: auto; }
+.only-dark { display: none; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .only-light { display: none; }
+  :root:not([data-theme="light"]) .only-dark { display: block; }
+}
+:root[data-theme="dark"] .only-light { display: none; }
+:root[data-theme="dark"] .only-dark { display: block; }
+details.src { font-size: 0.88rem; }
+details.src summary { cursor: pointer; color: var(--accent); width: fit-content; }
+details.src pre { margin: 8px 0 0; padding: 14px; background: var(--code-bg); border-radius: 8px; overflow-x: auto; font-family: var(--font-mono); font-size: 0.78rem; line-height: 1.5; }
+
+/* Pipeline chain */
+.chain { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 6px; }
+.chain .st { font-family: var(--font-display); font-weight: 600; font-size: 0.98rem; padding: 8px 12px; background: var(--surface); border: 1.5px solid var(--ink); border-radius: 10px; white-space: nowrap; }
+.chain .st.ev { border-style: dashed; border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+.chain .st.later { border-color: var(--line-strong); color: var(--muted); font-weight: 500; }
+.chain .ar { color: var(--muted); font-size: 1.1rem; }
+.bus { margin-top: 6px; padding: 8px 12px; border: 1.5px dashed var(--accent); border-radius: 10px; background: var(--accent-soft); color: var(--ink); font-size: 0.9rem; }
+blockquote { margin: 0; padding: 14px 18px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; max-width: 72ch; }
+blockquote p { max-width: none; }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 16px; }
+/* Doubt block */
+.doubt { display: grid; gap: 16px; }
+.doubt .box { border-color: var(--high); }
+
+/* Decision */
+section.decide { margin-top: 24px; padding: 28px clamp(16px, 4vw, 36px) 32px; background: var(--surface); border: 2px solid var(--accent); border-radius: 10px; }
+.q { font-family: var(--font-display); font-size: clamp(1.4rem, 3.4vw, 2rem); line-height: 1.2; font-weight: 700; max-width: 30ch; }
+fieldset { border: 0; border-top: 1px solid var(--line); margin: 0; padding: 16px 0 4px; display: grid; gap: 8px; min-width: 0; }
+legend { font-weight: 600; padding: 0; float: left; width: 100%; margin-bottom: 8px; }
+legend + * { clear: both; }
+.opt { display: flex; gap: 10px; align-items: flex-start; max-width: 70ch; }
+.opt input { margin-top: 5px; accent-color: var(--accent); }
+.opt .rec { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); margin-left: 6px; }
+.default-note { color: var(--muted); font-size: 0.86rem; }
+textarea { width: 100%; font: inherit; font-size: 0.9rem; padding: 8px 10px; background: var(--surface-2); color: var(--ink); border: 1px solid var(--line-strong); border-radius: 6px; min-height: 64px; }
+button.go { font: inherit; font-weight: 600; background: var(--accent); color: var(--surface); border: 0; border-radius: 6px; padding: 10px 18px; cursor: pointer; width: fit-content; }
+button.go:hover { filter: brightness(1.1); }
+#answers-out { display: none; margin-top: 8px; font-family: var(--font-mono); font-size: 0.82rem; min-height: 180px; }
+#copy-status { font-size: 0.86rem; color: var(--muted); }
+footer.end { padding-top: 28px; color: var(--muted); font-size: 0.82rem; max-width: 72ch; }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+pre.code{margin:0 0 14px;padding:10px 12px;overflow-x:auto;border:1px solid var(--line,#c9ccd3);border-radius:6px;font:12px/1.5 ui-monospace,Menlo,monospace;max-width:100%}
+pre.code code{background:none;padding:0;white-space:pre}
+</style>
+
+<div class="wrap">
+<header class="top">
+  <div class="eyebrow">CoBuilder · architect:design · round 6</div>
+  <h1>priority.dev interpreter schemas</h1>
+  <p class="lede">What the interpreter receives, what it produces, and every action it may propose.</p>
+  <div class="chips"><span class="chip warn">Draft for decision</span><span class="chip">Round 6: your answers applied</span><span class="chip">Sketch runs, no model call yet</span><span class="chip">23 October 2026</span></div>
+</header>
+<nav class="toc" aria-label="Sections"><a href="#contract">Contract</a><a href="#input">Input</a><a href="#facts">Facts</a><a href="#actions">Actions</a><a href="#flow">Flow</a><a href="#notify">Notify</a><a href="#store">Learning</a><a href="#examples">Examples</a><a href="#decide">Decision</a></nav>
+<section id="contract">
+  <header><div class="eyebrow">The parts</div><h2>The contract</h2></header>
+<div class="scroll"><table><thead><tr><th>Part</th><th>Type</th><th>Direction</th><th>Event kind</th></tr></thead><tbody><tr><td class="k">Slice</td><td><code>TurnSlice</code></td><td>in</td><td>built from <code>session.*</code> events</td></tr><tr><td class="k">Facts</td><td><code>Facts</code> (five typed decisions)</td><td>out</td><td><code>fact.status</code>, <code>fact.risk</code>, and so on</td></tr><tr><td class="k">Question card</td><td><code>Question</code></td><td>out</td><td><code>fact.question</code></td></tr><tr><td class="k">Action</td><td><code>Action</code> (12 kinds)</td><td>out</td><td><code>proposal.action</code></td></tr><tr><td class="k">Abstain</td><td>a reason string</td><td>out</td><td><code>proposal.abstain</code></td></tr></tbody></table></div>
+<p>The interpreter host builds the slice. A model never builds it. The host redacts secrets and clips each record before the call. The slice carries <code>allowed_kinds</code>, so the advisor can only name a kind that exists.</p>
+</section>
+
+<section id="input">
+  <header><div class="eyebrow">In</div><h2>Input: the turn slice</h2></header>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Meaning</th></tr></thead><tbody><tr><td class="k"><code>slice_id</code></td><td>hash of the session id and the last record uuid</td></tr><tr><td class="k"><code>cursor</code></td><td>transcript path and byte offset, for replay</td></tr><tr><td class="k"><code>context</code></td><td>session id, project, branch, workflow stage, last human reply, count of our answers in the last hour</td></tr><tr><td class="k"><code>records</code></td><td>the last records of the turn, each with <code>uuid</code>, <code>role</code>, clipped <code>text</code>, and the tool name</td></tr><tr><td class="k"><code>pending</code></td><td>the prompt that waits: <code>prompt_id</code>, <code>source</code> (hook, pane, transcript), <code>kind</code>, options, tool, command</td></tr><tr><td class="k"><code>redactions</code></td><td>how many secrets the host removed</td></tr><tr><td class="k"><code>allowed_kinds</code></td><td>the action kinds the advisor may name</td></tr></tbody></table></div>
+<p>Rules:</p>
+<ol class="plain"><li>A record <code>role</code> comes from the transcript <code>origin</code> field, so a task notification never counts as a human reply.</li><li><code>pending.source</code> tells the policy how much to trust the prompt. A hook is exact. A pane read is a guess.</li><li>A prose question has no <code>pending</code>. The facts say <code>waiting_answer</code>, and the slice text holds the question.</li></ol>
+</section>
+
+<section id="facts">
+  <header><div class="eyebrow">Out</div><h2>Facts and the question card</h2></header>
+<p>The five typed decisions come from the lab plan. Jev decides all five on a clipped slice.</p>
+<div class="scroll"><table><thead><tr><th>Field</th><th>DSPy type</th><th>Values</th></tr></thead><tbody><tr><td class="k"><code>status</code></td><td><code>Choice</code></td><td>done, waiting_answer, waiting_permission, blocked, failed, continuing</td></tr><tr><td class="k"><code>needs_human</code></td><td><code>Noul</code></td><td>true or false</td></tr><tr><td class="k"><code>answer_class</code></td><td><code>Choice</code></td><td>none, approve_continue, pick_default, provide_fact, decide, external_action</td></tr><tr><td class="k"><code>risk</code></td><td><code>Score</code></td><td>low, medium, high</td></tr><tr><td class="k"><code>priority_hint</code></td><td><code>Score</code></td><td>can wait, soon, now</td></tr></tbody></table></div>
+<p>DSPy confidence is the distance from the threshold. It is not a calibrated probability. A plain-Python rule forwards the slice to the advisor when <code>status</code> is <code>waiting_answer</code> or when any confidence is below its threshold.</p>
+<p>The <code>Question</code> card comes from the petekp/inbox typed item:</p>
+<ul class="plain"><li><code>ask</code>: the question, in 300 characters or fewer.</li><li><code>options</code>: the choices, if any.</li><li><code>agent_recommendation</code>: the option the agent picked. It is never the human's answer (petekp/inbox).</li><li><code>helps</code>: up to three steps that help the human answer.</li></ul>
+</section>
+
+<section id="actions">
+  <header><div class="eyebrow">Out</div><h2>All the proposed actions</h2></header>
+<p>Twelve kinds. Eight touch the session, and four change only the inbox. The policy file owns the starting verdict. The column shows the proposed default and the reason.</p>
+<div class="scroll"><table><thead><tr><th>Kind</th><th>Effect</th><th>Payload</th><th>Borrowed from</th><th>Starting verdict</th></tr></thead><tbody><tr><td class="k"><code>reply</code></td><td>sends text as the user</td><td><code>text</code></td><td>petekp/inbox answer, our addition</td><td>ASK, ALLOW for a fact already in the transcript</td></tr><tr><td class="k"><code>continue</code></td><td>sends a nudge to go on</td><td>none</td><td>agentbox (finished vs waiting)</td><td>ALLOW</td></tr><tr><td class="k"><code>approve_permission</code></td><td>answers yes to a tool prompt</td><td><code>scope</code> once or session</td><td>Omnigent ALLOW, DENY, ASK</td><td>ALLOW for a read-only tool, else ASK. DENY on the shell deny list</td></tr><tr><td class="k"><code>deny_permission</code></td><td>answers no</td><td><code>reason</code></td><td>Omnigent</td><td>ALLOW</td></tr><tr><td class="k"><code>pick_option</code></td><td>picks an option by index</td><td><code>index</code></td><td>petekp/inbox options</td><td>ALLOW when it is the agent's own recommendation and risk is low</td></tr><tr><td class="k"><code>approve</code></td><td>approves a CoBuilder gate</td><td><code>gate</code>, <code>notes</code></td><td>Plannotator Approve, Approve with Notes</td><td>ASK in v0.3. ALLOW later by gate, only on stored evidence (section 7)</td></tr><tr><td class="k"><code>send_feedback</code></td><td>returns a gate with notes</td><td><code>gate</code>, <code>notes</code></td><td>Plannotator Send Feedback</td><td>ASK</td></tr><tr><td class="k"><code>interrupt</code></td><td>stops a running turn</td><td>none</td><td>Omnigent PTY wrapper</td><td>ASK</td></tr><tr><td class="k"><code>ask_human</code></td><td>puts an item in the queue</td><td><code>detail</code> (nested: decide, do, or review), <code>why_escalated</code></td><td>petekp/inbox decide and do</td><td>ALLOW, always</td></tr><tr><td class="k"><code>snooze</code></td><td>hides an item until a time or an event</td><td><code>until</code>, <code>until_event</code></td><td>agentbox away gating</td><td>ALLOW</td></tr><tr><td class="k"><code>dismiss</code></td><td>closes an item</td><td><code>reason</code></td><td>petekp/inbox skip</td><td>ALLOW</td></tr><tr><td class="k"><code>set_priority_hint</code></td><td>proposes a hint</td><td><code>hint</code></td><td>agentbox: an agent cannot change its own priority</td><td>ALLOW, and rules still set the rank</td></tr></tbody></table></div>
+<p>Common fields on every action: <code>session_id</code>, <code>prompt_id</code>, <code>author</code> (interpreter, human, or rule), <code>evidence_quote</code>, and <code>confidence</code>.</p>
+<p>The action hash is the idempotency key. It covers the kind and the payload. It does not cover <code>author</code>, <code>evidence_quote</code>, or <code>confidence</code>. A human approval and an advisor approval of the same prompt therefore have the same hash, and the actuator sends one of them.</p>
+<p>Not in the list, on purpose:</p>
+<ul class="plain"><li><strong>Kill a session</strong>, <strong>launch a session</strong>, <strong>change the permission mode</strong>. These are not proposals in v0.3. A launch comes later, and it needs its own design.</li><li><strong>A free shell command to the pane.</strong> <code>reply</code> sends text to a prompt. It does not run a command. The deny list and the five unparseable-to-ASK rules still read every <code>reply</code> that looks like a command.</li><li><strong>Auto-deny on a timeout</strong> (agentbox). We do not take it. An unanswered item rises in rank and never answers itself.</li></ul>
+</section>
+
+<section id="flow">
+  <header><div class="eyebrow">Flow</div><h2>Questions, actions, and responses</h2></header>
+<div class="scroll"><table><thead><tr><th>Step</th><th>Who</th><th>What</th></tr></thead><tbody><tr><td class="k">Question</td><td>the agent</td><td>a pending prompt or a prose question in the transcript</td></tr><tr><td class="k">Fact</td><td>the interpreter</td><td><code>status</code>, <code>needs_human</code>, <code>answer_class</code>, <code>risk</code>, <code>priority_hint</code>, and a <code>Question</code> card</td></tr><tr><td class="k">Proposal</td><td>the interpreter</td><td>one <code>Action</code>, or <code>ask_human</code></td></tr><tr><td class="k">Verdict</td><td>the policy</td><td>ALLOW, DENY, or ASK, with <code>rule_id</code> and <code>policy_hash</code></td></tr><tr><td class="k">Effect</td><td>the actuator</td><td>the send, after a fresh <code>evaluate</code></td></tr><tr><td class="k">Response</td><td>the human</td><td>one of the answers below, as a human-authored action</td></tr></tbody></table></div>
+<p>The human response is an action with <code>author = "human"</code>. It goes through the same policy and the same actuator. A rule can allow it by default, because the human decided.</p>
+<figure class="dia" style="--min: 1000px"><div class="dia-scroll"><svg id="figrt22" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1480 630" role="img" aria-labelledby="rt-title rt-desc">
+<title id="rt-title">priority.dev runtime architecture, version 2.2 (proposal)</title>
+<desc id="rt-desc">Runtime components of priority.dev, grouped by boundary. Nodes marked pending are proposed by the design. Each edge names its protocol.</desc>
+<style>
+#figrt22 .bd{fill:var(--svg-bd,none);stroke:var(--svg-bd-line,#9aa4b2);stroke-width:1.2;stroke-dasharray:6 4}
+#figrt22 .bt{font:600 12px system-ui,sans-serif;fill:var(--svg-muted,#5b6575);letter-spacing:.06em;text-transform:uppercase}
+#figrt22 .nr{fill:var(--svg-node,#ffffff);stroke:var(--svg-ink,#1f2937);stroke-width:1.4}
+#figrt22 .nx{fill:var(--svg-node,#ffffff);stroke:var(--svg-ink,#1f2937);stroke-width:1.4;stroke-dasharray:5 3}
+#figrt22 .nt{font:600 12px system-ui,sans-serif;fill:var(--svg-ink,#1f2937)}
+#figrt22 .ns{font:400 10.5px system-ui,sans-serif;fill:var(--svg-muted,#5b6575)}
+#figrt22 .pb{fill:var(--svg-pending,#f4c36a);stroke:none}
+#figrt22 .pt{font:700 8.5px system-ui,sans-serif;fill:#2b1d00;letter-spacing:.04em}
+#figrt22 .ed{fill:none;stroke:var(--svg-ink,#1f2937);stroke-width:1.3;marker-end:url(#arr-figrt22)}
+#figrt22 .el{font:400 10px system-ui,sans-serif;fill:var(--svg-ink,#1f2937);paint-order:stroke;stroke:var(--svg-page,#ffffff);stroke-width:3.5px;stroke-linejoin:round}
+#figrt22 .ed2{fill:none;stroke:var(--svg-ink,#1f2937);stroke-width:1.3;marker-start:url(#arr-figrt22);marker-end:url(#arr-figrt22)}
+#figrt22 .ar{fill:var(--svg-ink,#1f2937)}
+</style>
+<defs><marker id="arr-figrt22" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ar" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+<g id="bound-infra"><title>Infra boundary: your Mac, where the sessions run</title>
+<rect class="bd" x="20" y="250" width="240" height="360" rx="10"/>
+<text class="bt" x="32" y="270">infra: your Mac</text></g>
+<g id="bound-api"><title>API boundary: the resident service in a Docker container</title>
+<rect class="bd" x="290" y="140" width="950" height="480" rx="10"/>
+<text class="bt" x="302" y="160">api: Docker container (Docker Desktop)</text></g>
+<g id="bound-external"><title>External boundary: models and the tracker</title>
+<rect class="bd" x="290" y="20" width="570" height="100" rx="10"/>
+<text class="bt" x="302" y="40">external</text></g>
+<g id="bound-interp"><title>Interpreter process: holds the model keys, cannot send</title>
+<rect class="bd" x="300" y="250" width="170" height="118" rx="10"/>
+<text class="bt" x="312" y="270">interpreter process</text></g>
+<g id="bound-control"><title>Control process: policy, actuator, and the signing key</title>
+<rect class="bd" x="490" y="250" width="360" height="118" rx="10"/>
+<text class="bt" x="502" y="270">control process: signing key</text></g>
+<g id="bound-client"><title>Client boundary: inbox clients and notification targets</title>
+<rect class="bd" x="1260" y="140" width="200" height="300" rx="10"/>
+<text class="bt" x="1272" y="160">client</text></g>
+<g id="n-adapter"><title>Session adapter: adapter host, launchd</title>
+<rect class="nr" x="35" y="290" width="170" height="60" rx="12"/>
+<text class="nt" x="120.0" y="316" text-anchor="middle">Session adapter</text>
+<text class="ns" x="120.0" y="331" text-anchor="middle">adapter host, launchd</text>
+<rect class="pb" x="161" y="283" width="42" height="13" rx="6"/>
+<text class="pt" x="182" y="293" text-anchor="middle">PENDING</text>
+</g>
+<g id="n-tmux"><title>tmux + Claude Code: local sessions, hooks</title>
+<rect class="nr" x="35" y="520" width="170" height="60" rx="12"/>
+<text class="nt" x="120.0" y="546" text-anchor="middle">tmux + Claude Code</text>
+<text class="ns" x="120.0" y="561" text-anchor="middle">local sessions, hooks</text>
+</g>
+<g id="n-interp"><title>Interpreter: Jev, then LM advisor</title>
+<rect class="nr" x="310" y="290" width="150" height="60" rx="12"/>
+<text class="nt" x="385.0" y="316" text-anchor="middle">Interpreter</text>
+<text class="ns" x="385.0" y="331" text-anchor="middle">Jev, then LM advisor</text>
+<rect class="pb" x="416" y="283" width="42" height="13" rx="6"/>
+<text class="pt" x="437" y="293" text-anchor="middle">PENDING</text>
+</g>
+<g id="n-policy"><title>Policy engine: rules, fixed deny list</title>
+<rect class="nr" x="500" y="290" width="150" height="60" rx="12"/>
+<text class="nt" x="575.0" y="316" text-anchor="middle">Policy engine</text>
+<text class="ns" x="575.0" y="331" text-anchor="middle">rules, fixed deny list</text>
+<rect class="pb" x="606" y="283" width="42" height="13" rx="6"/>
+<text class="pt" x="627" y="293" text-anchor="middle">PENDING</text>
+</g>
+<g id="n-actuator"><title>Actuator: send, approve, escalate</title>
+<rect class="nr" x="690" y="290" width="150" height="60" rx="12"/>
+<text class="nt" x="765.0" y="316" text-anchor="middle">Actuator</text>
+<text class="ns" x="765.0" y="331" text-anchor="middle">send, approve, escalate</text>
+<rect class="pb" x="796" y="283" width="42" height="13" rx="6"/>
+<text class="pt" x="817" y="293" text-anchor="middle">PENDING</text>
+</g>
+<g id="n-attn"><title>Attention queue: items for a human</title>
+<rect class="nr" x="880" y="290" width="150" height="60" rx="12"/>
+<text class="nt" x="955.0" y="316" text-anchor="middle">Attention queue</text>
+<text class="ns" x="955.0" y="331" text-anchor="middle">items for a human</text>
+<rect class="pb" x="986" y="283" width="42" height="13" rx="6"/>
+<text class="pt" x="1007" y="293" text-anchor="middle">PENDING</text>
+</g>
+<g id="n-notq"><title>Notification queue: plans delivery</title>
+<rect class="nr" x="1070" y="290" width="150" height="60" rx="12"/>
+<text class="nt" x="1145.0" y="316" text-anchor="middle">Notification queue</text>
+<text class="ns" x="1145.0" y="331" text-anchor="middle">plans delivery</text>
+<rect class="pb" x="1176" y="283" width="42" height="13" rx="6"/>
+<text class="pt" x="1197" y="293" text-anchor="middle">PENDING</text>
+</g>
+<g id="n-inbox"><title>Inbox API: REST + SSE with a cursor</title>
+<rect class="nr" x="880" y="170" width="150" height="60" rx="12"/>
+<text class="nt" x="955.0" y="196" text-anchor="middle">Inbox API</text>
+<text class="ns" x="955.0" y="211" text-anchor="middle">REST + SSE with a cursor</text>
+<rect class="pb" x="986" y="163" width="42" height="13" rx="6"/>
+<text class="pt" x="1007" y="173" text-anchor="middle">PENDING</text>
+</g>
+<g id="n-log"><title>Event log (Postgres): Postgres 17: append-only, LISTEN / NOTIFY, Docker volume</title>
+<path class="nr" d="M310,448 a455.0,8 0 0 1 910,0 v44 a455.0,8 0 0 1 -910,0 z"/>
+<path class="nr" fill="none" d="M310,448 a455.0,8 0 0 0 910,0"/>
+<text class="nt" x="765.0" y="470" text-anchor="middle">Event log (Postgres)</text>
+<text class="ns" x="765.0" y="485" text-anchor="middle">Postgres 17: append-only, LISTEN / NOTIFY, Docker volume</text>
+<rect class="pb" x="1176" y="433" width="42" height="13" rx="6"/>
+<text class="pt" x="1197" y="443" text-anchor="middle">PENDING</text>
+</g>
+<g id="n-jev"><title>Jev API: System-1 decisions, first</title>
+<rect class="nx" x="310" y="50" width="150" height="55" rx="12"/>
+<text class="nt" x="385.0" y="76" text-anchor="middle">Jev API</text>
+<text class="ns" x="385.0" y="91" text-anchor="middle">System-1 decisions, first</text>
+</g>
+<g id="n-claude"><title>Language model: advisor, forwarded cases</title>
+<rect class="nx" x="490" y="50" width="150" height="55" rx="12"/>
+<text class="nt" x="565.0" y="76" text-anchor="middle">Language model</text>
+<text class="ns" x="565.0" y="91" text-anchor="middle">advisor, forwarded cases</text>
+</g>
+<g id="n-tracker"><title>tracker.py + beads: workflow state</title>
+<rect class="nx" x="690" y="50" width="150" height="55" rx="12"/>
+<text class="nt" x="765.0" y="76" text-anchor="middle">tracker.py + beads</text>
+<text class="ns" x="765.0" y="91" text-anchor="middle">workflow state</text>
+</g>
+<g id="n-web"><title>Web viewer: inbox client</title>
+<rect class="nr" x="1280" y="175" width="160" height="48" rx="12"/>
+<text class="nt" x="1360.0" y="201" text-anchor="middle">Web viewer</text>
+<text class="ns" x="1360.0" y="216" text-anchor="middle">inbox client</text>
+<rect class="pb" x="1396" y="168" width="42" height="13" rx="6"/>
+<text class="pt" x="1417" y="178" text-anchor="middle">PENDING</text>
+</g>
+<g id="n-mobile"><title>Mobile app: same API, later</title>
+<rect class="nr" x="1280" y="232" width="160" height="45" rx="12"/>
+<text class="nt" x="1360.0" y="258" text-anchor="middle">Mobile app</text>
+<text class="ns" x="1360.0" y="273" text-anchor="middle">same API, later</text>
+<rect class="pb" x="1396" y="225" width="42" height="13" rx="6"/>
+<text class="pt" x="1417" y="235" text-anchor="middle">PENDING</text>
+</g>
+<g id="n-desktop"><title>Desktop notifier: host process, v0.1</title>
+<rect class="nr" x="1280" y="300" width="160" height="50" rx="12"/>
+<text class="nt" x="1360.0" y="326" text-anchor="middle">Desktop notifier</text>
+<text class="ns" x="1360.0" y="341" text-anchor="middle">host process, v0.1</text>
+<rect class="pb" x="1396" y="293" width="42" height="13" rx="6"/>
+<text class="pt" x="1417" y="303" text-anchor="middle">PENDING</text>
+</g>
+<g id="n-phone"><title>Phone and email: ntfy, email, later</title>
+<rect class="nr" x="1280" y="365" width="160" height="50" rx="12"/>
+<text class="nt" x="1360.0" y="391" text-anchor="middle">Phone and email</text>
+<text class="ns" x="1360.0" y="406" text-anchor="middle">ntfy, email, later</text>
+<rect class="pb" x="1396" y="358" width="42" height="13" rx="6"/>
+<text class="pt" x="1417" y="368" text-anchor="middle">PENDING</text>
+</g>
+<path class="ed2" d="M120,350 V520"/>
+<text class="el" x="128" y="432" text-anchor="start">hook events,</text>
+<text class="el" x="128" y="444" text-anchor="start">transcripts, send-keys</text>
+<path class="ed" d="M205,330 H275 V470 H310"/>
+<text class="el" x="252" y="396" text-anchor="end">HTTP ingest</text>
+<text class="el" x="252" y="408" text-anchor="end">POST /events</text>
+<path class="ed" d="M835,350 V405 H150 V350"/>
+<text class="el" x="480" y="397" text-anchor="middle">commands (adapter host pulls, signed)</text>
+<path class="ed" d="M810,350 V368 H620 V350"/>
+<text class="el" x="715" y="362" text-anchor="middle">re-check before send</text>
+<path class="ed" d="M460,320 H500"/>
+<text class="el" x="480" y="312" text-anchor="middle">events</text>
+<path class="ed" d="M650,320 H690"/>
+<text class="el" x="670" y="312" text-anchor="middle">events</text>
+<path class="ed" d="M840,320 H880"/>
+<text class="el" x="860" y="312" text-anchor="middle">items</text>
+<path class="ed" d="M1030,320 H1070"/>
+<text class="el" x="1050" y="312" text-anchor="middle">events</text>
+<path class="ed2" d="M385,350 V440"/>
+<text class="el" x="393" y="422" text-anchor="start">SQL read, append</text>
+<path class="ed2" d="M575,350 V440"/>
+<text class="el" x="583" y="422" text-anchor="start">SQL read, append</text>
+<path class="ed2" d="M785,350 V440"/>
+<text class="el" x="793" y="422" text-anchor="start">SQL read, append</text>
+<path class="ed2" d="M955,350 V440"/>
+<text class="el" x="963" y="422" text-anchor="start">SQL read, append</text>
+<path class="ed2" d="M1145,350 V440"/>
+<text class="el" x="1153" y="422" text-anchor="start">SQL read, append</text>
+<path class="ed2" d="M955,290 V230"/>
+<text class="el" x="963" y="262" text-anchor="start">items, answers</text>
+<path class="ed" d="M1030,195 H1280"/>
+<text class="el" x="1155" y="187" text-anchor="middle">push: SSE + cursor (v0.1)</text>
+<path class="ed" d="M1280,213 H1030"/>
+<text class="el" x="1155" y="229" text-anchor="middle">pull: request after cursor (v0.1)</text>
+<path class="ed" d="M1100,290 L1030,224"/>
+<text class="el" x="1060" y="262" text-anchor="start">notification events</text>
+<path class="ed" d="M1220,325 H1280"/>
+<text class="el" x="1250" y="317" text-anchor="middle">notify</text>
+<path class="ed" d="M1220,345 L1280,388"/>
+<text class="el" x="1238" y="372" text-anchor="end">push (later)</text>
+<path class="ed" d="M385,290 V105"/>
+<text class="el" x="377" y="202" text-anchor="end">typed questions (first)</text>
+<path class="ed" d="M430,290 L540,105"/>
+<text class="el" x="484" y="234" text-anchor="middle">forwarded cases (second)</text>
+<path class="ed" d="M735,290 V105"/>
+<text class="el" x="743" y="202" text-anchor="middle">uv run tracker.py</text>
+</svg>
+</div><figcaption>Level 4, version 2.2. The interpreter and the control process are separate processes. The actuator re-checks the policy before each send. The event log is Postgres.</figcaption></figure>
+<div class="scroll"><table><thead><tr><th>Client response</th><th>Becomes</th></tr></thead><tbody><tr><td class="k">Accept the proposal</td><td>the proposed action, <code>author = "human"</code></td></tr><tr><td class="k">Edit the text, then send</td><td><code>reply</code> with the edited text</td></tr><tr><td class="k">Choose an option</td><td><code>pick_option</code></td></tr><tr><td class="k">Approve</td><td><code>approve_permission</code> or <code>approve</code></td></tr><tr><td class="k">Approve with notes</td><td><code>approve</code> with <code>notes</code></td></tr><tr><td class="k">Send feedback</td><td><code>send_feedback</code></td></tr><tr><td class="k">Not now</td><td><code>snooze</code></td></tr><tr><td class="k">Close</td><td><code>dismiss</code></td></tr></tbody></table></div>
+<p>Two rules from Plannotator apply. A reply never blocks the client, and the answer arrives in the session as a message. The client warns before it drops notes that the human did not send.</p>
+<p>Two rules from petekp/inbox apply. An option that the agent picked is never recorded as the human's answer. A malformed model reply is never dropped silently. It becomes <code>proposal.abstain</code> and an <code>ask_human</code>.</p>
+</section>
+
+<section id="notify">
+  <header><div class="eyebrow">Delivery</div><h2>Notification levels and settings</h2></header>
+<p>The goal is to sort notifications into priority levels. A level has no upper limit. Anything that does not need immediate attention goes into a batch, and one batch counts as one notification.</p>
+<div class="scroll"><table><thead><tr><th>Level</th><th>Source in the attention queue</th><th>Delivery</th></tr></thead><tbody><tr><td class="k">N0</td><td>class 0: policy ASK on a destructive action</td><td>at once, ignores quiet hours</td></tr><tr><td class="k">N1</td><td>class 1: a blocked session</td><td>at once</td></tr><tr><td class="k">N2</td><td>class 2: a question</td><td>batch</td></tr><tr><td class="k">N3</td><td>class 3: FYI</td><td>batch</td></tr></tbody></table></div>
+<p>The batch window and the quiet hours are settings, not constants. The starting value of each batch window is 30 minutes, for N2 and for N3 alike. Quiet hours start at 22:00 and end at 07:00, and only N0 passes. The <code>NotifyConfig</code> type in the sketch holds these values.</p>
+</section>
+
+<section id="store">
+  <header><div class="eyebrow">Learning</div><h2>Stored recommendations</h2></header>
+<p>The system stores each proposal that reaches the human, and the human's reply to it. The pair is a <code>Recommendation</code> and an <code>Outcome</code>. The outcome is one of accepted, edited, replaced, rejected, snoozed, or dismissed.</p>
+<ul class="plain"><li>The pairs are the data for fine-tuning the interpreter and for the lab metrics, with the same slice as the input.</li><li><code>approve</code> stays at ASK until stored outcomes support a change. The human sees the proposal, and the proposal is stored with the reply.</li><li>I propose to move one gate to ALLOW when the human accepted the proposal for that gate without an edit in a set share of the cases. I do not know the share. See the decision below.</li></ul>
+</section>
+
+<section id="checks">
+  <header><div class="eyebrow">Gaps</div><h2>Checks this design needs</h2></header>
+<ol class="plain"><li>The sketch imports and validates (done: <code>uv run schemas/interpreter_schemas.py</code> prints <code>ok</code>).</li><li>A real Jev call returns the five typed fields for one slice (not done, one-day test).</li><li>The advisor returns a valid <code>Action</code> through <code>Advise</code> for 20 recorded slices (not done). The <code>Action</code> union as a DSPy output field is untested against a real model.</li><li>The evidence quote check rejects a proposal whose quote is not in the slice (not done, a unit test).</li></ol>
+</section>
+
+<section id="examples">
+  <header><div class="eyebrow">Data</div><h2>Examples of the data</h2></header>
+<p>The sketch builds each example and checks a JSON round trip. Run <code>uv run schemas/interpreter_schemas.py dump</code> to print them. Empty and default fields are in the real output, and they are cut here.</p>
+<p><strong>reply</strong></p>
+<pre class="code"><code>{&quot;session_id&quot;: &quot;s1&quot;, &quot;prompt_id&quot;: &quot;p1&quot;, &quot;evidence_quote&quot;: &quot;Which database should I use?&quot;, &quot;confidence&quot;: 0.91, &quot;kind&quot;: &quot;reply&quot;, &quot;text&quot;: &quot;Use Postgres 17.&quot;}</code></pre>
+<p><strong>continue</strong></p>
+<pre class="code"><code>{&quot;session_id&quot;: &quot;s1&quot;, &quot;evidence_quote&quot;: &quot;Shall I continue?&quot;, &quot;confidence&quot;: 0.97, &quot;kind&quot;: &quot;continue&quot;}</code></pre>
+<p><strong>approve_permission</strong></p>
+<pre class="code"><code>{&quot;session_id&quot;: &quot;s1&quot;, &quot;prompt_id&quot;: &quot;p2&quot;, &quot;evidence_quote&quot;: &quot;Allow Bash(ls -la)?&quot;, &quot;confidence&quot;: 0.99, &quot;kind&quot;: &quot;approve_permission&quot;, &quot;scope&quot;: &quot;once&quot;}</code></pre>
+<p><strong>deny_permission</strong></p>
+<pre class="code"><code>{&quot;session_id&quot;: &quot;s1&quot;, &quot;prompt_id&quot;: &quot;p3&quot;, &quot;confidence&quot;: 0.0, &quot;kind&quot;: &quot;deny_permission&quot;, &quot;reason&quot;: &quot;Writes outside the repo&quot;}</code></pre>
+<p><strong>pick_option</strong></p>
+<pre class="code"><code>{&quot;session_id&quot;: &quot;s1&quot;, &quot;prompt_id&quot;: &quot;p4&quot;, &quot;evidence_quote&quot;: &quot;1. Existing table (recommended)&quot;, &quot;confidence&quot;: 0.88, &quot;kind&quot;: &quot;pick_option&quot;, &quot;index&quot;: 0}</code></pre>
+<p><strong>approve</strong></p>
+<pre class="code"><code>{&quot;session_id&quot;: &quot;s1&quot;, &quot;prompt_id&quot;: &quot;p5&quot;, &quot;evidence_quote&quot;: &quot;Approve the design?&quot;, &quot;confidence&quot;: 0.8, &quot;kind&quot;: &quot;approve&quot;, &quot;gate&quot;: &quot;design-review&quot;, &quot;notes&quot;: &quot;Check the retry limit.&quot;}</code></pre>
+<p><strong>send_feedback</strong></p>
+<pre class="code"><code>{&quot;session_id&quot;: &quot;s1&quot;, &quot;confidence&quot;: 0.0, &quot;kind&quot;: &quot;send_feedback&quot;, &quot;gate&quot;: &quot;design-review&quot;, &quot;notes&quot;: &quot;Split slice 2 in two.&quot;}</code></pre>
+<p><strong>interrupt</strong></p>
+<pre class="code"><code>{&quot;session_id&quot;: &quot;s1&quot;, &quot;evidence_quote&quot;: &quot;rm -rf build/ running&quot;, &quot;confidence&quot;: 0.7, &quot;kind&quot;: &quot;interrupt&quot;}</code></pre>
+<p><strong>ask_human (decide)</strong></p>
+<pre class="code"><code>{&quot;session_id&quot;: &quot;s1&quot;, &quot;confidence&quot;: 0.0, &quot;kind&quot;: &quot;ask_human&quot;, &quot;detail&quot;: {&quot;role&quot;: &quot;decide&quot;, &quot;question&quot;: {&quot;ask&quot;: &quot;Use the existing table or add a new one?&quot;, &quot;options&quot;: [&quot;existing&quot;, &quot;new&quot;], &quot;agent_recommendation&quot;: &quot;existing&quot;, &quot;helps&quot;: [&quot;The table has 3 columns&quot;]}}, &quot;why_escalated&quot;: &quot;Cost of a new table is not in the transcript&quot;}</code></pre>
+<p><strong>ask_human (do)</strong></p>
+<pre class="code"><code>{&quot;session_id&quot;: &quot;s1&quot;, &quot;confidence&quot;: 0.0, &quot;kind&quot;: &quot;ask_human&quot;, &quot;detail&quot;: {&quot;role&quot;: &quot;do&quot;, &quot;steps&quot;: [&quot;Open the console&quot;, &quot;Create the bucket&quot;], &quot;where&quot;: &quot;aws console&quot;, &quot;done_check&quot;: &quot;Bucket name appears in the next prompt&quot;}, &quot;why_escalated&quot;: &quot;Needs the AWS console&quot;}</code></pre>
+<p><strong>ask_human (review)</strong></p>
+<pre class="code"><code>{&quot;session_id&quot;: &quot;s1&quot;, &quot;confidence&quot;: 0.0, &quot;kind&quot;: &quot;ask_human&quot;, &quot;detail&quot;: {&quot;role&quot;: &quot;review&quot;, &quot;artifact&quot;: &quot;docs/plans/x/04-slices.md&quot;, &quot;check_items&quot;: [&quot;Slice order&quot;]}, &quot;why_escalated&quot;: &quot;Gate needs a person&quot;}</code></pre>
+<p><strong>snooze</strong></p>
+<pre class="code"><code>{&quot;session_id&quot;: &quot;s1&quot;, &quot;confidence&quot;: 0.0, &quot;kind&quot;: &quot;snooze&quot;, &quot;until_event&quot;: &quot;turn_end&quot;}</code></pre>
+<p><strong>dismiss</strong></p>
+<pre class="code"><code>{&quot;session_id&quot;: &quot;s1&quot;, &quot;confidence&quot;: 0.0, &quot;kind&quot;: &quot;dismiss&quot;, &quot;reason&quot;: &quot;fyi_read&quot;}</code></pre>
+<p><strong>set_priority_hint</strong></p>
+<pre class="code"><code>{&quot;session_id&quot;: &quot;s1&quot;, &quot;confidence&quot;: 0.0, &quot;kind&quot;: &quot;set_priority_hint&quot;, &quot;hint&quot;: 0.8}</code></pre>
+<p><strong>notification settings</strong></p>
+<pre class="code"><code>{&quot;batch_window_minutes&quot;: {&quot;N2&quot;: 30, &quot;N3&quot;: 30}, &quot;quiet_hours&quot;: [&quot;22:00&quot;, &quot;07:00&quot;], &quot;timezone&quot;: &quot;Australia/Sydney&quot;}</code></pre>
+</section>
+
+<section id="decide" class="decide">
+  <div class="eyebrow">Decision</div>
+  <p class="q">Do these schemas and actions match what you want?</p>
+  <p class="default-note">If you do not answer a point, the draft uses the default marked under it. Nothing leaves this machine until you say so.</p>
+  <form id="decision-form" onsubmit="return false">
+    <fieldset id="f-d0"><legend>0. The name <code>approve</code></legend>
+      <label class="opt"><input type="radio" name="d0" value="Rename only, approve_permission stays a separate kind"><span>Rename <code>approve_gate</code> to <code>approve</code> only. <code>approve_permission</code> stays a separate kind<span class="rec">Recommended</span></span></label>
+      <label class="opt"><input type="radio" name="d0" value="One approve kind with a target field"><span>One <code>approve</code> kind with a <code>target</code> field (a gate or a permission prompt)</span></label>
+      <label class="opt"><input type="radio" name="d0" value="Other, see notes"><span>Other. My reason is in the notes</span></label>
+      <p class="default-note">Default: the first. Your message ended before the reason, so I did not guess it.</p>
+    </fieldset>
+    <fieldset id="f-d1"><legend>1. When may a gate move from ASK to ALLOW?</legend>
+      <label class="opt"><input type="radio" name="d1" value="Per gate, after 20 accepted proposals in a row with no edit"><span>Per gate, after 20 proposals in a row that you accepted with no edit<span class="rec">Recommended</span></span></label>
+      <label class="opt"><input type="radio" name="d1" value="Per gate, after 50 in a row"><span>Per gate, after 50 in a row</span></label>
+      <label class="opt"><input type="radio" name="d1" value="Never automatic, I change the rule by hand"><span>Never automatic. You change the rule by hand</span></label>
+      <p class="default-note">Default: never automatic. The number 20 is my guess, with no data behind it.</p>
+    </fieldset>
+    <fieldset id="f-d2"><legend>2. Which proposals are stored for training?</legend>
+      <label class="opt"><input type="radio" name="d2" value="Every proposal, shown or not"><span>Every proposal, including those that the policy allowed without you<span class="rec">Recommended</span></span></label>
+      <label class="opt"><input type="radio" name="d2" value="Only proposals shown to the human"><span>Only proposals that reached you</span></label>
+      <p class="default-note">Default: every proposal. A proposal that you never saw has no human outcome, so it trains nothing until you review a sample.</p>
+    </fieldset>
+    <fieldset id="f-d3"><legend>3. The <code>do</code> and <code>review</code> detail</legend>
+      <label class="opt"><input type="radio" name="d3" value="Accept the fields as drawn"><span>Accept: <code>do</code> has steps, where, and a done check. <code>review</code> has an artifact and check items<span class="rec">Recommended</span></span></label>
+      <label class="opt"><input type="radio" name="d3" value="Change, see notes"><span>Change the fields. I describe them in the notes</span></label>
+      <p class="default-note">Default: accept.</p>
+    </fieldset>
+    <fieldset id="f-notes"><legend><label for="notes">Notes</label></legend><textarea id="notes" placeholder="Changes, extra actions, or a reason for a name"></textarea></fieldset>
+    <div style="display:flex; flex-wrap:wrap; gap:12px; align-items:center; padding-top:12px"><button class="go" id="copy-btn" type="button">Copy my answers</button><span id="copy-status" role="status"></span></div>
+    <textarea id="answers-out" readonly aria-label="Your answers, ready to paste into the session"></textarea>
+    <p class="default-note" style="padding-top:8px">Paste the copied text into the session.</p>
+  </form>
+</section>
+<footer class="end">Source of record: <code>priority-dev/docs/design/schemas.md</code> and <code>schemas/interpreter_schemas.py</code>. The components are in <code>components.md</code>.</footer>
+</div>
+<script>
+(function () {
+  var form = document.getElementById('decision-form'), out = document.getElementById('answers-out'), status = document.getElementById('copy-status');
+  function lt(f) { var l = f.querySelector('legend'); return l ? l.textContent.trim() : ''; }
+  function collect() {
+    var lines = ['priority.dev interpreter schemas, round 6: my answers'];
+    ['d0','d1','d2','d3'].forEach(function (n) {
+      var c = form.querySelector('input[name="' + n + '"]:checked');
+      lines.push(lt(document.getElementById('f-' + n)) + ' -> ' + (c ? c.value : 'no answer (use the default)'));
+    });
+    lines.push('Notes: ' + (document.getElementById('notes').value.trim() || 'none'));
+    return lines.join('\n');
+  }
+  document.getElementById('copy-btn').addEventListener('click', function () {
+    var text = collect(); out.value = text;
+    function fallback() { out.style.display = 'block'; out.focus(); out.select(); status.textContent = 'Copy is blocked here. Select the text below and copy it.'; }
+    try { if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(text).then(function () { status.textContent = 'Copied. Paste it into the session.'; }, fallback); } else { fallback(); } } catch (e) { fallback(); }
+  });
+})();
+</script>
