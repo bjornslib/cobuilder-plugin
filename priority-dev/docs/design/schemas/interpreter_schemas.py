@@ -27,21 +27,57 @@ def digest(*parts: str) -> str:
 
 
 # ---- 1. Input: the turn slice ----------------------------------------------
+# A slice is one run: from the record that woke the agent to the stop that
+# waits. Code reads structured transcript records. It judges no meaning.
 
-class DigestItem(Strict):
-    """One tool call of the turn. Built by code. It holds no tool output."""
+class Step(Strict):
+    """One tool call. The tool, the target, and the outcome come from the records."""
     tool: str
     target: str  # a path, a command, or a URL, redacted
     outcome: Literal["ok", "error", "denied"]
     note: str = Field(default="", max_length=200)  # the first line of an error
 
 
+class StepSummary(Strict):
+    total: int
+    by_tool: dict[str, int]
+    last: tuple[Step, ...] = Field(default=(), max_length=8)  # the last steps in full
+    errors: tuple[Step, ...] = Field(default=(), max_length=5)  # the first errors in full
+
+
+class Ask(Strict):
+    """What woke the agent. The origin comes from the record, never from a guess."""
+    origin: Literal["human", "goal_hook", "task_notification", "peer"]
+    text: str = Field(max_length=1500)
+
+
+class GoalState(Strict):
+    text: str
+    stop_attempts: int  # stop hook feedback records seen since the goal was set
+    last_reason: str | None = None  # the reason that the last stop attempt was refused
+
+
+class AgentReport(Strict):
+    """A sub-agent call with the start of its result. Other tool results are not kept."""
+    description: str
+    result: str = Field(max_length=800)
+
+
+class PreviousRun(Strict):
+    """The run before this one, in compact form."""
+    ask: str = Field(max_length=400)
+    steps_total: int
+    by_tool: dict[str, int]
+    final: str = Field(max_length=800)
+
+
 class PendingPrompt(Strict):
-    """A prompt that waits for an answer, seen by a hook or a pane read."""
+    """A prompt that waits for an answer."""
     prompt_id: str
-    source: Literal["hook", "pane", "transcript"]
+    source: Literal["hook", "pane", "transcript"]  # a transcript prompt is an AskUserQuestion call
     kind: Literal["permission", "choice", "free_text", "gate"]
     options: tuple[str, ...] = ()
+    multi_select: bool = False
     tool: str | None = None
     command: str | None = None  # the shell command, redacted
 
@@ -57,20 +93,27 @@ class SessionContext(Strict):
 
 class TurnSlice(Strict):
     """The exact input of the interpreter. Built by code, stored once, never edited."""
-    slice_id: str  # digest of the session id and the uuid of the last record
+    slice_id: str  # digest of the session id and the uuid of the stop record
     cursor: str  # transcript path and byte offset, to find the source again
+    trigger: Literal["end_turn", "goal_stop_attempt", "question_tool", "permission_wait"]
     context: SessionContext
-    last_human_message: str | None  # what the agent was asked, redacted, in full
-    turn_digest: tuple[DigestItem, ...]  # what the agent did, one line for each tool call
-    last_response: str  # the full last assistant message of the turn, redacted
-    earlier_summary: str | None = None  # a model summary of older turns, off in v0.1
+    ask: Ask
+    goal: GoalState | None = None
+    notes: tuple[str, ...] = Field(default=(), max_length=6)  # assistant text before a tool call, each clipped
+    steps: StepSummary
+    agent_reports: tuple[AgentReport, ...] = Field(default=(), max_length=4)
+    last_thinking: str | None = None  # off by default, a lab ablation
+    final: str  # the last assistant message of the run: head 1500 and tail 6000 characters, redacted
+    final_chars: int  # the length before the clip
+    previous: PreviousRun | None = None
     pending: PendingPrompt | None = None
     redactions: int = 0
     allowed_kinds: tuple[str, ...]  # the action kinds the advisor may name
 
     def for_model(self) -> str:
         """The text that the models read. It leaves out the ids, the cursor, and the kinds."""
-        return self.model_dump_json(exclude={"slice_id", "cursor", "redactions", "allowed_kinds"})
+        return self.model_dump_json(exclude={"slice_id", "cursor", "redactions", "allowed_kinds", "final_chars"},
+                                    exclude_none=True)
 
 
 class InterpreterCall(Strict):
@@ -359,18 +402,24 @@ class NotifyConfig(Strict):
 def example_slice() -> TurnSlice:
     return TurnSlice(
         slice_id=digest("sess-7c1", "rec-0412"), cursor="~/.claude/projects/-work-exporter/7c1e.jsonl@184220",
+        trigger="end_turn",
         context=SessionContext(session_id="sess-7c1", project="exporter", branch="slice-2-csv",
                                workflow_stage="implement: slice 2 of 5", answered_by_us_last_hour=1),
-        last_human_message="Build slice 2: the CSV export endpoint. Run the tests before you stop.",
-        turn_digest=(
-            DigestItem(tool="Read", target="src/export/routes.py", outcome="ok"),
-            DigestItem(tool="Edit", target="src/export/csv_writer.py", outcome="ok"),
-            DigestItem(tool="Bash", target="pytest tests/export -q", outcome="ok"),
-        ),
-        last_response=("Slice 2 is done. 14 tests pass.\n\nBefore I start slice 3, one question. "
-                       "Should the CSV timestamps use UTC or the project timezone?\n"
-                       "1. UTC (I recommend this: it matches the API)\n2. The project timezone\n"
-                       "Reply 1 or 2."),
+        ask=Ask(origin="human", text="Build slice 2: the CSV export endpoint. Run the tests before you stop."),
+        notes=("I will read the routes first, then add the writer.", "Tests pass. I check the timestamp format."),
+        steps=StepSummary(total=9, by_tool={"Read": 4, "Edit": 3, "Bash": 2}, last=(
+            Step(tool="Edit", target="src/export/csv_writer.py", outcome="ok"),
+            Step(tool="Bash", target="pytest tests/export -q", outcome="ok")),
+            errors=(Step(tool="Bash", target="pytest tests/export -q", outcome="error",
+                         note="1 failed: test_header_order"),)),
+        final=("Slice 2 is done. 14 tests pass.\n\nBefore I start slice 3, one question. "
+               "Should the CSV timestamps use UTC or the project timezone?\n"
+               "1. UTC (I recommend this: it matches the API)\n2. The project timezone\n"
+               "Reply 1 or 2."),
+        final_chars=288,
+        previous=PreviousRun(ask="Build slice 1: the export model.", steps_total=14,
+                             by_tool={"Read": 6, "Edit": 5, "Bash": 3},
+                             final="Slice 1 is done. 9 tests pass. Starting slice 2 next."),
         redactions=0, allowed_kinds=tuple(sorted(SESSION_EFFECT | {"ask_human", "snooze", "dismiss"})),
     )
 
