@@ -10,6 +10,7 @@
     "ADR-0029",
     "ADR-0001",
     "ADR-0043",
+    "ADR-0044",
     "ADR-0020"
   ],
   "created": "2026-09-26",
@@ -22,7 +23,7 @@
     "shared/build_index.py gives a byte-comparable data/index.json through the projector, and a byte compare of the viewer index.html shows no viewer change",
     "the files adapter alone projects to the current data/index.json offline, with no bd installed",
     "next_ready(kind, under) returns the ready records of one kind, and on beads, closing slice n-1 makes slice n appear in bd ready",
-    "a pull request issue blocks each epic it holds until a human closes it. Gates 1 to 4, 2b, and 4a to 4c are scalar fields on the program issue",
+    "a pull request milestone tracks each epic it holds and blocks none. Gates 1 to 4, 2b, and 4a to 4c are scalar fields on the program issue",
     "tracker.py exits 2 on a write with no configured adapter, and a grep check finds no call to bd outside shared/tracker_port/",
     "a second clone runs bd sync and sees the same programs, epics, and slices",
     "a test removes the file sources. Then one list-programs call names a program and its stage, and one next-ready call names the next slice, with zero file reads",
@@ -34,12 +35,18 @@
     "tracker.py has one subcommand for each port operation plus doctor. Over the fake adapter it prints JSON and exits 4 on bad arguments",
     "the reference shared/tracker-usage.md exists, and the main SKILL.md of architect, implement, pr, and artifact link it",
     "every tracker.py operation that a skill, command, or reference names is a subcommand that tracker.py --help lists",
-    "no skill, command, or reference outside the beads adapter notes names a bd command, and the reference is in AUTHORING_REFERENCES"
+    "no skill, command, or reference outside the beads adapter notes names a bd command, and the reference is in AUTHORING_REFERENCES",
+    "a program is a feature, an epic is an epic, a slice is a task, and a pull request is a milestone that tracks its epics with no blocking edge",
+    "prepare sets no custom bd type, and a consecutive pair of slices and a consecutive pair of epics each have a blocks edge",
+    "each issue title holds the record name, and external_ref and metadata.cb.id hold the cb id, unless the engineer picks the id-and-name form at review",
+    "next_ready for slices runs bd ready -t task, native_ready is true on beads, and a parity test holds on the corpus",
+    "claim-next claims one ready slice in one bd call. Nothing ready gives an empty result and exit 0, and a foreign task is never claimed",
+    "migrate-mapping converts a legacy tracker in one sync, a dry run writes nothing, and a second run changes nothing"
   ],
   "abort_if": [
     "the metadata envelope cannot round-trip through bd create, bd update, bd export, and bd list --json without loss",
     "the index rebuild reads anything but a local database, a file, or an adapter cache, or it needs GitHub credentials. A later Linear or Jira adapter may use the network",
-    "the mapping needs a second custom type beyond program, which would mean the built-in vocabulary was misread",
+    "the mapping needs a custom bd type, which would mean the built-in vocabulary was misread",
     "the port needs a method that only one tracker can implement, and no capability flag can cover it"
   ],
   "min_work": {
@@ -87,6 +94,12 @@
       "title": "Formula-driven slice loop on beads: the config key formulas turns the slice-loop formula on or off. With formulas true, start-slice-loop pours one molecule for a slice, record-attempt adds a wisp to it, and closing the slice squashes the molecule to a digest that holds the attempt history. E6 starts after E5 and needs the engineer's approval of its design.",
       "outcome": "On beads, each slice runs as one molecule, and a squash keeps the attempt history in a synced digest. With formulas false, the formula operation refuses and the other operations behave as before.",
       "slug": "formula-slice-loop"
+    },
+    {
+      "id": "E7",
+      "title": "Native beads mapping and bd ready: a program is a feature, an epic is an epic, a slice is a task, and a pull request is a milestone that tracks its epics and blocks none. Blocks edges order the slices and the epics. The title holds the human name, and the seed fills the text fields. Slice readiness comes from bd ready, and the new operation claim-next claims through it. The operation migrate-mapping converts existing trackers. E7 starts after E5 and needs the engineer's approval of its design. E6 stays unbuilt, and E7 does not wait for it.",
+      "outcome": "The beads adapter uses native types, hierarchy, edges, and the ready queue, and it hides no structure in metadata.cb. One call claims the next slice. A migration converts the live trackers.",
+      "slug": "native-mapping"
     }
   ],
   "stage": "approved",
