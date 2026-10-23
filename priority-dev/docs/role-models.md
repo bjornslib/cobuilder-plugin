@@ -59,7 +59,7 @@ The engineer wrote "Omniagent". The project is called **Omnigent**. Databricks a
 **What the design takes.**
 
 - The split of an event into decide, do, and skip. priority.dev adds a fourth outcome, answer.
-- A typed item with options, a recommendation, and up to three help steps.
+- A typed item with options and a recommendation. The README shows buttons for the steps of a task, such as copy a command or open a file. It does not show a field named `helps`. An agent summary gave "up to three help steps", and nobody verified that. Our `Help` buttons are our own design.
 - The rule that an option the agent picked is never the human's answer.
 - The method of one small model call at the end of each turn, with the transcript clipped to a bound.
 - The evaluation habit: 53 cases, eight runs for each case, and a pass rate.

@@ -1,42 +1,58 @@
 # Typed schemas: what the interpreter receives and produces
 
-Status: design, round 6. The code sketch is `schemas/interpreter_schemas.py`. It runs with `uv run`, and it checks one round trip and one hash rule. It is not the code layout.
+Status: design, round 7. The code sketch is `schemas/interpreter_schemas.py`. It runs with `uv run`. It checks every example, one hash rule, and one plan rule. It is not the code layout.
 
-The sketch uses `dspy[typesafe]==3.4.1`. `Choice`, `Noul`, and `Score` import from `dspy.experimental`. `Score[...]` must be the field type itself. `Annotated[float, Score[...]]` raises an error. Nobody has yet sent a call to Jev or to the advisor through these signatures. The one-day test does that.
+The sketch uses `dspy[typesafe]==3.4.1`. `Choice`, `Noul`, and `Score` import from `dspy.experimental`. `Score[...]` must be the field type itself. Each decision field needs `desc=` in its `OutputField`. No call to Jev or to the advisor has run yet. The one-day test makes the first call.
 
-## 1. The parts of the contract
+## 1. The two stages of the interpreter
 
-| Part | Type | Direction | Event kind |
-|---|---|---|---|
-| Slice | `TurnSlice` | in | built from `session.*` events |
-| Facts | `Facts` (five typed decisions) | out | `fact.status`, `fact.risk`, and so on |
-| Question card | `Question` | out | `fact.question` |
-| Action | `Action` (12 kinds) | out | `proposal.action` |
-| Abstain | a reason string | out | `proposal.abstain` |
+The language model is required. Jev returns typed values only. It cannot write a reply or a question card. The interpreter therefore has two stages, and stage 1 feeds stage 2.
 
-The interpreter host builds the slice. A model never builds it. The host redacts secrets and clips each record before the call. The slice carries `allowed_kinds`, so the advisor can only name a kind that exists.
+| Stage | Model | Input | Output | Calls for each slice |
+|---|---|---|---|---|
+| 1. Triage | Jev (`typesafe:jev-latest`) | the slice | `Facts`: five typed values with confidence | one |
+| 2. Advise | the language model (`openrouter/anthropic/claude-haiku-5.5`) | the slice and the facts | `Advice`: a question card and a proposal | one, when an answer is due |
 
-## 2. Input: `TurnSlice`
+One Jev call carries all five questions. A DSPy signature with five decision fields builds one request, `client.system_one(state=..., questions=...)`. The source is `dspy/adapters/decision.py` and `dspy/clients/typesafe.py` in version 3.4.1. I do not know whether Jev prices each question or each call.
+
+Stage 2 runs when the facts say that an answer is due. The rule is plain Python:
+
+1. Run stage 2 when `status` is `waiting_answer`, `waiting_permission`, `blocked`, or `failed`.
+2. Run stage 2 when any confidence is below its threshold.
+3. Otherwise store the facts and stop. The slice needs no answer.
+
+Stage 2 runs even when `needs_human` is true. The human then sees a card with a recommended answer and does not start from nothing.
+
+The stage 2 system prompt holds the JSON schema of `Advice`. That schema is 16,028 characters, because the `Action` type has 13 kinds. Every call sends it. Prompt caching at the provider may lower the cost. I did not check that.
+
+## 2. Input: the turn slice
+
+A slice is the exact input of the interpreter. Code builds it from the transcript at the end of a turn. No model builds it. The system stores each slice once and never edits it. The raw transcript stays in `~/.claude`, and the slice holds a cursor that points to it.
 
 | Field | Meaning |
 |---|---|
-| `slice_id` | hash of the session id and the last record uuid |
-| `cursor` | transcript path and byte offset, for replay |
-| `context` | session id, project, branch, workflow stage, last human reply, count of our answers in the last hour |
-| `records` | the last records of the turn, each with `uuid`, `role`, clipped `text`, and the tool name |
-| `pending` | the prompt that waits: `prompt_id`, `source` (hook, pane, transcript), `kind`, options, tool, command |
+| `slice_id` | digest of the session id and the uuid of the last record |
+| `cursor` | transcript path and byte offset, to find the source again |
+| `context` | session, project, branch, workflow stage, our answers in the last hour |
+| `last_human_message` | what the agent was asked, redacted, in full |
+| `turn_digest` | one line for each tool call: tool, target, outcome, and the first line of an error |
+| `last_response` | the full last assistant message of the turn, redacted |
+| `earlier_summary` | a model summary of older turns. It is off in v0.1 |
+| `pending` | the prompt that waits: `prompt_id`, `source`, `kind`, options, tool, command |
 | `redactions` | how many secrets the host removed |
-| `allowed_kinds` | the action kinds the advisor may name |
+| `allowed_kinds` | the action kinds that the advisor may name |
 
-Rules:
+Three rules follow from this design:
 
-1. A record `role` comes from the transcript `origin` field, so a task notification never counts as a human reply.
-2. `pending.source` tells the policy how much to trust the prompt. A hook is exact. A pane read is a guess.
-3. A prose question has no `pending`. The facts say `waiting_answer`, and the slice text holds the question.
+1. The slice holds the digest of the turn and the full last response. It does not hold tool output, and it does not hold older messages.
+2. The model reads `slice.for_model()`. That text leaves out `slice_id`, `cursor`, `redactions`, and `allowed_kinds`.
+3. A prose question has no `pending`. The facts say `waiting_answer`, and `last_response` holds the question.
 
-## 3. Output: facts and question
+A model summary of the whole turn is an option. I do not recommend it for v0.1. It adds a model call and a second place for an error, and the digest gives the same facts from code. Turn it on only if the lab shows that the advisor lacks context. The field `earlier_summary` is ready for it.
 
-The five typed decisions come from the lab plan. Jev decides all five on a clipped slice.
+Every model call is stored as an `InterpreterCall`. The row holds the exact text that the model received, how many characters the clip removed, the model name, the output, and the time. A `Recommendation` links to its call rows. Section 11 shows both requests in full.
+
+## 3. Output: the facts and the question card
 
 | Field | DSPy type | Values |
 |---|---|---|
@@ -46,37 +62,69 @@ The five typed decisions come from the lab plan. Jev decides all five on a clipp
 | `risk` | `Score` | low, medium, high |
 | `priority_hint` | `Score` | can wait, soon, now |
 
-DSPy confidence is the distance from the threshold. It is not a calibrated probability. A plain-Python rule forwards the slice to the advisor when `status` is `waiting_answer` or when any confidence is below its threshold.
+DSPy confidence is the distance from the threshold. It is not a calibrated probability.
 
-The `Question` card comes from the petekp/inbox typed item:
+The `Question` card comes from the advisor, not from Jev:
 
 - `ask`: the question, in 300 characters or fewer.
-- `options`: the choices, if any.
-- `agent_recommendation`: the option the agent picked. It is never the human's answer (petekp/inbox).
-- `helps`: up to three steps that help the human answer.
+- `options`: a list of `Option`, each with a `label` and a `detail`.
+- `multi_select`: true when the human may choose more than one option.
+- `free_text`: true when the human may type an answer that is not an option. The default is true.
+- `agent_recommendation`: the option that the agent picked. It is never the human's answer (petekp/inbox).
+- `helps`: up to three buttons that help the human answer.
+
+A `Help` button has a `kind`, a `label`, and a `value`. The kinds are `copy_command`, `open_file`, `open_url`, and `explain`. Example: `{"kind": "open_file", "label": "Open the API spec", "value": "docs/api.md"}`.
+
+The petekp/inbox README does not show a field called `helps`. It says that a task comes with buttons for its steps, such as copying a command or opening a file. An earlier agent summary gave "up to three help steps". I did not verify that number. The four kinds and the limit of three are our own design.
 
 ## 4. All the proposed actions
 
-Twelve kinds. Eight touch the session, and four change only the inbox. The policy file owns the starting verdict. The column shows the proposed default and the reason.
+Thirteen kinds. Nine touch the session, and four change only the inbox. The policy file owns the starting verdict. The column shows the proposed default and the reason.
 
 | Kind | Effect | Payload | Borrowed from | Starting verdict |
 |---|---|---|---|---|
 | `reply` | sends text as the user | `text` | petekp/inbox answer, our addition | ASK, ALLOW for a fact already in the transcript |
 | `continue` | sends a nudge to go on | none | agentbox (finished vs waiting) | ALLOW |
+| `continue_until` | sends `continue` after each turn until code proves the goal | `goal`, `proof`, `max_turns`, `max_minutes` | our addition | ASK |
 | `approve_permission` | answers yes to a tool prompt | `scope` once or session | Omnigent ALLOW, DENY, ASK | ALLOW for a read-only tool, else ASK. DENY on the shell deny list |
 | `deny_permission` | answers no | `reason` | Omnigent | ALLOW |
 | `pick_option` | picks an option by index | `index` | petekp/inbox options | ALLOW when it is the agent's own recommendation and risk is low |
-| `approve` | approves a CoBuilder gate | `gate`, `notes` | Plannotator Approve, Approve with Notes | ASK in v0.3. ALLOW later by gate, only on stored evidence (section 7) |
-| `send_feedback` | returns a gate with notes | `gate`, `notes` | Plannotator Send Feedback | ASK |
+| `approve_gate` | approves a CoBuilder gate (design, implement, and the others) | `gate`, `notes` | Plannotator Approve, Approve with Notes | ASK. The human changes the rule by hand |
+| `send_feedback` | returns a CoBuilder gate with notes | `gate`, `notes` | Plannotator Send Feedback | ASK |
 | `interrupt` | stops a running turn | none | Omnigent PTY wrapper | ASK |
-| `ask_human` | puts an item in the queue | `detail` (nested: decide, do, or review), `why_escalated` | petekp/inbox decide and do | ALLOW, always |
+| `ask_human` | puts an item in the queue | `detail`: decide, do, or review, and `why_escalated` | petekp/inbox decide and do | ALLOW, always |
 | `snooze` | hides an item until a time or an event | `until`, `until_event` | agentbox away gating | ALLOW |
 | `dismiss` | closes an item | `reason` | petekp/inbox skip | ALLOW |
-| `set_priority_hint` | proposes a hint | `hint` | agentbox: an agent cannot change its own priority | ALLOW, and rules still set the rank |
+| `set_priority_hint` | proposes a new hint after the advisor reads the full text | `hint` | agentbox: an agent cannot change its own priority | ALLOW. A rule still sets the rank |
+
+The name `approve_gate` stays. A gate is a CoBuilder gate, not a generic approval stage. `approve_permission` answers a tool prompt of the harness, and it is a different thing.
 
 Common fields on every action: `session_id`, `prompt_id`, `author` (interpreter, human, or rule), `evidence_quote`, and `confidence`.
 
-The action hash is the idempotency key. It covers the kind and the payload. It does not cover `author`, `evidence_quote`, or `confidence`. A human approval and an advisor approval of the same prompt therefore have the same hash, and the actuator sends one of them.
+The action hash is the idempotency key. It covers the kind and the payload. It does not cover `author`, `evidence_quote`, or `confidence`. A human approval and an advisor approval of the same prompt have the same hash, and the actuator sends one of them.
+
+### 4.1 `continue_until`
+
+This action runs a harness in a loop until code proves that it reached the stated outcome. It differs from `continue`, which sends one nudge.
+
+- `goal`: the stated outcome, in words.
+- `proof`: how code checks it. The kinds are `command_exit_zero` (a command returns 0), `file_exists`, and `human_confirms`. The agent saying that it is done is never proof (CLAUDE.md principle 8).
+- `max_turns` and `max_minutes`: the budget. When the budget ends, the actuator opens an `ask_human` item.
+
+The policy decides the loop once, as one action with a budget. It still decides each send inside the loop, and it evaluates the proof command against the shell deny list. I propose the name `continue_until`. The name `goal` sounds like only a note on the session. The human can also start this action from the client, as a human-authored action.
+
+### 4.2 A proposal with more than one step
+
+A `Proposal` holds one to three steps. The answer to "can one proposal hold more than one action" is yes, with these rules:
+
+1. The policy decides each step on its own, in order, with fresh state.
+2. If a step is denied, asked, or fails, the later steps do not run. The inbox gets one `ask_human` item for the rest.
+3. All session steps must target one session. If the pending prompt changes between two steps, the plan stops.
+4. An inbox step (`ask_human`, `snooze`, `dismiss`, `set_priority_hint`) may follow a session step.
+5. The hash covers each step, not the proposal.
+6. A proposal that approves a gate and returns the same gate is invalid. `approve_gate` with `notes` already means Approve with Notes. `send_feedback` means the opposite.
+
+Example: `reply` with "1", then `continue_until` with the goal "Slices 3 to 5 pass their tests". Section 11 shows it.
 
 Not in the list, on purpose:
 
@@ -89,9 +137,9 @@ Not in the list, on purpose:
 | Step | Who | What |
 |---|---|---|
 | Question | the agent | a pending prompt or a prose question in the transcript |
-| Fact | the interpreter | `status`, `needs_human`, `answer_class`, `risk`, `priority_hint`, and a `Question` card |
-| Proposal | the interpreter | one `Action`, or `ask_human` |
-| Verdict | the policy | ALLOW, DENY, or ASK, with `rule_id` and `policy_hash` |
+| Facts | Jev | one call: `status`, `needs_human`, `answer_class`, `risk`, `priority_hint` |
+| Advice | the language model | a `Question` card and a `Proposal` of one to three steps |
+| Verdict | the policy | ALLOW, DENY, or ASK for each step, with `rule_id` and `policy_hash` |
 | Effect | the actuator | the send, after a fresh `evaluate` |
 | Response | the human | one of the answers below, as a human-authored action |
 
@@ -99,137 +147,376 @@ The human response is an action with `author = "human"`. It goes through the sam
 
 | Client response | Becomes |
 |---|---|
-| Accept the proposal | the proposed action, `author = "human"` |
+| Accept the proposal | the proposed steps, `author = "human"` |
 | Edit the text, then send | `reply` with the edited text |
-| Choose an option | `pick_option` |
-| Approve | `approve_permission` or `approve` |
-| Approve with notes | `approve` with `notes` |
+| Choose an option | `pick_option`, or `reply` for a prose list |
+| Type another answer | `reply` (when `free_text` is true) |
+| Approve | `approve_permission` or `approve_gate` |
+| Approve with notes | `approve_gate` with `notes` |
 | Send feedback | `send_feedback` |
+| Run until done | `continue_until` |
 | Not now | `snooze` |
 | Close | `dismiss` |
 
 Two rules from Plannotator apply. A reply never blocks the client, and the answer arrives in the session as a message. The client warns before it drops notes that the human did not send.
 
-Two rules from petekp/inbox apply. An option that the agent picked is never recorded as the human's answer. A malformed model reply is never dropped silently. It becomes `proposal.abstain` and an `ask_human`.
+Two rules from petekp/inbox apply. An option that the agent picked is never recorded as the human's answer. A malformed model reply is never dropped silently. It becomes an `Abstain` and an `ask_human` item.
 
-## 6. Notification levels
+## 6. Who sets the priority
+
+Four components each set one part. The interpreter sets none of the rank.
+
+| Part | Set by | How |
+|---|---|---|
+| Class 0 to 3 | the attention queue, a pure function of the policy verdict and the facts | class 0: policy ASK on a destructive action. Class 1: `status` is blocked or failed. Class 2: a question or a permission prompt. Class 3: done, FYI |
+| Project rank | the human | a setting, one number for each project |
+| Hint | Jev, in `priority_hint`. The advisor may change it with `set_priority_hint` | it orders items inside one class and one project. It never moves an item to another class |
+| Wait time | the clock | the oldest item first |
+
+The sort key is (class, project rank, hint, wait time). The agentbox order is project, then priority, then age. Ours puts the class first, because a destructive ASK must outrank a project rank. I did not test this order with real items.
+
+## 7. Notification levels
 
 The goal is to sort notifications into priority levels. A level has no upper limit. Anything that does not need immediate attention goes into a batch, and one batch counts as one notification.
 
 | Level | Source in the attention queue | Delivery |
 |---|---|---|
-| N0 | class 0: policy ASK on a destructive action | at once, ignores quiet hours |
-| N1 | class 1: a blocked session | at once |
-| N2 | class 2: a question | batch |
-| N3 | class 3: FYI | batch |
+| N0 | class 0 | at once, ignores quiet hours |
+| N1 | class 1 | at once |
+| N2 | class 2 and class 3 | one batch in each window. Questions come before FYI items |
 
-The batch window and the quiet hours are settings, not constants. The starting value of each batch window is 30 minutes, for N2 and for N3 alike. Quiet hours start at 22:00 and end at 07:00, and only N0 passes. The `NotifyConfig` type in the sketch holds these values.
+N2 and N3 of the earlier draft had the same delivery, so they are one level now. The inbox still ranks class 2 above class 3.
 
-## 7. Stored recommendations
+The batch window and the quiet hours are settings. The `NotifyConfig` type holds them. The starting window is 30 minutes. Quiet hours start at 22:00 and end at 07:00, and only N0 passes. I read "every 30 minutes" as one batch for each window that holds at least one item. If you want a different rule, say so.
 
-The system stores each proposal that reaches the human, and the human's reply to it. The pair is a `Recommendation` and an `Outcome`. The outcome is one of accepted, edited, replaced, rejected, snoozed, or dismissed.
+## 8. Stored recommendations
 
-- The pairs are the data for fine-tuning the interpreter and for the lab metrics, with the same slice as the input.
-- `approve` stays at ASK until stored outcomes support a change. The human sees the proposal, and the proposal is stored with the reply.
-- I propose to move one gate to ALLOW when the human accepted the proposal for that gate without an edit in a set share of the cases. I do not know the share. See the decision below.
+The system stores every proposal, shown to the human or not. It also stores the input of the proposal. A `Recommendation` holds the proposal, the facts, a flag `shown_to_human`, and the ids of its `InterpreterCall` rows. Each call row holds the exact text that the model received. The slice row holds the redacted transcript input. The human's reply is an `Outcome`: accepted, edited, replaced, rejected, snoozed, or dismissed.
 
-## 8. Checks that this design needs
+- The triple (slice, proposal, outcome) is the data for tuning the interpreter and for the lab metrics.
+- A proposal that the human never saw has no outcome. It trains nothing until the human reviews a sample of it.
+- The raw transcript is never copied. The stored text is already redacted. The redaction is lossy, so a stored slice cannot give back a secret.
+- `approve_gate` stays at ASK. No rule moves it to ALLOW by itself. The human edits the policy file by hand when the stored outcomes justify it.
+
+## 9. When the interpreter abstains
+
+An `Abstain` event says that the interpreter proposes nothing. The inbox then gets an `ask_human` item, and the item carries the reason. The reasons are:
+
+| Reason | Cause |
+|---|---|
+| `quote_not_in_slice` | the `evidence_quote` is not an exact substring of the slice |
+| `invalid_output` | the model reply does not parse as `Advice` |
+| `kind_not_allowed` | the proposal names a kind that is not in `allowed_kinds` |
+| `model_timeout` | a model call did not return in time |
+| `model_error` | a model call returned an error |
+| `slice_empty` | the turn has no response text |
+
+Section 11 shows an example.
+
+## 10. Checks that this design needs
 
 1. The sketch imports and validates (done: `uv run schemas/interpreter_schemas.py` prints `ok`).
-2. A real Jev call returns the five typed fields for one slice (not done, one-day test).
-3. The advisor returns a valid `Action` through `Advise` for 20 recorded slices (not done). The `Action` union as a DSPy output field is untested against a real model.
-4. The evidence quote check rejects a proposal whose quote is not in the slice (not done, a unit test).
+2. The request to Jev builds from the signature (done: section 11 shows the output of `DecisionAdapter._prepare`).
+3. A real Jev call returns the five typed fields for one slice (not done, one-day test).
+4. The advisor returns a valid `Advice` for 20 recorded slices (not done). The `Action` union as a DSPy output field is untested against a real model.
+5. The evidence quote check rejects a proposal whose quote is not in the slice (not done, a unit test).
+6. The 16,028-character schema in the stage 2 prompt does not lower the advisor's accuracy (not done).
 
-## 9. Examples of the data
+## 11. Examples of the data
 
-The sketch builds each example and checks a JSON round trip. Run `uv run schemas/interpreter_schemas.py dump` to print them. Empty and default fields are in the real output, and they are cut here.
+The data is synthetic. The sketch builds each example and checks a JSON round trip. Run `uv run schemas/interpreter_schemas.py dump` to print them. Empty fields are cut here.
 
-**reply**
+**The turn slice (what is stored)**
 
 ```json
-{"session_id": "s1", "prompt_id": "p1", "evidence_quote": "Which database should I use?", "confidence": 0.91, "kind": "reply", "text": "Use Postgres 17."}
+{
+ "slice_id": "c096cea9b4f73d72",
+ "cursor": "~/.claude/projects/-work-exporter/7c1e.jsonl@184220",
+ "context": {
+  "session_id": "sess-7c1",
+  "project": "exporter",
+  "branch": "slice-2-csv",
+  "workflow_stage": "implement: slice 2 of 5",
+  "answered_by_us_last_hour": 1
+ },
+ "last_human_message": "Build slice 2: the CSV export endpoint. Run the tests before you stop.",
+ "turn_digest": [
+  {
+   "tool": "Read",
+   "target": "src/export/routes.py",
+   "outcome": "ok"
+  },
+  {
+   "tool": "Edit",
+   "target": "src/export/csv_writer.py",
+   "outcome": "ok"
+  },
+  {
+   "tool": "Bash",
+   "target": "pytest tests/export -q",
+   "outcome": "ok"
+  }
+ ],
+ "last_response": "Slice 2 is done. 14 tests pass.\n\nBefore I start slice 3, one question. Should the CSV timestamps use UTC or the project timezone?\n1. UTC (I recommend this: it matches the API)\n2. The project timezone\nReply 1 or 2.",
+ "allowed_kinds": [
+  "approve_gate",
+  "approve_permission",
+  "ask_human",
+  "continue",
+  "continue_until",
+  "deny_permission",
+  "dismiss",
+  "interrupt",
+  "pick_option",
+  "reply",
+  "send_feedback",
+  "snooze"
+ ]
+}
 ```
 
-**continue**
+**Facts from the Jev call**
 
 ```json
-{"session_id": "s1", "evidence_quote": "Shall I continue?", "confidence": 0.97, "kind": "continue"}
+{"status": "waiting_answer", "needs_human": false, "answer_class": "pick_default", "risk": 0.2, "priority_hint": 0.3, "confidence": {"status": 0.93, "needs_human": 0.81, "answer_class": 0.88, "risk": 0.74, "priority_hint": 0.6}}
 ```
 
-**approve_permission**
+**Advice from the language model, with a question card**
 
 ```json
-{"session_id": "s1", "prompt_id": "p2", "evidence_quote": "Allow Bash(ls -la)?", "confidence": 0.99, "kind": "approve_permission", "scope": "once"}
+{
+ "question": {
+  "ask": "Use UTC or the project timezone for the CSV timestamps?",
+  "options": [
+   {
+    "label": "UTC",
+    "detail": "Matches the API"
+   },
+   {
+    "label": "Project timezone"
+   }
+  ],
+  "multi_select": false,
+  "free_text": true,
+  "agent_recommendation": "UTC",
+  "helps": [
+   {
+    "kind": "open_file",
+    "label": "Open the API spec",
+    "value": "docs/api.md"
+   },
+   {
+    "kind": "copy_command",
+    "label": "Show the timestamp column",
+    "value": "head -3 out/export.csv"
+   }
+  ]
+ },
+ "proposal": {
+  "proposal_id": "p-1",
+  "slice_id": "c096cea9b4f73d72",
+  "steps": [
+   {
+    "session_id": "sess-7c1",
+    "evidence_quote": "1. UTC (I recommend this",
+    "confidence": 0.9,
+    "kind": "reply",
+    "text": "1"
+   }
+  ],
+  "rationale": "The agent recommends UTC."
+ }
+}
 ```
 
-**deny_permission**
+**A proposal with two steps**
 
 ```json
-{"session_id": "s1", "prompt_id": "p3", "confidence": 0.0, "kind": "deny_permission", "reason": "Writes outside the repo"}
+{"proposal_id": "p-2", "slice_id": "c096cea9b4f73d72", "steps": [{"session_id": "sess-7c1", "evidence_quote": "1. UTC (I recommend this", "confidence": 0.9, "kind": "reply", "text": "1"}, {"session_id": "sess-7c1", "evidence_quote": "Before I start slice 3", "confidence": 0.0, "kind": "continue_until", "goal": "Slices 3 to 5 pass their tests", "proof": {"kind": "command_exit_zero", "value": "pytest -q"}, "max_turns": 20, "max_minutes": 120}], "rationale": "Answer the question, then run to the end of the plan."}
 ```
 
-**pick_option**
+**continue_until**
 
 ```json
-{"session_id": "s1", "prompt_id": "p4", "evidence_quote": "1. Existing table (recommended)", "confidence": 0.88, "kind": "pick_option", "index": 0}
+{"session_id": "sess-7c1", "evidence_quote": "Reply 1 or 2.", "confidence": 0.7, "kind": "continue_until", "goal": "All 5 slices pass their tests", "proof": {"kind": "command_exit_zero", "value": "pytest -q"}, "max_turns": 20, "max_minutes": 120}
 ```
 
-**approve**
+**Abstain**
 
 ```json
-{"session_id": "s1", "prompt_id": "p5", "evidence_quote": "Approve the design?", "confidence": 0.8, "kind": "approve", "gate": "design-review", "notes": "Check the retry limit."}
-```
-
-**send_feedback**
-
-```json
-{"session_id": "s1", "confidence": 0.0, "kind": "send_feedback", "gate": "design-review", "notes": "Split slice 2 in two."}
-```
-
-**interrupt**
-
-```json
-{"session_id": "s1", "evidence_quote": "rm -rf build/ running", "confidence": 0.7, "kind": "interrupt"}
-```
-
-**ask_human (decide)**
-
-```json
-{"session_id": "s1", "confidence": 0.0, "kind": "ask_human", "detail": {"role": "decide", "question": {"ask": "Use the existing table or add a new one?", "options": ["existing", "new"], "agent_recommendation": "existing", "helps": ["The table has 3 columns"]}}, "why_escalated": "Cost of a new table is not in the transcript"}
+{"slice_id": "c096cea9b4f73d72", "reason": "quote_not_in_slice", "detail": "The quote 'Use UTC, as agreed' is not in the slice"}
 ```
 
 **ask_human (do)**
 
 ```json
-{"session_id": "s1", "confidence": 0.0, "kind": "ask_human", "detail": {"role": "do", "steps": ["Open the console", "Create the bucket"], "where": "aws console", "done_check": "Bucket name appears in the next prompt"}, "why_escalated": "Needs the AWS console"}
+{"session_id": "sess-7c1", "confidence": 0.0, "kind": "ask_human", "detail": {"role": "do", "steps": ["Open the console", "Create the bucket"], "where": "aws console", "done_check": "The bucket name appears in the next prompt"}, "why_escalated": "Needs the AWS console"}
 ```
 
 **ask_human (review)**
 
 ```json
-{"session_id": "s1", "confidence": 0.0, "kind": "ask_human", "detail": {"role": "review", "artifact": "docs/plans/x/04-slices.md", "check_items": ["Slice order"]}, "why_escalated": "Gate needs a person"}
+{"session_id": "sess-7c1", "confidence": 0.0, "kind": "ask_human", "detail": {"role": "review", "artifact": "docs/plans/x/04-slices.md", "check_items": ["Slice order"]}, "why_escalated": "The gate needs a person"}
 ```
 
-**snooze**
+**InterpreterCall (the stored row)**
 
 ```json
-{"session_id": "s1", "confidence": 0.0, "kind": "snooze", "until_event": "turn_end"}
+{"call_id": "c-1", "slice_id": "c096cea9b4f73d72", "stage": "triage", "model": "typesafe:jev-latest", "rendered_input": "(the state and the five questions, see schemas.md section 10)", "clipped_chars": 0, "output_json": "{\"status\":\"waiting_answer\",\"needs_human\":false,\"answer_class\":\"pick_default\",\"risk\":0.2,\"priority_hint\":0.3,\"confidence\":{\"status\":0.93,\"needs_human\":0.81,\"answer_class\":0.88,\"risk\":0.74,\"priority_hint\":0.6}}", "latency_ms": 410}
 ```
 
-**dismiss**
+**Recommendation**
 
 ```json
-{"session_id": "s1", "confidence": 0.0, "kind": "dismiss", "reason": "fyi_read"}
+{"proposal": {"proposal_id": "p-1", "slice_id": "c096cea9b4f73d72", "steps": [{"session_id": "sess-7c1", "evidence_quote": "1. UTC (I recommend this", "confidence": 0.9, "kind": "reply", "text": "1"}], "rationale": "The agent recommends UTC."}, "facts": {"status": "waiting_answer", "needs_human": false, "answer_class": "pick_default", "risk": 0.2, "priority_hint": 0.3, "confidence": {"status": 0.93, "needs_human": 0.81, "answer_class": 0.88, "risk": 0.74, "priority_hint": 0.6}}, "shown_to_human": false, "call_ids": ["c-1", "c-2"]}
 ```
 
-**set_priority_hint**
+**Outcome**
 
 ```json
-{"session_id": "s1", "confidence": 0.0, "kind": "set_priority_hint", "hint": 0.8}
+{"proposal_id": "p-1", "result": "accepted", "final": {"proposal_id": "p-1", "slice_id": "c096cea9b4f73d72", "steps": [{"session_id": "sess-7c1", "evidence_quote": "1. UTC (I recommend this", "confidence": 0.9, "kind": "reply", "text": "1"}], "rationale": "The agent recommends UTC."}, "seconds_to_answer": 41.0}
 ```
 
-**notification settings**
+**Notification settings**
 
 ```json
-{"batch_window_minutes": {"N2": 30, "N3": 30}, "quiet_hours": ["22:00", "07:00"], "timezone": "Australia/Sydney"}
+{"batch_window_minutes": 30, "quiet_hours": ["22:00", "07:00"], "timezone": "Australia/Sydney"}
+```
+
+### 11.1 The exact request to Jev (stage 1)
+
+DSPy builds this request. One call carries all five questions. The inputs hold `slice.for_model()`.
+
+```json
+{
+ "state": {
+  "instructions": "Read the end of a turn. Report the state of the session.",
+  "input_fields": "1. `slice_json` (str):",
+  "inputs": {
+   "slice_json": {
+    "context": {
+     "session_id": "sess-7c1",
+     "project": "exporter",
+     "branch": "slice-2-csv",
+     "workflow_stage": "implement: slice 2 of 5",
+     "last_human_reply_at": null,
+     "answered_by_us_last_hour": 1
+    },
+    "last_human_message": "Build slice 2: the CSV export endpoint. Run the tests before you stop.",
+    "turn_digest": [
+     {
+      "tool": "Read",
+      "target": "src/export/routes.py",
+      "outcome": "ok",
+      "note": ""
+     },
+     {
+      "tool": "Edit",
+      "target": "src/export/csv_writer.py",
+      "outcome": "ok",
+      "note": ""
+     },
+     {
+      "tool": "Bash",
+      "target": "pytest tests/export -q",
+      "outcome": "ok",
+      "note": ""
+     }
+    ],
+    "last_response": "Slice 2 is done. 14 tests pass.\n\nBefore I start slice 3, one question. Should the CSV timestamps use UTC or the project timezone?\n1. UTC (I recommend this: it matches the API)\n2. The project timezone\nReply 1 or 2.",
+    "earlier_summary": null,
+    "pending": null
+   }
+  }
+ },
+ "questions": {
+  "status": {
+   "instructions": "What the session does now",
+   "type": "choice",
+   "criteria": {
+    "done": "The agent finished and asks for nothing",
+    "waiting_answer": "The agent asks a question",
+    "waiting_permission": "A tool prompt waits for yes or no",
+    "blocked": "The agent cannot go on without outside help",
+    "failed": "The agent stopped on an error",
+    "continuing": "The agent still works"
+   }
+  },
+  "needs_human": {
+   "instructions": "Whether only the human can give the answer",
+   "type": "noul",
+   "criteria": {
+    "true": "Only the human can answer",
+    "false": "An advisor may answer"
+   }
+  },
+  "answer_class": {
+   "instructions": "The kind of answer that is due",
+   "type": "choice",
+   "criteria": {
+    "none": "No answer is due",
+    "approve_continue": "Yes or go on",
+    "pick_default": "Pick the option the agent recommends",
+    "provide_fact": "A fact the human holds",
+    "decide": "A choice with a cost the human owns",
+    "external_action": "The human must act outside the session"
+   }
+  },
+  "risk": {
+   "instructions": "The cost of a wrong answer",
+   "type": "score",
+   "criteria": [
+    "low: reversible and local",
+    "medium: costly to undo",
+    "high: destructive or outside"
+   ]
+  },
+  "priority_hint": {
+   "instructions": "How soon the human should look",
+   "type": "score",
+   "criteria": [
+    "can wait",
+    "soon",
+    "now"
+   ]
+  }
+ }
+}
+```
+
+### 11.2 The exact request to the language model (stage 2)
+
+The system message ends with the JSON schema of `Advice`. The schema has 16,028 characters in all, and it is cut here. The user message is the exact text.
+
+```
+[system]
+Your input fields are:
+1. `slice_json` (str): 
+2. `facts_json` (str): The five typed facts from the triage call
+Your output fields are:
+1. `advice` (Advice):
+All interactions will be structured in the following way, with the appropriate values filled in.
+
+[[ ## slice_json ## ]]
+{slice_json}
+
+[[ ## facts_json ## ]]
+{facts_json}
+
+[[ ## advice ## ]]
+{advice}        # note: the value you produce must adhere to the JSON schema: {... JSON schema of Advice, cut ...}
+
+
+[[ ## completed ## ]]
+In adhering to this structure, your objective is: 
+        Write the question card and propose the next steps for a waiting session.
+
+[user]
+[[ ## slice_json ## ]]
+{"context":{"session_id":"sess-7c1","project":"exporter","branch":"slice-2-csv","workflow_stage":"implement: slice 2 of 5","last_human_reply_at":null,"answered_by_us_last_hour":1},"last_human_message":"Build slice 2: the CSV export endpoint. Run the tests before you stop.","turn_digest":[{"tool":"Read","target":"src/export/routes.py","outcome":"ok","note":""},{"tool":"Edit","target":"src/export/csv_writer.py","outcome":"ok","note":""},{"tool":"Bash","target":"pytest tests/export -q","outcome":"ok","note":""}],"last_response":"Slice 2 is done. 14 tests pass.\n\nBefore I start slice 3, one question. Should the CSV timestamps use UTC or the project timezone?\n1. UTC (I recommend this: it matches the API)\n2. The project timezone\nReply 1 or 2.","earlier_summary":null,"pending":null}
+
+[[ ## facts_json ## ]]
+{"status":"waiting_answer","needs_human":false,"answer_class":"pick_default","risk":0.2,"priority_hint":0.3,"confidence":{"status":0.93,"needs_human":0.81,"answer_class":0.88,"risk":0.74,"priority_hint":0.6}}
+
+Respond with the corresponding output fields, starting with the field `[[ ## advice ## ]]` (must be formatted as a valid Python Advice), and then ending with the marker for `[[ ## completed ## ]]`.
 ```

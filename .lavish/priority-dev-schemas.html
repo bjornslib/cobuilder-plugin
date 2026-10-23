@@ -181,47 +181,65 @@ pre.code code{background:none;padding:0;white-space:pre}
 
 <div class="wrap">
 <header class="top">
-  <div class="eyebrow">CoBuilder · architect:design · round 6</div>
+  <div class="eyebrow">CoBuilder · architect:design · round 7</div>
   <h1>priority.dev interpreter schemas</h1>
   <p class="lede">What the interpreter receives, what it produces, and every action it may propose.</p>
-  <div class="chips"><span class="chip warn">Draft for decision</span><span class="chip">Round 6: your answers applied</span><span class="chip">Sketch runs, no model call yet</span><span class="chip">23 October 2026</span></div>
+  <div class="chips"><span class="chip warn">Draft for decision</span><span class="chip">Round 7: your answers applied</span><span class="chip">Sketch runs, no model call yet</span><span class="chip">23 October 2026</span></div>
 </header>
-<nav class="toc" aria-label="Sections"><a href="#contract">Contract</a><a href="#input">Input</a><a href="#facts">Facts</a><a href="#actions">Actions</a><a href="#flow">Flow</a><a href="#notify">Notify</a><a href="#store">Learning</a><a href="#examples">Examples</a><a href="#decide">Decision</a></nav>
-<section id="contract">
-  <header><div class="eyebrow">The parts</div><h2>The contract</h2></header>
-<div class="scroll"><table><thead><tr><th>Part</th><th>Type</th><th>Direction</th><th>Event kind</th></tr></thead><tbody><tr><td class="k">Slice</td><td><code>TurnSlice</code></td><td>in</td><td>built from <code>session.*</code> events</td></tr><tr><td class="k">Facts</td><td><code>Facts</code> (five typed decisions)</td><td>out</td><td><code>fact.status</code>, <code>fact.risk</code>, and so on</td></tr><tr><td class="k">Question card</td><td><code>Question</code></td><td>out</td><td><code>fact.question</code></td></tr><tr><td class="k">Action</td><td><code>Action</code> (12 kinds)</td><td>out</td><td><code>proposal.action</code></td></tr><tr><td class="k">Abstain</td><td>a reason string</td><td>out</td><td><code>proposal.abstain</code></td></tr></tbody></table></div>
-<p>The interpreter host builds the slice. A model never builds it. The host redacts secrets and clips each record before the call. The slice carries <code>allowed_kinds</code>, so the advisor can only name a kind that exists.</p>
+<nav class="toc" aria-label="Sections"><a href="#stages">Stages</a><a href="#input">Input</a><a href="#facts">Facts</a><a href="#actions">Actions</a><a href="#flow">Flow</a><a href="#priority">Priority</a><a href="#notify">Notify</a><a href="#store">Learning</a><a href="#examples">Examples</a><a href="#decide">Decision</a></nav>
+<section id="stages">
+  <header><div class="eyebrow">Pipeline</div><h2>The two stages of the interpreter</h2></header>
+<p>The language model is required. Jev returns typed values only. It cannot write a reply or a question card. The interpreter therefore has two stages, and stage 1 feeds stage 2.</p>
+<div class="scroll"><table><thead><tr><th>Stage</th><th>Model</th><th>Input</th><th>Output</th><th>Calls for each slice</th></tr></thead><tbody><tr><td class="k">1. Triage</td><td>Jev (<code>typesafe:jev-latest</code>)</td><td>the slice</td><td><code>Facts</code>: five typed values with confidence</td><td>one</td></tr><tr><td class="k">2. Advise</td><td>the language model (<code>openrouter/anthropic/claude-haiku-5.5</code>)</td><td>the slice and the facts</td><td><code>Advice</code>: a question card and a proposal</td><td>one, when an answer is due</td></tr></tbody></table></div>
+<p>One Jev call carries all five questions. A DSPy signature with five decision fields builds one request, <code>client.system_one(state=..., questions=...)</code>. The source is <code>dspy/adapters/decision.py</code> and <code>dspy/clients/typesafe.py</code> in version 3.4.1. I do not know whether Jev prices each question or each call.</p>
+<p>Stage 2 runs when the facts say that an answer is due. The rule is plain Python:</p>
+<ol class="plain"><li>Run stage 2 when <code>status</code> is <code>waiting_answer</code>, <code>waiting_permission</code>, <code>blocked</code>, or <code>failed</code>.</li><li>Run stage 2 when any confidence is below its threshold.</li><li>Otherwise store the facts and stop. The slice needs no answer.</li></ol>
+<p>Stage 2 runs even when <code>needs_human</code> is true. The human then sees a card with a recommended answer and does not start from nothing.</p>
+<p>The stage 2 system prompt holds the JSON schema of <code>Advice</code>. That schema is 16,028 characters, because the <code>Action</code> type has 13 kinds. Every call sends it. Prompt caching at the provider may lower the cost. I did not check that.</p>
 </section>
 
 <section id="input">
   <header><div class="eyebrow">In</div><h2>Input: the turn slice</h2></header>
-<div class="scroll"><table><thead><tr><th>Field</th><th>Meaning</th></tr></thead><tbody><tr><td class="k"><code>slice_id</code></td><td>hash of the session id and the last record uuid</td></tr><tr><td class="k"><code>cursor</code></td><td>transcript path and byte offset, for replay</td></tr><tr><td class="k"><code>context</code></td><td>session id, project, branch, workflow stage, last human reply, count of our answers in the last hour</td></tr><tr><td class="k"><code>records</code></td><td>the last records of the turn, each with <code>uuid</code>, <code>role</code>, clipped <code>text</code>, and the tool name</td></tr><tr><td class="k"><code>pending</code></td><td>the prompt that waits: <code>prompt_id</code>, <code>source</code> (hook, pane, transcript), <code>kind</code>, options, tool, command</td></tr><tr><td class="k"><code>redactions</code></td><td>how many secrets the host removed</td></tr><tr><td class="k"><code>allowed_kinds</code></td><td>the action kinds the advisor may name</td></tr></tbody></table></div>
-<p>Rules:</p>
-<ol class="plain"><li>A record <code>role</code> comes from the transcript <code>origin</code> field, so a task notification never counts as a human reply.</li><li><code>pending.source</code> tells the policy how much to trust the prompt. A hook is exact. A pane read is a guess.</li><li>A prose question has no <code>pending</code>. The facts say <code>waiting_answer</code>, and the slice text holds the question.</li></ol>
+<p>A slice is the exact input of the interpreter. Code builds it from the transcript at the end of a turn. No model builds it. The system stores each slice once and never edits it. The raw transcript stays in <code>~/.claude</code>, and the slice holds a cursor that points to it.</p>
+<div class="scroll"><table><thead><tr><th>Field</th><th>Meaning</th></tr></thead><tbody><tr><td class="k"><code>slice_id</code></td><td>digest of the session id and the uuid of the last record</td></tr><tr><td class="k"><code>cursor</code></td><td>transcript path and byte offset, to find the source again</td></tr><tr><td class="k"><code>context</code></td><td>session, project, branch, workflow stage, our answers in the last hour</td></tr><tr><td class="k"><code>last_human_message</code></td><td>what the agent was asked, redacted, in full</td></tr><tr><td class="k"><code>turn_digest</code></td><td>one line for each tool call: tool, target, outcome, and the first line of an error</td></tr><tr><td class="k"><code>last_response</code></td><td>the full last assistant message of the turn, redacted</td></tr><tr><td class="k"><code>earlier_summary</code></td><td>a model summary of older turns. It is off in v0.1</td></tr><tr><td class="k"><code>pending</code></td><td>the prompt that waits: <code>prompt_id</code>, <code>source</code>, <code>kind</code>, options, tool, command</td></tr><tr><td class="k"><code>redactions</code></td><td>how many secrets the host removed</td></tr><tr><td class="k"><code>allowed_kinds</code></td><td>the action kinds that the advisor may name</td></tr></tbody></table></div>
+<p>Three rules follow from this design:</p>
+<ol class="plain"><li>The slice holds the digest of the turn and the full last response. It does not hold tool output, and it does not hold older messages.</li><li>The model reads <code>slice.for_model()</code>. That text leaves out <code>slice_id</code>, <code>cursor</code>, <code>redactions</code>, and <code>allowed_kinds</code>.</li><li>A prose question has no <code>pending</code>. The facts say <code>waiting_answer</code>, and <code>last_response</code> holds the question.</li></ol>
+<p>A model summary of the whole turn is an option. I do not recommend it for v0.1. It adds a model call and a second place for an error, and the digest gives the same facts from code. Turn it on only if the lab shows that the advisor lacks context. The field <code>earlier_summary</code> is ready for it.</p>
+<p>Every model call is stored as an <code>InterpreterCall</code>. The row holds the exact text that the model received, how many characters the clip removed, the model name, the output, and the time. A <code>Recommendation</code> links to its call rows. Section 11 shows both requests in full.</p>
 </section>
 
 <section id="facts">
-  <header><div class="eyebrow">Out</div><h2>Facts and the question card</h2></header>
-<p>The five typed decisions come from the lab plan. Jev decides all five on a clipped slice.</p>
+  <header><div class="eyebrow">Out</div><h2>The facts and the question card</h2></header>
 <div class="scroll"><table><thead><tr><th>Field</th><th>DSPy type</th><th>Values</th></tr></thead><tbody><tr><td class="k"><code>status</code></td><td><code>Choice</code></td><td>done, waiting_answer, waiting_permission, blocked, failed, continuing</td></tr><tr><td class="k"><code>needs_human</code></td><td><code>Noul</code></td><td>true or false</td></tr><tr><td class="k"><code>answer_class</code></td><td><code>Choice</code></td><td>none, approve_continue, pick_default, provide_fact, decide, external_action</td></tr><tr><td class="k"><code>risk</code></td><td><code>Score</code></td><td>low, medium, high</td></tr><tr><td class="k"><code>priority_hint</code></td><td><code>Score</code></td><td>can wait, soon, now</td></tr></tbody></table></div>
-<p>DSPy confidence is the distance from the threshold. It is not a calibrated probability. A plain-Python rule forwards the slice to the advisor when <code>status</code> is <code>waiting_answer</code> or when any confidence is below its threshold.</p>
-<p>The <code>Question</code> card comes from the petekp/inbox typed item:</p>
-<ul class="plain"><li><code>ask</code>: the question, in 300 characters or fewer.</li><li><code>options</code>: the choices, if any.</li><li><code>agent_recommendation</code>: the option the agent picked. It is never the human's answer (petekp/inbox).</li><li><code>helps</code>: up to three steps that help the human answer.</li></ul>
+<p>DSPy confidence is the distance from the threshold. It is not a calibrated probability.</p>
+<p>The <code>Question</code> card comes from the advisor, not from Jev:</p>
+<ul class="plain"><li><code>ask</code>: the question, in 300 characters or fewer.</li><li><code>options</code>: a list of <code>Option</code>, each with a <code>label</code> and a <code>detail</code>.</li><li><code>multi_select</code>: true when the human may choose more than one option.</li><li><code>free_text</code>: true when the human may type an answer that is not an option. The default is true.</li><li><code>agent_recommendation</code>: the option that the agent picked. It is never the human's answer (petekp/inbox).</li><li><code>helps</code>: up to three buttons that help the human answer.</li></ul>
+<p>A <code>Help</code> button has a <code>kind</code>, a <code>label</code>, and a <code>value</code>. The kinds are <code>copy_command</code>, <code>open_file</code>, <code>open_url</code>, and <code>explain</code>. Example: <code>{"kind": "open_file", "label": "Open the API spec", "value": "docs/api.md"}</code>.</p>
+<p>The petekp/inbox README does not show a field called <code>helps</code>. It says that a task comes with buttons for its steps, such as copying a command or opening a file. An earlier agent summary gave "up to three help steps". I did not verify that number. The four kinds and the limit of three are our own design.</p>
 </section>
 
 <section id="actions">
   <header><div class="eyebrow">Out</div><h2>All the proposed actions</h2></header>
-<p>Twelve kinds. Eight touch the session, and four change only the inbox. The policy file owns the starting verdict. The column shows the proposed default and the reason.</p>
-<div class="scroll"><table><thead><tr><th>Kind</th><th>Effect</th><th>Payload</th><th>Borrowed from</th><th>Starting verdict</th></tr></thead><tbody><tr><td class="k"><code>reply</code></td><td>sends text as the user</td><td><code>text</code></td><td>petekp/inbox answer, our addition</td><td>ASK, ALLOW for a fact already in the transcript</td></tr><tr><td class="k"><code>continue</code></td><td>sends a nudge to go on</td><td>none</td><td>agentbox (finished vs waiting)</td><td>ALLOW</td></tr><tr><td class="k"><code>approve_permission</code></td><td>answers yes to a tool prompt</td><td><code>scope</code> once or session</td><td>Omnigent ALLOW, DENY, ASK</td><td>ALLOW for a read-only tool, else ASK. DENY on the shell deny list</td></tr><tr><td class="k"><code>deny_permission</code></td><td>answers no</td><td><code>reason</code></td><td>Omnigent</td><td>ALLOW</td></tr><tr><td class="k"><code>pick_option</code></td><td>picks an option by index</td><td><code>index</code></td><td>petekp/inbox options</td><td>ALLOW when it is the agent's own recommendation and risk is low</td></tr><tr><td class="k"><code>approve</code></td><td>approves a CoBuilder gate</td><td><code>gate</code>, <code>notes</code></td><td>Plannotator Approve, Approve with Notes</td><td>ASK in v0.3. ALLOW later by gate, only on stored evidence (section 7)</td></tr><tr><td class="k"><code>send_feedback</code></td><td>returns a gate with notes</td><td><code>gate</code>, <code>notes</code></td><td>Plannotator Send Feedback</td><td>ASK</td></tr><tr><td class="k"><code>interrupt</code></td><td>stops a running turn</td><td>none</td><td>Omnigent PTY wrapper</td><td>ASK</td></tr><tr><td class="k"><code>ask_human</code></td><td>puts an item in the queue</td><td><code>detail</code> (nested: decide, do, or review), <code>why_escalated</code></td><td>petekp/inbox decide and do</td><td>ALLOW, always</td></tr><tr><td class="k"><code>snooze</code></td><td>hides an item until a time or an event</td><td><code>until</code>, <code>until_event</code></td><td>agentbox away gating</td><td>ALLOW</td></tr><tr><td class="k"><code>dismiss</code></td><td>closes an item</td><td><code>reason</code></td><td>petekp/inbox skip</td><td>ALLOW</td></tr><tr><td class="k"><code>set_priority_hint</code></td><td>proposes a hint</td><td><code>hint</code></td><td>agentbox: an agent cannot change its own priority</td><td>ALLOW, and rules still set the rank</td></tr></tbody></table></div>
+<p>Thirteen kinds. Nine touch the session, and four change only the inbox. The policy file owns the starting verdict. The column shows the proposed default and the reason.</p>
+<div class="scroll"><table><thead><tr><th>Kind</th><th>Effect</th><th>Payload</th><th>Borrowed from</th><th>Starting verdict</th></tr></thead><tbody><tr><td class="k"><code>reply</code></td><td>sends text as the user</td><td><code>text</code></td><td>petekp/inbox answer, our addition</td><td>ASK, ALLOW for a fact already in the transcript</td></tr><tr><td class="k"><code>continue</code></td><td>sends a nudge to go on</td><td>none</td><td>agentbox (finished vs waiting)</td><td>ALLOW</td></tr><tr><td class="k"><code>continue_until</code></td><td>sends <code>continue</code> after each turn until code proves the goal</td><td><code>goal</code>, <code>proof</code>, <code>max_turns</code>, <code>max_minutes</code></td><td>our addition</td><td>ASK</td></tr><tr><td class="k"><code>approve_permission</code></td><td>answers yes to a tool prompt</td><td><code>scope</code> once or session</td><td>Omnigent ALLOW, DENY, ASK</td><td>ALLOW for a read-only tool, else ASK. DENY on the shell deny list</td></tr><tr><td class="k"><code>deny_permission</code></td><td>answers no</td><td><code>reason</code></td><td>Omnigent</td><td>ALLOW</td></tr><tr><td class="k"><code>pick_option</code></td><td>picks an option by index</td><td><code>index</code></td><td>petekp/inbox options</td><td>ALLOW when it is the agent's own recommendation and risk is low</td></tr><tr><td class="k"><code>approve_gate</code></td><td>approves a CoBuilder gate (design, implement, and the others)</td><td><code>gate</code>, <code>notes</code></td><td>Plannotator Approve, Approve with Notes</td><td>ASK. The human changes the rule by hand</td></tr><tr><td class="k"><code>send_feedback</code></td><td>returns a CoBuilder gate with notes</td><td><code>gate</code>, <code>notes</code></td><td>Plannotator Send Feedback</td><td>ASK</td></tr><tr><td class="k"><code>interrupt</code></td><td>stops a running turn</td><td>none</td><td>Omnigent PTY wrapper</td><td>ASK</td></tr><tr><td class="k"><code>ask_human</code></td><td>puts an item in the queue</td><td><code>detail</code>: decide, do, or review, and <code>why_escalated</code></td><td>petekp/inbox decide and do</td><td>ALLOW, always</td></tr><tr><td class="k"><code>snooze</code></td><td>hides an item until a time or an event</td><td><code>until</code>, <code>until_event</code></td><td>agentbox away gating</td><td>ALLOW</td></tr><tr><td class="k"><code>dismiss</code></td><td>closes an item</td><td><code>reason</code></td><td>petekp/inbox skip</td><td>ALLOW</td></tr><tr><td class="k"><code>set_priority_hint</code></td><td>proposes a new hint after the advisor reads the full text</td><td><code>hint</code></td><td>agentbox: an agent cannot change its own priority</td><td>ALLOW. A rule still sets the rank</td></tr></tbody></table></div>
+<p>The name <code>approve_gate</code> stays. A gate is a CoBuilder gate, not a generic approval stage. <code>approve_permission</code> answers a tool prompt of the harness, and it is a different thing.</p>
 <p>Common fields on every action: <code>session_id</code>, <code>prompt_id</code>, <code>author</code> (interpreter, human, or rule), <code>evidence_quote</code>, and <code>confidence</code>.</p>
-<p>The action hash is the idempotency key. It covers the kind and the payload. It does not cover <code>author</code>, <code>evidence_quote</code>, or <code>confidence</code>. A human approval and an advisor approval of the same prompt therefore have the same hash, and the actuator sends one of them.</p>
+<p>The action hash is the idempotency key. It covers the kind and the payload. It does not cover <code>author</code>, <code>evidence_quote</code>, or <code>confidence</code>. A human approval and an advisor approval of the same prompt have the same hash, and the actuator sends one of them.</p>
+<h3>4.1 <code>continue_until</code></h3>
+<p>This action runs a harness in a loop until code proves that it reached the stated outcome. It differs from <code>continue</code>, which sends one nudge.</p>
+<ul class="plain"><li><code>goal</code>: the stated outcome, in words.</li><li><code>proof</code>: how code checks it. The kinds are <code>command_exit_zero</code> (a command returns 0), <code>file_exists</code>, and <code>human_confirms</code>. The agent saying that it is done is never proof (CLAUDE.md principle 8).</li><li><code>max_turns</code> and <code>max_minutes</code>: the budget. When the budget ends, the actuator opens an <code>ask_human</code> item.</li></ul>
+<p>The policy decides the loop once, as one action with a budget. It still decides each send inside the loop, and it evaluates the proof command against the shell deny list. I propose the name <code>continue_until</code>. The name <code>goal</code> sounds like only a note on the session. The human can also start this action from the client, as a human-authored action.</p>
+<h3>4.2 A proposal with more than one step</h3>
+<p>A <code>Proposal</code> holds one to three steps. The answer to "can one proposal hold more than one action" is yes, with these rules:</p>
+<ol class="plain"><li>The policy decides each step on its own, in order, with fresh state.</li><li>If a step is denied, asked, or fails, the later steps do not run. The inbox gets one <code>ask_human</code> item for the rest.</li><li>All session steps must target one session. If the pending prompt changes between two steps, the plan stops.</li><li>An inbox step (<code>ask_human</code>, <code>snooze</code>, <code>dismiss</code>, <code>set_priority_hint</code>) may follow a session step.</li><li>The hash covers each step, not the proposal.</li><li>A proposal that approves a gate and returns the same gate is invalid. <code>approve_gate</code> with <code>notes</code> already means Approve with Notes. <code>send_feedback</code> means the opposite.</li></ol>
+<p>Example: <code>reply</code> with "1", then <code>continue_until</code> with the goal "Slices 3 to 5 pass their tests". Section 11 shows it.</p>
 <p>Not in the list, on purpose:</p>
 <ul class="plain"><li><strong>Kill a session</strong>, <strong>launch a session</strong>, <strong>change the permission mode</strong>. These are not proposals in v0.3. A launch comes later, and it needs its own design.</li><li><strong>A free shell command to the pane.</strong> <code>reply</code> sends text to a prompt. It does not run a command. The deny list and the five unparseable-to-ASK rules still read every <code>reply</code> that looks like a command.</li><li><strong>Auto-deny on a timeout</strong> (agentbox). We do not take it. An unanswered item rises in rank and never answers itself.</li></ul>
 </section>
 
 <section id="flow">
   <header><div class="eyebrow">Flow</div><h2>Questions, actions, and responses</h2></header>
-<div class="scroll"><table><thead><tr><th>Step</th><th>Who</th><th>What</th></tr></thead><tbody><tr><td class="k">Question</td><td>the agent</td><td>a pending prompt or a prose question in the transcript</td></tr><tr><td class="k">Fact</td><td>the interpreter</td><td><code>status</code>, <code>needs_human</code>, <code>answer_class</code>, <code>risk</code>, <code>priority_hint</code>, and a <code>Question</code> card</td></tr><tr><td class="k">Proposal</td><td>the interpreter</td><td>one <code>Action</code>, or <code>ask_human</code></td></tr><tr><td class="k">Verdict</td><td>the policy</td><td>ALLOW, DENY, or ASK, with <code>rule_id</code> and <code>policy_hash</code></td></tr><tr><td class="k">Effect</td><td>the actuator</td><td>the send, after a fresh <code>evaluate</code></td></tr><tr><td class="k">Response</td><td>the human</td><td>one of the answers below, as a human-authored action</td></tr></tbody></table></div>
+<div class="scroll"><table><thead><tr><th>Step</th><th>Who</th><th>What</th></tr></thead><tbody><tr><td class="k">Question</td><td>the agent</td><td>a pending prompt or a prose question in the transcript</td></tr><tr><td class="k">Facts</td><td>Jev</td><td>one call: <code>status</code>, <code>needs_human</code>, <code>answer_class</code>, <code>risk</code>, <code>priority_hint</code></td></tr><tr><td class="k">Advice</td><td>the language model</td><td>a <code>Question</code> card and a <code>Proposal</code> of one to three steps</td></tr><tr><td class="k">Verdict</td><td>the policy</td><td>ALLOW, DENY, or ASK for each step, with <code>rule_id</code> and <code>policy_hash</code></td></tr><tr><td class="k">Effect</td><td>the actuator</td><td>the send, after a fresh <code>evaluate</code></td></tr><tr><td class="k">Response</td><td>the human</td><td>one of the answers below, as a human-authored action</td></tr></tbody></table></div>
 <p>The human response is an action with <code>author = "human"</code>. It goes through the same policy and the same actuator. A rule can allow it by default, because the human decided.</p>
 <figure class="dia" style="--min: 1000px"><div class="dia-scroll"><svg id="figrt22" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1480 630" role="img" aria-labelledby="rt-title rt-desc">
 <title id="rt-title">priority.dev runtime architecture, version 2.2 (proposal)</title>
@@ -412,90 +430,321 @@ pre.code code{background:none;padding:0;white-space:pre}
 <text class="el" x="743" y="202" text-anchor="middle">uv run tracker.py</text>
 </svg>
 </div><figcaption>Level 4, version 2.2. The interpreter and the control process are separate processes. The actuator re-checks the policy before each send. The event log is Postgres.</figcaption></figure>
-<div class="scroll"><table><thead><tr><th>Client response</th><th>Becomes</th></tr></thead><tbody><tr><td class="k">Accept the proposal</td><td>the proposed action, <code>author = "human"</code></td></tr><tr><td class="k">Edit the text, then send</td><td><code>reply</code> with the edited text</td></tr><tr><td class="k">Choose an option</td><td><code>pick_option</code></td></tr><tr><td class="k">Approve</td><td><code>approve_permission</code> or <code>approve</code></td></tr><tr><td class="k">Approve with notes</td><td><code>approve</code> with <code>notes</code></td></tr><tr><td class="k">Send feedback</td><td><code>send_feedback</code></td></tr><tr><td class="k">Not now</td><td><code>snooze</code></td></tr><tr><td class="k">Close</td><td><code>dismiss</code></td></tr></tbody></table></div>
+<div class="scroll"><table><thead><tr><th>Client response</th><th>Becomes</th></tr></thead><tbody><tr><td class="k">Accept the proposal</td><td>the proposed steps, <code>author = "human"</code></td></tr><tr><td class="k">Edit the text, then send</td><td><code>reply</code> with the edited text</td></tr><tr><td class="k">Choose an option</td><td><code>pick_option</code>, or <code>reply</code> for a prose list</td></tr><tr><td class="k">Type another answer</td><td><code>reply</code> (when <code>free_text</code> is true)</td></tr><tr><td class="k">Approve</td><td><code>approve_permission</code> or <code>approve_gate</code></td></tr><tr><td class="k">Approve with notes</td><td><code>approve_gate</code> with <code>notes</code></td></tr><tr><td class="k">Send feedback</td><td><code>send_feedback</code></td></tr><tr><td class="k">Run until done</td><td><code>continue_until</code></td></tr><tr><td class="k">Not now</td><td><code>snooze</code></td></tr><tr><td class="k">Close</td><td><code>dismiss</code></td></tr></tbody></table></div>
 <p>Two rules from Plannotator apply. A reply never blocks the client, and the answer arrives in the session as a message. The client warns before it drops notes that the human did not send.</p>
-<p>Two rules from petekp/inbox apply. An option that the agent picked is never recorded as the human's answer. A malformed model reply is never dropped silently. It becomes <code>proposal.abstain</code> and an <code>ask_human</code>.</p>
+<p>Two rules from petekp/inbox apply. An option that the agent picked is never recorded as the human's answer. A malformed model reply is never dropped silently. It becomes an <code>Abstain</code> and an <code>ask_human</code> item.</p>
+</section>
+
+<section id="priority">
+  <header><div class="eyebrow">Ranking</div><h2>Who sets the priority</h2></header>
+<p>Four components each set one part. The interpreter sets none of the rank.</p>
+<div class="scroll"><table><thead><tr><th>Part</th><th>Set by</th><th>How</th></tr></thead><tbody><tr><td class="k">Class 0 to 3</td><td>the attention queue, a pure function of the policy verdict and the facts</td><td>class 0: policy ASK on a destructive action. Class 1: <code>status</code> is blocked or failed. Class 2: a question or a permission prompt. Class 3: done, FYI</td></tr><tr><td class="k">Project rank</td><td>the human</td><td>a setting, one number for each project</td></tr><tr><td class="k">Hint</td><td>Jev, in <code>priority_hint</code>. The advisor may change it with <code>set_priority_hint</code></td><td>it orders items inside one class and one project. It never moves an item to another class</td></tr><tr><td class="k">Wait time</td><td>the clock</td><td>the oldest item first</td></tr></tbody></table></div>
+<p>The sort key is (class, project rank, hint, wait time). The agentbox order is project, then priority, then age. Ours puts the class first, because a destructive ASK must outrank a project rank. I did not test this order with real items.</p>
 </section>
 
 <section id="notify">
   <header><div class="eyebrow">Delivery</div><h2>Notification levels and settings</h2></header>
 <p>The goal is to sort notifications into priority levels. A level has no upper limit. Anything that does not need immediate attention goes into a batch, and one batch counts as one notification.</p>
-<div class="scroll"><table><thead><tr><th>Level</th><th>Source in the attention queue</th><th>Delivery</th></tr></thead><tbody><tr><td class="k">N0</td><td>class 0: policy ASK on a destructive action</td><td>at once, ignores quiet hours</td></tr><tr><td class="k">N1</td><td>class 1: a blocked session</td><td>at once</td></tr><tr><td class="k">N2</td><td>class 2: a question</td><td>batch</td></tr><tr><td class="k">N3</td><td>class 3: FYI</td><td>batch</td></tr></tbody></table></div>
-<p>The batch window and the quiet hours are settings, not constants. The starting value of each batch window is 30 minutes, for N2 and for N3 alike. Quiet hours start at 22:00 and end at 07:00, and only N0 passes. The <code>NotifyConfig</code> type in the sketch holds these values.</p>
+<div class="scroll"><table><thead><tr><th>Level</th><th>Source in the attention queue</th><th>Delivery</th></tr></thead><tbody><tr><td class="k">N0</td><td>class 0</td><td>at once, ignores quiet hours</td></tr><tr><td class="k">N1</td><td>class 1</td><td>at once</td></tr><tr><td class="k">N2</td><td>class 2 and class 3</td><td>one batch in each window. Questions come before FYI items</td></tr></tbody></table></div>
+<p>N2 and N3 of the earlier draft had the same delivery, so they are one level now. The inbox still ranks class 2 above class 3.</p>
+<p>The batch window and the quiet hours are settings. The <code>NotifyConfig</code> type holds them. The starting window is 30 minutes. Quiet hours start at 22:00 and end at 07:00, and only N0 passes. I read "every 30 minutes" as one batch for each window that holds at least one item. If you want a different rule, say so.</p>
 </section>
 
 <section id="store">
   <header><div class="eyebrow">Learning</div><h2>Stored recommendations</h2></header>
-<p>The system stores each proposal that reaches the human, and the human's reply to it. The pair is a <code>Recommendation</code> and an <code>Outcome</code>. The outcome is one of accepted, edited, replaced, rejected, snoozed, or dismissed.</p>
-<ul class="plain"><li>The pairs are the data for fine-tuning the interpreter and for the lab metrics, with the same slice as the input.</li><li><code>approve</code> stays at ASK until stored outcomes support a change. The human sees the proposal, and the proposal is stored with the reply.</li><li>I propose to move one gate to ALLOW when the human accepted the proposal for that gate without an edit in a set share of the cases. I do not know the share. See the decision below.</li></ul>
+<p>The system stores every proposal, shown to the human or not. It also stores the input of the proposal. A <code>Recommendation</code> holds the proposal, the facts, a flag <code>shown_to_human</code>, and the ids of its <code>InterpreterCall</code> rows. Each call row holds the exact text that the model received. The slice row holds the redacted transcript input. The human's reply is an <code>Outcome</code>: accepted, edited, replaced, rejected, snoozed, or dismissed.</p>
+<ul class="plain"><li>The triple (slice, proposal, outcome) is the data for tuning the interpreter and for the lab metrics.</li><li>A proposal that the human never saw has no outcome. It trains nothing until the human reviews a sample of it.</li><li>The raw transcript is never copied. The stored text is already redacted. The redaction is lossy, so a stored slice cannot give back a secret.</li><li><code>approve_gate</code> stays at ASK. No rule moves it to ALLOW by itself. The human edits the policy file by hand when the stored outcomes justify it.</li></ul>
+</section>
+
+<section id="abstain">
+  <header><div class="eyebrow">Failure</div><h2>When the interpreter abstains</h2></header>
+<p>An <code>Abstain</code> event says that the interpreter proposes nothing. The inbox then gets an <code>ask_human</code> item, and the item carries the reason. The reasons are:</p>
+<div class="scroll"><table><thead><tr><th>Reason</th><th>Cause</th></tr></thead><tbody><tr><td class="k"><code>quote_not_in_slice</code></td><td>the <code>evidence_quote</code> is not an exact substring of the slice</td></tr><tr><td class="k"><code>invalid_output</code></td><td>the model reply does not parse as <code>Advice</code></td></tr><tr><td class="k"><code>kind_not_allowed</code></td><td>the proposal names a kind that is not in <code>allowed_kinds</code></td></tr><tr><td class="k"><code>model_timeout</code></td><td>a model call did not return in time</td></tr><tr><td class="k"><code>model_error</code></td><td>a model call returned an error</td></tr><tr><td class="k"><code>slice_empty</code></td><td>the turn has no response text</td></tr></tbody></table></div>
+<p>Section 11 shows an example.</p>
 </section>
 
 <section id="checks">
   <header><div class="eyebrow">Gaps</div><h2>Checks this design needs</h2></header>
-<ol class="plain"><li>The sketch imports and validates (done: <code>uv run schemas/interpreter_schemas.py</code> prints <code>ok</code>).</li><li>A real Jev call returns the five typed fields for one slice (not done, one-day test).</li><li>The advisor returns a valid <code>Action</code> through <code>Advise</code> for 20 recorded slices (not done). The <code>Action</code> union as a DSPy output field is untested against a real model.</li><li>The evidence quote check rejects a proposal whose quote is not in the slice (not done, a unit test).</li></ol>
+<ol class="plain"><li>The sketch imports and validates (done: <code>uv run schemas/interpreter_schemas.py</code> prints <code>ok</code>).</li><li>The request to Jev builds from the signature (done: section 11 shows the output of <code>DecisionAdapter._prepare</code>).</li><li>A real Jev call returns the five typed fields for one slice (not done, one-day test).</li><li>The advisor returns a valid <code>Advice</code> for 20 recorded slices (not done). The <code>Action</code> union as a DSPy output field is untested against a real model.</li><li>The evidence quote check rejects a proposal whose quote is not in the slice (not done, a unit test).</li><li>The 16,028-character schema in the stage 2 prompt does not lower the advisor's accuracy (not done).</li></ol>
 </section>
 
 <section id="examples">
   <header><div class="eyebrow">Data</div><h2>Examples of the data</h2></header>
-<p>The sketch builds each example and checks a JSON round trip. Run <code>uv run schemas/interpreter_schemas.py dump</code> to print them. Empty and default fields are in the real output, and they are cut here.</p>
-<p><strong>reply</strong></p>
-<pre class="code"><code>{&quot;session_id&quot;: &quot;s1&quot;, &quot;prompt_id&quot;: &quot;p1&quot;, &quot;evidence_quote&quot;: &quot;Which database should I use?&quot;, &quot;confidence&quot;: 0.91, &quot;kind&quot;: &quot;reply&quot;, &quot;text&quot;: &quot;Use Postgres 17.&quot;}</code></pre>
-<p><strong>continue</strong></p>
-<pre class="code"><code>{&quot;session_id&quot;: &quot;s1&quot;, &quot;evidence_quote&quot;: &quot;Shall I continue?&quot;, &quot;confidence&quot;: 0.97, &quot;kind&quot;: &quot;continue&quot;}</code></pre>
-<p><strong>approve_permission</strong></p>
-<pre class="code"><code>{&quot;session_id&quot;: &quot;s1&quot;, &quot;prompt_id&quot;: &quot;p2&quot;, &quot;evidence_quote&quot;: &quot;Allow Bash(ls -la)?&quot;, &quot;confidence&quot;: 0.99, &quot;kind&quot;: &quot;approve_permission&quot;, &quot;scope&quot;: &quot;once&quot;}</code></pre>
-<p><strong>deny_permission</strong></p>
-<pre class="code"><code>{&quot;session_id&quot;: &quot;s1&quot;, &quot;prompt_id&quot;: &quot;p3&quot;, &quot;confidence&quot;: 0.0, &quot;kind&quot;: &quot;deny_permission&quot;, &quot;reason&quot;: &quot;Writes outside the repo&quot;}</code></pre>
-<p><strong>pick_option</strong></p>
-<pre class="code"><code>{&quot;session_id&quot;: &quot;s1&quot;, &quot;prompt_id&quot;: &quot;p4&quot;, &quot;evidence_quote&quot;: &quot;1. Existing table (recommended)&quot;, &quot;confidence&quot;: 0.88, &quot;kind&quot;: &quot;pick_option&quot;, &quot;index&quot;: 0}</code></pre>
-<p><strong>approve</strong></p>
-<pre class="code"><code>{&quot;session_id&quot;: &quot;s1&quot;, &quot;prompt_id&quot;: &quot;p5&quot;, &quot;evidence_quote&quot;: &quot;Approve the design?&quot;, &quot;confidence&quot;: 0.8, &quot;kind&quot;: &quot;approve&quot;, &quot;gate&quot;: &quot;design-review&quot;, &quot;notes&quot;: &quot;Check the retry limit.&quot;}</code></pre>
-<p><strong>send_feedback</strong></p>
-<pre class="code"><code>{&quot;session_id&quot;: &quot;s1&quot;, &quot;confidence&quot;: 0.0, &quot;kind&quot;: &quot;send_feedback&quot;, &quot;gate&quot;: &quot;design-review&quot;, &quot;notes&quot;: &quot;Split slice 2 in two.&quot;}</code></pre>
-<p><strong>interrupt</strong></p>
-<pre class="code"><code>{&quot;session_id&quot;: &quot;s1&quot;, &quot;evidence_quote&quot;: &quot;rm -rf build/ running&quot;, &quot;confidence&quot;: 0.7, &quot;kind&quot;: &quot;interrupt&quot;}</code></pre>
-<p><strong>ask_human (decide)</strong></p>
-<pre class="code"><code>{&quot;session_id&quot;: &quot;s1&quot;, &quot;confidence&quot;: 0.0, &quot;kind&quot;: &quot;ask_human&quot;, &quot;detail&quot;: {&quot;role&quot;: &quot;decide&quot;, &quot;question&quot;: {&quot;ask&quot;: &quot;Use the existing table or add a new one?&quot;, &quot;options&quot;: [&quot;existing&quot;, &quot;new&quot;], &quot;agent_recommendation&quot;: &quot;existing&quot;, &quot;helps&quot;: [&quot;The table has 3 columns&quot;]}}, &quot;why_escalated&quot;: &quot;Cost of a new table is not in the transcript&quot;}</code></pre>
+<p>The data is synthetic. The sketch builds each example and checks a JSON round trip. Run <code>uv run schemas/interpreter_schemas.py dump</code> to print them. Empty fields are cut here.</p>
+<p><strong>The turn slice (what is stored)</strong></p>
+<pre class="code"><code>{
+ &quot;slice_id&quot;: &quot;c096cea9b4f73d72&quot;,
+ &quot;cursor&quot;: &quot;~/.claude/projects/-work-exporter/7c1e.jsonl@184220&quot;,
+ &quot;context&quot;: {
+  &quot;session_id&quot;: &quot;sess-7c1&quot;,
+  &quot;project&quot;: &quot;exporter&quot;,
+  &quot;branch&quot;: &quot;slice-2-csv&quot;,
+  &quot;workflow_stage&quot;: &quot;implement: slice 2 of 5&quot;,
+  &quot;answered_by_us_last_hour&quot;: 1
+ },
+ &quot;last_human_message&quot;: &quot;Build slice 2: the CSV export endpoint. Run the tests before you stop.&quot;,
+ &quot;turn_digest&quot;: [
+  {
+   &quot;tool&quot;: &quot;Read&quot;,
+   &quot;target&quot;: &quot;src/export/routes.py&quot;,
+   &quot;outcome&quot;: &quot;ok&quot;
+  },
+  {
+   &quot;tool&quot;: &quot;Edit&quot;,
+   &quot;target&quot;: &quot;src/export/csv_writer.py&quot;,
+   &quot;outcome&quot;: &quot;ok&quot;
+  },
+  {
+   &quot;tool&quot;: &quot;Bash&quot;,
+   &quot;target&quot;: &quot;pytest tests/export -q&quot;,
+   &quot;outcome&quot;: &quot;ok&quot;
+  }
+ ],
+ &quot;last_response&quot;: &quot;Slice 2 is done. 14 tests pass.\n\nBefore I start slice 3, one question. Should the CSV timestamps use UTC or the project timezone?\n1. UTC (I recommend this: it matches the API)\n2. The project timezone\nReply 1 or 2.&quot;,
+ &quot;allowed_kinds&quot;: [
+  &quot;approve_gate&quot;,
+  &quot;approve_permission&quot;,
+  &quot;ask_human&quot;,
+  &quot;continue&quot;,
+  &quot;continue_until&quot;,
+  &quot;deny_permission&quot;,
+  &quot;dismiss&quot;,
+  &quot;interrupt&quot;,
+  &quot;pick_option&quot;,
+  &quot;reply&quot;,
+  &quot;send_feedback&quot;,
+  &quot;snooze&quot;
+ ]
+}</code></pre>
+<p><strong>Facts from the Jev call</strong></p>
+<pre class="code"><code>{&quot;status&quot;: &quot;waiting_answer&quot;, &quot;needs_human&quot;: false, &quot;answer_class&quot;: &quot;pick_default&quot;, &quot;risk&quot;: 0.2, &quot;priority_hint&quot;: 0.3, &quot;confidence&quot;: {&quot;status&quot;: 0.93, &quot;needs_human&quot;: 0.81, &quot;answer_class&quot;: 0.88, &quot;risk&quot;: 0.74, &quot;priority_hint&quot;: 0.6}}</code></pre>
+<p><strong>Advice from the language model, with a question card</strong></p>
+<pre class="code"><code>{
+ &quot;question&quot;: {
+  &quot;ask&quot;: &quot;Use UTC or the project timezone for the CSV timestamps?&quot;,
+  &quot;options&quot;: [
+   {
+    &quot;label&quot;: &quot;UTC&quot;,
+    &quot;detail&quot;: &quot;Matches the API&quot;
+   },
+   {
+    &quot;label&quot;: &quot;Project timezone&quot;
+   }
+  ],
+  &quot;multi_select&quot;: false,
+  &quot;free_text&quot;: true,
+  &quot;agent_recommendation&quot;: &quot;UTC&quot;,
+  &quot;helps&quot;: [
+   {
+    &quot;kind&quot;: &quot;open_file&quot;,
+    &quot;label&quot;: &quot;Open the API spec&quot;,
+    &quot;value&quot;: &quot;docs/api.md&quot;
+   },
+   {
+    &quot;kind&quot;: &quot;copy_command&quot;,
+    &quot;label&quot;: &quot;Show the timestamp column&quot;,
+    &quot;value&quot;: &quot;head -3 out/export.csv&quot;
+   }
+  ]
+ },
+ &quot;proposal&quot;: {
+  &quot;proposal_id&quot;: &quot;p-1&quot;,
+  &quot;slice_id&quot;: &quot;c096cea9b4f73d72&quot;,
+  &quot;steps&quot;: [
+   {
+    &quot;session_id&quot;: &quot;sess-7c1&quot;,
+    &quot;evidence_quote&quot;: &quot;1. UTC (I recommend this&quot;,
+    &quot;confidence&quot;: 0.9,
+    &quot;kind&quot;: &quot;reply&quot;,
+    &quot;text&quot;: &quot;1&quot;
+   }
+  ],
+  &quot;rationale&quot;: &quot;The agent recommends UTC.&quot;
+ }
+}</code></pre>
+<p><strong>A proposal with two steps</strong></p>
+<pre class="code"><code>{&quot;proposal_id&quot;: &quot;p-2&quot;, &quot;slice_id&quot;: &quot;c096cea9b4f73d72&quot;, &quot;steps&quot;: [{&quot;session_id&quot;: &quot;sess-7c1&quot;, &quot;evidence_quote&quot;: &quot;1. UTC (I recommend this&quot;, &quot;confidence&quot;: 0.9, &quot;kind&quot;: &quot;reply&quot;, &quot;text&quot;: &quot;1&quot;}, {&quot;session_id&quot;: &quot;sess-7c1&quot;, &quot;evidence_quote&quot;: &quot;Before I start slice 3&quot;, &quot;confidence&quot;: 0.0, &quot;kind&quot;: &quot;continue_until&quot;, &quot;goal&quot;: &quot;Slices 3 to 5 pass their tests&quot;, &quot;proof&quot;: {&quot;kind&quot;: &quot;command_exit_zero&quot;, &quot;value&quot;: &quot;pytest -q&quot;}, &quot;max_turns&quot;: 20, &quot;max_minutes&quot;: 120}], &quot;rationale&quot;: &quot;Answer the question, then run to the end of the plan.&quot;}</code></pre>
+<p><strong>continue_until</strong></p>
+<pre class="code"><code>{&quot;session_id&quot;: &quot;sess-7c1&quot;, &quot;evidence_quote&quot;: &quot;Reply 1 or 2.&quot;, &quot;confidence&quot;: 0.7, &quot;kind&quot;: &quot;continue_until&quot;, &quot;goal&quot;: &quot;All 5 slices pass their tests&quot;, &quot;proof&quot;: {&quot;kind&quot;: &quot;command_exit_zero&quot;, &quot;value&quot;: &quot;pytest -q&quot;}, &quot;max_turns&quot;: 20, &quot;max_minutes&quot;: 120}</code></pre>
+<p><strong>Abstain</strong></p>
+<pre class="code"><code>{&quot;slice_id&quot;: &quot;c096cea9b4f73d72&quot;, &quot;reason&quot;: &quot;quote_not_in_slice&quot;, &quot;detail&quot;: &quot;The quote &#x27;Use UTC, as agreed&#x27; is not in the slice&quot;}</code></pre>
 <p><strong>ask_human (do)</strong></p>
-<pre class="code"><code>{&quot;session_id&quot;: &quot;s1&quot;, &quot;confidence&quot;: 0.0, &quot;kind&quot;: &quot;ask_human&quot;, &quot;detail&quot;: {&quot;role&quot;: &quot;do&quot;, &quot;steps&quot;: [&quot;Open the console&quot;, &quot;Create the bucket&quot;], &quot;where&quot;: &quot;aws console&quot;, &quot;done_check&quot;: &quot;Bucket name appears in the next prompt&quot;}, &quot;why_escalated&quot;: &quot;Needs the AWS console&quot;}</code></pre>
+<pre class="code"><code>{&quot;session_id&quot;: &quot;sess-7c1&quot;, &quot;confidence&quot;: 0.0, &quot;kind&quot;: &quot;ask_human&quot;, &quot;detail&quot;: {&quot;role&quot;: &quot;do&quot;, &quot;steps&quot;: [&quot;Open the console&quot;, &quot;Create the bucket&quot;], &quot;where&quot;: &quot;aws console&quot;, &quot;done_check&quot;: &quot;The bucket name appears in the next prompt&quot;}, &quot;why_escalated&quot;: &quot;Needs the AWS console&quot;}</code></pre>
 <p><strong>ask_human (review)</strong></p>
-<pre class="code"><code>{&quot;session_id&quot;: &quot;s1&quot;, &quot;confidence&quot;: 0.0, &quot;kind&quot;: &quot;ask_human&quot;, &quot;detail&quot;: {&quot;role&quot;: &quot;review&quot;, &quot;artifact&quot;: &quot;docs/plans/x/04-slices.md&quot;, &quot;check_items&quot;: [&quot;Slice order&quot;]}, &quot;why_escalated&quot;: &quot;Gate needs a person&quot;}</code></pre>
-<p><strong>snooze</strong></p>
-<pre class="code"><code>{&quot;session_id&quot;: &quot;s1&quot;, &quot;confidence&quot;: 0.0, &quot;kind&quot;: &quot;snooze&quot;, &quot;until_event&quot;: &quot;turn_end&quot;}</code></pre>
-<p><strong>dismiss</strong></p>
-<pre class="code"><code>{&quot;session_id&quot;: &quot;s1&quot;, &quot;confidence&quot;: 0.0, &quot;kind&quot;: &quot;dismiss&quot;, &quot;reason&quot;: &quot;fyi_read&quot;}</code></pre>
-<p><strong>set_priority_hint</strong></p>
-<pre class="code"><code>{&quot;session_id&quot;: &quot;s1&quot;, &quot;confidence&quot;: 0.0, &quot;kind&quot;: &quot;set_priority_hint&quot;, &quot;hint&quot;: 0.8}</code></pre>
-<p><strong>notification settings</strong></p>
-<pre class="code"><code>{&quot;batch_window_minutes&quot;: {&quot;N2&quot;: 30, &quot;N3&quot;: 30}, &quot;quiet_hours&quot;: [&quot;22:00&quot;, &quot;07:00&quot;], &quot;timezone&quot;: &quot;Australia/Sydney&quot;}</code></pre>
+<pre class="code"><code>{&quot;session_id&quot;: &quot;sess-7c1&quot;, &quot;confidence&quot;: 0.0, &quot;kind&quot;: &quot;ask_human&quot;, &quot;detail&quot;: {&quot;role&quot;: &quot;review&quot;, &quot;artifact&quot;: &quot;docs/plans/x/04-slices.md&quot;, &quot;check_items&quot;: [&quot;Slice order&quot;]}, &quot;why_escalated&quot;: &quot;The gate needs a person&quot;}</code></pre>
+<p><strong>InterpreterCall (the stored row)</strong></p>
+<pre class="code"><code>{&quot;call_id&quot;: &quot;c-1&quot;, &quot;slice_id&quot;: &quot;c096cea9b4f73d72&quot;, &quot;stage&quot;: &quot;triage&quot;, &quot;model&quot;: &quot;typesafe:jev-latest&quot;, &quot;rendered_input&quot;: &quot;(the state and the five questions, see schemas.md section 10)&quot;, &quot;clipped_chars&quot;: 0, &quot;output_json&quot;: &quot;{\&quot;status\&quot;:\&quot;waiting_answer\&quot;,\&quot;needs_human\&quot;:false,\&quot;answer_class\&quot;:\&quot;pick_default\&quot;,\&quot;risk\&quot;:0.2,\&quot;priority_hint\&quot;:0.3,\&quot;confidence\&quot;:{\&quot;status\&quot;:0.93,\&quot;needs_human\&quot;:0.81,\&quot;answer_class\&quot;:0.88,\&quot;risk\&quot;:0.74,\&quot;priority_hint\&quot;:0.6}}&quot;, &quot;latency_ms&quot;: 410}</code></pre>
+<p><strong>Recommendation</strong></p>
+<pre class="code"><code>{&quot;proposal&quot;: {&quot;proposal_id&quot;: &quot;p-1&quot;, &quot;slice_id&quot;: &quot;c096cea9b4f73d72&quot;, &quot;steps&quot;: [{&quot;session_id&quot;: &quot;sess-7c1&quot;, &quot;evidence_quote&quot;: &quot;1. UTC (I recommend this&quot;, &quot;confidence&quot;: 0.9, &quot;kind&quot;: &quot;reply&quot;, &quot;text&quot;: &quot;1&quot;}], &quot;rationale&quot;: &quot;The agent recommends UTC.&quot;}, &quot;facts&quot;: {&quot;status&quot;: &quot;waiting_answer&quot;, &quot;needs_human&quot;: false, &quot;answer_class&quot;: &quot;pick_default&quot;, &quot;risk&quot;: 0.2, &quot;priority_hint&quot;: 0.3, &quot;confidence&quot;: {&quot;status&quot;: 0.93, &quot;needs_human&quot;: 0.81, &quot;answer_class&quot;: 0.88, &quot;risk&quot;: 0.74, &quot;priority_hint&quot;: 0.6}}, &quot;shown_to_human&quot;: false, &quot;call_ids&quot;: [&quot;c-1&quot;, &quot;c-2&quot;]}</code></pre>
+<p><strong>Outcome</strong></p>
+<pre class="code"><code>{&quot;proposal_id&quot;: &quot;p-1&quot;, &quot;result&quot;: &quot;accepted&quot;, &quot;final&quot;: {&quot;proposal_id&quot;: &quot;p-1&quot;, &quot;slice_id&quot;: &quot;c096cea9b4f73d72&quot;, &quot;steps&quot;: [{&quot;session_id&quot;: &quot;sess-7c1&quot;, &quot;evidence_quote&quot;: &quot;1. UTC (I recommend this&quot;, &quot;confidence&quot;: 0.9, &quot;kind&quot;: &quot;reply&quot;, &quot;text&quot;: &quot;1&quot;}], &quot;rationale&quot;: &quot;The agent recommends UTC.&quot;}, &quot;seconds_to_answer&quot;: 41.0}</code></pre>
+<p><strong>Notification settings</strong></p>
+<pre class="code"><code>{&quot;batch_window_minutes&quot;: 30, &quot;quiet_hours&quot;: [&quot;22:00&quot;, &quot;07:00&quot;], &quot;timezone&quot;: &quot;Australia/Sydney&quot;}</code></pre>
+<h3>11.1 The exact request to Jev (stage 1)</h3>
+<p>DSPy builds this request. One call carries all five questions. The inputs hold <code>slice.for_model()</code>.</p>
+<pre class="code"><code>{
+ &quot;state&quot;: {
+  &quot;instructions&quot;: &quot;Read the end of a turn. Report the state of the session.&quot;,
+  &quot;input_fields&quot;: &quot;1. `slice_json` (str):&quot;,
+  &quot;inputs&quot;: {
+   &quot;slice_json&quot;: {
+    &quot;context&quot;: {
+     &quot;session_id&quot;: &quot;sess-7c1&quot;,
+     &quot;project&quot;: &quot;exporter&quot;,
+     &quot;branch&quot;: &quot;slice-2-csv&quot;,
+     &quot;workflow_stage&quot;: &quot;implement: slice 2 of 5&quot;,
+     &quot;last_human_reply_at&quot;: null,
+     &quot;answered_by_us_last_hour&quot;: 1
+    },
+    &quot;last_human_message&quot;: &quot;Build slice 2: the CSV export endpoint. Run the tests before you stop.&quot;,
+    &quot;turn_digest&quot;: [
+     {
+      &quot;tool&quot;: &quot;Read&quot;,
+      &quot;target&quot;: &quot;src/export/routes.py&quot;,
+      &quot;outcome&quot;: &quot;ok&quot;,
+      &quot;note&quot;: &quot;&quot;
+     },
+     {
+      &quot;tool&quot;: &quot;Edit&quot;,
+      &quot;target&quot;: &quot;src/export/csv_writer.py&quot;,
+      &quot;outcome&quot;: &quot;ok&quot;,
+      &quot;note&quot;: &quot;&quot;
+     },
+     {
+      &quot;tool&quot;: &quot;Bash&quot;,
+      &quot;target&quot;: &quot;pytest tests/export -q&quot;,
+      &quot;outcome&quot;: &quot;ok&quot;,
+      &quot;note&quot;: &quot;&quot;
+     }
+    ],
+    &quot;last_response&quot;: &quot;Slice 2 is done. 14 tests pass.\n\nBefore I start slice 3, one question. Should the CSV timestamps use UTC or the project timezone?\n1. UTC (I recommend this: it matches the API)\n2. The project timezone\nReply 1 or 2.&quot;,
+    &quot;earlier_summary&quot;: null,
+    &quot;pending&quot;: null
+   }
+  }
+ },
+ &quot;questions&quot;: {
+  &quot;status&quot;: {
+   &quot;instructions&quot;: &quot;What the session does now&quot;,
+   &quot;type&quot;: &quot;choice&quot;,
+   &quot;criteria&quot;: {
+    &quot;done&quot;: &quot;The agent finished and asks for nothing&quot;,
+    &quot;waiting_answer&quot;: &quot;The agent asks a question&quot;,
+    &quot;waiting_permission&quot;: &quot;A tool prompt waits for yes or no&quot;,
+    &quot;blocked&quot;: &quot;The agent cannot go on without outside help&quot;,
+    &quot;failed&quot;: &quot;The agent stopped on an error&quot;,
+    &quot;continuing&quot;: &quot;The agent still works&quot;
+   }
+  },
+  &quot;needs_human&quot;: {
+   &quot;instructions&quot;: &quot;Whether only the human can give the answer&quot;,
+   &quot;type&quot;: &quot;noul&quot;,
+   &quot;criteria&quot;: {
+    &quot;true&quot;: &quot;Only the human can answer&quot;,
+    &quot;false&quot;: &quot;An advisor may answer&quot;
+   }
+  },
+  &quot;answer_class&quot;: {
+   &quot;instructions&quot;: &quot;The kind of answer that is due&quot;,
+   &quot;type&quot;: &quot;choice&quot;,
+   &quot;criteria&quot;: {
+    &quot;none&quot;: &quot;No answer is due&quot;,
+    &quot;approve_continue&quot;: &quot;Yes or go on&quot;,
+    &quot;pick_default&quot;: &quot;Pick the option the agent recommends&quot;,
+    &quot;provide_fact&quot;: &quot;A fact the human holds&quot;,
+    &quot;decide&quot;: &quot;A choice with a cost the human owns&quot;,
+    &quot;external_action&quot;: &quot;The human must act outside the session&quot;
+   }
+  },
+  &quot;risk&quot;: {
+   &quot;instructions&quot;: &quot;The cost of a wrong answer&quot;,
+   &quot;type&quot;: &quot;score&quot;,
+   &quot;criteria&quot;: [
+    &quot;low: reversible and local&quot;,
+    &quot;medium: costly to undo&quot;,
+    &quot;high: destructive or outside&quot;
+   ]
+  },
+  &quot;priority_hint&quot;: {
+   &quot;instructions&quot;: &quot;How soon the human should look&quot;,
+   &quot;type&quot;: &quot;score&quot;,
+   &quot;criteria&quot;: [
+    &quot;can wait&quot;,
+    &quot;soon&quot;,
+    &quot;now&quot;
+   ]
+  }
+ }
+}</code></pre>
+<h3>11.2 The exact request to the language model (stage 2)</h3>
+<p>The system message ends with the JSON schema of <code>Advice</code>. The schema has 16,028 characters in all, and it is cut here. The user message is the exact text.</p>
+<pre class="code"><code>[system]
+Your input fields are:
+1. `slice_json` (str): 
+2. `facts_json` (str): The five typed facts from the triage call
+Your output fields are:
+1. `advice` (Advice):
+All interactions will be structured in the following way, with the appropriate values filled in.
+
+[[ ## slice_json ## ]]
+{slice_json}
+
+[[ ## facts_json ## ]]
+{facts_json}
+
+[[ ## advice ## ]]
+{advice}        # note: the value you produce must adhere to the JSON schema: {... JSON schema of Advice, cut ...}
+
+
+[[ ## completed ## ]]
+In adhering to this structure, your objective is: 
+        Write the question card and propose the next steps for a waiting session.
+
+[user]
+[[ ## slice_json ## ]]
+{&quot;context&quot;:{&quot;session_id&quot;:&quot;sess-7c1&quot;,&quot;project&quot;:&quot;exporter&quot;,&quot;branch&quot;:&quot;slice-2-csv&quot;,&quot;workflow_stage&quot;:&quot;implement: slice 2 of 5&quot;,&quot;last_human_reply_at&quot;:null,&quot;answered_by_us_last_hour&quot;:1},&quot;last_human_message&quot;:&quot;Build slice 2: the CSV export endpoint. Run the tests before you stop.&quot;,&quot;turn_digest&quot;:[{&quot;tool&quot;:&quot;Read&quot;,&quot;target&quot;:&quot;src/export/routes.py&quot;,&quot;outcome&quot;:&quot;ok&quot;,&quot;note&quot;:&quot;&quot;},{&quot;tool&quot;:&quot;Edit&quot;,&quot;target&quot;:&quot;src/export/csv_writer.py&quot;,&quot;outcome&quot;:&quot;ok&quot;,&quot;note&quot;:&quot;&quot;},{&quot;tool&quot;:&quot;Bash&quot;,&quot;target&quot;:&quot;pytest tests/export -q&quot;,&quot;outcome&quot;:&quot;ok&quot;,&quot;note&quot;:&quot;&quot;}],&quot;last_response&quot;:&quot;Slice 2 is done. 14 tests pass.\n\nBefore I start slice 3, one question. Should the CSV timestamps use UTC or the project timezone?\n1. UTC (I recommend this: it matches the API)\n2. The project timezone\nReply 1 or 2.&quot;,&quot;earlier_summary&quot;:null,&quot;pending&quot;:null}
+
+[[ ## facts_json ## ]]
+{&quot;status&quot;:&quot;waiting_answer&quot;,&quot;needs_human&quot;:false,&quot;answer_class&quot;:&quot;pick_default&quot;,&quot;risk&quot;:0.2,&quot;priority_hint&quot;:0.3,&quot;confidence&quot;:{&quot;status&quot;:0.93,&quot;needs_human&quot;:0.81,&quot;answer_class&quot;:0.88,&quot;risk&quot;:0.74,&quot;priority_hint&quot;:0.6}}
+
+Respond with the corresponding output fields, starting with the field `[[ ## advice ## ]]` (must be formatted as a valid Python Advice), and then ending with the marker for `[[ ## completed ## ]]`.</code></pre>
 </section>
 
 <section id="decide" class="decide">
   <div class="eyebrow">Decision</div>
-  <p class="q">Do these schemas and actions match what you want?</p>
+  <p class="q">Do these changes match what you want?</p>
   <p class="default-note">If you do not answer a point, the draft uses the default marked under it. Nothing leaves this machine until you say so.</p>
   <form id="decision-form" onsubmit="return false">
-    <fieldset id="f-d0"><legend>0. The name <code>approve</code></legend>
-      <label class="opt"><input type="radio" name="d0" value="Rename only, approve_permission stays a separate kind"><span>Rename <code>approve_gate</code> to <code>approve</code> only. <code>approve_permission</code> stays a separate kind<span class="rec">Recommended</span></span></label>
-      <label class="opt"><input type="radio" name="d0" value="One approve kind with a target field"><span>One <code>approve</code> kind with a <code>target</code> field (a gate or a permission prompt)</span></label>
-      <label class="opt"><input type="radio" name="d0" value="Other, see notes"><span>Other. My reason is in the notes</span></label>
-      <p class="default-note">Default: the first. Your message ended before the reason, so I did not guess it.</p>
+    <fieldset id="f-d0"><legend>0. The name of the loop action</legend>
+      <label class="opt"><input type="radio" name="d0" value="continue_until"><span><code>continue_until</code><span class="rec">Recommended</span></span></label>
+      <label class="opt"><input type="radio" name="d0" value="goal"><span><code>goal</code></span></label>
+      <label class="opt"><input type="radio" name="d0" value="Other, see notes"><span>Another name, in the notes</span></label>
+      <p class="default-note">Default: <code>continue_until</code>. The name <code>goal</code> sounds like a note on the session.</p>
     </fieldset>
-    <fieldset id="f-d1"><legend>1. When may a gate move from ASK to ALLOW?</legend>
-      <label class="opt"><input type="radio" name="d1" value="Per gate, after 20 accepted proposals in a row with no edit"><span>Per gate, after 20 proposals in a row that you accepted with no edit<span class="rec">Recommended</span></span></label>
-      <label class="opt"><input type="radio" name="d1" value="Per gate, after 50 in a row"><span>Per gate, after 50 in a row</span></label>
-      <label class="opt"><input type="radio" name="d1" value="Never automatic, I change the rule by hand"><span>Never automatic. You change the rule by hand</span></label>
-      <p class="default-note">Default: never automatic. The number 20 is my guess, with no data behind it.</p>
+    <fieldset id="f-d1"><legend>1. A model summary of older turns in the slice</legend>
+      <label class="opt"><input type="radio" name="d1" value="Off in v0.1, turn on only if the lab shows missing context"><span>Off in v0.1. Turn it on only if the lab shows that the advisor lacks context<span class="rec">Recommended</span></span></label>
+      <label class="opt"><input type="radio" name="d1" value="On from the start"><span>On from the start, with one more model call for each slice</span></label>
+      <p class="default-note">Default: off.</p>
     </fieldset>
-    <fieldset id="f-d2"><legend>2. Which proposals are stored for training?</legend>
-      <label class="opt"><input type="radio" name="d2" value="Every proposal, shown or not"><span>Every proposal, including those that the policy allowed without you<span class="rec">Recommended</span></span></label>
-      <label class="opt"><input type="radio" name="d2" value="Only proposals shown to the human"><span>Only proposals that reached you</span></label>
-      <p class="default-note">Default: every proposal. A proposal that you never saw has no human outcome, so it trains nothing until you review a sample.</p>
+    <fieldset id="f-d2"><legend>2. Steps in one proposal</legend>
+      <label class="opt"><input type="radio" name="d2" value="Up to three steps, rules as drawn"><span>Up to three steps, with the six rules in section 4.2<span class="rec">Recommended</span></span></label>
+      <label class="opt"><input type="radio" name="d2" value="One step only"><span>One step only. Several steps become several proposals</span></label>
+      <p class="default-note">Default: up to three steps.</p>
     </fieldset>
-    <fieldset id="f-d3"><legend>3. The <code>do</code> and <code>review</code> detail</legend>
-      <label class="opt"><input type="radio" name="d3" value="Accept the fields as drawn"><span>Accept: <code>do</code> has steps, where, and a done check. <code>review</code> has an artifact and check items<span class="rec">Recommended</span></span></label>
-      <label class="opt"><input type="radio" name="d3" value="Change, see notes"><span>Change the fields. I describe them in the notes</span></label>
-      <p class="default-note">Default: accept.</p>
+    <fieldset id="f-d3"><legend>3. The sort key of the inbox</legend>
+      <label class="opt"><input type="radio" name="d3" value="class, project rank, hint, wait time"><span>Class, then project rank, then hint, then wait time<span class="rec">Recommended</span></span></label>
+      <label class="opt"><input type="radio" name="d3" value="project rank, class, hint, wait time"><span>Project rank first, then class, then hint, then wait time (the agentbox order)</span></label>
+      <p class="default-note">Default: class first, so a destructive ASK outranks any project rank.</p>
+    </fieldset>
+    <fieldset id="f-d4"><legend>4. The batch rule</legend>
+      <label class="opt"><input type="radio" name="d4" value="One batch for each 30-minute window that holds an item"><span>One batch for each 30-minute window that holds at least one item<span class="rec">Recommended</span></span></label>
+      <label class="opt"><input type="radio" name="d4" value="A 30-minute timer from the first item in an empty batch"><span>A 30-minute timer that starts at the first item in an empty batch</span></label>
+      <p class="default-note">Default: the first. Both use the same one number.</p>
+    </fieldset>
+    <fieldset id="f-d5"><legend>5. The question card options</legend>
+      <label class="opt"><input type="radio" name="d5" value="Several options, multi_select and free_text as fields"><span>A list of options. <code>multi_select</code> and <code>free_text</code> are fields. Free text is on by default<span class="rec">Recommended</span></span></label>
+      <label class="opt"><input type="radio" name="d5" value="Other, see notes"><span>Other. I describe it in the notes</span></label>
+      <p class="default-note">Default: the first. I read your note as: the options can be several, and the human can also type text.</p>
     </fieldset>
     <fieldset id="f-notes"><legend><label for="notes">Notes</label></legend><textarea id="notes" placeholder="Changes, extra actions, or a reason for a name"></textarea></fieldset>
     <div style="display:flex; flex-wrap:wrap; gap:12px; align-items:center; padding-top:12px"><button class="go" id="copy-btn" type="button">Copy my answers</button><span id="copy-status" role="status"></span></div>
@@ -510,8 +759,8 @@ pre.code code{background:none;padding:0;white-space:pre}
   var form = document.getElementById('decision-form'), out = document.getElementById('answers-out'), status = document.getElementById('copy-status');
   function lt(f) { var l = f.querySelector('legend'); return l ? l.textContent.trim() : ''; }
   function collect() {
-    var lines = ['priority.dev interpreter schemas, round 6: my answers'];
-    ['d0','d1','d2','d3'].forEach(function (n) {
+    var lines = ['priority.dev interpreter schemas, round 7: my answers'];
+    ['d0','d1','d2','d3','d4','d5'].forEach(function (n) {
       var c = form.querySelector('input[name="' + n + '"]:checked');
       lines.push(lt(document.getElementById('f-' + n)) + ' -> ' + (c ? c.value : 'no answer (use the default)'));
     });
