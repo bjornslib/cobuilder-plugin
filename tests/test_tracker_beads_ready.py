@@ -101,3 +101,22 @@ def test_live_bd_ready_differs_and_adapter_equals_projector(tmp_path: Path) -> N
         assert contract.ids(adapter.next_ready(kind)) == _projector(corpus, kind), kind
     assert contract.ids(adapter.next_ready("slice", under="demo-E1")) == ["demo-E1-s3"]
     assert "demo-E1-s3" not in native
+
+
+def _rows_with_molecule() -> list[dict[str, Any]]:
+    listed = json.loads(support.steps("ready-bd-molecule")[2]["stdout"])
+    molecule = [row for row in listed if row["issue_type"] == "molecule" or row["id"].startswith("t-mol-")]
+    assert any(row["issue_type"] == "molecule" for row in molecule)
+    return json.loads(support.BEADS_DIR.joinpath("list.json").read_text(encoding="utf-8")) + molecule
+
+
+@pytest.mark.parametrize("under", [None, "demo-E1"])
+@pytest.mark.parametrize("kind", KINDS)
+def test_next_ready_drops_pull_request_deferred_epic_and_molecule(kind: str, under: str | None) -> None:
+    adapter, _ = support.list_adapter(_rows_with_molecule())
+
+    result = adapter.next_ready(kind, under=under)
+
+    assert all(record.kind == kind for record in result)
+    assert not {"pr-101", "demo-E3", "tiny"} & set(contract.ids(result))
+    assert sorted(contract.ids(result)) == _projector(contract.CORPUS_DIR, kind, under)
