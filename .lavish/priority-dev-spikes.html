@@ -1,0 +1,901 @@
+<title>priority.dev first spikes</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=Public+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column on a cool grey ground. A dispatch-board look: priority classes carry the only strong colour. */
+:root {
+  --page: #eef1f4;
+  --surface: #ffffff;
+  --surface-2: #f5f7f9;
+  --ink: #14202c;
+  --muted: #566373;
+  --line: #d3dae1;
+  --line-strong: #8f9bab;
+  --accent: #0b6b7a;
+  --accent-soft: #dcecef;
+  --pending: #f1c25e;
+  --urgent: #b8323a;
+  --high: #b86a12;
+  --medium: #2a62a8;
+  --low: #5f6b79;
+  --ok: #2c7a4b;
+  --code-bg: #e7ebef;
+  --focus: #0b6b7a;
+  --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Public Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --svg-ink: var(--ink);
+  --svg-muted: var(--muted);
+  --svg-node: var(--surface);
+  --svg-page: var(--surface);
+  --svg-bd-line: var(--line-strong);
+  --svg-pending: var(--pending);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --page: #0d141b;
+    --surface: #151e27;
+    --surface-2: #1a2531;
+    --ink: #e3e8ed;
+    --muted: #92a0af;
+    --line: #2a3745;
+    --line-strong: #5b6b7c;
+    --accent: #55bccc;
+    --accent-soft: #15303a;
+    --pending: #dcae4d;
+    --urgent: #ee7b80;
+    --high: #e8a050;
+    --medium: #7aaae6;
+    --low: #97a3b0;
+    --ok: #6cc08b;
+    --code-bg: #1d2935;
+    --focus: #55bccc;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --page: #0d141b;
+  --surface: #151e27;
+  --surface-2: #1a2531;
+  --ink: #e3e8ed;
+  --muted: #92a0af;
+  --line: #2a3745;
+  --line-strong: #5b6b7c;
+  --accent: #55bccc;
+  --accent-soft: #15303a;
+  --pending: #dcae4d;
+  --urgent: #ee7b80;
+  --high: #e8a050;
+  --medium: #7aaae6;
+  --low: #97a3b0;
+  --ok: #6cc08b;
+  --code-bg: #1d2935;
+  --focus: #55bccc;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--page);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.6;
+  padding-block: 0 72px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 1180px; margin: 0 auto; }
+a { color: var(--accent); }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; line-height: 1.15; margin: 0; }
+h1 { font-size: clamp(2.4rem, 7vw, 4rem); letter-spacing: -0.02em; font-weight: 700; }
+h2 { font-size: clamp(1.5rem, 3.4vw, 2rem); font-weight: 700; letter-spacing: -0.01em; }
+h3 { font-size: 1.15rem; font-weight: 600; }
+p { margin: 0; max-width: 68ch; }
+code, .mono { font-family: var(--font-mono); font-size: 0.86em; background: var(--code-bg); padding: 0.1em 0.35em; border-radius: 4px; }
+.eyebrow { font-size: 0.74rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+
+/* Header */
+header.top { padding-block: 40px 28px; display: grid; gap: 14px; }
+.lede { font-size: 1.2rem; max-width: 56ch; color: var(--ink); }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { font-size: 0.8rem; font-weight: 500; padding: 4px 10px; border: 1px solid var(--line-strong); border-radius: 999px; background: var(--surface); }
+.chip.warn { border-color: var(--high); color: var(--high); }
+nav.toc { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--page); border-block: 1px solid var(--line); padding: 8px 0; display: flex; gap: 4px 16px; flex-wrap: wrap; font-size: 0.86rem; }
+nav.toc a { text-decoration: none; padding: 2px 0; color: var(--muted); }
+nav.toc a:hover { color: var(--accent); }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--page); }
+
+/* Sections */
+section { padding-block: 48px 8px; display: grid; gap: 18px; scroll-margin-top: 48px; }
+section > header { display: grid; gap: 6px; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 16px; }
+.box { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 18px 20px; display: grid; gap: 10px; min-width: 0; align-content: start; }
+.box.flat { background: var(--surface-2); }
+ul.plain { margin: 0; padding-left: 1.2em; display: grid; gap: 6px; }
+ul.plain li { max-width: 68ch; }
+.scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 0.92rem; }
+th, td { text-align: left; padding: 10px 14px; vertical-align: top; border-bottom: 1px solid var(--line); }
+th { font-size: 0.74rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); background: var(--surface-2); font-weight: 600; white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+td.k { font-weight: 600; white-space: nowrap; }
+.tag { display: inline-block; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; padding: 2px 8px; border-radius: 4px; border: 1px solid currentColor; white-space: nowrap; }
+.tag.urgent { color: var(--urgent); } .tag.high { color: var(--high); } .tag.medium { color: var(--medium); } .tag.low { color: var(--low); }
+.tag.ok { color: var(--ok); } .tag.reshape { color: var(--high); } .tag.reject { color: var(--urgent); } .tag.unverified { color: var(--high); }
+.status-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.status-row span { font-family: var(--font-mono); font-size: 0.8rem; padding: 3px 8px; background: var(--code-bg); border-radius: 4px; }
+.label-line { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 12px; }
+
+/* Diagrams */
+figure.dia { margin: 0; display: grid; gap: 10px; }
+figure.dia figcaption { color: var(--muted); font-size: 0.9rem; max-width: 72ch; }
+.dia-scroll { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 12px; }
+.dia-scroll svg { display: block; width: 100%; height: auto; min-width: var(--min, 760px); max-width: var(--max, none); margin-inline: auto; }
+.only-dark { display: none; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .only-light { display: none; }
+  :root:not([data-theme="light"]) .only-dark { display: block; }
+}
+:root[data-theme="dark"] .only-light { display: none; }
+:root[data-theme="dark"] .only-dark { display: block; }
+details.src { font-size: 0.88rem; }
+details.src summary { cursor: pointer; color: var(--accent); width: fit-content; }
+details.src pre { margin: 8px 0 0; padding: 14px; background: var(--code-bg); border-radius: 8px; overflow-x: auto; font-family: var(--font-mono); font-size: 0.78rem; line-height: 1.5; }
+
+/* Pipeline chain */
+.chain { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 6px; }
+.chain .st { font-family: var(--font-display); font-weight: 600; font-size: 0.98rem; padding: 8px 12px; background: var(--surface); border: 1.5px solid var(--ink); border-radius: 10px; white-space: nowrap; }
+.chain .st.ev { border-style: dashed; border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+.chain .st.later { border-color: var(--line-strong); color: var(--muted); font-weight: 500; }
+.chain .ar { color: var(--muted); font-size: 1.1rem; }
+.bus { margin-top: 6px; padding: 8px 12px; border: 1.5px dashed var(--accent); border-radius: 10px; background: var(--accent-soft); color: var(--ink); font-size: 0.9rem; }
+blockquote { margin: 0; padding: 14px 18px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; max-width: 72ch; }
+blockquote p { max-width: none; }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 16px; }
+/* Doubt block */
+.doubt { display: grid; gap: 16px; }
+.doubt .box { border-color: var(--high); }
+
+/* Decision */
+section.decide { margin-top: 24px; padding: 28px clamp(16px, 4vw, 36px) 32px; background: var(--surface); border: 2px solid var(--accent); border-radius: 10px; }
+.q { font-family: var(--font-display); font-size: clamp(1.4rem, 3.4vw, 2rem); line-height: 1.2; font-weight: 700; max-width: 30ch; }
+fieldset { border: 0; border-top: 1px solid var(--line); margin: 0; padding: 16px 0 4px; display: grid; gap: 8px; min-width: 0; }
+legend { font-weight: 600; padding: 0; float: left; width: 100%; margin-bottom: 8px; }
+legend + * { clear: both; }
+.opt { display: flex; gap: 10px; align-items: flex-start; max-width: 70ch; }
+.opt input { margin-top: 5px; accent-color: var(--accent); }
+.opt .rec { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); margin-left: 6px; }
+.default-note { color: var(--muted); font-size: 0.86rem; }
+textarea { width: 100%; font: inherit; font-size: 0.9rem; padding: 8px 10px; background: var(--surface-2); color: var(--ink); border: 1px solid var(--line-strong); border-radius: 6px; min-height: 64px; }
+button.go { font: inherit; font-weight: 600; background: var(--accent); color: var(--surface); border: 0; border-radius: 6px; padding: 10px 18px; cursor: pointer; width: fit-content; }
+button.go:hover { filter: brightness(1.1); }
+#answers-out { display: none; margin-top: 8px; font-family: var(--font-mono); font-size: 0.82rem; min-height: 180px; }
+#copy-status { font-size: 0.86rem; color: var(--muted); }
+footer.end { padding-top: 28px; color: var(--muted); font-size: 0.82rem; max-width: 72ch; }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+pre.code{margin:0 0 14px;padding:10px 12px;overflow-x:auto;border:1px solid var(--line,#c9ccd3);border-radius:6px;font:12px/1.5 ui-monospace,Menlo,monospace;max-width:100%}
+pre.code code{background:none;padding:0;white-space:pre}
+</style>
+
+<div class="wrap">
+<header class="top">
+  <div class="eyebrow">CoBuilder · architect:design · round 10</div>
+  <h1>priority.dev first spikes</h1>
+  <p class="lede">A plan for three spikes: the interpreter, the event log, and the session adapter.</p>
+  <div class="chips"><span class="chip warn">Draft for decision</span><span class="chip">Nothing built</span><span class="chip">No model call made</span><span class="chip">24 October 2026</span></div>
+</header>
+<nav class="toc" aria-label="Sections"><a href="#plan">Plan</a><a href="#host">Adapter host</a><a href="#dspy">DSPy modules</a><a href="#decide">Decision</a></nav>
+<section id="plan">
+  <header><div class="eyebrow">Plan</div><h2>The slice plan, in the form of /implement:start</h2></header>
+<p>Status: draft, round 10. I read <code>plugins/implement/skills/build/SKILL.md</code> and wrote only Gate 4a in its format. I did not run <code>/implement:start</code>, and I did not touch the tracker. No gate is approved.</p>
+<p>The goal of the spikes is to find out whether the design holds. Each slice ends in a state that a command or a file shows. The first four slices need no database and no running session. They retire the biggest risk first: does a small model give valid, grounded output on real transcripts?</p>
+<div class="scroll"><table>
+<thead>
+<tr>
+<th>#</th>
+<th>Epic</th>
+<th>Slice</th>
+<th>Ends with</th>
+<th>Score</th>
+<th>State</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="k"></td>
+<td><strong><code>priority-dev/E1</code> — The interpreter works on a recorded transcript.</strong> No Jev, no database, no live session. Nemo and Inkling through OpenRouter.</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td class="k">1</td>
+<td><code>priority-dev/E1</code></td>
+<td>Slice a recorded run</td>
+<td><code>uv run priority slice fixtures/run-3.jsonl --stop 2</code> prints a slice that equals the stored snapshot. Replies group by <code>message.id</code>, results pair by id, and a planted key is redacted</td>
+<td>—</td>
+<td>pending</td>
+</tr>
+<tr>
+<td class="k">2</td>
+<td><code>priority-dev/E1</code></td>
+<td>Digest a run</td>
+<td><code>priority digest</code> calls Inkling and prints a <code>RunDigest</code> that validates. The call row with the exact input is saved as a file</td>
+<td>—</td>
+<td>pending</td>
+</tr>
+<tr>
+<td class="k">3</td>
+<td><code>priority-dev/E1</code></td>
+<td>Interpret a stop</td>
+<td><code>priority interpret</code> runs Triage, Pick, Fill, and Card on Nemo. It prints an <code>Interpretation</code> or an <code>Abstain</code>. The call rows are saved</td>
+<td>—</td>
+<td>pending</td>
+</tr>
+<tr>
+<td class="k">4</td>
+<td><code>priority-dev/E1</code></td>
+<td>Replay many stops</td>
+<td><code>priority replay fixtures/</code> writes <code>report.md</code> with the valid-output rate, the quote-found rate, the abstain reasons, the kinds picked, the characters sent, the seconds, and the cost, for both adapters</td>
+<td>—</td>
+<td>pending</td>
+</tr>
+<tr>
+<td class="k"></td>
+<td><strong><code>priority-dev/E2</code> — The event log keeps what the other parts send.</strong> Postgres 17 in Docker.</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td class="k">5</td>
+<td><code>priority-dev/E2</code></td>
+<td>Append and read</td>
+<td><code>priority log append</code> twice with one idempotency key stores one row. <code>priority log read --from 0</code> lists rows in order</td>
+<td>—</td>
+<td>pending</td>
+</tr>
+<tr>
+<td class="k">6</td>
+<td><code>priority-dev/E2</code></td>
+<td>Ingest and follow</td>
+<td><code>POST /events</code> stores an event. A reader that follows the log gets it within one second and resumes from its cursor after a restart</td>
+<td>—</td>
+<td>pending</td>
+</tr>
+<tr>
+<td class="k">7</td>
+<td><code>priority-dev/E2</code></td>
+<td>Interpret from the log</td>
+<td>A <code>run.stopped</code> event in the log leads to a <code>fact.run_digest</code> event and an <code>interpretation</code> event, written by the interpreter process</td>
+<td>—</td>
+<td>pending</td>
+</tr>
+<tr>
+<td class="k"></td>
+<td><strong><code>priority-dev/E3</code> — The session adapter watches and answers a real session.</strong> A scratch Claude Code session in tmux.</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td class="k">8</td>
+<td><code>priority-dev/E3</code></td>
+<td>Stop hook to the log</td>
+<td>A <code>Stop</code> hook in the scratch session leads to a <code>run.stopped</code> event in the log. It holds <code>last_assistant_message</code> and the tmux pane id</td>
+<td>—</td>
+<td>pending</td>
+</tr>
+<tr>
+<td class="k">9</td>
+<td><code>priority-dev/E3</code></td>
+<td>Prompt hooks to the log</td>
+<td>A permission dialog and an <code>AskUserQuestion</code> in the scratch session lead to a <code>prompt.permission</code> event and a <code>prompt.question</code> event with the exact options</td>
+<td>—</td>
+<td>pending</td>
+</tr>
+<tr>
+<td class="k">10</td>
+<td><code>priority-dev/E3</code></td>
+<td>Tail the transcript</td>
+<td>The tailer adds transcript records with <code>file:offset</code> keys. A host restart adds no duplicate. The report states the transcript lag after a stop</td>
+<td>—</td>
+<td>pending</td>
+</tr>
+<tr>
+<td class="k">11</td>
+<td><code>priority-dev/E3</code></td>
+<td>Send a signed command</td>
+<td>A signed command pastes text into the scratch pane at an empty prompt, and <code>command.confirmed</code> follows. An unsigned command is refused. A command for a changed prompt gives <code>command.unknown</code></td>
+<td>—</td>
+<td>pending</td>
+</tr>
+<tr>
+<td class="k">12</td>
+<td><code>priority-dev/E3</code></td>
+<td>Answer from a held hook</td>
+<td>A <code>PermissionRequest</code> hook holds, a stub command returns allow, and the scratch session runs the tool with no dialog. The report states whether the dialog shows while the hook waits</td>
+<td>—</td>
+<td>pending</td>
+</tr>
+</tbody>
+</table></div>
+<h3>Notes for the gates</h3>
+<ol class="plain">
+<li><strong>Order.</strong> Build E1 first, slices 1 to 4. Then E2 slices 5 and 6, then E3 slice 8. Slice 7 joins E1 and E2. Slices 9 to 12 come last, because each tests one unknown of <code>adapter-host.md</code> section 7.</li>
+<li><strong>Gate 4b.</strong> Each epic holds more than one slice, so each needs a technical solution design. The designs exist as prose in <code>schemas.md</code> (E1), <code>dspy-modules.md</code> (E1), <code>components.md</code> section 3.3 (E2), and <code>adapter-host.md</code> (E3). They are not yet in the <code>epic-&lt;id&gt;-design.md</code> form.</li>
+<li><strong>Gate 4c.</strong> No blind rubric exists. The unknowns in <code>adapter-host.md</code> section 7 are good rubric criteria, because each one has an observable answer.</li>
+<li><strong>Fixtures.</strong> Slice 1 needs recorded transcripts, redacted. I measured two transcripts of this repo. The fixtures need your approval before they enter a repository, because a transcript holds your prompts.</li>
+<li><strong>Test command and place.</strong> The spike code needs a folder, a <code>pyproject.toml</code>, and a test command. I propose <code>priority-dev/</code> on this branch, and <code>uv run pytest</code>. This is an open decision.</li>
+<li><strong>The tracker.</strong> <code>/implement:start</code> stores slice state in the beads tracker of the repo that runs it. Running it here would add priority.dev programs to the cobuilder-plugin tracker. This is an open decision.</li>
+</ol>
+</section>
+
+<section id="host">
+  <header><div class="eyebrow">Design</div><h2>The adapter host</h2></header>
+<p>Status: design, round 10. This text covers the first spikes only. I read the Claude Code hooks reference (<code>hooks.md</code>) and the <code>/goal</code> page (<code>goal.md</code>) on 24 October 2026. I label each claim as <strong>read</strong> (in the documentation), <strong>inferred</strong> (my reasoning), or <strong>untested</strong> (a spike must settle it). Nothing here has run.</p>
+<figure class="dia" style="--min: 1000px"><div class="dia-scroll"><svg id="figah" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 510" role="img" aria-labelledby="ah-t ah-d"><title id="ah-t">priority.dev adapter host</title><desc id="ah-d">Hooks and the transcript feed the host. The host spools events to the event log. Signed commands come back and reach the session by a hook answer or by tmux.</desc>
+<style>
+#figah .bd{fill:var(--svg-bd,none);stroke:var(--svg-bd-line,#9aa4b2);stroke-width:1.2;stroke-dasharray:6 4}
+#figah .bt{font:600 12px system-ui,sans-serif;fill:var(--svg-muted,#5b6575);letter-spacing:.06em;text-transform:uppercase}
+#figah .nr{fill:var(--svg-node,#ffffff);stroke:var(--svg-ink,#1f2937);stroke-width:1.4}
+#figah .nx{fill:var(--svg-node,#ffffff);stroke:var(--svg-ink,#1f2937);stroke-width:1.4;stroke-dasharray:5 3}
+#figah .nt{font:600 12px system-ui,sans-serif;fill:var(--svg-ink,#1f2937)}
+#figah .ns{font:400 10.5px system-ui,sans-serif;fill:var(--svg-muted,#5b6575)}
+#figah .pb{fill:var(--svg-pending,#f4c36a);stroke:none}
+#figah .pt{font:700 8.5px system-ui,sans-serif;fill:#2b1d00;letter-spacing:.04em}
+#figah .ed{fill:none;stroke:var(--svg-ink,#1f2937);stroke-width:1.3;marker-end:url(#arr-figah)}
+#figah .el{font:400 10px system-ui,sans-serif;fill:var(--svg-ink,#1f2937);paint-order:stroke;stroke:var(--svg-page,#ffffff);stroke-width:3.5px;stroke-linejoin:round}
+#figah .ed2{fill:none;stroke:var(--svg-ink,#1f2937);stroke-width:1.3;marker-start:url(#arr-figah);marker-end:url(#arr-figah)}
+#figah .ar{fill:var(--svg-ink,#1f2937)}
+</style>
+<defs><marker id="arr-figah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ar" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+<rect class="bd" x="10" y="20" width="860" height="470" rx="10"/><text class="bt" x="22" y="40">your Mac</text>
+<rect class="bd" x="30" y="50" width="200" height="420" rx="10"/><text class="bt" x="42" y="70">tmux pane</text>
+<rect class="bd" x="260" y="50" width="590" height="420" rx="10"/><text class="bt" x="272" y="70">adapter host (launchd, one process)</text>
+<rect class="bd" x="900" y="50" width="290" height="420" rx="10"/><text class="bt" x="912" y="70">service (Docker)</text>
+<g id="n-cc"><rect class="nr" x="50" y="90" width="160" height="60" rx="12"/><text class="nt" x="130.0" y="118.0" text-anchor="middle">Claude Code</text><text class="ns" x="130.0" y="133.0" text-anchor="middle">hooks fire here</text></g>
+<g id="n-tr"><rect class="nr" x="50" y="250" width="160" height="50" rx="12"/><text class="nt" x="130.0" y="273.0" text-anchor="middle">Transcript file</text><text class="ns" x="130.0" y="288.0" text-anchor="middle">~/.claude/projects/*.jsonl</text></g>
+<g id="n-pane"><rect class="nr" x="50" y="390" width="160" height="50" rx="12"/><text class="nt" x="130.0" y="413.0" text-anchor="middle">tmux pane</text><text class="ns" x="130.0" y="428.0" text-anchor="middle">paste and send-keys</text></g>
+<g id="n-hook"><rect class="nr" x="280" y="90" width="150" height="60" rx="12"/><text class="nt" x="355.0" y="118.0" text-anchor="middle">priority-hook</text><text class="ns" x="355.0" y="133.0" text-anchor="middle">command hook</text></g>
+<g id="n-sock"><rect class="nr" x="470" y="90" width="150" height="60" rx="12"/><text class="nt" x="545.0" y="118.0" text-anchor="middle">Socket server</text><text class="ns" x="545.0" y="133.0" text-anchor="middle">~/.priority/hook.sock</text></g>
+<g id="n-spool"><rect class="nr" x="660" y="90" width="170" height="60" rx="12"/><text class="nt" x="745.0" y="118.0" text-anchor="middle">Spool</text><text class="ns" x="745.0" y="133.0" text-anchor="middle">JSONL, at least once</text></g>
+<g id="n-tail"><rect class="nr" x="470" y="250" width="150" height="50" rx="12"/><text class="nt" x="545.0" y="273.0" text-anchor="middle">Tailer</text><text class="ns" x="545.0" y="288.0" text-anchor="middle">watchfiles, byte offsets</text></g>
+<g id="n-pull"><rect class="nr" x="660" y="250" width="170" height="50" rx="12"/><text class="nt" x="745.0" y="273.0" text-anchor="middle">Puller</text><text class="ns" x="745.0" y="288.0" text-anchor="middle">long poll, checks the HMAC</text></g>
+<g id="n-tmux"><rect class="nr" x="470" y="390" width="150" height="50" rx="12"/><text class="nt" x="545.0" y="413.0" text-anchor="middle">tmux module</text><text class="ns" x="545.0" y="428.0" text-anchor="middle">the only code that calls tmux</text></g>
+<g id="n-log"><rect class="nr" x="920" y="90" width="250" height="60" rx="12"/><text class="nt" x="1045.0" y="118.0" text-anchor="middle">Event log</text><text class="ns" x="1045.0" y="133.0" text-anchor="middle">POST /events</text></g>
+<g id="n-ctl"><rect class="nr" x="920" y="250" width="250" height="60" rx="12"/><text class="nt" x="1045.0" y="278.0" text-anchor="middle">Control process</text><text class="ns" x="1045.0" y="293.0" text-anchor="middle">policy, actuator, signing key</text></g>
+<path class="ed2" d="M210,120 H280"/>
+<text class="el" x="245" y="112" text-anchor="middle">hook JSON,</text>
+<text class="el" x="245" y="138" text-anchor="middle">verdict</text>
+<path class="ed2" d="M430,120 H470"/>
+<text class="el" x="450" y="112" text-anchor="middle">event</text>
+<path class="ed" d="M620,120 H660"/>
+<path class="ed" d="M830,120 H920"/>
+<text class="el" x="875" y="112" text-anchor="middle">POST</text>
+<path class="ed" d="M210,275 H470"/>
+<text class="el" x="340" y="267" text-anchor="middle">new records</text>
+<path class="ed" d="M545,250 V200 H745 V150"/>
+<text class="el" x="640" y="193" text-anchor="middle">records</text>
+<path class="ed" d="M920,280 H830"/>
+<text class="el" x="875" y="272" text-anchor="middle">signed command</text>
+<path class="ed" d="M745,300 V345 H545 V390"/>
+<text class="el" x="645" y="338" text-anchor="middle">if the checks pass</text>
+<path class="ed" d="M470,415 H210"/>
+<text class="el" x="340" y="407" text-anchor="middle">paste or keys</text>
+<path class="ed" d="M1045,150 V250"/>
+<text class="el" x="1053" y="205" text-anchor="start">events in, commands out</text>
+</svg></div><figcaption>The adapter host. A hook gives the host an event and can wait for a verdict (channel H). A signed command from the control process reaches the pane through the tmux module (channel T). The host holds no model key and no signing key.</figcaption></figure><h3>1. Job</h3>
+<p>The adapter host runs on your Mac, next to the sessions. It does three things:</p>
+<ol class="plain">
+<li>It watches each session and turns what it sees into events.</li>
+<li>It sends the events to the event log.</li>
+<li>It carries a signed command from the control process to one session.</li>
+</ol>
+<p>It does not hold a model key. It does not decide. It holds only the key that verifies a command signature. A poisoned transcript therefore cannot make the host send anything.</p>
+<h3>2. What Claude Code gives us (read)</h3>
+<p>Earlier rounds guessed the stop from the transcript and read permission prompts from the pane. The hooks reference shows better inputs.</p>
+<div class="scroll"><table>
+<thead>
+<tr>
+<th>Event</th>
+<th>When it fires</th>
+<th>Fields we use</th>
+<th>What it replaces</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="k"><code>Stop</code></td>
+<td>The main agent finishes. It does not fire on a user interrupt</td>
+<td><code>session_id</code>, <code>transcript_path</code>, <code>cwd</code>, <code>last_assistant_message</code>, <code>stop_hook_active</code>, <code>background_tasks</code>, <code>session_crons</code></td>
+<td>The guess of the stop from the transcript. The final text arrives with the event</td>
+</tr>
+<tr>
+<td class="k"><code>StopFailure</code></td>
+<td>A turn ends on an API error</td>
+<td><code>error</code>, <code>last_assistant_message</code></td>
+<td>A model call to find <code>failed</code></td>
+</tr>
+<tr>
+<td class="k"><code>PermissionRequest</code></td>
+<td>At once, when a permission dialog is about to show</td>
+<td><code>tool_name</code>, <code>tool_input</code>, <code>permission_suggestions</code></td>
+<td>The pane read. The <code>Notification</code> type <code>permission_prompt</code> fires only after about 6 seconds</td>
+</tr>
+<tr>
+<td class="k"><code>PreToolUse</code> with matcher <code>AskUserQuestion</code></td>
+<td>Before the question shows</td>
+<td><code>tool_input.questions</code> with every option</td>
+<td>A transcript parse for <code>pending</code></td>
+</tr>
+<tr>
+<td class="k"><code>Notification</code></td>
+<td>Idle after 60 seconds, a permission wait, and others</td>
+<td><code>message</code>, the type</td>
+<td>Nothing needed in the spikes</td>
+</tr>
+<tr>
+<td class="k"><code>SessionStart</code>, <code>SessionEnd</code></td>
+<td>Start and end</td>
+<td><code>session_id</code>, <code>cwd</code>, <code>transcript_path</code></td>
+<td>Directory polling</td>
+</tr>
+</tbody>
+</table></div>
+<p>Two fields change the interpreter. The <code>Stop</code> field <code>background_tasks</code> lists tasks that still run, such as a sub-agent or a shell. A stop with a running task is "paused for background work", not "done". The goal run that I measured had 104 <code>end_turn</code> replies between two refused stops. The last one said "I am waiting for the foreign-run agent". I did not check whether <code>background_tasks</code> would have listed that agent. The field <code>last_assistant_message</code> gives the final text without the transcript lag. The documentation says the transcript may not hold the final message at <code>Stop</code> time.</p>
+<p>The hook script should read <code>$TMUX_PANE</code> (inferred). The documentation says a hook inherits the environment of Claude Code, and tmux sets <code>TMUX_PANE</code> for each process in a pane. The pane link then needs no process-tree guess (untested).</p>
+<h3>3. Two ways to act on a session</h3>
+<p>A hook can answer, and tmux can type. Both exist, and they suit different cases.</p>
+<div class="scroll"><table>
+<thead>
+<tr>
+<th></th>
+<th>H: the hook answers</th>
+<th>T: tmux types</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="k">Permission</td>
+<td><code>PermissionRequest</code> returns <code>allow</code> or <code>deny</code> with a message (read)</td>
+<td>Type the digit of the option into the dialog</td>
+</tr>
+<tr>
+<td class="k">Question</td>
+<td><code>PreToolUse</code> returns <code>allow</code> with <code>updatedInput.answers</code> (read)</td>
+<td>Type the digit, then Enter</td>
+</tr>
+<tr>
+<td class="k">Continue after a stop</td>
+<td><code>Stop</code> returns <code>block</code> with a <code>reason</code>, or <code>additionalContext</code> (read). At most 8 in a row, and a tool call resets the count (read)</td>
+<td>Paste a message at the prompt</td>
+</tr>
+<tr>
+<td class="k">Free-text reply</td>
+<td>Not possible</td>
+<td>Paste the text, then Enter</td>
+</tr>
+<tr>
+<td class="k">Needs tmux</td>
+<td>No</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td class="k">Timing</td>
+<td>Only while the hook waits. The default timeout is 600 seconds (read)</td>
+<td>Any time the pane sits at the right prompt</td>
+</tr>
+<tr>
+<td class="k">Main risk</td>
+<td>Unknown: does the dialog show while a hook waits? (untested)</td>
+<td>Pane state, newlines, and a lost paste (components.md, section 3.2)</td>
+</tr>
+</tbody>
+</table></div>
+<p>Rule for the spikes: use H when the policy gives a verdict within the hold time. Use T for a free-text reply and for a human answer that arrives later. A hook that times out does not block the call (components.md, section 3.2), so the normal dialog then appears and the human can answer in the terminal.</p>
+<p>The two channels share one path. The control process signs a command. The host verifies it and picks H or T. The host reports <code>command.sent</code> and then <code>command.confirmed</code> or <code>command.unknown</code>. The confirmation is a transcript user record that matches the text, or the next hook event.</p>
+<h3>4. Parts</h3>
+<div class="scroll"><table>
+<thead>
+<tr>
+<th>Part</th>
+<th>Job</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="k"><code>priority-hook</code></td>
+<td>A short command hook. It reads the JSON on stdin, adds <code>$TMUX_PANE</code>, a UUID, and the time, and writes one line to the Unix socket <code>~/.priority/hook.sock</code></td>
+<td>Observation events fail open: exit 0 and no output. It waits for a reply only for <code>PermissionRequest</code>, <code>PreToolUse</code> on <code>AskUserQuestion</code>, and <code>Stop</code> when a verdict is due</td>
+</tr>
+<tr>
+<td class="k"><code>host</code></td>
+<td>The daemon, started by <code>launchd</code>. It owns the socket, the spool, the tailer, the command puller, and the sender</td>
+<td>One process. It opens no inbound TCP port</td>
+</tr>
+<tr>
+<td class="k"><code>spool</code></td>
+<td>Append-only JSONL files in <code>~/.priority/spool/</code>. The host writes before it posts, and deletes a file after a 2xx reply</td>
+<td>Delivery is at least once. The event log drops a repeat by its idempotency key</td>
+</tr>
+<tr>
+<td class="k"><code>tailer</code></td>
+<td><code>watchfiles</code> over <code>~/.claude/projects/**/*.jsonl</code>, with a stored byte offset for each file. It reads complete lines only</td>
+<td>The key is <code>file:offset</code>. It adds the raw records to the log in batches</td>
+</tr>
+<tr>
+<td class="k"><code>tmux</code> module</td>
+<td>The only code that calls tmux. It lists panes and sends keys or a paste</td>
+<td>A test searches the repository for other uses</td>
+</tr>
+<tr>
+<td class="k"><code>puller</code></td>
+<td>Long poll, <code>GET /commands?cursor=N&amp;wait=25</code>. It verifies the HMAC, checks the preconditions, and hands the command to H or T</td>
+<td>The host records the key before it sends</td>
+</tr>
+<tr>
+<td class="k"><code>installer</code></td>
+<td>Writes the hook entries into <code>~/.claude/settings.json</code></td>
+<td>Marked entries, a dry-run diff, a backup, an atomic write, and an uninstall that removes only marked entries</td>
+</tr>
+</tbody>
+</table></div>
+<h3>5. The events the host adds to the log</h3>
+<div class="scroll"><table>
+<thead>
+<tr>
+<th>Kind</th>
+<th>Source</th>
+<th>Payload</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="k"><code>session.started</code>, <code>session.ended</code></td>
+<td><code>SessionStart</code>, <code>SessionEnd</code></td>
+<td>session id, directory, transcript path, pane id</td>
+</tr>
+<tr>
+<td class="k"><code>run.stopped</code></td>
+<td><code>Stop</code></td>
+<td><code>last_assistant_message</code>, <code>stop_hook_active</code>, <code>background_tasks</code>, the transcript path</td>
+</tr>
+<tr>
+<td class="k"><code>run.failed</code></td>
+<td><code>StopFailure</code></td>
+<td><code>error</code>, the text</td>
+</tr>
+<tr>
+<td class="k"><code>prompt.permission</code></td>
+<td><code>PermissionRequest</code></td>
+<td>tool name, input, suggestions</td>
+</tr>
+<tr>
+<td class="k"><code>prompt.question</code></td>
+<td><code>PreToolUse</code> on <code>AskUserQuestion</code></td>
+<td>the questions with their options</td>
+</tr>
+<tr>
+<td class="k"><code>transcript.records</code></td>
+<td>the tailer</td>
+<td>raw lines, with <code>file:offset</code> keys</td>
+</tr>
+<tr>
+<td class="k"><code>command.received</code>, <code>command.sent</code>, <code>command.confirmed</code>, <code>command.unknown</code></td>
+<td>the puller and the sender</td>
+<td>the command hash, the channel (H or T), the result</td>
+</tr>
+</tbody>
+</table></div>
+<p>The slicer cuts a slice when it sees <code>run.stopped</code>. The transcript may lag, so the slicer waits until the transcript tail holds the first 200 characters of <code>last_assistant_message</code>, with a timeout of 5 seconds. After the timeout it cuts anyway and records <code>transcript_lag</code>. This wait is inferred, and a spike must measure the lag.</p>
+<h3>6. Failure rules</h3>
+<ol class="plain">
+<li>The host is down. Hooks exit 0 with no output, so Claude Code runs as if no hook existed. The deny-list hook is separate. It runs in-process and fails closed, so a host outage never opens the deny list.</li>
+<li>The service is down. The host keeps writing the spool and posts again later.</li>
+<li>A command arrives for a pane that has moved on. The precondition check (the pending prompt id still matches) fails. The host reports <code>command.unknown</code> and does not send.</li>
+<li>The host dies between <code>command.sent</code> and <code>command.confirmed</code>. The next start reports <code>command.unknown</code>. The actuator never resends. A human decides.</li>
+<li>A session has no tmux pane. The host marks it read-only for channel T. Channel H still works.</li>
+</ol>
+<h3>7. What the spikes must settle</h3>
+<div class="scroll"><table>
+<thead>
+<tr>
+<th>#</th>
+<th>Question</th>
+<th>Why it matters</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="k">1</td>
+<td>Does <code>$TMUX_PANE</code> reach the hook?</td>
+<td>The whole pane link rests on it</td>
+</tr>
+<tr>
+<td class="k">2</td>
+<td>Does the permission dialog show while a <code>PermissionRequest</code> hook waits?</td>
+<td>Decides the hold time for H</td>
+</tr>
+<tr>
+<td class="k">3</td>
+<td>How long does the transcript lag behind <code>Stop</code>?</td>
+<td>Decides the slicer wait</td>
+</tr>
+<tr>
+<td class="k">4</td>
+<td>What does the transcript hold when a <code>/goal</code> clears?</td>
+<td>Decides whether <code>continue_until</code> can use <code>/goal</code> (schemas.md, section 4.1)</td>
+</tr>
+<tr>
+<td class="k">5</td>
+<td>Does <code>-p</code> mode or bypass mode skip the hooks?</td>
+<td>The policy hook must run in every mode</td>
+</tr>
+<tr>
+<td class="k">6</td>
+<td>Does a paste into a busy pane get lost?</td>
+<td>Decides the precondition check for T</td>
+</tr>
+</tbody>
+</table></div>
+<h3>8. Not in the spikes</h3>
+<p>Pi and other harnesses, a mobile client, the notifier, and any launch of a new session. The host design leaves a slot for them: a second <code>priority-hook</code> for another harness posts the same event kinds.</p>
+</section>
+
+<section id="dspy">
+  <header><div class="eyebrow">Design</div><h2>The DSPy modules</h2></header>
+<p>Status: design, round 10. The sketch is <code>schemas/dspy_modules.py</code>. It runs with <code>uv run</code>, with a dummy model, and prints <code>ok</code>. It makes no network call. I have no OpenRouter key on this machine, so no real model has answered. Every claim about model behaviour below is therefore untested.</p>
+<h3>1. Models</h3>
+<div class="scroll"><table>
+<thead>
+<tr>
+<th>Job</th>
+<th>Model</th>
+<th>Why</th>
+<th>Adapter</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="k">Triage, Pick, Fill, Card</td>
+<td><code>openrouter/mistralai/mistral-nemo</code></td>
+<td>You chose it. Its OpenRouter entry lists <code>structured_outputs</code> and <code>response_format</code>. The window is 131,072 tokens. The price is USD 0.029 for a million input tokens and USD 0.03 for a million output tokens (from the list)</td>
+<td><code>JSONAdapter</code> is the first try. <code>ChatAdapter</code> is the fallback</td>
+</tr>
+<tr>
+<td class="k">Digest, Shrink</td>
+<td><code>openrouter/thinkingmachines/inkling:free</code></td>
+<td>You chose it. It is free, and the window is 1,048,576 tokens. Its entry lists <code>reasoning</code> but no <code>response_format</code></td>
+<td><code>ChatAdapter</code>, which parses text fields</td>
+</tr>
+</tbody>
+</table></div>
+<p>Mistral Nemo is a small model, from my memory and not checked. A small model handles a short schema better than a large one. This drives the design in section 3.</p>
+<h3>2. What the two skills said, and what I did with it</h3>
+<p>I read <code>dspy-signature-designer</code> and <code>dspy-custom-module-design</code>. I did not read the others. The rules below are from those two skills.</p>
+<div class="scroll"><table>
+<thead>
+<tr>
+<th>Rule</th>
+<th>Where it shows</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="k">The class docstring is the task instruction</td>
+<td>Each signature has one plain sentence</td>
+</tr>
+<tr>
+<td class="k"><code>desc=</code> on each field guides the model</td>
+<td>Each output field has a <code>desc=</code></td>
+</tr>
+<tr>
+<td class="k">Use <code>Literal</code> for a category</td>
+<td><code>status</code>, <code>risk</code>, <code>priority_hint</code>, <code>kind</code></td>
+</tr>
+<tr>
+<td class="k">Use a Pydantic model for a structure</td>
+<td><code>Question</code>, <code>RunDigest</code>, and the payload of each action</td>
+</tr>
+<tr>
+<td class="k">Default values work only on input fields</td>
+<td>No output field has a default</td>
+</tr>
+<tr>
+<td class="k">A module composes small predictors in <code>forward</code></td>
+<td><code>Interpreter</code> holds a triage, a pick, a card, and 13 fill predictors</td>
+</tr>
+<tr>
+<td class="k">A module returns a safe value when a call fails, and it logs</td>
+<td>The interpreter returns an <code>Abstain</code>, never an exception</td>
+</tr>
+</tbody>
+</table></div>
+<h3>3. The main decision: split the Advise call</h3>
+<p>The old design made one call for stage 2. Its output type was <code>Advice</code>, which holds a union of 13 action kinds. The prompt for that call is 16,903 characters, which I measured in the sketch. A small model is likely to fail on a schema that large. I could not test that. I split the call into small ones, because the risk is cheap to remove.</p>
+<div class="scroll"><table>
+<thead>
+<tr>
+<th>Call</th>
+<th>Model</th>
+<th>Output</th>
+<th>Prompt, in characters</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="k">Triage</td>
+<td>Nemo</td>
+<td>five <code>Literal</code> values and a list of fields it is unsure about</td>
+<td>2,710</td>
+</tr>
+<tr>
+<td class="k">Pick</td>
+<td>Nemo</td>
+<td>the action <code>kind</code>, an exact quote, a confidence</td>
+<td>1,925</td>
+</tr>
+<tr>
+<td class="k">Fill</td>
+<td>Nemo</td>
+<td>the fields of one action kind</td>
+<td>927 to 1,743, and 3,781 for <code>ask_human</code></td>
+</tr>
+<tr>
+<td class="k">Card</td>
+<td>Nemo</td>
+<td>a <code>Question</code> card, when a human must answer</td>
+<td>2,056</td>
+</tr>
+<tr>
+<td class="k">Digest</td>
+<td>Inkling</td>
+<td>a <code>RunDigest</code></td>
+<td>1,288</td>
+</tr>
+</tbody>
+</table></div>
+<p>The sizes are for an empty slice. The slice text comes on top. The old single call was 16,903 characters. A chain of Triage, Pick, Fill, and Card is about 7,700 characters for a common kind. It has four calls where the old design had two. The chain is not cheaper in calls. It is shorter in each prompt, and each call has one job. The spike measures whether it is more reliable.</p>
+<p>Rules for the split:</p>
+<ol class="plain">
+<li>The model writes only the payload of an action. Code sets <code>session_id</code>, <code>author</code>, <code>evidence_quote</code>, and <code>confidence</code>. The model cannot forge an id.</li>
+<li>Code checks the quote. If the quote is not in the slice text, the result is an <code>Abstain</code> with the reason <code>quote_not_in_slice</code>. The kind <code>ask_human</code> needs no quote.</li>
+<li>Code checks the kind against <code>allowed_kinds</code>. A kind that is not allowed gives an <code>Abstain</code> with <code>kind_not_allowed</code>.</li>
+<li>Triage gives no confidence number, because a language model has no calibrated one. It lists the fields it is unsure about. Stage 2 runs when the status needs an answer or when the list is not empty. This replaces the confidence rule of <code>schemas.md</code> section 1 for the spikes. The <code>Facts</code> type is unchanged. The sketch sets 0.5 for an unsure field and 0.9 for the others, and these numbers are stand-ins and not measurements.</li>
+<li>A proposal has one step in the spikes. Multi-step plans come after the single step works.</li>
+</ol>
+<h3>4. The modules</h3>
+<div class="scroll"><table>
+<thead>
+<tr>
+<th>Module</th>
+<th>Holds</th>
+<th>Returns</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="k"><code>Interpreter</code></td>
+<td><code>Predict(TriageLM)</code>, <code>Predict(PickStep)</code>, one <code>Predict(Fill)</code> for each kind, <code>Predict(WriteCard)</code></td>
+<td><code>Interpretation</code>: facts, and either advice or an <code>Abstain</code></td>
+</tr>
+<tr>
+<td class="k"><code>DigestRun</code></td>
+<td><code>Predict(Digest)</code></td>
+<td><code>RunDigest</code></td>
+</tr>
+</tbody>
+</table></div>
+<p>The <code>Fill</code> signature changes its output type for each kind. The sketch builds the 13 variants with <code>Signature.with_updated_fields</code>, and the payload model of each variant comes from the action class with the shared fields removed. The sketch checks this with the dummy model.</p>
+<p>I use <code>Predict</code>, not <code>ChainOfThought</code>. The first spike measures the plain call. If the quotes fail often, the next try is <code>ChainOfThought</code> on Pick only.</p>
+<h3>5. What the spike measures</h3>
+<p>No labels are needed. The replay report in slice 4 of the plan counts these:</p>
+<div class="scroll"><table>
+<thead>
+<tr>
+<th>Measure</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="k">Valid-output rate</td>
+<td>The share of calls whose output parses into the type</td>
+</tr>
+<tr>
+<td class="k">Quote-found rate</td>
+<td>The share of picks whose quote is in the slice</td>
+</tr>
+<tr>
+<td class="k">Abstain reasons</td>
+<td>A count for each reason</td>
+</tr>
+<tr>
+<td class="k">Kinds picked</td>
+<td>A count for each kind</td>
+</tr>
+<tr>
+<td class="k">Characters sent, seconds, and cost</td>
+<td>For each stage</td>
+</tr>
+<tr>
+<td class="k">Stage 2 run rate</td>
+<td>How often Triage sends a slice on</td>
+</tr>
+<tr>
+<td class="k">Digest size</td>
+<td>Characters out against characters in, and whether <code>open_items</code> holds the last question of the run</td>
+</tr>
+</tbody>
+</table></div>
+<p>The skill <code>dspy-evaluation-suite</code> covers metrics and baselines. I did not read it, so the metric code is not designed yet. A metric that needs the right answer waits for labels, which are out of scope for now.</p>
+<h3>6. What stays open</h3>
+<ol class="plain">
+<li>Does Nemo follow <code>JSONAdapter</code> for the nested payloads? The spike runs both adapters on the same slices and compares the valid-output rate.</li>
+<li>Does Inkling's free tier have a rate limit that a goal run with many stops will hit? The documentation I used does not say.</li>
+<li>Does Digest keep the open question of a run? The replay report reads this on a few runs by hand.</li>
+<li>Optimisers (<code>MIPROv2</code>, <code>GEPA</code>) and <code>Refine</code> are not in the spikes. They need a metric first.</li>
+</ol>
+</section>
+
+<section id="decide" class="decide">
+  <div class="eyebrow">Decision</div>
+  <p class="q">Do these changes match what you want?</p>
+  <p class="default-note">If you do not answer a point, the draft uses the default marked under it. Nothing leaves this machine until you say so.</p>
+  <form id="decision-form" onsubmit="return false">
+    <fieldset id="f-d0"><legend>0. Where the spike code and its tracker live</legend>
+      <label class="opt"><input type="radio" name="d0" value="new repo"><span>A new repository for priority.dev, with its own tracker. This repository stays the plugin only<span class="rec">Recommended</span></span></label>
+      <label class="opt"><input type="radio" name="d0" value="this branch"><span>A <code>priority-dev/</code> folder on this branch, using this repository's tracker</span></label>
+      <p class="default-note">Default: nothing is created. I keep designing on this branch.</p>
+    </fieldset>
+    <fieldset id="f-d1"><legend>1. The transcripts that become test fixtures</legend>
+      <label class="opt"><input type="radio" name="d1" value="real and local"><span>Real transcripts, redacted, kept local and ignored by Git. Small made-up fixtures go in the repository<span class="rec">Recommended</span></span></label>
+      <label class="opt"><input type="radio" name="d1" value="made-up only"><span>Made-up fixtures only. The replay then says little about real runs</span></label>
+      <p class="default-note">Default: the first. No transcript is copied until you answer.</p>
+    </fieldset>
+    <fieldset id="f-d2"><legend>2. The slices to build first</legend>
+      <label class="opt"><input type="radio" name="d2" value="1 to 4"><span>Slices 1 to 4: the interpreter on recorded transcripts<span class="rec">Recommended</span></span></label>
+      <label class="opt"><input type="radio" name="d2" value="1 to 6"><span>Slices 1 to 6: add the event log</span></label>
+      <label class="opt"><input type="radio" name="d2" value="all"><span>All twelve slices</span></label>
+      <p class="default-note">Default: slices 1 to 4.</p>
+    </fieldset>
+    <fieldset id="f-d3"><legend>3. Run the /implement:start gates for epic E1</legend>
+      <label class="opt"><input type="radio" name="d3" value="after 0 to 2"><span>Yes, after you answer the three points above<span class="rec">Recommended</span></span></label>
+      <label class="opt"><input type="radio" name="d3" value="not yet"><span>Not yet. Keep designing first</span></label>
+      <p class="default-note">Default: not yet.</p>
+    </fieldset>
+    <fieldset id="f-notes"><legend><label for="notes">Notes</label></legend><textarea id="notes" placeholder="Changes, extra actions, or a reason"></textarea></fieldset>
+    <div style="display:flex; flex-wrap:wrap; gap:12px; align-items:center; padding-top:12px"><button class="go" id="copy-btn" type="button">Copy my answers</button><span id="copy-status" role="status"></span></div>
+    <textarea id="answers-out" readonly aria-label="Your answers, ready to paste into the session"></textarea>
+    <p class="default-note" style="padding-top:8px">Paste the copied text into the session.</p>
+  </form>
+</section>
+<footer class="end">Source of record: <code>priority-dev/docs/design/adapter-host.md</code>, <code>dspy-modules.md</code>, and <code>plans/priority-dev-spikes/04-slices.md</code>.</footer>
+</div>
+<script>
+(function () {
+  var form = document.getElementById('decision-form'), out = document.getElementById('answers-out'), status = document.getElementById('copy-status');
+  function lt(f) { var l = f.querySelector('legend'); return l ? l.textContent.trim() : ''; }
+  function collect() {
+    var lines = ['priority.dev first spikes, round 10: my answers'];
+    ['d0','d1','d2','d3'].forEach(function (n) {
+      var c = form.querySelector('input[name="' + n + '"]:checked');
+      lines.push(lt(document.getElementById('f-' + n)) + ' -> ' + (c ? c.value : 'no answer (use the default)'));
+    });
+    lines.push('Notes: ' + (document.getElementById('notes').value.trim() || 'none'));
+    return lines.join('\n');
+  }
+  document.getElementById('copy-btn').addEventListener('click', function () {
+    var text = collect(); out.value = text;
+    function fallback() { out.style.display = 'block'; out.focus(); out.select(); status.textContent = 'Copy is blocked here. Select the text below and copy it.'; }
+    try { if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(text).then(function () { status.textContent = 'Copied. Paste it into the session.'; }, fallback); } else { fallback(); } } catch (e) { fallback(); }
+  });
+})();
+</script>

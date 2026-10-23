@@ -1,8 +1,8 @@
 # Typed schemas: what the interpreter receives and produces
 
-Status: design, round 9. The code sketch is `schemas/interpreter_schemas.py`. It runs with `uv run`. It checks every example, one hash rule, and one plan rule. It is not the code layout.
+Status: design, round 10. The code sketch is `schemas/interpreter_schemas.py`. It runs with `uv run`. It checks every example, one hash rule, and one plan rule. It is not the code layout.
 
-The sketch uses `dspy[typesafe]==3.4.1`. `Choice`, `Noul`, and `Score` import from `dspy.experimental`. `Score[...]` must be the field type itself. Each decision field needs `desc=` in its `OutputField`. No call to Jev or to the advisor has run yet. The one-day test makes the first call.
+The first spikes do not use Jev (section 1). The sketch still shows the Jev types, so a later swap is cheap. The sketch uses `dspy[typesafe]==3.4.1`. `Choice`, `Noul`, and `Score` import from `dspy.experimental`. `Score[...]` must be the field type itself. Each decision field needs `desc=` in its `OutputField`. No call to Jev or to the advisor has run yet. The one-day test makes the first call.
 
 ## 1. The two stages of the interpreter
 
@@ -10,10 +10,14 @@ The language model is required. Jev returns typed values only. It cannot write a
 
 | Stage | Model | Input | Output | Calls for each slice |
 |---|---|---|---|---|
-| 1. Triage | Jev (`typesafe:jev-latest`) | the slice | `Facts`: five typed values with confidence | one |
-| 2. Advise | the language model (`openrouter/anthropic/claude-haiku-5.5`) | the slice and the facts | `Advice`: a question card and a proposal | one, when an answer is due |
-| Digest | the same language model | the slice | `RunDigest`: a short summary of the run | one for each finished run |
-| Shrink | the same language model | one oversized tool result | a shorter text | none, unless the slice is over the budget (section 2.3) |
+| 1. Triage | spikes: `openrouter/mistralai/mistral-nemo`. Later: Jev (`typesafe:jev-latest`) | the slice | `Facts`: five typed values | one |
+| 2. Advise | `openrouter/mistralai/mistral-nemo` | the slice and the facts | `Advice`: a question card and a proposal | one, when an answer is due |
+| Digest | `openrouter/thinkingmachines/inkling:free` | the slice | `RunDigest`: a short summary of the run | one for each finished run, always |
+| Shrink | the Digest model | one oversized tool result | a shorter text | none, unless the slice is over the budget (section 2.3) |
+
+The first spikes do not call Jev. You asked for this so that a poor classifier cannot make the design look wrong. The `Facts` type stays the same. Only the stage 1 module changes, so a Jev module can replace it later. `dspy-modules.md` shows the modules.
+
+I checked both models on the OpenRouter model list on 24 October 2026. Mistral Nemo has a 131,072-token window, and it lists `structured_outputs` and `response_format`. Inkling free has a 1,048,576-token window, and it lists `reasoning` but neither of those two. Inkling therefore needs the DSPy text adapter, not a JSON schema. I did not make a call, because no OpenRouter key is set on this machine.
 
 One Jev call carries all five questions. A DSPy signature with five decision fields builds one request, `client.system_one(state=..., questions=...)`. The source is `dspy/adapters/decision.py` and `dspy/clients/typesafe.py` in version 3.4.1. I do not know whether Jev prices each question or each call.
 
@@ -68,13 +72,13 @@ Code reads structured JSON. It can group replies, pair each tool call with its r
 Rules that follow:
 
 1. Nothing in a slice is clipped. The slice keeps the assistant text, each tool call, and each full result. Only the redaction changes the text.
-2. The renderer sets a budget of 160,000 characters for the text that a model reads. This is a guess: about 40,000 tokens, against 64,000 input tokens for Jev. I did not measure the characters for each token. Over the budget, the Shrink call replaces the largest tool results first. It never touches `ask`, `final`, or the last three exchanges. The stored `InterpreterCall` records how many results it replaced. By the measure in 2.1, about 1 run in 100 passes 100,000 characters.
+2. The renderer sets a budget of 160,000 characters for the text that a model reads. This is a guess: about 40,000 tokens, against a 131,072-token window for Mistral Nemo. I did not measure the characters for each token. Over the budget, the Shrink call replaces the largest tool results first. It never touches `ask`, `final`, or the last three exchanges. The stored `InterpreterCall` records how many results it replaced. By the measure in 2.1, about 1 run in 100 passes 100,000 characters.
 3. The model reads `slice.for_model()`. That text leaves out `slice_id`, `cursor`, `redactions`, and `allowed_kinds`. The option `agent_reports_first` copies each sub-agent exchange into a block at the top. It is a lab option, and the lab tests whether it helps.
 4. A prose question has no `pending`. The facts say `waiting_answer`, and `final` holds the question.
 5. A goal run gives one slice for each stop attempt. The `goal` field lets the models see that the agent only waits.
 6. A model summary of older turns stays off in v0.1. The `previous` field is the one exception that you asked for, the digest of the run before.
 
-How the digest works. The Digest call reads the slice of a run that has just ended. It returns a `RunDigest`: what the agent did (up to 600 characters), how the run ended (up to 300), up to five open items, and up to five decisions. The system stores it as a `fact.run_digest` event. The next slice of the same session carries it as `previous`. It costs one model call for each run. In a goal run with many stops, that is one call for each stop. The lab checks whether the digest helps and whether it loses facts.
+How the digest works. The Digest call reads the slice of a run that has just ended. It returns a `RunDigest`: what the agent did (up to 600 characters), how the run ended (up to 300), up to five open items, and up to five decisions. The system stores it as a `fact.run_digest` event. The next slice of the same session carries it as `previous`. It costs one model call for each finished run, and the call always runs. This includes each stop of a goal run, so the next slice always has a `previous`. The lab checks whether the digest helps and whether it loses facts.
 
 ### 2.4 What the lab must settle
 
@@ -137,6 +141,8 @@ The action hash is the idempotency key. It covers the kind and the payload. It d
 
 This action runs a harness in a loop until the session shows evidence that it reached the stated outcome. It differs from `continue`, which sends one nudge.
 
+**What the evidence check is.** It is a check that code runs on the transcript. It runs when the agent says that the goal is met. The goal names a command, for example `pytest -q`. The check looks in the transcript for a real Bash call that ran that command. It needs the call to have no error flag. It needs the text that the agent quoted to appear in the real result of that call. If all three hold, the check passes. The check does not run anything, and it does not judge whether the command was a good test. It only stops the agent from claiming a result that the transcript does not show.
+
 - `goal`: the stated outcome, in words.
 - `proof`: what the session must show. The kinds are `agent_shows` (the agent runs a named command and reports the result) and `human_confirms`. The field has a `command` and a `show` text, for example "the exit code and the last 5 lines".
 - `max_turns` and `max_minutes`: the budget. When the budget ends, the actuator opens an `ask_human` item.
@@ -155,6 +161,20 @@ This action runs a harness in a loop until the session shows evidence that it re
 8. If the budget ends before step 6, the actuator opens an `ask_human` item.
 
 **What the check cannot see.** The agent can run a weaker command than the goal needs, or change the tests, or end the command with `|| true`. The transcript then shows a pass, and the check passes. The check does not judge whether the command is a good proof. It stops one failure: the agent claims a result that it never produced. Because the check reads the tool result record and not the agent's words, the agent cannot invent the result. The human stays the judge of the proof itself. A later orchestrator agent could run the command itself, and that needs its own design.
+
+**Claude Code already has `/goal`.** I found this in the Claude Code documentation (`goal.md`) while I read the hooks. The command `/goal <condition>` keeps the session running. After each turn, a small model judges the condition from the conversation. It does not run commands. The condition may name a check and a turn limit, and it may hold 4,000 characters. This is the "Stop hook feedback" record that I measured in the goal run. Claude Code writes it, not a user.
+
+This changes `continue_until`. Two ways exist to build it:
+
+| | A. Our own loop (this section) | B. Send `/goal` (recommended) |
+|---|---|---|
+| Who sends the nudge | the actuator, after each stop | Claude Code, by its own Stop hook |
+| Who judges "met" | our advisor and the evidence check | the built-in small model |
+| Our evidence check | decides when the loop ends | runs after the goal clears, as a second opinion |
+| What we build | the loop, the budget, the stop rules | one `reply` that holds the `/goal` text, and the check |
+| Known limit | none found yet | the built-in judge reads only what the agent shows; a Stop hook may block at most 8 times in a row, and the count resets when a tool runs (`hooks.md`) |
+
+I did not check how the transcript marks a goal that cleared. The first spike for B must read that record. Under B the action keeps its name and its fields. The `goal` and `proof` fields become the text of one `/goal` message. The `max_turns` and `max_minutes` fields become the "stop after N turns" clause that the documentation describes.
 
 The policy decides each send inside the loop, as for any `continue`. The human can also start this action from the client, as a human-authored action. I propose the name `continue_until`. The name `goal` sounds like only a note on the session.
 
@@ -544,7 +564,7 @@ The data is synthetic. The sketch builds each example and checks a JSON round tr
 {"batch_window_minutes": 30, "quiet_hours": ["22:00", "07:00"], "timezone": "Australia/Sydney"}
 ```
 
-### 11.1 The exact request to Jev (stage 1)
+### 11.1 The exact request to Jev (stage 1, later)
 
 DSPy builds this request. One call carries all five questions. The inputs hold `slice.for_model()`.
 
