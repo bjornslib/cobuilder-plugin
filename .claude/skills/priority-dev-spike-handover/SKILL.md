@@ -13,7 +13,7 @@ A fleet inbox for one developer who runs many local Claude Code sessions in tmux
 
 ## Where everything is
 
-Work in the worktree on branch `design/priority-dev`. Its path at the time of writing is `/private/tmp/claude-503/-Users-theb-Documents-Windsurf-cobuilder-plugin/05e9a06e-c737-4a85-ae83-84319ee56377/scratchpad/wt`. If it is gone, check out the branch `design/priority-dev` from the repository. Do not edit the engineer's main checkout.
+Work in the worktree on branch `design/priority-dev`. Its path at the time of writing is `/private/tmp/claude-503/-Users-theb-Documents-Windsurf-cobuilder-plugin/05e9a06e-c737-4a85-ae83-84319ee56377/scratchpad/wt`. If it is gone, check out the branch `design/priority-dev` from the repository. Do not edit the engineer's main checkout. The branch carries a merge of `e40bb0c` from `feature/tracker-management`.
 
 | What | Where |
 |---|---|
@@ -39,10 +39,10 @@ Work in the worktree on branch `design/priority-dev`. Its path at the time of wr
 
 ## Open items you must settle with the engineer
 
-1. **The tracker.** The program is not yet in the tracker. The shared beads data has a broken link: `bd issue cb-g43.5 refers to cb-a0e, which bd did not list`. Every tracker read fails until that is fixed. It belongs to other work in the engineer's checkout. Do not repair it. Ask the engineer. Then seed with `uv run shared/tracker.py seed-from-files docs/plans` (run `--dry-run` first).
+1. **The tracker.** The program is seeded: `priority-dev-spike` with epics E1 to E4 and slices 1 to 13, in the beads tracker. The first read failed because the branch was older than PR #50 (beads-native), so its adapter could not read gate records. The fix was `git merge e40bb0c`. `next-ready` returns nothing until the engineer approves the gates and the program stage moves on. Do not seed again.
 2. **Gate approvals.** Gates 1 to 4 are drafted and are not approved. Check `00-status.md` once it exists. Ask for approval as `/implement:start` describes. Do not write code before gate 4 is approved.
 3. **The design stage.** `goal.json` holds `stage: review`. Stage 7 (one pull request or several, and the branch) is not run.
-4. **The index.** Run `uv run shared/build_index.py` only when the tracker works. A temporary `files` adapter built an index once, and that output was thrown away.
+4. **The index.** Run `uv run shared/build_index.py` so the viewer shows the design. I did not run it after the merge.
 5. **Later programs.** `priority-dev-phase-a` and later phases are planned, not created.
 
 ## First steps
