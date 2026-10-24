@@ -13,7 +13,7 @@ A fleet inbox for one developer who runs many local Claude Code sessions in tmux
 
 ## Where everything is
 
-Work in the worktree on branch `design/priority-dev`. Its path at the time of writing is `/private/tmp/claude-503/-Users-theb-Documents-Windsurf-cobuilder-plugin/05e9a06e-c737-4a85-ae83-84319ee56377/scratchpad/wt`. If it is gone, check out the branch `design/priority-dev` from the repository. Do not edit the engineer's main checkout. The branch carries a merge of `e40bb0c` from `feature/tracker-management`.
+Work in the worktree `/Users/theb/Documents/Windsurf/cobuilder-plugin/.claude/worktrees/priority-dev-spike` on branch `design/priority-dev-spike`. Run every command from there. It holds the design, the plan, the rubrics, and `priority-dev/.env`. The branch is local and unpushed. Do not edit the engineer's main checkout or the other worktrees. If the folder is gone, run `git worktree add .claude/worktrees/priority-dev-spike design/priority-dev-spike` in the main checkout, then copy `priority-dev/.env` from the engineer. The older branch `design/priority-dev` holds the same design history and the review pages. Do not build on it.
 
 | What | Where |
 |---|---|
@@ -41,7 +41,7 @@ Work in the worktree on branch `design/priority-dev`. Its path at the time of wr
 
 1. **The tracker.** The program is seeded: `priority-dev-spike` with epics E1 to E4 and slices 1 to 13, in the beads tracker. The first read failed because the branch was older than PR #50 (beads-native), so its adapter could not read gate records. The fix was `git merge e40bb0c`. `next-ready` returns nothing until the engineer approves the gates and the program stage moves on. Do not seed again.
 2. **Gate approvals.** Gates 1 to 4 were approved on 2026-10-24 and are in `00-status.md` and the tracker. `verify_gate.py` reports OK. **The engineer asked to see the final design and program in the viewer (`/artifact:view`) before any implementation starts.** Confirm that this review happened and that the engineer said to start. Do not write code before that.
-3. **The design stage.** `goal.json` holds `stage: approved`. The local branch `design/priority-dev-spike` exists, unpushed, and the engineer chose one pull request. No PR is open.
+3. **The design stage.** `goal.json` holds `stage: approved`. The branch `design/priority-dev-spike` is the build branch, unpushed, and the engineer chose one pull request. Ask before you push it. No PR is open.
 4. **The index.** Built after the merge. Rebuild with `uv run shared/build_index.py` after any change to the plan or the design.
 5. **Later programs.** `priority-dev-phase-a` and later phases are planned, not created.
 
