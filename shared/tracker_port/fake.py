@@ -16,18 +16,18 @@ from .fake_support import (
     is_under,
     load_corpus,
     load_state,
-    now,
 )
 from .files import seedable_records
 from .port import AdapterError, ArgumentError
 from .program_state import program_lifecycle
 from .record import Capabilities, Kind, TrackerRecord
+from .fake_activity import _FakeActivityMixin
 from .fake_pull_requests import _PullRequestMixin
 from .skip_slice import _FakeSkipMixin
 from .regenerate import regenerate
 
 
-class FakeAdapter(_PullRequestMixin, _FakeSkipMixin):
+class FakeAdapter(_PullRequestMixin, _FakeSkipMixin, _FakeActivityMixin):
     name = "fake"
     capabilities = Capabilities(
         native_ready=False,
@@ -187,18 +187,3 @@ class FakeAdapter(_PullRequestMixin, _FakeSkipMixin):
             envelope["attempts"] = attempts
         return self._update(id, "slice", lifecycle=state, envelope=envelope)
 
-    def record_attempt(self, id: str, score: float, note: str | None = None) -> TrackerRecord:
-        attempts = self._record_of(id, "slice").envelope.get("attempts", 0)
-        if note is not None:
-            self.add_note(id, note)
-        return self._update(id, "slice", envelope={"score": score, "attempts": attempts + 1})
-
-    def add_note(self, id: str, text: str) -> None:
-        self._record_of(id)
-        self._notes.setdefault(id, []).append((now(), text))
-        self._commit()
-
-    def escalate(self, id: str, score: float, reason: str) -> TrackerRecord:
-        record = self._update(id, "slice", envelope={"escalated": True, "score": score})
-        self.add_note(id, f"escalated at score {score}: {reason}")
-        return record

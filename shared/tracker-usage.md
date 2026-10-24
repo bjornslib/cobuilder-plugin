@@ -111,6 +111,7 @@ $ uv run shared/tracker.py list-epics --program demo
   ]
 }
 ```
+For beads, `doctor` lists `mapping: native` or `mapping: legacy`. It also lists `native_ready` to show whether beads decides slice readiness.
 
 ## Vocabulary
 
@@ -139,8 +140,46 @@ Find the command for each workflow moment in this table.
 | PR merges | `set-pull-request-state <ref> merged`, then `set-epic-state` |
 | Program done | `set-program-stage <program> <stage>` |
 | Session end | `sync` |
+| Tracker uses the old mapping | `doctor`, then `migrate-mapping --dry-run`, then `migrate-mapping` |
 | Status files drift from the tracker | `uv run shared/tracker.py regenerate-status-files <program> --plans-dir <dir>` |
+```console
+$ uv run shared/tracker.py regenerate-status-files demo --plans-dir docs/plans
+exit: 1
+```
+This fake-adapter example exits 1 because the scratch repo has no status files.
+ 
 
+## Migrate a legacy tracker
+
+When `doctor` reports `mapping: legacy`, inspect the planned changes first.
+Show the report to the engineer and get approval before the migration run.
+
+```console
+$ uv run shared/tracker.py migrate-mapping --dry-run
+{
+  "ok": true,
+  "result": {
+    "changed": 0,
+    "changes": [],
+    "counts": {},
+    "dry_run": true,
+    "missing": []
+  }
+}
+$ uv run shared/tracker.py migrate-mapping
+{
+  "ok": true,
+  "result": {
+    "changed": 0,
+    "changes": [],
+    "counts": {},
+    "dry_run": false,
+    "missing": []
+  }
+}
+```
+
+This example runs on a fake adapter. The fake adapter returns an empty report and keeps its records.
 `regenerate-status-files` rewrites only the state lines of `00-status.md` and `04-slices.md`. It keeps every prose line. With no adapter, it exits 2 and writes nothing.
 
 ## Read patterns
@@ -309,7 +348,7 @@ $ uv run shared/tracker.py get-slice demo-E1-s2
 
 ## Prepare
 
-`tracker.py prepare` sets up the tracker once, before the first seed. The beads adapter adds `program` to the bd issue type list and keeps the types that are there. It prints `changed: true` only when it set the type. The fake and files adapters print `changed: false`. A second call changes nothing.
+`tracker.py prepare` sets up the tracker once, before the first seed. It makes no changes to tracker types. It prints `changed: false` when no setup is needed. A second call changes nothing.
 
 ```console
 $ uv run shared/tracker.py prepare

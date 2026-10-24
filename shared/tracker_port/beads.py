@@ -28,6 +28,7 @@ from .beads_ready import _ReadyMixin
 from .beads_seed import _SeedMixin
 from .beads_pull_requests import _PullRequestMixin
 from .beads_writes import _WriteMixin
+from .beads_migrate import migrate_mapping
 from .skip_slice import _BeadsSkipMixin
 from .beads_sync import _SyncModeMixin
 from .port import AdapterError, ArgumentError
@@ -184,3 +185,6 @@ class BeadsAdapter(_LookupMixin, _ReadyMixin, _ClaimNextMixin, _SyncModeMixin, _
 
     def regenerate_status_files(self, program: str, plans_dir: Path) -> list[Path]:
         return regenerate(self, program, plans_dir)
+
+    def migrate_mapping(self, dry_run: bool = False, plans_dir: Path | None = None) -> dict[str, Any]:
+        return migrate_mapping(self, dry_run=dry_run, plans_dir=plans_dir)

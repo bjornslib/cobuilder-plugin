@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from .port import ArgumentError
 from .record import TrackerRecord
 
@@ -31,3 +32,6 @@ class _PullRequestMixin:
 
     def set_pull_request_state(self, ref: str, merged: bool) -> TrackerRecord:
         return self._update(ref, "pr", lifecycle="closed" if merged else "open")
+
+    def migrate_mapping(self, dry_run: bool = False, plans_dir: Path | None = None) -> dict[str, object]:
+        return {"changed": 0, "dry_run": dry_run, "changes": [], "counts": {}, "missing": []}

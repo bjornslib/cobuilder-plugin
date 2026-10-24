@@ -1,0 +1,18 @@
+sequenceDiagram
+    participant Scan as habit-sensors
+    participant Cat as findings-catalog
+    participant P as mechanical-smells
+    participant Shell as viewer shell
+    participant Next as type-surface-sweep
+
+    Scan->>Cat: 2,456 findings, 14 smells
+    Cat->>Cat: cluster into 6, verdict each
+    Note over Cat: structural = resolve, type = commission, rest = defer
+    Cat->>P: E2 logic layer first
+    P->>Shell: split model.ts and bundle.ts, keep exports
+    Shell-->>P: vitest passes, habit-sensors clean
+    P->>Shell: E3 atoms, E4 change, E5 shell and chrome
+    Shell-->>P: every structural finding clears
+    P->>Cat: mark the structural cluster resolved
+    P->>Next: E6 authors type-surface-sweep/goal.json
+    Next->>Cat: open the type-surface cluster by name

@@ -223,9 +223,13 @@ uv run shared/tracker.py --help                # list every tracker operation
 Plugin scripts are PEP 723, so `uv run <script>` resolves their dependencies.
 
 The repo keeps its own state in its beads tracker: programs, epics, and slices.
-Use `tracker.py` to move that state. Do not edit the state by hand. Version
-1.3.0 or later of `bd` is a dependency of the tests. The beads contract tests
-run the real `bd` in temporary folders.
+Use `tracker.py` to move that state. Do not edit the state by hand. A program is
+a native `feature`. A pull request record is a `milestone` that `tracks` its
+epics. Slices are ordered, and native ready (`claim-next`) picks the next slice.
+Records carry the `cb` label and `external_ref` finds each record. Run
+`migrate-mapping` for an old tracker. Version 1.3.0 or later of `bd` is a
+dependency of the tests. The beads contract tests run the real `bd` in
+temporary folders.
 
 ## Rules that break easily
 

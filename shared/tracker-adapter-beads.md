@@ -136,6 +136,32 @@ ADR-0044 sets this mapping. The adapter creates each cb row with these bd fields
 - **Read.** A read fills `title`, `description`, `acceptance_criteria`, and `design` of the record from the bd row. These four fields are outside the equality of two records. A pull request also reads `tracks`, the epic ids of its `tracks` edges. `tracks` is inside the equality.
 - **Lookup.** `create_record` runs `bd list --external-ref <ref> --json --limit 0 --all`. It stops with `already exists` when a row holds the ref. `find_record` uses the same call to read one record.
 - **Doctor.** `doctor` reports `mapping: native`, or `mapping: legacy` when a cb row has the old mapping. The old mapping is a program of the type `program`, a pull request of the type `task`, or an epic that a pull request blocks.
+## migrate-mapping
+
+`tracker.py migrate-mapping [--dry-run] [--plans-dir DIR]` converts rows from the legacy mapping.
+It ignores foreign rows and reads the row list once at the start.
+
+
+Before migration, save a snapshot outside the repo:
+`bd export > "$HOME/beads-before-migrate-$(date +%Y%m%d-%H%M%S).jsonl"`.
+Check that the file is not empty before you continue. Restore from this export
+is not tested, so keep the original tracker unchanged until the migration is
+complete.
+
+The operation changes issue types, labels, external refs, titles, text fields,
+defer dates, gates, and dependency edges. With `--plans-dir`, it reads names,
+text, and order from the plan files. Without it, it updates slice titles from
+their envelopes and reports missing order edges without adding them.
+
+The operation runs each step only when the held row or edge differs. It adds a
+PR `tracks` edge before it removes the old blocking edge. It resolves a gate
+before it removes the gate edge. It drops the custom `program` type only after
+it retypes CoBuilder programs and PRs, and it keeps other custom types.
+
+Each write completes before the next begins. If a write fails, fix the cause
+and run the operation again. It reads held state and skips completed steps.
+It runs one sync after all writes. A dry run returns the report and writes
+nothing. A native mapping needs no writes or sync.
 
 | Source | Title | `description` | `acceptance_criteria` | `design` |
 |---|---|---|---|---|
