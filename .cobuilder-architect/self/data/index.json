@@ -1,10 +1,10 @@
 {
   "schema_version": "1.4",
   "sources": {
-    "git_head": "317e047e988d7290e148a8a35cbdd647c0778d52",
+    "git_head": "5e9423fb18595233ce2366648aa5124e312fa33c",
     "trees": {
       "docs/architecture/adr": "sha256:cde10507a4d3ca399662e07ddc5e60384cb07039aac9fb8e3acd6c33d5ffc621",
-      "docs/architecture/designs": "sha256:2e5beadc29237853bccbe8e0b3c3e11c4fc87d91fc25de490a679f613e5821af",
+      "docs/architecture/designs": "sha256:8136cb662e0be5b38313dfd6a9104abfa328688273842c38a84a402e603c579e",
       "docs/architecture/contexts": "sha256:6663ee456e31bfbe31401908ae494017ed864dbb9c72211b6cbdccc44d078482",
       "docs/plans": "sha256:e9593d73ea54d8c0a165042c931f2b6c37d9b83d52465cc8100950b9b584de0b",
       ".cobuilder/rubrics": "sha256:3bf1a55b089183f2b75207f5e86057cd3c043a93b13df9d1469ce0ad4a63aef7"
@@ -323,12 +323,6 @@
         "name": "maintainable-viewer",
         "outcome": "An engineer changes one view mode of the bundle viewer by opening one file of a few hundred lines, and the file that ships is still one self-contained HTML page that publishes as an Artifact unchanged.",
         "stage": "superseded"
-      },
-      {
-        "id": "mechanical-smells",
-        "name": "mechanical-smells",
-        "outcome": "The viewer shell has no file over 200 lines, no path over complexity 10, and no duplicate import, and a findings catalog clusters the standing smells so the next program resolves one cluster by name.",
-        "stage": "decided"
       },
       {
         "id": "nexus-borrowings",
@@ -952,60 +946,6 @@
         "pr": null,
         "state": "open",
         "note": "Each mode owns its own part. The five view modes stop interleaving: the 50 scattered mode-predicate calls collapse into one registry, and renderContextsMainContent, renderBuildsMainContent, and renderMainContent stop being three functions of over 200 lines that live beside each other. Adding a sixth mode becomes one new part plus one registry entry."
-      },
-      {
-        "id": "mechanical-smells/E1",
-        "design": "mechanical-smells",
-        "epic_id": "E1",
-        "branch": null,
-        "pr": null,
-        "state": null,
-        "note": null
-      },
-      {
-        "id": "mechanical-smells/E2",
-        "design": "mechanical-smells",
-        "epic_id": "E2",
-        "branch": null,
-        "pr": null,
-        "state": null,
-        "note": null
-      },
-      {
-        "id": "mechanical-smells/E3",
-        "design": "mechanical-smells",
-        "epic_id": "E3",
-        "branch": null,
-        "pr": null,
-        "state": null,
-        "note": null
-      },
-      {
-        "id": "mechanical-smells/E4",
-        "design": "mechanical-smells",
-        "epic_id": "E4",
-        "branch": null,
-        "pr": null,
-        "state": null,
-        "note": null
-      },
-      {
-        "id": "mechanical-smells/E5",
-        "design": "mechanical-smells",
-        "epic_id": "E5",
-        "branch": null,
-        "pr": null,
-        "state": null,
-        "note": null
-      },
-      {
-        "id": "mechanical-smells/E6",
-        "design": "mechanical-smells",
-        "epic_id": "E6",
-        "branch": null,
-        "pr": null,
-        "state": null,
-        "note": null
       },
       {
         "id": "nexus-borrowings/E1",
@@ -6347,12 +6287,6 @@
           "cobuilder-viewer/E17",
           "cobuilder-viewer/E18",
           "cobuilder-viewer/E19",
-          "mechanical-smells/E1",
-          "mechanical-smells/E2",
-          "mechanical-smells/E3",
-          "mechanical-smells/E4",
-          "mechanical-smells/E5",
-          "mechanical-smells/E6",
           "react-viewer/E1",
           "react-viewer/E2",
           "react-viewer/E3",
@@ -6566,13 +6500,7 @@
         "path": [
           "habit-smells/E1",
           "habit-smells/E2",
-          "habit-smells/E3",
-          "mechanical-smells/E1",
-          "mechanical-smells/E2",
-          "mechanical-smells/E3",
-          "mechanical-smells/E4",
-          "mechanical-smells/E5",
-          "mechanical-smells/E6"
+          "habit-smells/E3"
         ]
       },
       "ADR-0039": {
@@ -6739,12 +6667,6 @@
       "maintainable-viewer/E2": "unstarted",
       "maintainable-viewer/E3": "unstarted",
       "maintainable-viewer/E4": "unstarted",
-      "mechanical-smells/E1": "unstarted",
-      "mechanical-smells/E2": "unstarted",
-      "mechanical-smells/E3": "unstarted",
-      "mechanical-smells/E4": "unstarted",
-      "mechanical-smells/E5": "unstarted",
-      "mechanical-smells/E6": "unstarted",
       "nexus-borrowings/E1": "open",
       "nexus-borrowings/E2": "open",
       "nexus-borrowings/E3": "open",

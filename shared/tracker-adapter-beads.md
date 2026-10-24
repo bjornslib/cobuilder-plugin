@@ -22,14 +22,14 @@ Ask one question: "Set up beads in this repo? It adds one commit, `.beads/` file
 
 > Replaced by ADR-0044.
 
-`types.custom` is the bd setting that lists the issue types beyond the built-in ones. It holds names that a comma separates. bd has no built-in `program` type, so the list must include it. `tracker.py prepare` adds `program` to the list. The entries that are already in the list stay. It changes nothing when `program` is there. bd prints `types.custom (not set)` when the list is empty.
+The adapter uses only built-in bd types: `feature`, `epic`, `task`, and `milestone`. `tracker.py prepare` sets no custom type. The old mapping used a custom `program` type. `tracker.py migrate-mapping` retypes those rows and drops the entry.
 
 ## Setup on the first machine
 
 Run these steps in order. Each step needs the step before it.
 
 1. `bd init --skip-agents --skip-hooks -p demo --non-interactive`. The two skip flags skip bd's agent and hook setup. `-p demo` is the id prefix that the verification runs used.
-2. `bd config set types.custom program`. bd has no built-in `program` type. A `program` create fails until this step runs. `tracker.py prepare` runs this step and keeps the existing types. The adapter also runs it on demand. Replaced by ADR-0044.
+2. Nothing else sets a type. The adapter needs no custom type. Replaced by ADR-0044. A tracker in the old mapping needs `tracker.py migrate-mapping`.
 3. `bd config set team.enabled true`.
 4. `bd config set team.sync_branch main`.
 5. `git remote add origin <url>`. Use a URL that every machine can reach.
