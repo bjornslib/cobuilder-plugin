@@ -62,8 +62,8 @@ Initial checks, 2026-10-17:
 - [x] Slice 26 — Pull request as a milestone with `tracks`
 - [x] Slice 27 — Native ready for slices, with parity
 - [x] Slice 28 — `claim-next`
-- [ ] Slice 29 — `migrate-mapping` with dry run
-- [ ] Slice 30 — Docs, install, usage
+- [x] Slice 29 — `migrate-mapping` with dry run
+- [x] Slice 30 — Docs, install, usage
 
 ## Escalated
 

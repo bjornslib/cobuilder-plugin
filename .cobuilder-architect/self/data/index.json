@@ -1,13 +1,13 @@
 {
   "schema_version": "1.4",
   "sources": {
-    "git_head": "5e9423fb18595233ce2366648aa5124e312fa33c",
+    "git_head": "3085abab8fe1e185a3297eee08a5565febf1f129",
     "trees": {
       "docs/architecture/adr": "sha256:cde10507a4d3ca399662e07ddc5e60384cb07039aac9fb8e3acd6c33d5ffc621",
       "docs/architecture/designs": "sha256:8136cb662e0be5b38313dfd6a9104abfa328688273842c38a84a402e603c579e",
       "docs/architecture/contexts": "sha256:6663ee456e31bfbe31401908ae494017ed864dbb9c72211b6cbdccc44d078482",
-      "docs/plans": "sha256:e9593d73ea54d8c0a165042c931f2b6c37d9b83d52465cc8100950b9b584de0b",
-      ".cobuilder/rubrics": "sha256:3bf1a55b089183f2b75207f5e86057cd3c043a93b13df9d1469ce0ad4a63aef7"
+      "docs/plans": "sha256:17e4c4abf6cbef31189c18e7edb01067c997cd21cf42be45615bddf7d9f47265",
+      ".cobuilder/rubrics": "sha256:8d3fb9c5c081261e9c056766f8f39e6a0ee6ccf9420100b15dff54d7c9bac38a"
     }
   },
   "entities": {
@@ -3182,9 +3182,9 @@
         "n": 29,
         "title": "**`migrate-mapping` with dry run**",
         "ends_with": "A legacy scratch tracker converts in one sync. A dry run writes nothing. A second run changes nothing.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "beads-storage/30",
@@ -3192,9 +3192,9 @@
         "n": 30,
         "title": "**Docs, install, usage**",
         "ends_with": "The docs name the two operations and the migration. `tracker.py --help` lists them.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 2,
+        "state": "completed"
       },
       {
         "id": "coach-reaches-green/1",
@@ -5303,7 +5303,7 @@
         "feature_slug": "beads-storage",
         "n": 30,
         "title": "Slice 30 — E7 docs, install, usage",
-        "body_md": "Kind: behavioral\n\n# Rubric: Slice 30 — E7 docs, install, usage\n\nFeature: beads-storage\nEpic: beads-storage/E7\nSlice goal: The usage guide names `claim-next` and `migrate-mapping` as moment rows. `slice-loop.md` names `claim-next` as the way to take the next slice. `install.md` says that an existing tracker needs `migrate-mapping`, and that a snapshot comes first. The adapter notes drop the obsolete sections. Each tracker.py operation that a doc names is a subcommand.\nTest command: `uv run pytest tests/test_tracker_docs.py tests/test_tracker_usage_doc.py tests/test_install_tracker_config.py tests/test_install_command.py tests/test_prose_budget.py -q`\n\nThe slice changes docs and one hook reminder. It changes no adapter code.\n\n## Criteria\n\n### C1 — Each operation a doc names is a subcommand of `tracker.py` [CRITICAL]\n\n**Must be true:** Every `tracker.py` operation that the usage guide, `slice-loop.md`, `install.md`, and the hook reminder name appears in the output of `uv run shared/tracker.py --help`, and it includes `claim-next` and `migrate-mapping`. A reader who runs the usage examples gets the output that the guide shows.\n\n**Evidence to check:** Run `tracker.py --help`. Extract the operation names from the four texts, and check each against the help. Run `tests/test_tracker_usage_doc.py`.\n\n**Scoring:**\n- 1.0: every name resolves, and the usage test passes.\n- 0.5: every name resolves, but the usage test was not run.\n- 0.0: a doc names an operation that is not a subcommand.\n\n### C2 — The docs name no bd command outside the adapter notes [CRITICAL]\n\n**Must be true:** `tests/test_tracker_docs.py` passes, and a grep finds no `bd` command in `tracker-usage.md`, `slice-loop.md`, `install.md`, or the hook reminder. The port rule holds: only `shared/tracker_port/` calls bd.\n\n**Evidence to check:** Run the test and the grep. Read the result.\n\n**Scoring:**\n- 1.0: the test passes and the grep is empty.\n- 0.5: the test passes, but one doc holds a bd command in an example.\n- 0.0: the test fails, or a doc tells the reader to run bd.\n\n### C3 — The obsolete sections are dropped and the build still runs [CRITICAL]\n\n**Must be true:** The adapter notes no longer hold the sections that ADR-0044 lists under \"Obsolete after this ADR\", or they carry a pointer to ADR-0044 in place of the text. `uv run shared/build_index.py` exits 0, and `uv run shared/prose_budget.py check` and `ste-lint.py` pass on the changed docs.\n\n**Evidence to check:** Run the three commands. Read each exit code. Compare the notes with the list in ADR-0044.\n\n**Scoring:**\n- 1.0: all three commands exit 0 and no listed section remains as live text.\n- 0.5: the commands pass, but one listed section remains as live text.\n- 0.0: a command fails.\n\n### C4 — `install.md` asks for a snapshot first\n\n**Must be true:** `install.md` states, for an existing tracker, that a `bd export` snapshot comes first, then `migrate-mapping --dry-run`, then the run. The install tests pass with that text.\n\n**Evidence to check:** Run `tests/test_install_command.py`. Check the order of the three steps in the file.\n\n**Scoring:**\n- 1.0: the order is right and the tests pass.\n- 0.5: the order is right, but a test needed a change that is not explained.\n- 0.0: the dry run or the snapshot step is missing.\n\n## Regression check\n\n- `uv run pytest tests/test_tracker_docs.py tests/test_install_command.py -q` passes.\n- The Hindsight allow rules in the setup skill still match the names in `hindsight.ts`, so `tests/test_install_command.py` stays green.\n\n## Out of scope — do not penalise\n\n- The wording of the docs, when the checks pass.\n- The adapter code. Slices 24 to 29 own it.\n",
+        "body_md": "Kind: behavioral\n\n# Rubric: Slice 30 — E7 docs, install, usage\n\nFeature: beads-storage\nEpic: beads-storage/E7\nSlice goal: The usage guide names `claim-next` and `migrate-mapping` as moment rows. `slice-loop.md` names `claim-next` as the way to take the next slice. `install.md` says that an existing tracker needs `migrate-mapping`, and that a snapshot comes first. The adapter notes drop the obsolete sections. Each tracker.py operation that a doc names is a subcommand.\nTest command: `uv run pytest tests/test_tracker_docs.py tests/test_tracker_usage_doc.py tests/test_install_tracker_config.py tests/test_install_command.py tests/test_prose_budget.py -q`\n\nThe slice changes docs and one hook reminder. It changes no adapter code.\n\n## Criteria\n\n### C1 — Each operation a doc names is a subcommand of `tracker.py` [CRITICAL]\n\n**Must be true:** Every `tracker.py` operation that the usage guide, `slice-loop.md`, `install.md`, and the hook reminder name appears in the output of `uv run shared/tracker.py --help`, and it includes `claim-next` and `migrate-mapping`. A reader who runs the usage examples gets the output that the guide shows.\n\n**Evidence to check:** Run `tracker.py --help`. Extract the operation names from the four texts, and check each against the help. Run `tests/test_tracker_usage_doc.py`.\n\n**Scoring:**\n- 1.0: every name resolves, and the usage test passes.\n- 0.5: every name resolves, but the usage test was not run.\n- 0.0: a doc names an operation that is not a subcommand.\n\n### C2 — The docs name no bd command outside the adapter notes [CRITICAL]\n\n**Must be true:** `tests/test_tracker_docs.py` passes, and a grep finds no `bd` command in `tracker-usage.md`, `slice-loop.md`, `install.md`, or the hook reminder. The port rule holds: only `shared/tracker_port/` calls bd.\n\n**Evidence to check:** Run the test and the grep. Read the result.\n\n**Scoring:**\n- 1.0: the test passes and the grep is empty.\n- 0.5: the test passes, but one doc holds a bd command in an example.\n- 0.0: the test fails, or a doc tells the reader to run bd.\n\n### C3 — The obsolete sections are dropped and the build still runs [CRITICAL]\n\n**Must be true:** The adapter notes no longer hold the sections that ADR-0044 lists under \"Obsolete after this ADR\", or they carry a pointer to ADR-0044 in place of the text. `uv run shared/build_index.py` exits 0, and `ste-lint.py` scores each changed doc no worse than its base (`prose_budget.py check` takes only the design JSON files, so it does not apply to these docs).\n\n**Evidence to check:** Run `build_index.py` and `ste-lint.py`. Read each exit code and compare the lint score with the base. Compare the notes with the list in ADR-0044.\n\n**Scoring:**\n- 1.0: both commands pass and no listed section remains as live text.\n- 0.5: the commands pass, but one listed section remains as live text.\n- 0.0: a command fails.\n\n### C4 — `install.md` asks for a snapshot first\n\n**Must be true:** `install.md` states, for an existing tracker, that a `bd export` snapshot comes first, then `migrate-mapping --dry-run`, then the run. The install tests pass with that text.\n\n**Evidence to check:** Run `tests/test_install_command.py`. Check the order of the three steps in the file.\n\n**Scoring:**\n- 1.0: the order is right and the tests pass.\n- 0.5: the order is right, but a test needed a change that is not explained.\n- 0.0: the dry run or the snapshot step is missing.\n\n## Regression check\n\n- `uv run pytest tests/test_tracker_docs.py tests/test_install_command.py -q` passes.\n- The Hindsight allow rules in the setup skill still match the names in `hindsight.ts`, so `tests/test_install_command.py` stays green.\n\n## Out of scope — do not penalise\n\n- The wording of the docs, when the checks pass.\n- The adapter code. Slices 24 to 29 own it.\n",
         "source_path": ".cobuilder/rubrics/beads-storage/slice-30.md"
       },
       {

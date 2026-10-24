@@ -48,8 +48,8 @@ Each slice ends in one thing that a test asserts or a reader sees. A slice never
 | 26 | `beads-storage/E7` | **Pull request as a milestone with `tracks`** | A PR holds its epics by `tracks` and blocks nothing. No gate remains. | 1 (attempt 1) | done |
 | 27 | `beads-storage/E7` | **Native ready for slices, with parity** | `next_ready("slice", under)` runs `bd ready`. `native_ready` is true. The parity test holds on the corpus. | 1 (attempt 1) | done |
 | 28 | `beads-storage/E7` | **`claim-next`** | One call claims the first ready slice. Nothing ready gives `null` and exit 0. | 1 (attempt 1) | done |
-| 29 | `beads-storage/E7` | **`migrate-mapping` with dry run** | A legacy scratch tracker converts in one sync. A dry run writes nothing. A second run changes nothing. | — | pending |
-| 30 | `beads-storage/E7` | **Docs, install, usage** | The docs name the two operations and the migration. `tracker.py --help` lists them. | — | pending |
+| 29 | `beads-storage/E7` | **`migrate-mapping` with dry run** | A legacy scratch tracker converts in one sync. A dry run writes nothing. A second run changes nothing. | 1 (attempt 1) | done |
+| 30 | `beads-storage/E7` | **Docs, install, usage** | The docs name the two operations and the migration. `tracker.py --help` lists them. | 1 (attempt 2) | done |
 
 ## Escalation and order
 
