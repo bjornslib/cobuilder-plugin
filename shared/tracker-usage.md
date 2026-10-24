@@ -33,8 +33,11 @@ $ uv run shared/tracker.py list-programs
   "ok": true,
   "result": [
     {
+      "acceptance_criteria": null,
       "assignee": null,
       "blocked_by": [],
+      "description": null,
+      "design": null,
       "envelope": {
         "gate1": "2026-10-14",
         "gate2b": "n/a",
@@ -44,7 +47,9 @@ $ uv run shared/tracker.py list-programs
       "id": "demo",
       "kind": "program",
       "lifecycle": "open",
-      "parent": null
+      "parent": null,
+      "title": null,
+      "tracks": []
     }
   ]
 }
@@ -53,32 +58,45 @@ $ uv run shared/tracker.py list-epics --program demo
   "ok": true,
   "result": [
     {
+      "acceptance_criteria": null,
       "assignee": null,
       "blocked_by": [
         "pr-101"
       ],
+      "description": null,
+      "design": null,
       "envelope": {},
       "external_ref": null,
       "id": "demo-E1",
       "kind": "epic",
       "lifecycle": "open",
-      "parent": "demo"
+      "parent": "demo",
+      "title": null,
+      "tracks": []
     },
     {
+      "acceptance_criteria": null,
       "assignee": null,
       "blocked_by": [
         "pr-101"
       ],
+      "description": null,
+      "design": null,
       "envelope": {},
       "external_ref": null,
       "id": "demo-E2",
       "kind": "epic",
       "lifecycle": "open",
-      "parent": "demo"
+      "parent": "demo",
+      "title": null,
+      "tracks": []
     },
     {
+      "acceptance_criteria": null,
       "assignee": null,
       "blocked_by": [],
+      "description": null,
+      "design": null,
       "envelope": {
         "deferred": "2026-11-01"
       },
@@ -86,7 +104,9 @@ $ uv run shared/tracker.py list-epics --program demo
       "id": "demo-E3",
       "kind": "epic",
       "lifecycle": "open",
-      "parent": "demo"
+      "parent": "demo",
+      "title": null,
+      "tracks": []
     }
   ]
 }
@@ -96,7 +116,7 @@ $ uv run shared/tracker.py list-epics --program demo
 
 Record kinds are `program`, `epic`, `slice`, and `pr`. The lifecycle states are `open`, `in_progress`, and `closed`. A composite id has the form `<design>/E5` or `<design>/<n>`.
 
-Gate values are a date, `n/a`, or absent. An assignee is a GitHub login. The envelope holds the other fields, such as `stage`, `score`, and `branch`.
+Gate values are a date, `n/a`, or absent. An assignee is a GitHub login. The envelope holds the other fields, such as `stage`, `score`, and `branch`. A record also holds the text fields `title`, `description`, `acceptance_criteria`, and `design`, and `tracks` for a pull request. Each text field is `null` when it has no value. Two records are equal when they differ only in a text field. The beads adapter reads the text fields from the bd row, and the files adapter reads them from the plan and design files.
 
 ## Moment table
 
@@ -132,16 +152,21 @@ $ uv run shared/tracker.py next-ready --kind slice --under demo-E1
   "ok": true,
   "result": [
     {
+      "acceptance_criteria": null,
       "assignee": null,
       "blocked_by": [
         "demo-E1-s1"
       ],
+      "description": null,
+      "design": null,
       "envelope": {},
       "external_ref": null,
       "id": "demo-E1-s3",
       "kind": "slice",
       "lifecycle": "open",
-      "parent": "demo-E1"
+      "parent": "demo-E1",
+      "title": null,
+      "tracks": []
     }
   ]
 }
@@ -149,16 +174,21 @@ $ uv run shared/tracker.py claim-slice demo-E1-s3 agent-2
 {
   "ok": true,
   "result": {
+    "acceptance_criteria": null,
     "assignee": "agent-2",
     "blocked_by": [
       "demo-E1-s1"
     ],
+    "description": null,
+    "design": null,
     "envelope": {},
     "external_ref": null,
     "id": "demo-E1-s3",
     "kind": "slice",
     "lifecycle": "open",
-    "parent": "demo-E1"
+    "parent": "demo-E1",
+    "title": null,
+    "tracks": []
   }
 }
 ```
@@ -173,8 +203,11 @@ $ uv run shared/tracker.py list-slices --epic demo-E1
   "ok": true,
   "result": [
     {
+      "acceptance_criteria": null,
       "assignee": null,
       "blocked_by": [],
+      "description": null,
+      "design": null,
       "envelope": {
         "score": 0.92
       },
@@ -182,31 +215,43 @@ $ uv run shared/tracker.py list-slices --epic demo-E1
       "id": "demo-E1-s1",
       "kind": "slice",
       "lifecycle": "closed",
-      "parent": "demo-E1"
+      "parent": "demo-E1",
+      "title": null,
+      "tracks": []
     },
     {
+      "acceptance_criteria": null,
       "assignee": "agent-1",
       "blocked_by": [
         "demo-E1-s1"
       ],
+      "description": null,
+      "design": null,
       "envelope": {},
       "external_ref": null,
       "id": "demo-E1-s2",
       "kind": "slice",
       "lifecycle": "in_progress",
-      "parent": "demo-E1"
+      "parent": "demo-E1",
+      "title": null,
+      "tracks": []
     },
     {
+      "acceptance_criteria": null,
       "assignee": null,
       "blocked_by": [
         "demo-E1-s1"
       ],
+      "description": null,
+      "design": null,
       "envelope": {},
       "external_ref": null,
       "id": "demo-E1-s3",
       "kind": "slice",
       "lifecycle": "open",
-      "parent": "demo-E1"
+      "parent": "demo-E1",
+      "title": null,
+      "tracks": []
     }
   ]
 }
@@ -214,16 +259,21 @@ $ uv run shared/tracker.py get-slice demo-E1-s2
 {
   "ok": true,
   "result": {
+    "acceptance_criteria": null,
     "assignee": "agent-1",
     "blocked_by": [
       "demo-E1-s1"
     ],
+    "description": null,
+    "design": null,
     "envelope": {},
     "external_ref": null,
     "id": "demo-E1-s2",
     "kind": "slice",
     "lifecycle": "in_progress",
-    "parent": "demo-E1"
+    "parent": "demo-E1",
+    "title": null,
+    "tracks": []
   }
 }
 ```
@@ -251,10 +301,13 @@ $ uv run shared/tracker.py set-slice-state demo-E1-s2 closed --score 0.92 --atte
 {
   "ok": true,
   "result": {
+    "acceptance_criteria": null,
     "assignee": "agent-1",
     "blocked_by": [
       "demo-E1-s1"
     ],
+    "description": null,
+    "design": null,
     "envelope": {
       "attempts": 2,
       "score": 0.92
@@ -263,7 +316,9 @@ $ uv run shared/tracker.py set-slice-state demo-E1-s2 closed --score 0.92 --atte
     "id": "demo-E1-s2",
     "kind": "slice",
     "lifecycle": "closed",
-    "parent": "demo-E1"
+    "parent": "demo-E1",
+    "title": null,
+    "tracks": []
   }
 }
 ```
@@ -275,10 +330,13 @@ $ uv run shared/tracker.py --state-file state.json set-slice-state demo-E1-s3 cl
 {
   "ok": true,
   "result": {
+    "acceptance_criteria": null,
     "assignee": null,
     "blocked_by": [
       "demo-E1-s1"
     ],
+    "description": null,
+    "design": null,
     "envelope": {
       "attempts": 1,
       "score": 0.88
@@ -287,7 +345,9 @@ $ uv run shared/tracker.py --state-file state.json set-slice-state demo-E1-s3 cl
     "id": "demo-E1-s3",
     "kind": "slice",
     "lifecycle": "closed",
-    "parent": "demo-E1"
+    "parent": "demo-E1",
+    "title": null,
+    "tracks": []
   }
 }
 $ uv run shared/tracker.py --state-file state.json next-ready --kind slice --under demo-E1
@@ -304,8 +364,11 @@ $ uv run shared/tracker.py set-program-stage demo approved
 {
   "ok": true,
   "result": {
+    "acceptance_criteria": null,
     "assignee": null,
     "blocked_by": [],
+    "description": null,
+    "design": null,
     "envelope": {
       "gate1": "2026-10-14",
       "gate2b": "n/a",
@@ -315,15 +378,20 @@ $ uv run shared/tracker.py set-program-stage demo approved
     "id": "demo",
     "kind": "program",
     "lifecycle": "open",
-    "parent": null
+    "parent": null,
+    "title": null,
+    "tracks": []
   }
 }
 $ uv run shared/tracker.py set-gate-value demo gate2b 2026-10-15
 {
   "ok": true,
   "result": {
+    "acceptance_criteria": null,
     "assignee": null,
     "blocked_by": [],
+    "description": null,
+    "design": null,
     "envelope": {
       "gate1": "2026-10-14",
       "gate2b": "2026-10-15",
@@ -333,7 +401,9 @@ $ uv run shared/tracker.py set-gate-value demo gate2b 2026-10-15
     "id": "demo",
     "kind": "program",
     "lifecycle": "open",
-    "parent": null
+    "parent": null,
+    "title": null,
+    "tracks": []
   }
 }
 $ uv run shared/tracker.py add-note demo-E1-s2 'checked the gate'
@@ -352,10 +422,13 @@ $ uv run shared/tracker.py record-attempt demo-E1-s2 0.6 --note 'first try'
 {
   "ok": true,
   "result": {
+    "acceptance_criteria": null,
     "assignee": "agent-1",
     "blocked_by": [
       "demo-E1-s1"
     ],
+    "description": null,
+    "design": null,
     "envelope": {
       "attempts": 1,
       "score": 0.6
@@ -364,17 +437,22 @@ $ uv run shared/tracker.py record-attempt demo-E1-s2 0.6 --note 'first try'
     "id": "demo-E1-s2",
     "kind": "slice",
     "lifecycle": "in_progress",
-    "parent": "demo-E1"
+    "parent": "demo-E1",
+    "title": null,
+    "tracks": []
   }
 }
 $ uv run shared/tracker.py escalate demo-E1-s2 0.4 'needs a human'
 {
   "ok": true,
   "result": {
+    "acceptance_criteria": null,
     "assignee": "agent-1",
     "blocked_by": [
       "demo-E1-s1"
     ],
+    "description": null,
+    "design": null,
     "envelope": {
       "escalated": true,
       "score": 0.4
@@ -383,7 +461,9 @@ $ uv run shared/tracker.py escalate demo-E1-s2 0.4 'needs a human'
     "id": "demo-E1-s2",
     "kind": "slice",
     "lifecycle": "in_progress",
-    "parent": "demo-E1"
+    "parent": "demo-E1",
+    "title": null,
+    "tracks": []
   }
 }
 ```
@@ -395,10 +475,13 @@ $ uv run shared/tracker.py skip-slice demo-E1-s2 --reason 'delayed by the engine
 {
   "ok": true,
   "result": {
+    "acceptance_criteria": null,
     "assignee": "agent-1",
     "blocked_by": [
       "demo-E1-s1"
     ],
+    "description": null,
+    "design": null,
     "envelope": {
       "outcome": "skipped",
       "reason": "delayed by the engineer"
@@ -407,7 +490,9 @@ $ uv run shared/tracker.py skip-slice demo-E1-s2 --reason 'delayed by the engine
     "id": "demo-E1-s2",
     "kind": "slice",
     "lifecycle": "closed",
-    "parent": "demo-E1"
+    "parent": "demo-E1",
+    "title": null,
+    "tracks": []
   }
 }
 ```
@@ -417,10 +502,13 @@ $ uv run shared/tracker.py set-epic-state demo-E1 closed --branch design/x
 {
   "ok": true,
   "result": {
+    "acceptance_criteria": null,
     "assignee": null,
     "blocked_by": [
       "pr-101"
     ],
+    "description": null,
+    "design": null,
     "envelope": {
       "branch": "design/x"
     },
@@ -428,35 +516,47 @@ $ uv run shared/tracker.py set-epic-state demo-E1 closed --branch design/x
     "id": "demo-E1",
     "kind": "epic",
     "lifecycle": "closed",
-    "parent": "demo"
+    "parent": "demo",
+    "title": null,
+    "tracks": []
   }
 }
 $ uv run shared/tracker.py open-pull-request pr-102 demo-E2
 {
   "ok": true,
   "result": {
+    "acceptance_criteria": null,
     "assignee": null,
     "blocked_by": [],
+    "description": null,
+    "design": null,
     "envelope": {},
     "external_ref": null,
     "id": "pr-102",
     "kind": "pr",
     "lifecycle": "open",
-    "parent": null
+    "parent": null,
+    "title": null,
+    "tracks": []
   }
 }
 $ uv run shared/tracker.py set-pull-request-state pr-101 merged
 {
   "ok": true,
   "result": {
+    "acceptance_criteria": null,
     "assignee": null,
     "blocked_by": [],
+    "description": null,
+    "design": null,
     "envelope": {},
     "external_ref": "PR#101",
     "id": "pr-101",
     "kind": "pr",
     "lifecycle": "closed",
-    "parent": null
+    "parent": null,
+    "title": null,
+    "tracks": []
   }
 }
 ```
@@ -524,14 +624,19 @@ $ uv run shared/tracker.py list-pull-requests
   "ok": true,
   "result": [
     {
+      "acceptance_criteria": null,
       "assignee": null,
       "blocked_by": [],
+      "description": null,
+      "design": null,
       "envelope": {},
       "external_ref": "PR#101",
       "id": "pr-101",
       "kind": "pr",
       "lifecycle": "open",
-      "parent": null
+      "parent": null,
+      "title": null,
+      "tracks": []
     }
   ]
 }

@@ -1,0 +1,10 @@
+{
+  "name": "solo",
+  "title": "Solo program title",
+  "outcome": "The solo program outcome.",
+  "done_when": ["Solo done"],
+  "stage": "build",
+  "epics": [
+    {"id": "E1", "title": "Solo epic title", "outcome": "The solo epic outcome.", "state": "in_progress"}
+  ]
+}

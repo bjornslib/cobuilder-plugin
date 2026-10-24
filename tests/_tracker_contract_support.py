@@ -30,7 +30,7 @@ def _seed_plan(corpus_dir: Path) -> list[tuple[dict[str, Any], str]]:
         return json.loads((corpus_dir / name).read_text(encoding="utf-8"))
 
     records = [load("program.json"), *load("prs.json"), *load("epics.json"), *load("slices.json")]
-    bd_types = {"program": "program", "pr": "task", "epic": "epic", "slice": "task"}
+    bd_types = {"program": "feature", "pr": "milestone", "epic": "epic", "slice": "task"}
     return [(record, bd_types[record["kind"]]) for record in records]
 
 
@@ -46,12 +46,11 @@ def _build_beads_scratch(corpus_dir: Path) -> Any:
     root.mkdir()
     runner = BdRunner(cwd=root)
     runner.run(["init", "--quiet", "--prefix", "t", "--skip-agents", "--skip-hooks", "--non-interactive"])
-    runner.run(["config", "set", "types.custom", "program,pr"])
     bd_ids: dict[str, str] = {}
     for record, bd_type in _seed_plan(corpus_dir):
         args = [
             "create", "--silent", "--type", bd_type, "--title", record["id"],
-            "--priority", "1" if record["kind"] == "program" else "2",
+            "--priority", "1" if record["kind"] == "program" else "2", "--labels", "cb",
             "--metadata", json.dumps({"cb": {"v": 1, "id": record["id"], "kind": record["kind"], "envelope": record["envelope"]}}),
         ]
         if record["external_ref"]:

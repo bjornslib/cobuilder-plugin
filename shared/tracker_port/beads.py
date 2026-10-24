@@ -22,7 +22,9 @@ from .beads_rows import (
     _is_cb_row,
     _is_ready,
     _metadata_arg,
+    row_extras,
 )
+from .beads_lookup import _LookupMixin
 from .beads_seed import _SeedMixin
 from .beads_pull_requests import _PullRequestMixin
 from .beads_writes import _WriteMixin
@@ -36,7 +38,7 @@ from .regenerate import regenerate
 __all__ = ["LIST_ARGS", "BeadsAdapter", "_cb_block", "_metadata_arg"]
 
 
-class BeadsAdapter(_SyncModeMixin, _WriteMixin, _PullRequestMixin, _SeedMixin, _BeadsSkipMixin):
+class BeadsAdapter(_LookupMixin, _SyncModeMixin, _WriteMixin, _PullRequestMixin, _SeedMixin, _BeadsSkipMixin):
     name = "beads"
     # Readiness comes from blocked_by, not from bd. The claim is atomic: bd update --claim.
     capabilities = Capabilities(native_ready=False, atomic_claim=True, rich_envelope=True, offline_read=True)
@@ -58,14 +60,6 @@ class BeadsAdapter(_SyncModeMixin, _WriteMixin, _PullRequestMixin, _SeedMixin, _
     def _rows(self) -> list[dict[str, Any]]:
         # A foreign issue carries no metadata.cb block. Every read and write ignores it.
         return [row for row in self._all_rows() if _is_cb_row(row)]
-
-    def doctor_details(self) -> dict[str, Any]:
-        # A workspace with no bd database still shows its sync details. It has no foreign issue count.
-        try:
-            foreign = {"foreign_issues": sum(1 for row in self._all_rows() if not _is_cb_row(row))}
-        except BdError:
-            foreign = {}
-        return {**foreign, **self._sync_details()}
 
     def _records(self) -> dict[str, TrackerRecord]:
         rows = self._rows()
@@ -96,6 +90,7 @@ class BeadsAdapter(_SyncModeMixin, _WriteMixin, _PullRequestMixin, _SeedMixin, _
             assignee=row.get("assignee"),
             envelope=_envelope(cb),
             external_ref=row.get("external_ref"),
+            **row_extras(row, to_cb_id, cb["kind"]),
         )
 
     @staticmethod

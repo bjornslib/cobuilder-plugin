@@ -31,6 +31,11 @@ def record_of_row(row: dict[str, Any]) -> TrackerRecord:
         assignee=row["assignee"],
         envelope=envelope,
         external_ref=row["external_ref"],
+        title=row.get("title"),
+        description=row.get("description"),
+        acceptance_criteria=row.get("acceptance_criteria"),
+        design=row.get("design"),
+        tracks=tuple(row.get("tracks", ())),
     )
 
 

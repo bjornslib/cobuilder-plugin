@@ -8,12 +8,14 @@ Run with: uv run pytest tests/test_tracker_contract.py -q
 """
 from __future__ import annotations
 
+import dataclasses
 import json
 from pathlib import Path
 from typing import Any, Callable
 
 import pytest
 
+from _beads_mapping_support import need_record_fields, text_of
 from _tracker_contract_support import CORPUS_DIR, assert_same_value, ids
 
 # The module holds the corpus, build, and adapter fixtures.
@@ -91,19 +93,20 @@ def test_gate_value_round_trip(adapter: Any) -> None:
     assert_same_value(adapter.list_programs()[0].envelope["gate4"], "done", "gate4")
 
 
-# Case 5: a pull request blocks two epics. Both epics show as ready only after the merge.
+# Case 5: a pull request blocks two epics. The merge frees the first epic, and the second waits for it (E7-3).
 def test_pr_blocks_two_epics(adapter: Any) -> None:
     # The corpus has pr-101 blocking demo-E1 and demo-E2.
     assert ids(adapter.next_ready("epic")) == []
 
     adapter.set_pull_request_state("pr-101", merged=True)
 
-    assert ids(adapter.next_ready("epic")) == ["demo-E1", "demo-E2"]
+    # E2 also waits for E1 (E7-3), so the merge frees the first epic only.
+    assert ids(adapter.next_ready("epic")) == ["demo-E1"]
 
 
 def test_open_pull_request_blocks_two_epics(adapter: Any) -> None:
     adapter.set_pull_request_state("pr-101", merged=True)
-    assert ids(adapter.next_ready("epic")) == ["demo-E1", "demo-E2"]
+    assert ids(adapter.next_ready("epic")) == ["demo-E1"]
 
     adapter.open_pull_request("pr-102", ["demo-E1", "demo-E2"])
 
@@ -112,7 +115,21 @@ def test_open_pull_request_blocks_two_epics(adapter: Any) -> None:
 
     adapter.set_pull_request_state("pr-102", merged=True)
 
-    assert ids(adapter.next_ready("epic")) == ["demo-E1", "demo-E2"]
+    assert ids(adapter.next_ready("epic")) == ["demo-E1"]
+
+
+# Case 5b (E7-2): every record carries the four text fields, and they stay out of equality.
+# The corpus holds no text. The beads scratch tracker holds the cb id as the title.
+def test_records_carry_the_text_fields_outside_equality(adapter: Any) -> None:
+    records = [*adapter.list_programs(), *adapter.list_epics(), *adapter.list_slices(), *adapter.list_pull_requests()]
+
+    need_record_fields()
+    assert records
+    for record in records:
+        title, description, acceptance, design = text_of(record)
+        assert (description, acceptance, design) == (None, None, None), record.id
+        assert title in (None, record.id), record.id
+        assert dataclasses.replace(record, title="Name", description="d", acceptance_criteria="a", design="g") == record
 
 
 # Case 6: no adapter. load_adapter returns None for a missing config.

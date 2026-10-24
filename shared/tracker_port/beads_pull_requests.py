@@ -23,7 +23,8 @@ class _PullRequestMixin:
         epic_rows = [self._find_row(rows, epic, ("epic",)) for epic in epic_ids]
         block = {"v": CB_VERSION, "id": ref, "kind": "pr", "envelope": {}}
         external_ref = f"gh-{number}"
-        pr_bd_id = self.runner.run(_create_argv(block, external_ref=external_ref)).strip()
+        argv = _create_argv(block, title=ref, options=[("--external-ref", external_ref)])
+        pr_bd_id = self.runner.run(argv).strip()
         for epic_row in epic_rows:
             # Each epic is blocked by the PR, so the epic is not ready until the PR closes.
             self.runner.run(["dep", "add", epic_row["id"], pr_bd_id])

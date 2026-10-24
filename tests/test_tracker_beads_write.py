@@ -27,9 +27,10 @@ def test_transcripts_record_bd_1_3_0() -> None:
         assert body["bd"].startswith(BD_VERSION_PREFIX), path.name
 
 
-def test_create_program_sends_program_type_and_cb_kind() -> None:
+def test_create_program_sends_the_native_feature_type_the_cb_label_and_cb_kind() -> None:
     args = _create_args("create_program")
-    assert args[args.index("--type") + 1] == "program"
+    assert args[args.index("--type") + 1] == "feature"
+    assert args[args.index("--labels") + 1] == "cb"
     assert support.metadata_arg(args)["cb"]["kind"] == "program"
     assert support.steps("create_program")[0]["stdout"] == "demo-b64\n"
 
@@ -38,6 +39,7 @@ def test_create_epic_is_a_child_blocked_by_its_pr() -> None:
     steps = support.steps("create_epic")
     args = _create_args("create_epic")
     assert args[args.index("--parent") + 1] == "demo-b64"
+    assert args[args.index("--type") + 1] == "epic"
     assert support.metadata_arg(args)["cb"]["kind"] == "epic"
     assert steps[1]["stdout"] == "demo-b64.1\n"
     assert steps[2]["args"] == ["dep", "add", "demo-b64.1", "demo-uwu"]
@@ -46,6 +48,7 @@ def test_create_epic_is_a_child_blocked_by_its_pr() -> None:
 def test_create_slice_is_a_child_of_its_epic() -> None:
     args = _create_args("create_slice")
     assert args[args.index("--parent") + 1] == "demo-b64.1"
+    assert args[args.index("--type") + 1] == "task"
     assert support.metadata_arg(args)["cb"]["kind"] == "slice"
     assert support.steps("create_slice")[1]["stdout"] == "demo-b64.1.1\n"
 

@@ -21,6 +21,8 @@
         "demo-E1-s1",
         "--priority",
         "2",
+        "--labels",
+        "cb",
         "--metadata",
         "{\"cb\":{\"v\":1,\"id\":\"demo-E1-s1\",\"kind\":\"slice\",\"envelope\":{\"score\":0.92,\"attempts\":2}}}"
       ],

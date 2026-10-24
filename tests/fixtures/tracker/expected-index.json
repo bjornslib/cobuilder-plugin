@@ -31,7 +31,8 @@
       "kind": "epic",
       "parent": "demo",
       "blocked_by": [
-        "pr-101"
+        "pr-101",
+        "demo-E1"
       ],
       "lifecycle": "open",
       "assignee": null,
@@ -42,7 +43,9 @@
       "id": "demo-E3",
       "kind": "epic",
       "parent": "demo",
-      "blocked_by": [],
+      "blocked_by": [
+        "demo-E2"
+      ],
       "lifecycle": "open",
       "assignee": null,
       "envelope": {
@@ -140,6 +143,11 @@
     ],
     [
       "demo-E2",
+      "demo-E1",
+      "blocked_by"
+    ],
+    [
+      "demo-E2",
       "pr-101",
       "blocked_by"
     ],
@@ -147,6 +155,11 @@
       "demo-E3",
       "demo",
       "parent"
+    ],
+    [
+      "demo-E3",
+      "demo-E2",
+      "blocked_by"
     ]
   ]
 }

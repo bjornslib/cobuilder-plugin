@@ -3,62 +3,16 @@
   "steps": [
     {
       "args": [
-        "config",
-        "get",
-        "types.custom"
-      ],
-      "stdout": "types.custom (not set)\n",
-      "stderr": "",
-      "exit": 0
-    },
-    {
-      "args": [
         "create",
         "--silent",
         "--type",
-        "program",
+        "feature",
         "--title",
         "demo-prog",
         "--priority",
         "1",
-        "--metadata",
-        "{\"cb\":{\"v\":1,\"id\":\"demo-prog\",\"kind\":\"program\",\"envelope\":{}}}"
-      ],
-      "stdout": "",
-      "stderr": "Error: validation failed: validation failed for issue : invalid issue type: program\n",
-      "exit": 1
-    },
-    {
-      "args": [
-        "config",
-        "set",
-        "types.custom",
-        "program"
-      ],
-      "stdout": "Set types.custom = program\n",
-      "stderr": "",
-      "exit": 0
-    },
-    {
-      "args": [
-        "config",
-        "get",
-        "types.custom"
-      ],
-      "stdout": "program\n",
-      "stderr": "",
-      "exit": 0
-    },
-    {
-      "args": [
-        "create",
-        "--silent",
-        "--type",
-        "program",
-        "--title",
-        "demo-prog",
-        "--priority",
-        "1",
+        "--labels",
+        "cb",
         "--metadata",
         "{\"cb\":{\"v\":1,\"id\":\"demo-prog\",\"kind\":\"program\",\"envelope\":{}}}"
       ],
@@ -76,6 +30,8 @@
         "demo-ip-probe",
         "--priority",
         "2",
+        "--labels",
+        "cb",
         "--status",
         "in_progress",
         "--metadata",

@@ -20,6 +20,8 @@ Ask one question: "Set up beads in this repo? It adds one commit, `.beads/` file
 
 ## Custom issue types
 
+> Replaced by ADR-0044.
+
 `types.custom` is the bd setting that lists the issue types beyond the built-in ones. It holds names that a comma separates. bd has no built-in `program` type, so the list must include it. `tracker.py prepare` adds `program` to the list. The entries that are already in the list stay. It changes nothing when `program` is there. bd prints `types.custom (not set)` when the list is empty.
 
 ## Setup on the first machine
@@ -27,7 +29,7 @@ Ask one question: "Set up beads in this repo? It adds one commit, `.beads/` file
 Run these steps in order. Each step needs the step before it.
 
 1. `bd init --skip-agents --skip-hooks -p demo --non-interactive`. The two skip flags skip bd's agent and hook setup. `-p demo` is the id prefix that the verification runs used.
-2. `bd config set types.custom program`. bd has no built-in `program` type. A `program` create fails until this step runs. `tracker.py prepare` runs this step and keeps the existing types. The adapter also runs it on demand.
+2. `bd config set types.custom program`. bd has no built-in `program` type. A `program` create fails until this step runs. `tracker.py prepare` runs this step and keeps the existing types. The adapter also runs it on demand. Replaced by ADR-0044.
 3. `bd config set team.enabled true`.
 4. `bd config set team.sync_branch main`.
 5. `git remote add origin <url>`. Use a URL that every machine can reach.
@@ -93,12 +95,40 @@ A plan program takes its stage from the `goal.json` of its design: the plan name
 
 ## Pull request issues
 
+> Replaced by ADR-0044.
+
 `open_pull_request(ref, epic_ids)` writes one issue for each pull request.
 
 - The ref must end in the GitHub number, such as `pr-101`.
 - The issue title is the ref. Its `external_ref` is `gh-<n>`, such as `gh-101`.
 - The issue type is `task`. The envelope holds no `pr` key. The number lives in the title and in `external_ref`.
 - The adapter runs `bd dep add <epic> <pr>` for each epic in `epic_ids`. Each epic stays blocked until the `pr` issue closes.
+
+## Native mapping
+
+ADR-0044 sets this mapping. The adapter creates each cb row with these bd fields.
+
+| Record | bd type | Parent | `external_ref` |
+|---|---|---|---|
+| Program | `feature` | none | the cb id |
+| Epic | `epic` | the program | the cb id |
+| Slice | `task` | the epic | the cb id |
+| Pull request | `milestone` | none | `gh-<n>`, such as `gh-101` |
+
+- **Label.** Every cb row has the label `cb`. The create sends `--labels cb`.
+- **Status.** A bd row with the status `deferred` reads as `open`.
+- **Custom type.** bd needs no custom type, so `prepare` sets none and a create does not retry.
+- **Title.** The constant `TITLE_RULE` in `tracker_port/record.py` sets the title. The value `name` (default) sends the name of the record. The value `id-and-name` sends `<cb id> — <name>`. A record with no name uses its cb id. A pull request uses its ref under both values.
+- **Text fields.** `description`, `acceptance_criteria`, and `design` map to the bd fields `description`, `acceptance_criteria`, and `design`. A field with no value sends no flag.
+- **Read.** A read fills `title`, `description`, `acceptance_criteria`, and `design` of the record from the bd row. These four fields are outside the equality of two records. A pull request also reads `tracks`, the epic ids of its `tracks` edges. `tracks` is inside the equality.
+- **Lookup.** `create_record` runs `bd list --external-ref <ref> --json --limit 0 --all`. It stops with `already exists` when a row holds the ref. `find_record` uses the same call to read one record.
+- **Doctor.** `doctor` reports `mapping: native`, or `mapping: legacy` when a cb row has the old mapping. The old mapping is a program of the type `program`, a pull request of the type `task`, or an epic that a pull request blocks.
+
+| Source | Title | `description` | `acceptance_criteria` | `design` |
+|---|---|---|---|---|
+| Program | the `title` of `goal.json`, or the plan folder name | the `outcome` of `goal.json` | the `done_when` lines | the design folder path, when it exists |
+| Epic | the header name in `04-slices.md`, or the `title` in `goal.json` | the `outcome` in `goal.json` | none | the path of `epic-<id>-design.md`, when it exists |
+| Slice | the slice name | none | the `Ends with` cell | none |
 
 ## Id mapping
 
@@ -114,7 +144,7 @@ A bd database may hold issues from other tools. The adapter never reads, changes
 | `bd <args> exited <code>: <stderr>` | A bd call failed | Read stderr and fix the named cause. |
 | `bd sync failed: <stderr>` | A sync failed | On an empty remote, run the first-publish steps. Otherwise read stderr. |
 | `no branches found in remote` | First sync to an empty remote | Run the first-publish steps. |
-| `invalid issue type: program` | The `program` type is not set | Run `bd config set types.custom program`. |
+| `invalid issue type: program` (replaced by ADR-0044) | The `program` type is not set | Run `bd config set types.custom program`. |
 | `claim of <id> refused: already claimed by <holder>` | Another holder owns a live claim | Pick another slice. The message names the holder. |
 | `claim of <id> refused: <stderr>` | bd refused the claim, for example a closed issue (`issue not claimable`) | Pick another slice. |
 | `pull request ref <ref> must end in its GitHub number, such as pr-101` | The ref has no GitHub number | Use the form `pr-<n>`. |
@@ -169,6 +199,8 @@ Findings:
 
 ## E5-3: native ready does not reach parity
 
+> Replaced by ADR-0044.
+
 - `bd ready --json --limit 0` on the E1 corpus lists `demo`, `demo-E3`, and `pr-101`. It does not list the slice `demo-E1-s3`. bd treats a child of a blocked parent as blocked, and the epic `demo-E1` is blocked by the open `pr-101`. The transcript is `ready-bd-corpus.json`.
 - `bd ready` also lists the pull request record, which is a task, and the deferred epic `demo-E3`. The adapter rules drop both.
 - The molecule root has the type `molecule`. Plain `bd ready` omits it. `bd ready --mol <root>` lists it. The transcript is `ready-bd-molecule.json`.
@@ -176,6 +208,8 @@ Findings:
 - The live parity test compares the adapter result with the E1 projector for each kind and for `under`.
 
 ## E5-4: pull request gates
+
+> Replaced by ADR-0044.
 
 - `open_pull_request` keeps the `blocks` dependency. It then runs `bd gate create --type gh:pr --blocks <epic> --await-id <number> --json` once for each blocked epic. The PR number is the await id.
 - The adapter stores the gate ids in the PR record, in `metadata.cb.envelope.gates`. A second `bd update` writes them, and then the sync runs.
@@ -195,3 +229,60 @@ The file is `shared/tracker_port/formulas/slice-loop.toml`. It has the steps `re
 - A failed attempt is an ephemeral child of the molecule: `bd create <title> --ephemeral --parent <molecule> --json`. The first child gets the id `<molecule>.1`.
 - Use `bd mol squash <molecule> --keep-children --summary <text>` to make a digest. With the flag, the result shows `kept_children` true and `deleted_count` 0, and the attempts stay. Without the flag, `deleted_count` is 1, and bd deletes the open attempts.
 - The adapter and the CLI do not read the formula. No code names the file, and the CLI operations did not change.
+
+## E7-1 spike: native mapping and bd ready
+
+The runs used bd 1.3.0 in a fresh scratch workspace, `/tmp/e71`, not the repo tracker. The actor was `BEADS_ACTOR=alice`. Each row has an exit code from the re-run. A step number counts from 0 in the `steps` list of the transcript. The rows for the migration run, the timing, the defer dates, and the row limits come from the designer's log `/tmp/e7-spike.md`, and they were not re-run. The adapter did not change.
+
+| Area | Command | Exit | Result | Evidence |
+|---|---|---|---|---|
+| Retype | `bd update <task> --type feature` | 0 | `issue_type` is `feature`, and `external_ref` stays | `native-retype.json` steps 2 and 3 |
+| Retype | `bd update <task> --type milestone` | 0 | `issue_type` is `milestone` | `native-retype.json` steps 4 and 6 |
+| Retype | `bd update <task> --type bogus` | 1 | `validation failed: invalid issue type bogus` | `native-retype.json` step 5 |
+| Tree and ready | `bd ready -t task --json --limit 0` on feature > epic > task with `blocks` edges | 0 | One row, `E1-1`. The epic `E2` waits for `E1`, and `E1-2` waits for `E1-1` | `native-tree-ready.json` step 15 |
+| Tree and ready | `bd ready -t task --parent <feature> --json --limit 0` (depth 2) | 0 | One row, `E1-1` | `native-tree-ready.json` step 16 |
+| Tree and ready | `bd ready -t task --parent <epic E2> --json --limit 0` (depth 1, blocked epic) | 0 | `[]` | `native-tree-ready.json` step 17 |
+| Tree and ready | `bd ready -t epic --json --limit 0`, and the same with `-t feature` | 0 | `E1` only, and the feature only | `native-tree-ready.json` steps 18 and 19 |
+| Row shape | `bd list --json --all --limit 0` with a milestone that tracks two epics | 0 | The milestone row holds two `tracks` dependencies. A slice row holds `parent-child` and `blocks` | `native-tree-ready.json` step 14 |
+| Row shape | `bd show <milestone> --json` | 0 | `dependencies` holds full issues, each with `dependency_type` `tracks` | `native-tree-ready.json` step 13 |
+| Claim | `bd ready -t task --claim --actor alice --json --limit 0` | 0 | One row, `E1-1`, with `status` `in_progress` and `assignee` alice | `native-ready-claim.json` step 0 |
+| Claim | The same command with `--actor bob`, with nothing ready | 0 | `[]` | `native-ready-claim.json` step 1 |
+| Claim | `bd ready -t task --json --limit 0` after the claim | 0 | `[]`. The held slice and its blocked sibling are not ready | `native-ready-claim.json` step 2 |
+| Lifecycle | `bd update <epic> --status in_progress`, then `bd ready -t epic` | 0 | `[]`. The epic leaves the epic list | `native-ready-claim.json` steps 3 and 4 |
+| Lifecycle | `bd close <slice E1-1>`, then `bd ready -t task` | 0 | `E1-2`. An epic in progress keeps its children ready | `native-ready-claim.json` steps 5 and 6 |
+| Lifecycle | `bd close <last slice of E1>`, then `bd list --json --all --limit 0` | 0 | Nothing auto-closes. `E1` stays `in_progress`, and the feature stays `open` | `native-ready-claim.json` steps 7 and 8 |
+| Lifecycle | `bd ready -t task` after the last slice closes | 0 | `[]`, because `E2` waits for `E1` | `native-ready-claim.json` step 9 |
+| Lifecycle | `bd close <E1>`, then `bd ready -t task` | 0 | `E2-1` | `native-ready-claim.json` steps 10 and 11 |
+| Lifecycle | `bd defer <E2> --until 2027-01-01`, then `bd ready -t task` | 0 | `[]`. A deferred epic hides its children | `native-ready-claim.json` steps 12 and 13 |
+| Claim | `bd ready -t task --parent <deferred epic> --claim --actor bob --json --limit 0` | 0 | `[]` | `native-ready-claim.json` step 14 |
+| Dependencies | `bd dep rm <epic> <task>`, run twice | 0 and 0 | Both calls print `Removed dependency`. The removal is idempotent | `native-dep-gate.json` steps 3 and 4 |
+| Dependencies | `bd gate resolve <gate>` | 0 | `Gate resolved`. The gate row is `closed`, and the epic keeps a `blocks` edge to it | `native-dep-gate.json` steps 6 and 7 |
+| Dependencies | `bd dep rm <epic> <gate>` | 0 | The edge goes, and `bd show <epic> --json` lists no dependency | `native-dep-gate.json` steps 8 and 9 |
+| Foreign tasks | `bd ready -t task --label cb --json --limit 0` with one foreign task and one labeled slice | 0 | Only the labeled slice | `native-foreign-label.json` step 3 |
+| Foreign tasks | `bd ready -t task --label cb --claim --actor dave --json --limit 0` | 0 | The claim takes the labeled slice, not the foreign task (priority 0) | `native-foreign-label.json` steps 4 and 5 |
+| Foreign tasks | `bd ready -t task --claim --actor dave --json`, with no label | 0 | The claim takes the foreign task | `/tmp/e7-spike.md` lines 68 to 75 |
+| External ref | `bd list --external-ref E1-1 --json --limit 0`, a known ref | 0 | One row, the issue with `external_ref` `E1-1` | `native-external-ref.json` step 2 |
+| External ref | `bd list --external-ref E9-9 --json --limit 0`, an unknown ref | 0 | `[]`. The exit code is 0, not an error | `native-external-ref.json` step 3 |
+| External ref | `bd create dup --type task --external-ref E1-1 --json`, a second issue with a known ref | 0 | bd accepts the duplicate | `native-external-ref.json` step 5 |
+| External ref | `bd list --external-ref E1-1 --json --all --limit 0` after the duplicate | 0 | Two rows | `native-external-ref.json` step 6 |
+| Migration run | `bd update --type`, `bd dep rm`, `bd dep add --type tracks`, `bd config unset types.custom`, and the field updates, on an old-mapping tracker | 0 for each | `bd ready -t task` changes from `gh-101` to `E1-1` | `/tmp/e7-spike.md` lines 58 to 63 |
+| Timing | A block of about 10 bd calls in a scratch store of 8 rows | 0 | 1.4 s to 17 s of wall time. The time for 322 issues is an inference | `/tmp/e7-spike.md` lines 64 to 67 |
+| Defer dates | `bd create --type epic --defer 2027-01-01`, and `bd update <epic> --defer 2020-01-01` | 0 | A past date frees the children, and the status word stays `deferred` | `/tmp/e7-spike.md` lines 76 to 82 |
+| Row limits | `bd list --json --all` and `bd ready -t task --json`, each with and without `--limit 0`, on 60 tasks | 0 | 60 rows each | `/tmp/e7-spike.md` lines 83 to 85 |
+
+Findings:
+
+- `bd update <id> --type` retypes an issue in place. The `external_ref` and the metadata stay. bd 1.3.0 refuses an unknown type with exit 1.
+- With a `blocks` edge between epics, the native frontier of `bd ready -t task` is the slice frontier. A `tracks` edge from a milestone adds no block. `--parent` filters at depth 1 and at depth 2.
+- `bd ready --claim` claims one issue and exits 0. When nothing is ready, it prints `[]` and exits 0. A caller cannot tell "held" from "empty" by the exit code.
+- An epic in progress keeps its children ready. Closing the last slice closes no parent. A deferred epic hides its children.
+- `bd dep rm` is idempotent. `bd gate resolve` closes the gate row but keeps the `blocks` edge, so `bd dep rm` must remove the edge.
+- `--label` filters both the ready list and the claim, so a claim does not take a foreign task. A claim with no label can take a foreign task.
+- `bd list --external-ref <ref> --json --limit 0` is an exact filter. A known ref gives one row, and an unknown ref gives `[]` with exit 0. bd does not enforce one issue for each ref. A duplicate create succeeds with exit 0, so the adapter must check for a ref before it creates.
+
+Not verified (unverified, with no outcome stated):
+
+- The claim race between two machines.
+- The restore from `bd export`.
+- Any bd version other than 1.3.0.
+- A defer date in the future that passes by the clock.
