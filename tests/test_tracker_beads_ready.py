@@ -29,8 +29,13 @@ def _projector(corpus: Path, kind: str, under: str | None = None) -> list[str]:
     return sorted(contract.ids(FakeAdapter(corpus).next_ready(kind, under=under)))
 
 
+def _native_rows() -> list[dict[str, Any]]:
+    # E7-4: the replay rows hold the pull request as a milestone with tracks, so no epic waits for it.
+    return json.loads(support.load_transcript("list")["stdout"])
+
+
 def _replay_adapter() -> Any:
-    return support.list_adapter(json.loads(support.BEADS_DIR.joinpath("list.json").read_text(encoding="utf-8")))[0]
+    return support.list_adapter(_native_rows())[0]
 
 
 def test_recorded_bd_ready_lists_a_pull_request_and_a_deferred_epic() -> None:
@@ -96,18 +101,19 @@ def test_live_bd_ready_differs_and_adapter_equals_projector(tmp_path: Path) -> N
 
     native = _titles(adapter.runner.run(READY_ARGS))
 
-    assert native == ["demo", "demo-E3", "pr-101"]
+    # E7-4: the milestone tracks the epics and blocks none, so bd ready also lists the epic and its slice.
+    assert native == ["demo", "demo-E1", "demo-E1-s3", "pr-101"]
     for kind in KINDS:
         assert contract.ids(adapter.next_ready(kind)) == _projector(corpus, kind), kind
     assert contract.ids(adapter.next_ready("slice", under="demo-E1")) == ["demo-E1-s3"]
-    assert "demo-E1-s3" not in native
+    assert "demo-E1-s3" in native
 
 
 def _rows_with_molecule() -> list[dict[str, Any]]:
     listed = json.loads(support.steps("ready-bd-molecule")[2]["stdout"])
     molecule = [row for row in listed if row["issue_type"] == "molecule" or row["id"].startswith("t-mol-")]
     assert any(row["issue_type"] == "molecule" for row in molecule)
-    return json.loads(support.BEADS_DIR.joinpath("list.json").read_text(encoding="utf-8")) + molecule
+    return _native_rows() + molecule
 
 
 @pytest.mark.parametrize("under", [None, "demo-E1"])

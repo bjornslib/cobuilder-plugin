@@ -108,7 +108,7 @@ def _epic_and_slice_records(
             id=epic_id,
             kind="epic",
             parent=program,
-            blocked_by=(),
+            blocked_by=(table.header_epic_ids[index - 1],) if index else (),
             lifecycle="open",
             assignee=None,
             envelope={
@@ -118,7 +118,7 @@ def _epic_and_slice_records(
             external_ref=epic_id,
             **epic_texts(plans_dir, program, epic_id, titles.get(epic_id)),
         )
-        for epic_id in table.header_epic_ids
+        for index, epic_id in enumerate(table.header_epic_ids)
     ]
     # Each slice waits for the slice row above it in the same epic.
     row_epics = _row_epics(text)

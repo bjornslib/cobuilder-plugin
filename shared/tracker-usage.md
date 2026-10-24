@@ -60,9 +60,7 @@ $ uv run shared/tracker.py list-epics --program demo
     {
       "acceptance_criteria": null,
       "assignee": null,
-      "blocked_by": [
-        "pr-101"
-      ],
+      "blocked_by": [],
       "description": null,
       "design": null,
       "envelope": {},
@@ -78,7 +76,7 @@ $ uv run shared/tracker.py list-epics --program demo
       "acceptance_criteria": null,
       "assignee": null,
       "blocked_by": [
-        "pr-101"
+        "demo-E1"
       ],
       "description": null,
       "design": null,
@@ -94,7 +92,9 @@ $ uv run shared/tracker.py list-epics --program demo
     {
       "acceptance_criteria": null,
       "assignee": null,
-      "blocked_by": [],
+      "blocked_by": [
+        "demo-E2"
+      ],
       "description": null,
       "design": null,
       "envelope": {
@@ -116,7 +116,7 @@ $ uv run shared/tracker.py list-epics --program demo
 
 Record kinds are `program`, `epic`, `slice`, and `pr`. The lifecycle states are `open`, `in_progress`, and `closed`. A composite id has the form `<design>/E5` or `<design>/<n>`.
 
-Gate values are a date, `n/a`, or absent. An assignee is a GitHub login. The envelope holds the other fields, such as `stage`, `score`, and `branch`. A record also holds the text fields `title`, `description`, `acceptance_criteria`, and `design`, and `tracks` for a pull request. Each text field is `null` when it has no value. Two records are equal when they differ only in a text field. The beads adapter reads the text fields from the bd row, and the files adapter reads them from the plan and design files.
+Gate values are a date, `n/a`, or absent. An assignee is a GitHub login. The envelope holds the other fields, such as `stage`, `score`, and `branch`. A record also holds the text fields `title`, `description`, `acceptance_criteria`, and `design`, and `tracks` for a pull request. Each text field is `null` when it has no value. Each epic after the first is blocked by the epic before it, so `blocked_by` shows the order. Two records are equal when they differ only in a text field. The beads adapter reads the text fields from the bd row, and the files adapter reads them from the plan and design files.
 
 ## Moment table
 
@@ -504,9 +504,7 @@ $ uv run shared/tracker.py set-epic-state demo-E1 closed --branch design/x
   "result": {
     "acceptance_criteria": null,
     "assignee": null,
-    "blocked_by": [
-      "pr-101"
-    ],
+    "blocked_by": [],
     "description": null,
     "design": null,
     "envelope": {
@@ -537,7 +535,9 @@ $ uv run shared/tracker.py open-pull-request pr-102 demo-E2
     "lifecycle": "open",
     "parent": null,
     "title": null,
-    "tracks": []
+    "tracks": [
+      "demo-E2"
+    ]
   }
 }
 $ uv run shared/tracker.py set-pull-request-state pr-101 merged
@@ -550,13 +550,16 @@ $ uv run shared/tracker.py set-pull-request-state pr-101 merged
     "description": null,
     "design": null,
     "envelope": {},
-    "external_ref": "PR#101",
+    "external_ref": "gh-101",
     "id": "pr-101",
     "kind": "pr",
     "lifecycle": "closed",
     "parent": null,
     "title": null,
-    "tracks": []
+    "tracks": [
+      "demo-E1",
+      "demo-E2"
+    ]
   }
 }
 ```
@@ -630,13 +633,16 @@ $ uv run shared/tracker.py list-pull-requests
       "description": null,
       "design": null,
       "envelope": {},
-      "external_ref": "PR#101",
+      "external_ref": "gh-101",
       "id": "pr-101",
       "kind": "pr",
       "lifecycle": "open",
       "parent": null,
       "title": null,
-      "tracks": []
+      "tracks": [
+        "demo-E1",
+        "demo-E2"
+      ]
     }
   ]
 }

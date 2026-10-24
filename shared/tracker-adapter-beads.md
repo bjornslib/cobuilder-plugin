@@ -93,16 +93,19 @@ The adapter sends `--force` on every close. bd refuses to close an epic that has
 
 A plan program takes its stage from the `goal.json` of its design: the plan name first, then the prefix of the first epic id. The seed repair closes an open program when the held stage is `implemented` or `superseded`, with or without a plan file. It also closes an open program that its files mark closed, unless the held stage is `review`. The close pass uses one sync. `set_program_stage` writes the bd status only when the lifecycle changes. A refused create names the held id: `create_record` stops with `already exists` before any `bd create`.
 
-## Pull request issues
+## Pull request milestones
 
-> Replaced by ADR-0044.
+ADR-0044 sets this mapping. It replaces the old `task` issue and the E5-4 gate.
 
-`open_pull_request(ref, epic_ids)` writes one issue for each pull request.
+`open_pull_request(ref, epic_ids)` writes one milestone for each pull request.
 
 - The ref must end in the GitHub number, such as `pr-101`.
-- The issue title is the ref. Its `external_ref` is `gh-<n>`, such as `gh-101`.
-- The issue type is `task`. The envelope holds no `pr` key. The number lives in the title and in `external_ref`.
-- The adapter runs `bd dep add <epic> <pr>` for each epic in `epic_ids`. Each epic stays blocked until the `pr` issue closes.
+- The milestone title is the ref. Its `external_ref` is `gh-<n>`, such as `gh-101`. Its label is `cb`.
+- The envelope holds no `pr` key and no gate id. The number lives in the title and in `external_ref`.
+- The adapter runs `bd dep add <pr> <epic> --type tracks` once for each epic, in the order of `epic_ids`.
+- The milestone has no `blocks` edge and no gate. An open pull request blocks no epic.
+- A read gives the record the epic ids of its `tracks` edges. A target that bd did not list is skipped.
+- `set_pull_request_state(merged)` closes the milestone only. The open state sets the milestone to `open`.
 
 ## Native mapping
 
@@ -129,6 +132,16 @@ ADR-0044 sets this mapping. The adapter creates each cb row with these bd fields
 | Program | the `title` of `goal.json`, or the plan folder name | the `outcome` of `goal.json` | the `done_when` lines | the design folder path, when it exists |
 | Epic | the header name in `04-slices.md`, or the `title` in `goal.json` | the `outcome` in `goal.json` | none | the path of `epic-<id>-design.md`, when it exists |
 | Slice | the slice name | none | the `Ends with` cell | none |
+
+## Hierarchy and ordering edges
+
+The seed gives each cb row one `parent` and two chains of `blocks` edges.
+
+- **Parent.** A slice has its epic as parent. An epic has its program as parent.
+- **Epic order.** Each epic after the first has a `blocks` edge to the epic before it. The files adapter sets `blocked_by` from the order of the epic headers in `04-slices.md`. For a design, it skips an epic with no state.
+- **Slice order.** Each slice after the first of its epic has a `blocks` edge to the slice before it.
+- **One edge each.** `create_record` runs one `bd dep add` for each `blocked_by` entry. The seed creates the epics in order, so each target exists. A second seed adds no edge.
+- **Defer.** An epic that is open and has `deferred` in its envelope gets `--defer <date>` on create. A closed or in-progress epic gets no flag. The slices of a deferred epic stay out of `bd ready`.
 
 ## Id mapping
 
@@ -206,18 +219,6 @@ Findings:
 - The molecule root has the type `molecule`. Plain `bd ready` omits it. `bd ready --mol <root>` lists it. The transcript is `ready-bd-molecule.json`.
 - The slice difference is a difference that bd cannot close. So `native_ready` stays false, and the adapter computes ready itself, as E1 does. The adapter has no `ready_argv` and no hybrid path.
 - The live parity test compares the adapter result with the E1 projector for each kind and for `under`.
-
-## E5-4: pull request gates
-
-> Replaced by ADR-0044.
-
-- `open_pull_request` keeps the `blocks` dependency. It then runs `bd gate create --type gh:pr --blocks <epic> --await-id <number> --json` once for each blocked epic. The PR number is the await id.
-- The adapter stores the gate ids in the PR record, in `metadata.cb.envelope.gates`. A second `bd update` writes them, and then the sync runs.
-- `set_pull_request_state(merged)` runs `bd gate list --json`. It runs `bd gate resolve <id>` for each stored gate that is open and whose `await_id` equals the PR number. Then it closes the PR.
-- A gate with no stored number has no `await_id`. It stays pending, and the merge raises no error.
-- The open and closed states run no gate command. A PR with no stored gate ids runs no gate command.
-- `bd list` hides gate rows. An epic row still lists its gate as a `blocks` dependency. A read skips a `blocks` dependency whose target bd did not list.
-- bd 1.3.0: `bd gate list --json` prints `null`, not `[]`, when no gate is open. The adapter reads `null` as an empty list.
 
 ## E5-5: slice-loop formula
 

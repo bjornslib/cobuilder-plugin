@@ -102,7 +102,7 @@ def design_records(plans_dir: Path, emitted: list[TrackerRecord]) -> list[Tracke
                     id=epic_id,
                     kind="epic",
                     parent=design,
-                    blocked_by=(),
+                    blocked_by=(epics[-1].id,) if epics else (),
                     lifecycle=lifecycle,
                     assignee=None,
                     envelope={"epic_id": entry["id"], **state},

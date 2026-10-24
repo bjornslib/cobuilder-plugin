@@ -154,6 +154,13 @@ def _is_ready(record: TrackerRecord, records: dict[str, TrackerRecord]) -> bool:
     return True
 
 
+def _defer_date(record: TrackerRecord) -> str | None:
+    if record.kind == "epic" and record.lifecycle == "open":
+        value = record.envelope.get("deferred")
+        return str(value) if value else None
+    return None
+
+
 def record_options(record: TrackerRecord) -> list[tuple[str, str | None]]:
     """The optional create flags of a record, in the recorded order. An unset field sends no flag."""
     return [
@@ -162,6 +169,7 @@ def record_options(record: TrackerRecord) -> list[tuple[str, str | None]]:
         ("--acceptance", record.acceptance_criteria),
         ("--design", record.design),
         ("--assignee", record.assignee),
+        ("--defer", _defer_date(record)),
     ]
 
 

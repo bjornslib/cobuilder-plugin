@@ -65,6 +65,10 @@ def _build_beads_scratch(corpus_dir: Path) -> Any:
             runner.run(["update", bd_id, "--status", "closed"])
         elif record["lifecycle"] == "in_progress":
             runner.run(["update", bd_id, "--status", "in_progress", "--assignee", record["assignee"]])
+    # A pull request tracks its epics. The edge runs from the pull request to each epic, and it blocks nothing.
+    for record, _ in _seed_plan(corpus_dir):
+        for epic in record.get("tracks", []):
+            runner.run(["dep", "add", bd_ids[record["id"]], bd_ids[epic], "--type", "tracks"])
     return BeadsAdapter(runner=runner)
 
 
@@ -116,6 +120,21 @@ def adapter(build: Callable[[Path], Any], corpus: Path) -> Any:
 
 def ids(records: list[Any]) -> list[str]:
     return [record.id for record in records]
+
+
+def ready_sets(adapter: Any) -> dict[str, list[str]]:
+    """The ids that next_ready gives for each ready kind."""
+    return {kind: ids(adapter.next_ready(kind)) for kind in ("program", "epic", "slice")}
+
+
+def tracked(adapter: Any, ref: str) -> list[str]:
+    """The epic ids that the pull request `ref` tracks, sorted. bd may list the edges in any order."""
+    return sorted(next(record for record in adapter.list_pull_requests() if record.id == ref).tracks)
+
+
+def blocked_by_a_pr(adapter: Any) -> list[str]:
+    """The ids of the epics that a pull request still blocks. A native tracker has none."""
+    return [epic.id for epic in adapter.list_epics() if any(b.startswith("pr-") for b in epic.blocked_by)]
 
 
 def assert_same_value(stored: Any, expected: Any, label: str) -> None:

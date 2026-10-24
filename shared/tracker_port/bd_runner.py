@@ -22,16 +22,6 @@ def claim_argv(issue_id: str, claimant: str) -> list[str]:
     return ["update", issue_id, "--claim", "--actor", claimant]
 
 
-def gate_create_argv(epic_bd_id: str, await_id: str) -> list[str]:
-    """The bd call that makes one gh:pr gate. The gate blocks the epic until the pull request merges."""
-    return ["gate", "create", "--type", "gh:pr", "--blocks", epic_bd_id, "--await-id", await_id, "--json"]
-
-
-def gate_resolve_argv(gate_id: str) -> list[str]:
-    return ["gate", "resolve", gate_id]
-
-
-
 class BdRunner:
     """Runs `bd <args>` with no shell and returns stdout as text."""
 

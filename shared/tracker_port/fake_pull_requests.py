@@ -23,11 +23,9 @@ class _PullRequestMixin:
             assignee=None,
             envelope={},
             external_ref=None,
+            tracks=tuple(epic_ids),
         )
         self._records.append(pull_request)
-        for epic in epic_ids:
-            current = self._record_of(epic, "epic")
-            self._update(epic, "epic", blocked_by=current.blocked_by + (ref,))
         self._commit()
         return pull_request
 
