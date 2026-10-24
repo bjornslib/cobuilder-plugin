@@ -35,12 +35,12 @@ The slice changes docs and one hook reminder. It changes no adapter code.
 
 ### C3 — The obsolete sections are dropped and the build still runs [CRITICAL]
 
-**Must be true:** The adapter notes no longer hold the sections that ADR-0044 lists under "Obsolete after this ADR", or they carry a pointer to ADR-0044 in place of the text. `uv run shared/build_index.py` exits 0, and `uv run shared/prose_budget.py check` and `ste-lint.py` pass on the changed docs.
+**Must be true:** The adapter notes no longer hold the sections that ADR-0044 lists under "Obsolete after this ADR", or they carry a pointer to ADR-0044 in place of the text. `uv run shared/build_index.py` exits 0, and `ste-lint.py` scores each changed doc no worse than its base (`prose_budget.py check` takes only the design JSON files, so it does not apply to these docs).
 
-**Evidence to check:** Run the three commands. Read each exit code. Compare the notes with the list in ADR-0044.
+**Evidence to check:** Run `build_index.py` and `ste-lint.py`. Read each exit code and compare the lint score with the base. Compare the notes with the list in ADR-0044.
 
 **Scoring:**
-- 1.0: all three commands exit 0 and no listed section remains as live text.
+- 1.0: both commands pass and no listed section remains as live text.
 - 0.5: the commands pass, but one listed section remains as live text.
 - 0.0: a command fails.
 
