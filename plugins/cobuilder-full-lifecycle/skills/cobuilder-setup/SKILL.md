@@ -139,7 +139,11 @@ This part runs after the engineer configures the tracker adapter. It follows `sh
    For beads, write `sync: async` in the file without a question. It makes each write return at once, and a short-lived worker runs the sync. To change it, the engineer sets `sync: write` or `sync: off` in `.cobuilder/tracker.yaml`. For files, write no `sync` key. If the file exists, keep its `sync` key.
 1. **Check the adapter.** When the adapter is beads and the repo has no `.beads` folder, read `shared/tracker-adapter-beads.md`. It holds the approval step for the beads setup. Do not run any beads command from this skill.
 2. **Check the beads tool.** When the adapter is beads, run `tracker.py doctor`. If it exits 3 and reports that the beads binary is not found, stop this part. Tell the engineer to install the beads tool as the Prerequisites section of the README says, and to run install again. Do not install it from this skill.
-3. **Prepare beads.** When the adapter is beads, tell the engineer that this step sets the issue type list of the repo to include `program`, and that the types already in the list stay. Ask the engineer to agree. After the engineer agrees, run `tracker.py prepare`. If the engineer declines, stop this part.
+   When `tracker.py doctor` reports `mapping: legacy`, first take a snapshot
+   with the tracker export described in `shared/tracker-adapter-beads.md`.
+   Then run `tracker.py migrate-mapping --dry-run` and show the changes to
+   the engineer. Get approval, then run `tracker.py migrate-mapping`.
+3. **Prepare beads.** When the adapter is beads, ask the engineer to approve the setup before you run `tracker.py prepare`. If the engineer declines, stop this part.
 4. **Run the dry run.** Run `tracker.py seed-from-files <plans-dir> --dry-run`. Show the engineer the list of planned creates.
 5. **Ask for consent.** Ask the engineer for explicit consent to write. Do not write on silence or on a vague answer.
 

@@ -8,13 +8,16 @@ Run with: uv run pytest tests/test_tracker_contract.py -q
 """
 from __future__ import annotations
 
+import dataclasses
 import json
 from pathlib import Path
 from typing import Any, Callable
 
 import pytest
 
-from _tracker_contract_support import CORPUS_DIR, assert_same_value, ids
+from _beads_mapping_support import need_record_fields, text_of
+from _tracker_contract_support import CORPUS_DIR, READ_ADAPTER_BUILDERS, assert_same_value, ids
+from _tracker_contract_support import blocked_by_a_pr, ready_sets, tracked
 
 # The module holds the corpus, build, and adapter fixtures.
 pytest_plugins = ["_tracker_contract_support"]
@@ -41,13 +44,15 @@ def test_next_ready_excludes_pr_and_deferred(adapter: Any) -> None:
     assert "pr-101" not in ids(adapter.next_ready("slice"))
 
 
-# Case 2: next_ready returns the right records for each kind, with and without under.
+# Case 2 (E7-5): next_ready returns the right records for each kind, with and without under (an epic or a program).
 def test_next_ready_kinds(adapter: Any) -> None:
     assert ids(adapter.next_ready("program")) == ["demo"]
     assert ids(adapter.next_ready("slice")) == ["demo-E1-s3"]
     assert ids(adapter.next_ready("slice", under="demo-E1")) == ["demo-E1-s3"]
+    assert ids(adapter.next_ready("slice", under="demo")) == ["demo-E1-s3"], "under may be the program"
     assert ids(adapter.next_ready("slice", under="demo-E2")) == []
-    assert ids(adapter.next_ready("epic")) == []
+    assert ids(adapter.next_ready("slice", under="demo-E3")) == [], "a deferred epic holds no ready slice"
+    assert ids(adapter.next_ready("epic")) == ["demo-E1"], "E2 waits for E1, and the open pull request holds neither"
 
 
 # Case 3: claim_slice leaves the claimant in assignee. Read-back covers atomic_claim false.
@@ -91,28 +96,50 @@ def test_gate_value_round_trip(adapter: Any) -> None:
     assert_same_value(adapter.list_programs()[0].envelope["gate4"], "done", "gate4")
 
 
-# Case 5: a pull request blocks two epics. Both epics show as ready only after the merge.
-def test_pr_blocks_two_epics(adapter: Any) -> None:
-    # The corpus has pr-101 blocking demo-E1 and demo-E2.
-    assert ids(adapter.next_ready("epic")) == []
+# Case 5 (E7-4): a pull request tracks its epics and blocks none. A merge only closes it, so no ready set changes.
+@pytest.mark.parametrize("adapter_id", list(READ_ADAPTER_BUILDERS))
+def test_pr_tracks_two_epics_on_every_read_adapter(adapter_id: str) -> None:
+    adapter = READ_ADAPTER_BUILDERS[adapter_id](CORPUS_DIR)
+
+    assert tracked(adapter, "pr-101") == ["demo-E1", "demo-E2"]
+    assert blocked_by_a_pr(adapter) == [], "no epic is blocked_by a pull request"
+    assert ids(adapter.next_ready("epic")) == ["demo-E1"]
+
+
+def test_a_merge_only_closes_the_pull_request_and_changes_no_ready_set(adapter: Any) -> None:
+    before = ready_sets(adapter)
 
     adapter.set_pull_request_state("pr-101", merged=True)
 
-    assert ids(adapter.next_ready("epic")) == ["demo-E1", "demo-E2"]
+    assert next(r for r in adapter.list_pull_requests() if r.id == "pr-101").lifecycle == "closed"
+    assert ready_sets(adapter) == before
+    assert tracked(adapter, "pr-101") == ["demo-E1", "demo-E2"], "the closed pull request keeps its epics"
 
 
-def test_open_pull_request_blocks_two_epics(adapter: Any) -> None:
-    adapter.set_pull_request_state("pr-101", merged=True)
-    assert ids(adapter.next_ready("epic")) == ["demo-E1", "demo-E2"]
+def test_open_pull_request_tracks_two_epics_blocks_none_and_changes_no_ready_set(adapter: Any) -> None:
+    before = ready_sets(adapter)
 
-    adapter.open_pull_request("pr-102", ["demo-E1", "demo-E2"])
+    opened = adapter.open_pull_request("pr-102", ["demo-E1", "demo-E2"])
 
-    assert "pr-102" in ids(adapter.list_pull_requests())
-    assert ids(adapter.next_ready("epic")) == []
-
+    assert (opened.kind, opened.blocked_by, opened.lifecycle) == ("pr", (), "open")
+    assert sorted(opened.tracks) == ["demo-E1", "demo-E2"] and tracked(adapter, "pr-102") == ["demo-E1", "demo-E2"]
+    assert blocked_by_a_pr(adapter) == [] and ready_sets(adapter) == before
     adapter.set_pull_request_state("pr-102", merged=True)
+    assert ready_sets(adapter) == before
 
-    assert ids(adapter.next_ready("epic")) == ["demo-E1", "demo-E2"]
+
+# Case 5b (E7-2): every record carries the four text fields, and they stay out of equality.
+# The corpus holds no text. The beads scratch tracker holds the cb id as the title.
+def test_records_carry_the_text_fields_outside_equality(adapter: Any) -> None:
+    records = [*adapter.list_programs(), *adapter.list_epics(), *adapter.list_slices(), *adapter.list_pull_requests()]
+
+    need_record_fields()
+    assert records
+    for record in records:
+        title, description, acceptance, design = text_of(record)
+        assert (description, acceptance, design) == (None, None, None), record.id
+        assert title in (None, record.id), record.id
+        assert dataclasses.replace(record, title="Name", description="d", acceptance_criteria="a", design="g") == record
 
 
 # Case 6: no adapter. load_adapter returns None for a missing config.

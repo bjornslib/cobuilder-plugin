@@ -40,7 +40,7 @@ Everything runs in your own Claude Code session, against your own checkout. Your
    /cobuilder-full-lifecycle:install
    ```
 
-   It installs habit-hooks and its detectors, and proves the coach. It checks for `DDD-VOCABULARY.md`. It adds the Hindsight allow rules to your user settings. It also sets up the tracker. It creates `.cobuilder/tracker.yaml`, runs the `prepare` step, and shows a backfill dry run before it writes. For the `beads` adapter, install `bd` first (see Prerequisites). It asks before each change.
+   It installs habit-hooks and its detectors, and proves the coach. It checks for `DDD-VOCABULARY.md`. It adds the Hindsight allow rules to your user settings. It also sets up the tracker. It creates `.cobuilder/tracker.yaml`, runs `prepare`, and shows a backfill dry run before it writes. For an existing tracker with an old mapping, run `migrate-mapping` after a snapshot and a dry run. For the `beads` adapter, install `bd` first (see Prerequisites). It asks before each change.
 5. Run a command from the table above.
 
 To start with one job, install one plugin. For example, `/plugin install architect@cobuilder-plugin` gives you the design and review modes.
@@ -87,6 +87,7 @@ The `architect`, `implement`, and `artifact view` commands need no API key. The 
 Workflow state lives in a tracker, not in plan files or `goal.json`. State means the program stage and gates, the epic state and branch, the slice claim, the attempts, the score, and the pull request records. The `00-status.md` and `04-slices.md` state lines are generated. Do not edit them by hand. `goal.json` epics no longer hold `branch`, `pr`, or `state`.
 
 `shared/tracker.py` is the one command for all of it. `.cobuilder/tracker.yaml` picks the adapter. Without that file, every state write exits with code 2. The `implement` plugin also ships a `SessionStart` hook that reminds the agent to use the tracker. State syncs between machines through the git remote, under `refs/dolt/data`. It adds no branch.
+In beads, a program is a native `feature`. A pull request record is a `milestone` that `tracks` its epics. Slices are ordered, and native ready (`claim-next`) picks the next slice. Records carry label `cb`, and `external_ref` finds each record. Run `migrate-mapping` for an old tracker.
 
 For the details, read `shared/tracker-usage.md`, ADR-0031, ADR-0040, and ADR-0041.
 

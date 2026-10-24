@@ -22,6 +22,14 @@ PLANS_DIR = FIXTURES / "plans"
 DRY_RUN = FIXTURES / "backfill" / "dry_run.txt"
 SEED_TRANSCRIPT = FIXTURES / "beads" / "transcripts" / "seed_steps.json"
 BD_VERSION_PREFIX = "bd version 1.3.0"
+# The title of each seeded record: the plan name, the epic header name, and each slice name.
+SEEDED_TITLES = [
+    "beads-storage-mini",
+    "Mini epic",
+    "Lists programs from the tree",
+    "Contract cases pass",
+    "Dry run matches the fixture",
+]
 SEEDED_IDS = [
     "beads-storage-mini",
     "beads-storage-mini/E1",
@@ -43,6 +51,7 @@ class ReplayRunner:
         self.list_after = list_after
         self.writes: list[list[str]] = []
         self.syncs = 0
+        self.lookups: list[list[str]] = []
         self.violations: list[str] = []
 
     def run(self, args: list[str]) -> str:
@@ -51,6 +60,10 @@ class ReplayRunner:
             self.syncs += 1
             return "Sync complete.\n"
 
+        if list(args)[:2] == ["list", "--external-ref"]:
+            # The ref lookup of a create. No row holds a ref that the seed is about to create.
+            self.lookups.append(list(args))
+            return "[]"
         if list(args) == LIST_ARGS:
             index = len(self.writes)
             return self.steps[index]["list_before"] if index < len(self.steps) else self.list_after
@@ -112,8 +125,10 @@ def test_apply_replays_creates_and_deps_in_recorded_order() -> None:
 
     assert not runner.violations
     assert runner.writes == [step["args"] for step in body["steps"]]
-    create_titles = [call[call.index("--title") + 1] for call in runner.writes if call[0] == "create"]
-    assert create_titles == SEEDED_IDS
+    creates = [call for call in runner.writes if call[0] == "create"]
+    assert [support.metadata_arg(call)["cb"]["id"] for call in creates] == SEEDED_IDS
+    assert [call[call.index("--title") + 1] for call in creates] == SEEDED_TITLES
+    assert runner.lookups == [["list", "--external-ref", ref, "--json", "--limit", "0", "--all"] for ref in SEEDED_IDS]
     assert [record.id for record in records] == SEEDED_IDS
     assert runner.syncs == 1, "a run that creates records must sync once, at the end"
 

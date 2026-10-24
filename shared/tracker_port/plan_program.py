@@ -7,6 +7,7 @@ from pathlib import Path
 
 from gate_status import approved_date, parse_gate4_substeps, parse_status_gates
 
+from .plan_texts import program_texts
 from .program_state import program_lifecycle
 from .record import TrackerRecord
 
@@ -37,4 +38,5 @@ def _program_record(
         assignee=None,
         envelope=envelope,
         external_ref=program,
+        **program_texts(directory.parent, program),
     )

@@ -9,7 +9,8 @@ from typing import Any
 from slice_table import parse_header_epic_id, parse_table
 
 from .design_records import epic_state
-from .plan_epic_rows import _row_epics
+from .plan_epic_rows import _header_epic_titles, _row_epics
+from .plan_texts import epic_texts
 from .port import AdapterError
 from .record import TrackerRecord
 
@@ -101,12 +102,13 @@ def _epic_and_slice_records(
         )
     _reject_repeated_epic_header(program, text)
     epic_ids = set(table.header_epic_ids)
+    titles = _header_epic_titles(text)
     records = [
         TrackerRecord(
             id=epic_id,
             kind="epic",
             parent=program,
-            blocked_by=(),
+            blocked_by=(table.header_epic_ids[index - 1],) if index else (),
             lifecycle="open",
             assignee=None,
             envelope={
@@ -114,8 +116,9 @@ def _epic_and_slice_records(
                 **(epic_state(plans_dir, program, epic_id) if plans_dir else {}),
             },
             external_ref=epic_id,
+            **epic_texts(plans_dir, program, epic_id, titles.get(epic_id)),
         )
-        for epic_id in table.header_epic_ids
+        for index, epic_id in enumerate(table.header_epic_ids)
     ]
     # Each slice waits for the slice row above it in the same epic.
     row_epics = _row_epics(text)
@@ -164,6 +167,8 @@ def _epic_and_slice_records(
                 lifecycle=_slice_lifecycle(checked, row.state),
                 assignee=None,
                 envelope=envelope,
+                title=row.name,
+                acceptance_criteria=row.ends_with,
                 external_ref=slice_id,
             )
         )

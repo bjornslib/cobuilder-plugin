@@ -36,7 +36,8 @@ def _transcript() -> dict[str, Any]:
 
 
 def _list_rows() -> list[dict[str, Any]]:
-    return json.loads((BEADS_DIR / "list.json").read_text(encoding="utf-8"))
+    # The transcript holds the native mapping of E7-4. beads/list.json stays as the old recording for the legacy tests.
+    return json.loads(_transcript()["stdout"])
 
 
 def _beads_adapter(stdout: str | None = None) -> Any:
@@ -55,9 +56,13 @@ def _fake_records() -> list[Any]:
     return sorted(records + fake.list_pull_requests(), key=lambda record: record.id)
 
 
-def test_transcript_stdout_is_the_list_fixture() -> None:
-    assert _transcript()["args"] == LIST_ARGS
-    assert json.loads(_transcript()["stdout"]) == _list_rows()
+def test_transcript_rows_hold_the_pull_request_as_a_milestone_that_tracks_both_epics() -> None:
+    rows = _list_rows()
+    pr = next(row for row in rows if row["issue_type"] == "milestone")
+
+    assert _transcript()["args"] == LIST_ARGS and pr["external_ref"] == "gh-101"
+    assert {d["depends_on_id"] for d in pr["dependencies"] if d["type"] == "tracks"} == {"t-anc.1", "t-anc.2"}
+    assert not any(d["depends_on_id"] == pr["id"] for row in rows for d in row.get("dependencies") or [])
 
 
 def test_list_json_maps_to_fake_records() -> None:

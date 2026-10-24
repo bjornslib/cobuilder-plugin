@@ -29,6 +29,9 @@ def project(records: Sequence[TrackerRecord]) -> dict[str, Any]:
             "envelope": {key: _plain(value) for key, value in record.envelope.items()},
             "external_ref": record.external_ref,
         }
+        if record.kind == "pr":
+            entities[record.id]["tracks"] = list(record.tracks)
+            joins.extend([record.id, epic, "tracks"] for epic in record.tracks)
         if record.parent is not None:
             joins.append([record.id, record.parent, "parent"])
         joins.extend([record.id, blocker, "blocked_by"] for blocker in record.blocked_by)

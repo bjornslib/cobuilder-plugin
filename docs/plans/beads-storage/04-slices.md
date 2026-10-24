@@ -1,6 +1,6 @@
 # Slices: beads-storage
 
-Gate 4a for the whole program. The slices cover five epics, E1 to E5. Slice numbers run 1 to 22 across the program. Epic E5 is a proposal until the engineer approves it. The epic designs for E2 to E4 come later, at their own Gate 4 run. Gate 4b and 4c stay pending.
+Gate 4a for the whole program. The slices cover six built or proposed epics, E1 to E5 and E7. Slice numbers run 1 to 30 across the program. E6 stays unbuilt, so it has no row. Epic E7 is a proposal until the engineer approves it. The epic designs for E2 to E4 come later, at their own Gate 4 run. Gate 4b and 4c stay pending.
 
 Test command for each slice: `uv run pytest tests -q`. Run it once after the implementation, not in each slice.
 
@@ -41,9 +41,18 @@ Each slice ends in one thing that a test asserts or a reader sees. A slice never
 | 20 | `beads-storage/E5` | **Native ready, with parity** | Ready parity holds for each kind on the recorded corpus, and contract cases 1 and 2 pass on beads. | 0.92 (attempt 1) | done |
 | 21 | `beads-storage/E5` | **Pull request gate** | The gate resolves when the pull request merges, and the slice 15 test stays green. | 1 (attempt 1) | done |
 | 22 | `beads-storage/E5` | **Slice-loop formula** | The formula cooks and pours, a failed attempt adds a wisp, and squash with `--keep-children` keeps the attempt history. | 1 (attempt 1) | done |
+| | **`beads-storage/E7` — Native beads mapping and bd ready.** Native types, human titles and text fields, ordering edges, a pull request milestone that tracks its epics, native ready for slices, `claim-next`, and `migrate-mapping`. It starts after E5 slice 22. E6 stays unbuilt. See `epic-E7-design.md` and ADR-0044. | | | | |
+| 23 | `beads-storage/E7` | **Spike notes into the adapter notes** | The notes hold each spike finding with its command and exit code | 1 (attempt 1) | done |
+| 24 | `beads-storage/E7` | **Type, title, label, and text mapping** | A created issue has the new type, the name as title, the label, and the text fields. A read returns them. `prepare` sets no custom type. | 1 (attempt 2) | done |
+| 25 | `beads-storage/E7` | **Hierarchy and ordering edges** | A seed gives the epic chain and the slice chain, and the deferred epic gets a native defer date | 1 (attempt 1) | done |
+| 26 | `beads-storage/E7` | **Pull request as a milestone with `tracks`** | A PR holds its epics by `tracks` and blocks nothing. No gate remains. | 1 (attempt 1) | done |
+| 27 | `beads-storage/E7` | **Native ready for slices, with parity** | `next_ready("slice", under)` runs `bd ready`. `native_ready` is true. The parity test holds on the corpus. | 1 (attempt 1) | done |
+| 28 | `beads-storage/E7` | **`claim-next`** | One call claims the first ready slice. Nothing ready gives `null` and exit 0. | 1 (attempt 1) | done |
+| 29 | `beads-storage/E7` | **`migrate-mapping` with dry run** | A legacy scratch tracker converts in one sync. A dry run writes nothing. A second run changes nothing. | 1 (attempt 1) | done |
+| 30 | `beads-storage/E7` | **Docs, install, usage** | The docs name the two operations and the migration. `tracker.py --help` lists them. | 1 (attempt 2) | done |
 
 ## Escalation and order
 
-- Each epic runs in order, E1 then E2 then E3 then E4 then E5. E2 does not start until E1 slice 5 closes. E3 does not start until E1 slice 5 closes, because the read model runs on the files and fake adapters. E4 does not start until E3 slice 12 closes. The Dolt clone check of E2 slice 9 gates the close of E2 and of the program. A failure of that check returns the decision to the engineer.
+- Each epic runs in order, E1 then E2 then E3 then E4 then E5 then E7. E7 starts after E5 slice 22. E2 does not start until E1 slice 5 closes. E3 does not start until E1 slice 5 closes, because the read model runs on the files and fake adapters. E4 does not start until E3 slice 12 closes. The Dolt clone check of E2 slice 9 gates the close of E2 and of the program. A failure of that check returns the decision to the engineer.
 - Plugin version bumps land in the first E4 slice of each plugin: implement at slice 13, architect at slice 14, pr at slice 15, artifact at slice 16, and cobuilder-full-lifecycle at slice 17. `plugin.json` and `marketplace.json` change together. The `implement:start` pointer to the backfill reference lands in slice 13.
 - An escalation goes to `## Escalated` in `00-status.md`, as the build skill directs.

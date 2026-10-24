@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from .port import ArgumentError
 from .record import TrackerRecord
 
@@ -23,13 +24,14 @@ class _PullRequestMixin:
             assignee=None,
             envelope={},
             external_ref=None,
+            tracks=tuple(epic_ids),
         )
         self._records.append(pull_request)
-        for epic in epic_ids:
-            current = self._record_of(epic, "epic")
-            self._update(epic, "epic", blocked_by=current.blocked_by + (ref,))
         self._commit()
         return pull_request
 
     def set_pull_request_state(self, ref: str, merged: bool) -> TrackerRecord:
         return self._update(ref, "pr", lifecycle="closed" if merged else "open")
+
+    def migrate_mapping(self, dry_run: bool = False, plans_dir: Path | None = None) -> dict[str, object]:
+        return {"changed": 0, "dry_run": dry_run, "changes": [], "counts": {}, "missing": []}

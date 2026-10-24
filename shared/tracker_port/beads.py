@@ -15,18 +15,21 @@ from typing import Any
 from .bd_runner import BdError
 from .beads_rows import (
     LIST_ARGS,
-    READY_KINDS,
     STATUS_MAP,
     _cb_block,
     _envelope,
     _is_cb_row,
-    _is_ready,
     _metadata_arg,
+    row_extras,
 )
+from .beads_lookup import _LookupMixin
+from .beads_claim_next import _ClaimNextMixin
+from .beads_ready import _ReadyMixin
 from .beads_seed import _SeedMixin
 from .beads_pull_requests import _PullRequestMixin
 from .beads_writes import _WriteMixin
-from .skip_slice import _BeadsSkipMixin
+from .beads_migrate import migrate_mapping
+from .beads_skip import _BeadsSkipMixin
 from .beads_sync import _SyncModeMixin
 from .port import AdapterError, ArgumentError
 from .sync_state import SYNC_MODES, spawn_worker
@@ -36,10 +39,10 @@ from .regenerate import regenerate
 __all__ = ["LIST_ARGS", "BeadsAdapter", "_cb_block", "_metadata_arg"]
 
 
-class BeadsAdapter(_SyncModeMixin, _WriteMixin, _PullRequestMixin, _SeedMixin, _BeadsSkipMixin):
+class BeadsAdapter(_LookupMixin, _ReadyMixin, _ClaimNextMixin, _SyncModeMixin, _WriteMixin, _PullRequestMixin, _SeedMixin, _BeadsSkipMixin):
     name = "beads"
-    # Readiness comes from blocked_by, not from bd. The claim is atomic: bd update --claim.
-    capabilities = Capabilities(native_ready=False, atomic_claim=True, rich_envelope=True, offline_read=True)
+    # A slice is ready when bd says so (beads_ready.py). The claim is atomic: bd update --claim.
+    capabilities = Capabilities(native_ready=True, atomic_claim=True, rich_envelope=True, offline_read=True)
 
     def __init__(
         self, runner: Any, sync: str = "write", spawner: Callable[[Path], None] | None = None, repo_root: Path | None = None
@@ -58,14 +61,6 @@ class BeadsAdapter(_SyncModeMixin, _WriteMixin, _PullRequestMixin, _SeedMixin, _
     def _rows(self) -> list[dict[str, Any]]:
         # A foreign issue carries no metadata.cb block. Every read and write ignores it.
         return [row for row in self._all_rows() if _is_cb_row(row)]
-
-    def doctor_details(self) -> dict[str, Any]:
-        # A workspace with no bd database still shows its sync details. It has no foreign issue count.
-        try:
-            foreign = {"foreign_issues": sum(1 for row in self._all_rows() if not _is_cb_row(row))}
-        except BdError:
-            foreign = {}
-        return {**foreign, **self._sync_details()}
 
     def _records(self) -> dict[str, TrackerRecord]:
         rows = self._rows()
@@ -96,6 +91,7 @@ class BeadsAdapter(_SyncModeMixin, _WriteMixin, _PullRequestMixin, _SeedMixin, _
             assignee=row.get("assignee"),
             envelope=_envelope(cb),
             external_ref=row.get("external_ref"),
+            **row_extras(row, to_cb_id, cb["kind"]),
         )
 
     @staticmethod
@@ -170,13 +166,6 @@ class BeadsAdapter(_SyncModeMixin, _WriteMixin, _PullRequestMixin, _SeedMixin, _
             raise ArgumentError(f"no slice with id {id}")
         return record
 
-    def next_ready(self, kind: str = "slice", under: str | None = None) -> list[TrackerRecord]:
-        if kind not in READY_KINDS:
-            raise ArgumentError(f"kind must be one of {READY_KINDS}, not {kind!r}")
-        records = self._records()
-        candidates = [r for r in records.values() if r.kind == kind and (under is None or r.parent == under)]
-        return sorted((r for r in candidates if _is_ready(r, records)), key=lambda record: record.id)
-
     def sync(self) -> None:
         # Publish and pull the tracker through bd. A failed sync raises, and the message keeps bd's stderr.
         try:
@@ -196,3 +185,6 @@ class BeadsAdapter(_SyncModeMixin, _WriteMixin, _PullRequestMixin, _SeedMixin, _
 
     def regenerate_status_files(self, program: str, plans_dir: Path) -> list[Path]:
         return regenerate(self, program, plans_dir)
+
+    def migrate_mapping(self, dry_run: bool = False, plans_dir: Path | None = None) -> dict[str, Any]:
+        return migrate_mapping(self, dry_run=dry_run, plans_dir=plans_dir)

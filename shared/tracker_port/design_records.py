@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+from .plan_texts import epic_texts, program_texts
 from .program_state import program_lifecycle
 from .record import TrackerRecord
 
@@ -101,11 +102,12 @@ def design_records(plans_dir: Path, emitted: list[TrackerRecord]) -> list[Tracke
                     id=epic_id,
                     kind="epic",
                     parent=design,
-                    blocked_by=(),
+                    blocked_by=(epics[-1].id,) if epics else (),
                     lifecycle=lifecycle,
                     assignee=None,
                     envelope={"epic_id": entry["id"], **state},
                     external_ref=epic_id,
+                    **epic_texts(plans_dir, design, epic_id),
                 )
             )
         if not epics:
@@ -121,6 +123,7 @@ def design_records(plans_dir: Path, emitted: list[TrackerRecord]) -> list[Tracke
                 assignee=None,
                 envelope={"stage": stage} if isinstance(stage, str) else {},
                 external_ref=design,
+                **program_texts(plans_dir, design),
             )
         )
         records.extend(epics)

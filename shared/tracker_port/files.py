@@ -99,9 +99,12 @@ class FilesAdapter:
     def prepare(self) -> dict[str, bool]:
         # This adapter writes nothing, so it needs no setup.
         return {"changed": False}
+    def migrate_mapping(self, dry_run: bool = False, plans_dir: Path | None = None) -> None:
+        _refuse(self)
 
     sync = _refuse
     claim_slice = _refuse
+    claim_next = _refuse
     set_program_stage = _refuse
     set_gate_value = _refuse
     set_epic_state = _refuse

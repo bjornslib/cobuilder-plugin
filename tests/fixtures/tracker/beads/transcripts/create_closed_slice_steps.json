@@ -11,6 +11,8 @@
         "demo-closed-probe",
         "--priority",
         "2",
+        "--labels",
+        "cb",
         "--metadata",
         "{\"cb\":{\"v\":1,\"id\":\"demo-closed-probe\",\"kind\":\"slice\",\"envelope\":{}}}"
       ],

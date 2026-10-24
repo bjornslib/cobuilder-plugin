@@ -26,7 +26,7 @@ def test_doctor_reports_the_foreign_issue_count_for_beads(monkeypatch: pytest.Mo
 
     assert result["adapter"] == "beads"
     assert result["foreign_issues"] == 1
-    assert set(result) == {"adapter", "capabilities", "foreign_issues", "sync"}
+    assert set(result) == {"adapter", "capabilities", "foreign_issues", "mapping", "sync"}
 
 
 def test_doctor_reports_zero_foreign_issues_for_beads_with_none(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:

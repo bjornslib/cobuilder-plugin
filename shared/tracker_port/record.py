@@ -3,13 +3,12 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Literal
 
 Scalar = str | int | float | bool | None
 Kind = Literal["program", "epic", "slice", "pr"]
 Lifecycle = Literal["open", "in_progress", "closed"]
-
 
 @dataclass(frozen=True)
 class TrackerRecord:
@@ -21,6 +20,13 @@ class TrackerRecord:
     assignee: str | None
     envelope: Mapping[str, Scalar | tuple[Scalar, ...]]
     external_ref: str | None
+    # Text fields. A bd row holds them in the fields of the same names. They stay out of equality.
+    title: str | None = field(default=None, compare=False)
+    description: str | None = field(default=None, compare=False)
+    acceptance_criteria: str | None = field(default=None, compare=False)
+    design: str | None = field(default=None, compare=False)
+    # Kind pr only: the epic ids of its `tracks` dependencies.
+    tracks: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)

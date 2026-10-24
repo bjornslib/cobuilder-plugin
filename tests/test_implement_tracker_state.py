@@ -117,7 +117,7 @@ def test_every_tracker_op_named_in_prose_is_a_cli_operation() -> None:
 def test_slice_loop_names_the_write_operations() -> None:
     text = (BUILD / "references" / "slice-loop.md").read_text(encoding="utf-8")
     named = set(OP_RE.findall(text))
-    required = {"claim-slice", "record-attempt", "set-slice-state", "escalate", "regenerate-status-files"}
+    required = {"claim-next", "record-attempt", "set-slice-state", "escalate", "regenerate-status-files"}
     assert required <= named, f"slice-loop.md misses {sorted(required - named)}"
 
 

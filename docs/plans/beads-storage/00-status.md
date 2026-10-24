@@ -56,6 +56,15 @@ Initial checks, 2026-10-17:
 - [x] Slice 21 — Pull request gate   score: 1 on attempt 1   note: —
 - [x] Slice 22 — Slice-loop formula   score: 1 on attempt 1   note: —
 
+- [x] Slice 23 — Spike notes into the adapter notes
+- [x] Slice 24 — Type, title, label, and text mapping
+- [x] Slice 25 — Hierarchy and ordering edges
+- [x] Slice 26 — Pull request as a milestone with `tracks`
+- [x] Slice 27 — Native ready for slices, with parity
+- [x] Slice 28 — `claim-next`
+- [x] Slice 29 — `migrate-mapping` with dry run
+- [x] Slice 30 — Docs, install, usage
+
 ## Escalated
 
 - Slice 7 (Beads writes on recorded transcripts): failed three attempts (0.67), then the follow-up on 2026-10-19 deleted three unused transcripts and added a real-bd create round trip and a repair test. The rubric then matched the real test names. Attempt 5 scored 1.00. Caveat: the round trip reads back through `list --json`, not `show --json`.

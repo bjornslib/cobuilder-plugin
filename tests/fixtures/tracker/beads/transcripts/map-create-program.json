@@ -1,0 +1,56 @@
+{
+  "bd": "bd version 1.3.0 (Homebrew)",
+  "steps": [
+    {
+      "args": [
+        "list",
+        "--json",
+        "--all"
+      ],
+      "stdout": "[]\n",
+      "stderr": "",
+      "exit": 0
+    },
+    {
+      "args": [
+        "list",
+        "--external-ref",
+        "mapdemo",
+        "--json",
+        "--limit",
+        "0",
+        "--all"
+      ],
+      "stdout": "[]\n",
+      "stderr": "",
+      "exit": 0
+    },
+    {
+      "args": [
+        "create",
+        "--silent",
+        "--type",
+        "feature",
+        "--title",
+        "Mapping demo",
+        "--priority",
+        "1",
+        "--labels",
+        "cb",
+        "--external-ref",
+        "mapdemo",
+        "--description",
+        "A program outcome.",
+        "--acceptance",
+        "First done-when\nSecond done-when",
+        "--design",
+        "docs/architecture/designs/mapdemo",
+        "--metadata",
+        "{\"cb\":{\"v\":1,\"id\":\"mapdemo\",\"kind\":\"program\",\"envelope\":{\"stage\":\"design\"}}}"
+      ],
+      "stdout": "demo-vyv\n",
+      "stderr": "",
+      "exit": 0
+    }
+  ]
+}

@@ -29,8 +29,9 @@ def _seed_plan(corpus_dir: Path) -> list[tuple[dict[str, Any], str]]:
     def load(name: str) -> Any:
         return json.loads((corpus_dir / name).read_text(encoding="utf-8"))
 
-    records = [load("program.json"), *load("prs.json"), *load("epics.json"), *load("slices.json")]
-    bd_types = {"program": "program", "pr": "task", "epic": "epic", "slice": "task"}
+    programs = load("program.json")
+    records = [*(programs if isinstance(programs, list) else [programs]), *load("prs.json"), *load("epics.json"), *load("slices.json")]
+    bd_types = {"program": "feature", "pr": "milestone", "epic": "epic", "slice": "task"}
     return [(record, bd_types[record["kind"]]) for record in records]
 
 
@@ -46,16 +47,18 @@ def _build_beads_scratch(corpus_dir: Path) -> Any:
     root.mkdir()
     runner = BdRunner(cwd=root)
     runner.run(["init", "--quiet", "--prefix", "t", "--skip-agents", "--skip-hooks", "--non-interactive"])
-    runner.run(["config", "set", "types.custom", "program,pr"])
     bd_ids: dict[str, str] = {}
     for record, bd_type in _seed_plan(corpus_dir):
         args = [
             "create", "--silent", "--type", bd_type, "--title", record["id"],
-            "--priority", "1" if record["kind"] == "program" else "2",
+            "--priority", "1" if record["kind"] == "program" else "2", "--labels", "cb",
             "--metadata", json.dumps({"cb": {"v": 1, "id": record["id"], "kind": record["kind"], "envelope": record["envelope"]}}),
         ]
         if record["external_ref"]:
             args += ["--external-ref", record["external_ref"]]
+        # A deferred epic gets the native defer date, so bd hides its slices as the fake does.
+        if record["kind"] == "epic" and record["lifecycle"] == "open" and record["envelope"].get("deferred"):
+            args += ["--defer", record["envelope"]["deferred"]]
         if record["parent"]:
             args += ["--parent", bd_ids[record["parent"]]]
         for blocker in record["blocked_by"]:
@@ -65,7 +68,11 @@ def _build_beads_scratch(corpus_dir: Path) -> Any:
         if record["lifecycle"] == "closed":
             runner.run(["update", bd_id, "--status", "closed"])
         elif record["lifecycle"] == "in_progress":
-            runner.run(["update", bd_id, "--status", "in_progress", "--assignee", record["assignee"]])
+            runner.run(["update", bd_id, "--status", "in_progress", *(["--assignee", record["assignee"]] if record["assignee"] else [])])
+    # A pull request tracks its epics. The edge runs from the pull request to each epic, and it blocks nothing.
+    for record, _ in _seed_plan(corpus_dir):
+        for epic in record.get("tracks", []):
+            runner.run(["dep", "add", bd_ids[record["id"]], bd_ids[epic], "--type", "tracks"])
     return BeadsAdapter(runner=runner)
 
 
@@ -117,6 +124,21 @@ def adapter(build: Callable[[Path], Any], corpus: Path) -> Any:
 
 def ids(records: list[Any]) -> list[str]:
     return [record.id for record in records]
+
+
+def ready_sets(adapter: Any) -> dict[str, list[str]]:
+    """The ids that next_ready gives for each ready kind."""
+    return {kind: ids(adapter.next_ready(kind)) for kind in ("program", "epic", "slice")}
+
+
+def tracked(adapter: Any, ref: str) -> list[str]:
+    """The epic ids that the pull request `ref` tracks, sorted. bd may list the edges in any order."""
+    return sorted(next(record for record in adapter.list_pull_requests() if record.id == ref).tracks)
+
+
+def blocked_by_a_pr(adapter: Any) -> list[str]:
+    """The ids of the epics that a pull request still blocks. A native tracker has none."""
+    return [epic.id for epic in adapter.list_epics() if any(b.startswith("pr-") for b in epic.blocked_by)]
 
 
 def assert_same_value(stored: Any, expected: Any, label: str) -> None:

@@ -27,6 +27,7 @@ CONFIGURED = "\n".join([
     "Never edit by hand the status files or goal.json.",
     "Key operations: tracker.py doctor, tracker.py list-programs, "
     "tracker.py next-ready.",
+    "Next slice: tracker.py claim-next <claimant>.",
     "Also: tracker.py claim-slice, tracker.py set-slice-state, tracker.py sync.",
     "Stuck slice: tracker.py skip-slice <id> --reason <text>.",
     f"Call it as: uv run {PLUGIN_ROOT}/shared/tracker.py <operation>.",
