@@ -57,7 +57,7 @@ Test command: `uv run pytest priority-dev/tests -q`
 - 0.0 — no such sentence.
 
 ### C6 — A client message never becomes the stop, and the run is never empty by accident [CRITICAL]
-**Must be true:** given a transcript whose last assistant record has model `<synthetic>`, the brief picks the last real agent message as the stop and holds the client text in a `CLIENT MESSAGE:` section with stop source `client_error`. A transcript with only synthetic assistant records gives an Abstain `no_agent_reply`. After a bare human ask such as `continue`, the RUN section still shows the work before it, up to 40 lines, with human asks as `[human]` lines.
+**Must be true:** given a transcript whose last assistant record has model `<synthetic>`, the brief picks the last real agent message as the stop and holds the client text in a `CLIENT MESSAGE:` section with stop source `client_error`. A transcript with only synthetic assistant records gives an Abstain `no_agent_reply`. After a bare human ask such as `continue`, the RUN section still shows the work before it, with no line limit, and with human asks as `[human]` lines.
 **Evidence to check:**
 - Run the brief builder on three made-up fixtures: a client error after a real reply, only synthetic records, and a bare `continue` after earlier work.
 - Compare each output to its stored snapshot, and read the stop source.
@@ -65,6 +65,21 @@ Test command: `uv run pytest priority-dev/tests -q`
 - 1.0 — all three fixtures give the stated result.
 - 0.5 — two of the three give it.
 - 0.0 — a synthetic record becomes the stop, or the run is empty although work precedes it.
+
+### C7 — Nothing is clipped, and an over-budget brief fails closed [CRITICAL]
+**Must be true:**
+- The brief builder is plain code. It makes no model call. It never cuts text at a character count and never shrinks text.
+- Below the size budget of 160,000 characters of brief text (the instruction block does not count), the brief holds every item of the run in order, with no cap on RUN lines. Redaction is the only change to the text.
+- Never clipped, in any brief: the human ask, the final reply (all text blocks of the last agent message), the last three exchanges (each tool call input and its full result, with the error flag), the `CLIENT MESSAGE:` section, and the human lines after the last agent message.
+- Over the budget, the builder returns the Abstain `brief_too_large`. Its detail lists the tool inputs and tool results of older exchanges by size, largest first, with the size of each and the size of the parts that never shrink.
+- When the parts that never shrink exceed the budget alone, the Abstain says so, and it is final.
+**Evidence to check:**
+- Build the brief from five made-up fixtures: a final reply of 5,000 characters; a 2,600-character tool call with a 50,000-character result, below the budget; an over-budget run with large older inputs and results; a run whose protected parts alone exceed the budget; and a long run of more than 100 RUN lines below the budget.
+- Compare each output to its stored snapshot. Search each brief for a cut such as `...` at a fixed length. Run the builder with a model stub that fails the test when it is called.
+**Scoring:**
+- 1.0 — the below-budget fixtures keep their text byte for byte (redaction apart), both over-budget fixtures give `brief_too_large` with the right detail, and the stub is never called.
+- 0.5 — the protected items stay whole, but the Abstain detail is missing or wrong.
+- 0.0 — any protected item is cut, any text is cut at a fixed length below the budget, or the builder calls a model.
 
 ## Regression check
 - All tests that passed before this slice must still pass.

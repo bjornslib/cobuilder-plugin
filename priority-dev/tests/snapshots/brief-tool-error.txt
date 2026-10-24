@@ -1,0 +1,9 @@
+HUMAN ASKED:
+Run the form tests and tell me what fails.
+RUN:
+[tool Bash] {"command": "pytest tests/test_form.py -q"}
+[result] Exit code 1
+FAILED tests/test_form.py::test_empty_name - AssertionError
+1 failed, 4 passed in 0.31s
+FINAL REPLY:
+One test fails: test_empty_name. Should I fix the form or the test?

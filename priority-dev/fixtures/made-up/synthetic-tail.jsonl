@@ -1,0 +1,3 @@
+{"type": "user", "uuid": "u1", "origin": null, "message": {"role": "user", "content": "Rename the config key timeout to timeout_seconds."}}
+{"type": "assistant", "uuid": "a1", "message": {"id": "msg_01", "role": "assistant", "model": "claude-test-1", "stop_reason": "end_turn", "content": [{"type": "text", "text": "I renamed the key in three files. Should I also update the sample config in the docs folder?"}]}}
+{"type": "assistant", "uuid": "a2", "message": {"id": "msg_02", "role": "assistant", "model": "<synthetic>", "stop_reason": "stop_sequence", "content": [{"type": "text", "text": "No response requested."}]}}

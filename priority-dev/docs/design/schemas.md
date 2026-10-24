@@ -275,6 +275,7 @@ An `Abstain` event says that the interpreter proposes nothing. The inbox then ge
 | `model_timeout` | a model call did not return in time |
 | `model_error` | a model call returned an error |
 | `brief_empty` | the turn has no response text |
+| `brief_too_large` | the brief is over the size budget, and no older tool result can shrink further |
 
 Section 11 shows an example.
 

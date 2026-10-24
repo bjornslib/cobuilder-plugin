@@ -267,6 +267,22 @@ _Avoid_: slice, turn slice (a Slice in `implement` is a vertical unit of build w
 **Abstain** (`priority-dev`):
 The result of the interpreter when it proposes nothing, with a reason such as `quote_not_in_brief` or `model_error`. The inbox then gets an `ask_human` item, and no failure ends in silence.
 _Avoid_: fallback, error result
+<a id="ask"></a>
+**Ask** (`priority-dev`):
+The human request before the selected stop. The builder skips a bare `continue` when an earlier human request exists.
+
+<a id="client-message"></a>
+**Client message** (`priority-dev`):
+A synthetic assistant error record after a real stop. The stop brief shows its text in `CLIENT MESSAGE:` and sets `stop_source` to `client_error`.
+<a id="exchange"></a>
+**Exchange** (`priority-dev`):
+An exchange is a tool call and its matching result in a run. The brief keeps the last three exchanges in full.
+
+
+
+<a id="brief-size-budget"></a>
+**Brief size budget** (`priority-dev`):
+The maximum character count of rendered stop-brief text that the interpreter reads. Prompt instructions are excluded. Over-limit briefs return `brief_too_large`.
 
 <a id="probe"></a>
 **Probe** (`priority-dev`):
