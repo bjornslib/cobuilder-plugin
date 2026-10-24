@@ -9,7 +9,6 @@ of each signature. It makes no network call. Section numbers refer to ../dspy-mo
 """
 from __future__ import annotations
 
-import os
 from typing import Literal, get_args
 
 import dspy
@@ -20,14 +19,12 @@ import interpreter_schemas as S
 
 # ---- Models (section 2) ------------------------------------------------------
 
-def nemo() -> dspy.LM:  # triage, pick, fill, card: JSON schema output is supported
-    from priority.config import load_key  # the one reader of the key
-    return dspy.LM("openrouter/mistralai/mistral-nemo", api_key=load_key(), temperature=0)
+def nemo(api_key: str) -> dspy.LM:  # triage, pick, fill, card: JSON schema output is supported
+    return dspy.LM("openrouter/mistralai/mistral-nemo", api_key=api_key, temperature=0)
 
 
-def inkling() -> dspy.LM:  # digest, shrink: no response_format, so the text adapter
-    from priority.config import load_key  # the one reader of the key
-    return dspy.LM("openrouter/thinkingmachines/inkling:free", api_key=load_key(), temperature=0)
+def inkling(api_key: str) -> dspy.LM:  # digest, shrink: no response_format, so the text adapter
+    return dspy.LM("openrouter/thinkingmachines/inkling:free", api_key=api_key, temperature=0)
 
 
 # ---- Signatures (section 3) --------------------------------------------------
