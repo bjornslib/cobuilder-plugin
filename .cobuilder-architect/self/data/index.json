@@ -1,12 +1,12 @@
 {
   "schema_version": "1.4",
   "sources": {
-    "git_head": "c3b4d71dbaceaeb56c7a8f42a952e83b1c1b51dc",
+    "git_head": "aa527fdabd84ea4bb3137e315c2ec7a9ffda628c",
     "trees": {
       "docs/architecture/adr": "sha256:cde10507a4d3ca399662e07ddc5e60384cb07039aac9fb8e3acd6c33d5ffc621",
       "docs/architecture/designs": "sha256:8136cb662e0be5b38313dfd6a9104abfa328688273842c38a84a402e603c579e",
       "docs/architecture/contexts": "sha256:6663ee456e31bfbe31401908ae494017ed864dbb9c72211b6cbdccc44d078482",
-      "docs/plans": "sha256:b8c3179135ce17b77f5368fff087c407fcc607165e88718a3bd333d32085cdc9",
+      "docs/plans": "sha256:b8f21d464918d5fb905bb73da71b5da0c968c85341a48f5e8fe7b10a1b090833",
       ".cobuilder/rubrics": "sha256:c64ae6ad2b17373cd09e99edadeac357ba2de16002c94ae7b8424d77bf637873"
     }
   },
@@ -3122,9 +3122,9 @@
         "n": 23,
         "title": "**Spike notes into the adapter notes**",
         "ends_with": "The notes hold each spike finding with its command and exit code",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "beads-storage/24",
@@ -3132,9 +3132,9 @@
         "n": 24,
         "title": "**Type, title, label, and text mapping**",
         "ends_with": "A created issue has the new type, the name as title, the label, and the text fields. A read returns them. `prepare` sets no custom type.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 2,
+        "state": "completed"
       },
       {
         "id": "beads-storage/25",

@@ -56,8 +56,8 @@ Initial checks, 2026-10-17:
 - [x] Slice 21 — Pull request gate   score: 1 on attempt 1   note: —
 - [x] Slice 22 — Slice-loop formula   score: 1 on attempt 1   note: —
 
-- [ ] Slice 23 — Spike notes into the adapter notes
-- [ ] Slice 24 — Type, title, label, and text mapping
+- [x] Slice 23 — Spike notes into the adapter notes
+- [x] Slice 24 — Type, title, label, and text mapping
 - [ ] Slice 25 — Hierarchy and ordering edges
 - [ ] Slice 26 — Pull request as a milestone with `tracks`
 - [ ] Slice 27 — Native ready for slices, with parity
