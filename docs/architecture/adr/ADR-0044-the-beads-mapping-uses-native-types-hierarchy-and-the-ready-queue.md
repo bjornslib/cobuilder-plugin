@@ -39,6 +39,7 @@ delivers:
 provenance: authored
 history:
   - { state: decided, date: 2026-10-24, by: engineer, note: "Decided in session: the mapping, the ordering edges, native ready for slices, claim-next, and migrate-mapping. The title rule is recommended and stays open for the engineer at review." }
+  - { state: decided, date: 2026-10-24, by: engineer, note: "Decided in session: claim-next also sets the parent epic in_progress. The record is read back from the bd row fields, and a lookup by cb id uses bd list --external-ref." }
 related_decisions:
   - { type: amends, target: ADR-0031 }
   - { type: amends, target: ADR-0040 }
@@ -68,10 +69,11 @@ A spike on bd 1.3.0 gave the facts below. The evidence is in `/tmp/e7-spike.md` 
 1. **Types.** A program is a `feature`. An epic is an `epic`, and it is a child of the feature. A slice is a `task`, and it is a child of its epic. A pull request is a `milestone`. The custom type `program` and the step `types.custom` in `prepare` go away.
 2. **Edges.** The slices of one epic are ordered by `blocks` edges between consecutive slices. The epics of one program are ordered by `blocks` edges between consecutive epics. A pull request has one `tracks` edge to each epic it holds. No blocking edge runs from a pull request to an epic, and no `gh:pr` gate blocks an epic. A later gate may block only a later dependent epic.
 3. **Ready.** `next_ready` for the kind `slice` runs `bd ready -t task --label cb [--parent <epic or program>] --json --limit 0`. `native_ready` is true when the parity test holds on the corpus. The adapter keeps a small rule for the kinds `epic` and `program`.
-4. **Claim.** The new port operation `claim-next [--under <epic or program>] <claimant>` runs `bd ready -t task --label cb --claim --actor <claimant> [--parent X]`. An empty list from bd gives an empty result, not an error. `claim-slice` stays.
+4. **Claim.** The new port operation `claim-next [--under <epic or program>] <claimant>` runs `bd ready -t task --label cb --claim --actor <claimant> [--parent X]`. An empty list from bd gives an empty result, not an error. `claim-slice` stays. In the same sync, `claim-next` also runs `bd update <epic> --status in_progress` for the parent epic of the claimed slice, and it skips that write when the epic is already `in_progress` or `closed`.
 5. **Names.** Recommended, and open for the engineer at review: the title holds the human name from the plan or design source. The cb id stays in `external_ref` and in `metadata.cb.id`. The alternative is `<cb id> — <name>`. The seed also fills `description`, `acceptance_criteria`, and `design` from the files where they exist. Every cb row gets the label `cb`.
 6. **Migration.** The new operation `migrate-mapping [--dry-run]` converts an existing tracker in one run. It is idempotent and it ends with one sync. A dry run lists each change and writes nothing.
 7. **Replaced decisions.** This ADR replaces the E5-3 decision that `native_ready` stays false, and the E5-4 decision that a `gh:pr` gate mirrors the pull request block.
+8. **Read back through bd.** The record fields `title`, `description`, `acceptance_criteria`, `design`, and `tracks` are read from the bd row fields of the same names and from the dependencies of type `tracks`. A lookup by cb id runs `bd list --external-ref <cb id>`. So `external_ref` is set on create, on seed, and on migrate. It is the cb id for a program, an epic, a slice, and a design record. It stays `gh-<n>` for a pull request, as the code sets it today.
 
 ## Obsolete after this ADR
 

@@ -2,11 +2,11 @@
 
 Feature: beads-storage
 Epic ID: E7
-Status: proposed. The slices E7-1 to E7-8 are local numbers, and they are not yet in `04-slices.md`. E6 stays unbuilt and unapproved. The section "How E7 meets E6" says what each epic needs from the other.
+Status: proposed. The slices E7-1 to E7-8 are global slices 23 to 30 in `04-slices.md`. E6 stays unbuilt and unapproved. The section "How E7 meets E6" says what each epic needs from the other.
 
 ## Decisions and results
 
-The engineer decided these seven points. Do not reopen them.
+The engineer decided these nine points. Do not reopen them.
 
 1. **Types.** A program is the native type `feature`. The custom type `program` and the `types.custom` step in `prepare` go away. An epic is an `epic` and a child of the feature. A slice is a `task` and a child of its epic. A pull request record is a `milestone`. It has the non-blocking dependency `tracks` to each epic it holds. No blocking edge runs from a pull request to an epic. The `gh:pr` gate of E5-4 leaves the epic. A gate may come back later, only to block a LATER dependent epic.
 2. **Order.** A `blocks` edge links each pair of consecutive slices. A `blocks` edge links each pair of consecutive epics, so E2 is blocked by E1. Children inherit the order natively.
@@ -15,6 +15,8 @@ The engineer decided these seven points. Do not reopen them.
 5. **Names.** The engineer asked for an explanation first. The recommendation is in the next section. It is recommended, and open for the engineer at review.
 6. **Migration.** A one-time operation `migrate-mapping [--dry-run]` converts an existing tracker. It retypes the programs, rewrites the titles, drops the pull request blocks edges and the gates, adds the `tracks` edges, and adds the missing `blocks` chains. It is idempotent and it runs one sync. A dry run lists the changes. The live trackers are this repo and think-with-ai, with 322 issues in all.
 7. **ADR.** ADR-0044 amends ADR-0031 and ADR-0040. It replaces the E5-3 decision (`native_ready` false) and the E5-4 decision (the epic gate).
+8. **Epic start.** `claim-next` ALSO sets the epic of the claimed slice to `in_progress` when it is not yet. This is one extra write in the same sync: the adapter finds the claimed slice's parent epic in the rows that it already read, and it runs `bd update <epic bd id> --status in_progress`. It skips the write when the epic is already `in_progress` or `closed`. The claim and the epic write go out in one publish. The earlier recommendation ("no") is replaced by this decision.
+9. **Read back through bd.** `TrackerRecord.title`, `description`, `acceptance_criteria`, `design`, and `tracks` are READ from the bd row: the fields `title`, `description`, `acceptance_criteria`, and `design`, and the dependencies of type `tracks`. The record fields are no longer write-only. A lookup by cb id uses `bd list --external-ref <cb id>` (an exact filter), and not a scan of all rows. So `external_ref` must be set correctly on create, on seed, and on migrate. For a program, an epic, a slice, and a design record the code today sets `external_ref` to the cb id (`plan_program.py`, `plan_records.py`, `design_records.py`), and E7 keeps that. For a pull request the code today sets `external_ref` to `gh-<n>` while the cb id is `pr-<n>` (`beads_pull_requests.py`), and E7 keeps that `gh-<n>` convention: the lookup of `pr-<n>` runs `--external-ref gh-<n>`. `migrate-mapping` sets a missing or wrong `external_ref` with `bd update --external-ref`. The flag `--external-ref` on `bd list` is not yet verified on bd 1.3.0, and E7-1 records it as a spike finding.
 
 ### The title rule: recommended, open for the engineer at review
 
@@ -38,7 +40,6 @@ The seed also fills these native fields, only where a file source has the text. 
 ### Additions by the designer, open for review
 
 - **The label `cb`.** Every cb row gets the label `cb` on create and on migration. A claim through `bd ready` must filter on it. Evidence: an unfiltered `bd ready -t task --claim` claimed a foreign task [spike L71]. With `--label cb` it claimed the cb slice [spike L72]. Labels were unused, and they are a native field.
-- **The record fields.** `TrackerRecord` gains `title`, `description`, `acceptance_criteria`, `design`, and `tracks`. The four text fields do not enter equality, so the contract equality tests keep their meaning.
 - **The legacy refusal.** On a tracker in the old mapping, `next-ready` for slices and `claim-next` refuse with a message that names `migrate-mapping`. `doctor` reports `mapping: legacy` or `mapping: native`.
 - **The optional flag `--plans-dir`** on `migrate-mapping`. Names and texts come from the files, and the edges do not. Without it, the migration rewrites slice titles from the envelope and leaves the other titles.
 
@@ -76,7 +77,7 @@ This is design stage 4. Each risk cites an ADR. The evidence lines come from `/t
 1. **Live data moves (ADR-0031, ADR-0044).** The migration touches 322 issues with about 700 bd calls, and a call can fail half way. Every step reads the held state first and acts only on a difference, so a rerun continues. A run in the scratch tracker converted the old mapping and gave `['E1-1']` from `['gh-101']` [L58-62]. The plan: take a `bd export` snapshot to a file outside the repo, run `--dry-run`, run once on one machine, and run `bd sync` on the others. Restoring from the export is not tested.
 2. **Hierarchical ids against cb ids (ADR-0031).** A bd id such as `q-445.1.2` carries the position, and the cb id stays in `metadata.cb.id`. Evidence: ids reach depth 3 [L16]. The adapter maps bd ids to cb ids through the envelope, and E7 adds no id rule. The migration edits issues in place, so no bd id changes. A move of a slice to another epic would change its prefix. [INFERENCE] No flow moves a slice today.
 3. **The `tracks` edge is invisible to an older adapter (ADR-0040).** The old adapter reads `type == "blocks"` only [L26]. On a migrated tracker it sees a PR with no epics and an epic that nothing blocks. That is harmless. The reverse is the risk: an old adapter on a machine that did not update keeps writing `dep add <epic> <pr>` and creates a `program`. The old `_create` then runs `prepare` and re-adds the custom type. The new adapter detects each legacy row, and a rerun of `migrate-mapping` repairs it. The plugin version bump in both manifests reaches the other machines.
-4. **An in_progress epic leaves the ready list (ADR-0040).** Evidence: `bd ready -t epic` gives `[]` for an in_progress epic, and its slices stay ready [L42-43]. The adapter rule for epics is the same as today: open and unblocked. `claim-next` does not set the epic in_progress. The caller does it through `set-epic-state`. See Open Questions.
+4. **An in_progress epic leaves the ready list (ADR-0040).** Evidence: `bd ready -t epic` gives `[]` for an in_progress epic, and its slices stay ready [L42-43]. The adapter rule for epics is the same as today: open and unblocked. `claim-next` sets the epic `in_progress` itself (decision 8), so a claimed epic leaves the epic ready list at once, with no extra caller step. A later `set-epic-state in_progress` by a caller changes nothing.
 5. **Two machines claim through ready (ADR-0042).** `--claim` is atomic in one store. Eight parallel calls gave one winner (E5-1). Two machines can both claim the same slice before a sync, and the merge outcome is not tested. With `sync: async`, a claim reaches the other machines late. `claim-next` publishes as `claim-slice` does. The gap stays in the notes under "Not verified".
 6. **The filter that protects the claim (ADR-0031).** Evidence: an unfiltered claim took a foreign task [L71]. A cb row without the label `cb` is invisible to `claim-next` and to native ready. The seed, `create_record`, and the migration all add the label. A test creates a foreign task and a cb slice, and it asserts that `claim-next` claims the slice.
 7. **The PR merge has no blocking edge (ADR-0040, ADR-0029).** Before E7, `next_ready(kind="epic")` showed an epic only after the merge. Now the epic stays ready while its PR is open, and the PR milestone hides nothing [L45-46]. The merge order holds through epic close order. The table of ADR-0040 says: merge, then `set-pull-request-state`, then `set-epic-state closed`. E2 waits for E1 to close, not for the merge. The rule moves from a graph edge to a procedure step. Contract case 5 changes to say so.
@@ -155,7 +156,7 @@ Modified files:
 - `shared/tracker-usage.md`, `plugins/implement/skills/build/references/slice-loop.md`, `plugins/implement/commands/install.md`, and the hook reminder text: the two operations (E7-8).
 - `docs/architecture/designs/beads-storage/goal.json`: the E7 entry and the done-when items.
 
-Not touched: `04-slices.md`, `00-status.md`, the rubrics, the manifest, and the viewer.
+Not touched by the build: `04-slices.md`, `00-status.md`, the rubrics, the manifest, and the viewer.
 
 ## Types & Signatures
 
@@ -172,11 +173,11 @@ class TrackerRecord:
     assignee: str | None
     envelope: Mapping[str, Scalar | tuple[Scalar, ...]]
     external_ref: str | None
-    title: str | None = field(default=None, compare=False)
-    description: str | None = field(default=None, compare=False)
-    acceptance_criteria: str | None = field(default=None, compare=False)
-    design: str | None = field(default=None, compare=False)
-    tracks: tuple[str, ...] = ()   # kind pr only: the epic ids that it holds
+    title: str | None = field(default=None, compare=False)               # read from the bd row `title`
+    description: str | None = field(default=None, compare=False)         # read from the bd row `description`
+    acceptance_criteria: str | None = field(default=None, compare=False) # read from the bd row `acceptance_criteria`
+    design: str | None = field(default=None, compare=False)              # read from the bd row `design`
+    tracks: tuple[str, ...] = ()   # kind pr only: the epic ids from the `tracks` dependencies
 ```
 
 Port operations:
@@ -219,6 +220,8 @@ Results and errors:
 | Legacy mapping | `AdapterError` that names `migrate-mapping` | 3 |
 | Files adapter | `NoAdapterError` | 2 |
 | bd claimed a row with no `cb` block | `AdapterError` that names the bd id, so a person can release it | 3 |
+| The epic of the claimed slice is `open` | one extra `bd update <epic> --status in_progress`, then one publish | 0 |
+| The epic is already `in_progress` or `closed` | no epic write | 0 |
 | `migrate-mapping --dry-run` | the change list, no write | 0 |
 | `migrate-mapping` on a native tracker | an empty list, no write, no sync | 0 |
 
@@ -241,7 +244,7 @@ Native ready, by kind:
 
 ## Slice Decomposition
 
-The numbers E7-1 to E7-8 are local to this epic. The engineer assigns the global numbers when the rows move to `04-slices.md`.
+The numbers E7-1 to E7-8 are local to this epic. In `04-slices.md` they are the global slices 23 to 30, in the same order.
 
 | Slice | Name | Depends on | Files | Ends with |
 |---|---|---|---|---|
@@ -258,7 +261,7 @@ The numbers E7-1 to E7-8 are local to this epic. The engineer assigns the global
 
 Input: `/tmp/e7-spike.md`.
 
-Assertions: the notes hold the eleven spike areas: retype, tree and ready, row shape, claim, lifecycle, dependencies, migration run, timing, foreign tasks, defer dates, and row limits. Each finding names its command and its exit code. The notes mark the obsolete sections of E5 (see ADR-0044).
+Assertions: the notes hold the eleven spike areas: retype, tree and ready, row shape, claim, lifecycle, dependencies, migration run, timing, foreign tasks, defer dates, and row limits. They also hold the exact filter `bd list --external-ref <id>` on bd 1.3.0: the command, the exit code, and the rows for a known and an unknown ref. Each finding names its command and its exit code. The notes mark the obsolete sections of E5 (see ADR-0044).
 
 Pass conditions: the notes state the bd version 1.3.0. No code changes in this slice.
 
@@ -267,8 +270,9 @@ Pass conditions: the notes state the bd version 1.3.0. No code changes in this s
 Input: the mapping table above, and the spike facts 4, 5, 16, 17.
 
 Assertions:
-- `BD_TYPE` maps program to `feature` and pr to `milestone`. `create_record` sends `--title <record.title or cb id>` and `--labels cb`. It sends `--description`, `--acceptance`, and `--design` only for a set field.
-- A read fills `title`, `description`, `acceptance_criteria`, and `design` from the row.
+- `BD_TYPE` maps program to `feature` and pr to `milestone`. `create_record` sends `--title <record.title or cb id>`, `--labels cb`, and `--external-ref <record.external_ref>` (the cb id, and `gh-<n>` for a pull request). It sends `--description`, `--acceptance`, and `--design` only for a set field.
+- A read fills `title`, `description`, `acceptance_criteria`, and `design` from the row fields of the same names. A lookup of one record by cb id runs `bd list --external-ref <ref> --json --limit 0 --all`, and an unknown ref gives no record.
+- The seed and `migrate-mapping` set `external_ref` on every cb row that has none or a wrong one.
 - `STATUS_MAP` maps `deferred` to `open`.
 - `prepare` sets no custom type, and `_create` no longer retries on `invalid issue type`.
 - The seed fills the text fields from the sources in the table of the title rule. A field with no source sends no flag.
@@ -322,11 +326,12 @@ Input: the spike facts 9 to 11 and 17.
 Assertions:
 - The adapter reads the rows, maps `under`, runs `claim_next_argv`, and parses the one-item list. An empty list returns `None`.
 - It builds the record from the list row, with `in_progress` and the claimant, and then it publishes once.
+- After the claim it finds the parent epic of the claimed slice in the same rows. When that epic is not `in_progress` and not `closed`, it runs `bd update <epic bd id> --status in_progress`. It makes no write for an epic that is already `in_progress` or `closed`. The claim and this write go out in one publish.
 - A bd failure raises `AdapterError` with the text `claim-next refused`.
 - The fake adapter picks the first of `next_ready("slice", under)` and claims it. The files adapter refuses.
 - The CLI prints `null` for no result.
 
-Pass conditions: a live test with a foreign task of priority 0 shows that the claim takes the cb slice. A test with eight parallel calls on eight ready slices gives eight different slices. A test with an empty frontier gives `null` and exit 0. The replay checks the argv.
+Pass conditions: a live test with a foreign task of priority 0 shows that the claim takes the cb slice. A live test shows that the parent epic row reads `in_progress` after the claim, that a second claim under the same epic makes no epic write, and that a closed epic gets no write. A test with eight parallel calls on eight ready slices gives eight different slices. A test with an empty frontier gives `null` and exit 0. The replay checks the argv, including the epic update.
 
 ### Slice E7-7: `migrate-mapping` with dry run
 
@@ -335,7 +340,7 @@ Input: the spike facts 4 to 7, 15, 18, 19, and the scratch run of S7.
 Assertions: the steps run in this order. Each step acts only on a row that differs.
 1. Read all rows with `--limit 0`. Foreign rows are left alone.
 2. Retype: a `program` row to `feature`, and a pr row of type `task` to `milestone`.
-3. Label: add `cb` to each cb row without it.
+3. Label and external ref: add `cb` to each cb row without it, and set `external_ref` with `bd update --external-ref` on each cb row where it is missing or differs from the cb id (`gh-<n>` for a pr row).
 4. Unblock: for each epic with a `blocks` edge to a pr row, run `bd dep rm`, and then `bd dep add <pr> <epic> --type tracks` when it is missing.
 5. Gates: for each id in the PR envelope `gates`, run `bd dep rm` for each epic that depends on it and `bd gate resolve` when the gate is open. Then write the envelope without `gates`.
 6. Chains: add the missing `blocks` edge between consecutive epics of one program, ordered by the epic number, and between consecutive slices of one epic, ordered by `n`.
@@ -372,13 +377,12 @@ Pass conditions: every tracker.py operation that a doc names is a subcommand in 
 
 1. **The title rule.** Recommended: the name. The alternative is `<cb id> — <name>`. One constant sets the rule. The engineer decides at review.
 2. **Epic order is serial.** The engineer decided it. A plan with parallel epics needs a note in the plan that says so, or a later option to skip an edge. Open: the engineer decides if a header marker may mark an epic as parallel.
-3. **Who sets the epic in_progress?** `claim-next` claims a slice and does not touch the epic. The epic stays in the ready list of epics until a caller runs `set-epic-state in_progress`. Open: the engineer decides if `claim-next` also moves the epic.
-4. **Defer dates.** After the date passes, bd frees the slices, and the envelope key still says `deferred` [L78]. The adapter rule for epics then differs from bd. Open: the engineer decides if the adapter reads the date, and treats a past date as not deferred. The fixture date moves to 2099 meanwhile.
-5. **The order of `bd ready`.** The spike saw the first created slice first [L33]. [INFERENCE] The order is priority and then creation time. The parity test compares sets, and not the first item.
-6. **Two machines.** The claim race between two machines is not tested. See risk 5 of the Challenge.
-7. **The migration has no rollback.** The snapshot is the only recovery. The restore from `bd export` is not tested.
-8. **The projector output changes.** The epic `blocked_by` joins and the pr `tracks` are new. [INFERENCE] No reader of the projector output uses epic `blocked_by`. E7-3 greps for readers before the change.
-9. **bd versions.** Only 1.3.0 is checked. A later bd needs a new spike.
-10. **`--plans-dir` on `migrate-mapping`.** The engineer asked for `[--dry-run]` only. The optional flag is an addition. Without it, only the slice titles change.
-11. **The `description` and `design` sources.** The sources in the table are a proposal. A slice has no description source. Open: the engineer says if a slice description should come from the epic design document.
-12. **A PR title.** The title is the ref (`pr-101`). A person may prefer `PR #101`. It follows the title rule.
+3. **Defer dates.** After the date passes, bd frees the slices, and the envelope key still says `deferred` [L78]. The adapter rule for epics then differs from bd. Open: the engineer decides if the adapter reads the date, and treats a past date as not deferred. The fixture date moves to 2099 meanwhile.
+4. **The order of `bd ready`.** The spike saw the first created slice first [L33]. [INFERENCE] The order is priority and then creation time. The parity test compares sets, and not the first item.
+5. **Two machines.** The claim race between two machines is not tested. See risk 5 of the Challenge.
+6. **The migration has no rollback.** The snapshot is the only recovery. The restore from `bd export` is not tested.
+7. **The projector output changes.** The epic `blocked_by` joins and the pr `tracks` are new. [INFERENCE] No reader of the projector output uses epic `blocked_by`. E7-3 greps for readers before the change.
+8. **bd versions.** Only 1.3.0 is checked. A later bd needs a new spike. The flag `bd list --external-ref` is the first item for E7-1 to check.
+9. **`--plans-dir` on `migrate-mapping`.** The engineer asked for `[--dry-run]` only. The optional flag is an addition. Without it, only the slice titles change.
+10. **The `description` and `design` sources.** The sources in the table are a proposal. A slice has no description source. Open: the engineer says if a slice description should come from the epic design document.
+11. **A PR title.** The title is the ref (`pr-101`). A person may prefer `PR #101`. It follows the title rule.
