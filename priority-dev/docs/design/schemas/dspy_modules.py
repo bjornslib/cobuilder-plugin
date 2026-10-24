@@ -21,11 +21,13 @@ import interpreter_schemas as S
 # ---- Models (section 2) ------------------------------------------------------
 
 def nemo() -> dspy.LM:  # triage, pick, fill, card: JSON schema output is supported
-    return dspy.LM("openrouter/mistralai/mistral-nemo", api_key=os.environ.get("OPENROUTER_API_KEY"), temperature=0)
+    from priority.config import load_key  # the one reader of the key
+    return dspy.LM("openrouter/mistralai/mistral-nemo", api_key=load_key(), temperature=0)
 
 
 def inkling() -> dspy.LM:  # digest, shrink: no response_format, so the text adapter
-    return dspy.LM("openrouter/thinkingmachines/inkling:free", api_key=os.environ.get("OPENROUTER_API_KEY"), temperature=0)
+    from priority.config import load_key  # the one reader of the key
+    return dspy.LM("openrouter/thinkingmachines/inkling:free", api_key=load_key(), temperature=0)
 
 
 # ---- Signatures (section 3) --------------------------------------------------
