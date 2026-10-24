@@ -1,13 +1,13 @@
 {
   "schema_version": "1.4",
   "sources": {
-    "git_head": "5d52d2c751e5f689cd6029276f38daa5f0c41f26",
+    "git_head": "9ea0106caeb31f15300536ba8abaa92040b8c11d",
     "trees": {
-      "docs/architecture/adr": "sha256:608f1f9d9c20a4b5b520c4641440bcae38cad3cc588735be1fd22a9adf3e1dd7",
-      "docs/architecture/designs": "sha256:fab49e23773c605524d4c352883a86c7a450a3d25ceabdeace8185f2ee335b5e",
+      "docs/architecture/adr": "sha256:bb7f812ebc6edc4f23883d87cce644a9e9f160532e9e0d334c64e54bd5b9045f",
+      "docs/architecture/designs": "sha256:3b6964b529d7a99ca9cd4d918b952aa15806423200293253f260eb9a4d28fc70",
       "docs/architecture/contexts": "sha256:6663ee456e31bfbe31401908ae494017ed864dbb9c72211b6cbdccc44d078482",
-      "docs/plans": "sha256:2d806c1e9d12bc2e9a0e759d467918a5fd1dea7e9c88ddb41582a06b92b342d8",
-      ".cobuilder/rubrics": "sha256:d40fd37297e8771cabdcef5c94c321b25b1fa73f9948aa4a6d49b9d4025c6f00"
+      "docs/plans": "sha256:ad9dfaf4eb73dbb27b02244b39a58ca81e684fb75664d4920b4ff4afcf914015",
+      ".cobuilder/rubrics": "sha256:73bfc67a39f86b504fc8bb2e92544debe4cd193b2cacf3c11b4969ee1fc887fd"
     }
   },
   "entities": {
@@ -226,6 +226,11 @@
         "id": "ADR-0043",
         "title": "the slice-loop formula follows the formulas key in tracker.yaml",
         "state": "decided"
+      },
+      {
+        "id": "ADR-0045",
+        "title": "The priority-dev spike measures its unknowns, probes first",
+        "state": "decided"
       }
     ],
     "design": [
@@ -336,6 +341,12 @@
         "name": "plugin-split",
         "outcome": "A user installs one stage of the architecture lifecycle without the other three, and four independently-installed plugins write into one bundle without a stale copy destroying authored or paid content.",
         "stage": "implemented"
+      },
+      {
+        "id": "priority-dev-spike",
+        "name": "priority-dev-spike",
+        "outcome": "On recorded transcripts, priority-dev digests a run with Inkling and interprets it with Nemo into a checked Interpretation or an Abstain. Probes show what the hooks and the pane do. A replay report states the valid-output and quote-found rates, and each injected failure ends as an Abstain.",
+        "stage": "approved"
       },
       {
         "id": "react-viewer",
@@ -1058,6 +1069,46 @@
         "pr": 17,
         "state": "closed",
         "note": "The cobuilder- prefix drops from the four non-umbrella plugins named in E1's table (cobuilder-architect, cobuilder-pr, cobuilder-artifact, cobuilder-implement become architect, pr, artifact, implement), since it duplicates the marketplace repo's own name. cobuilder-full-lifecycle keeps its prefix, being the umbrella the repo's own name already carries. Merged as PR #17, then a same-epic follow-up (uncommitted at the time this entry was written) fixes a second-order bug the rename introduced: two of the four renamed plugins (implement, artifact) already shipped a skill folder named after themselves, and once the plugin took that same name too, Skill() resolution inside Claude Code broke -- reproduced directly, not environment-specific. Fixed by renaming the colliding skill folders (implement's skill to build, its command to start; artifact's skill to cobuilder-artifacts) and, for consistency, cobuilder-full-lifecycle's orientation skill to cobuilder-full. See ADR-0016's addendum."
+      },
+      {
+        "id": "priority-dev-spike/E1",
+        "design": "priority-dev-spike",
+        "epic_id": "E1",
+        "branch": "design/priority-dev-spike",
+        "pr": null,
+        "state": "open",
+        "note": null,
+        "design_doc": "priority-dev-spike/E1"
+      },
+      {
+        "id": "priority-dev-spike/E2",
+        "design": "priority-dev-spike",
+        "epic_id": "E2",
+        "branch": "design/priority-dev-spike",
+        "pr": null,
+        "state": "open",
+        "note": null,
+        "design_doc": "priority-dev-spike/E2"
+      },
+      {
+        "id": "priority-dev-spike/E3",
+        "design": "priority-dev-spike",
+        "epic_id": "E3",
+        "branch": "design/priority-dev-spike",
+        "pr": null,
+        "state": "open",
+        "note": null,
+        "design_doc": "priority-dev-spike/E3"
+      },
+      {
+        "id": "priority-dev-spike/E4",
+        "design": "priority-dev-spike",
+        "epic_id": "E4",
+        "branch": "design/priority-dev-spike",
+        "pr": null,
+        "state": "open",
+        "note": null,
+        "design_doc": "priority-dev-spike/E4"
       },
       {
         "id": "react-viewer/E1",
@@ -3102,6 +3153,66 @@
         "state": "completed"
       },
       {
+        "id": "beads-storage/23",
+        "feature": "beads-storage",
+        "n": 23,
+        "title": "**Spike notes into the adapter notes**",
+        "ends_with": "The notes hold each spike finding with its command and exit code",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
+        "id": "beads-storage/24",
+        "feature": "beads-storage",
+        "n": 24,
+        "title": "**Type, title, label, and text mapping**",
+        "ends_with": "A created issue has the new type, the name as title, the label, and the text fields. A read returns them. `prepare` sets no custom type.",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
+        "id": "beads-storage/25",
+        "feature": "beads-storage",
+        "n": 25,
+        "title": "**Hierarchy and ordering edges**",
+        "ends_with": "A seed gives the epic chain and the slice chain, and the deferred epic gets a native defer date",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
+        "id": "beads-storage/26",
+        "feature": "beads-storage",
+        "n": 26,
+        "title": "**Pull request as a milestone with `tracks`**",
+        "ends_with": "A PR holds its epics by `tracks` and blocks nothing. No gate remains.",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
+        "id": "beads-storage/27",
+        "feature": "beads-storage",
+        "n": 27,
+        "title": "**Native ready for slices, with parity**",
+        "ends_with": "`next_ready(\"slice\", under)` runs `bd ready`. `native_ready` is true. The parity test holds on the corpus.",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
+        "id": "beads-storage/28",
+        "feature": "beads-storage",
+        "n": 28,
+        "title": "**`claim-next`**",
+        "ends_with": "One call claims the first ready slice. Nothing ready gives `null` and exit 0.",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
         "id": "coach-reaches-green/1",
         "feature": "coach-reaches-green",
         "n": 1,
@@ -3932,6 +4043,136 @@
         "state": "completed"
       },
       {
+        "id": "priority-dev-spike/1",
+        "feature": "priority-dev-spike",
+        "n": 1,
+        "title": "**Model probe**",
+        "ends_with": "`uv run python priority-dev/probes/model_probe.py <transcript>` runs Nemo on three redacted real transcripts and prints the five facts, an action kind, a quote, and whether the quote is in the text. `probes/model-probe.md` states the JSON validity and the rate-limit count",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
+        "id": "priority-dev-spike/2",
+        "feature": "priority-dev-spike",
+        "n": 2,
+        "title": "**Hook probe**",
+        "ends_with": "In a scratch tmux session, Stop, PermissionRequest, and AskUserQuestion hooks append lines to a local file. `probes/hook-probe.md` states whether `$TMUX_PANE` is set, the fields seen, and the transcript lag. The report also states what the transcript holds when `/goal` clears. A failing hook exits 0 within 5 seconds, and the bypass file makes every hook a no-op",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
+        "id": "priority-dev-spike/3",
+        "feature": "priority-dev-spike",
+        "n": 3,
+        "title": "**Tmux probe**",
+        "ends_with": "`probes/tmux-probe.md` states whether a paste is lost in an idle pane and in a busy pane, whether newlines survive, and whether the permission dialog shows while a PermissionRequest hook waits 20 seconds",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
+        "id": "priority-dev-spike/4",
+        "feature": "priority-dev-spike",
+        "n": 4,
+        "title": "**Stop brief**",
+        "ends_with": "`uv run priority brief fixtures/run-3.jsonl --stop 2` prints a stop brief that equals the stored snapshot. Replies group by message id, results pair by id, a duplicate message id is handled, and a planted key is redacted",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
+        "id": "priority-dev-spike/5",
+        "feature": "priority-dev-spike",
+        "n": 5,
+        "title": "**Interpret a stop**",
+        "ends_with": "`uv run priority interpret` runs Triage, Pick, Fill, and Card on Nemo through DSPy. It prints an Interpretation or an Abstain. Each call is stored with its model id, prompt hash, and raw reply",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
+        "id": "priority-dev-spike/6",
+        "feature": "priority-dev-spike",
+        "n": 6,
+        "title": "**Digest a run**",
+        "ends_with": "`uv run priority digest` calls Inkling and prints a RunDigest that validates. The next stop brief of the same session carries it as `previous`",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
+        "id": "priority-dev-spike/7",
+        "feature": "priority-dev-spike",
+        "n": 7,
+        "title": "**Replay report with failure drills**",
+        "ends_with": "`uv run priority replay fixtures/` writes `report.md` with the valid-output rate, the quote-found rate, the abstain reasons, the kinds picked, and the characters, seconds, and cost for each stage. A replay at the event rate of 5 sessions counts the free-tier limit errors. An injected 429, malformed JSON, empty quote, and timeout each end as an Abstain with a logged reason",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
+        "id": "priority-dev-spike/8",
+        "feature": "priority-dev-spike",
+        "n": 8,
+        "title": "**Append and read**",
+        "ends_with": "`uv run priority log append` twice with one idempotency key stores one row, and `priority log read --from 0` lists rows in order",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
+        "id": "priority-dev-spike/9",
+        "feature": "priority-dev-spike",
+        "n": 9,
+        "title": "**Ingest and follow**",
+        "ends_with": "`POST /events` stores an event. A reader that follows the log gets it within one second and resumes from its cursor after a restart",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
+        "id": "priority-dev-spike/10",
+        "feature": "priority-dev-spike",
+        "n": 10,
+        "title": "**Interpret from the log**",
+        "ends_with": "A `run.stopped` event in the log leads to a `fact.run_digest` event and an `interpretation` event, written by the interpreter service",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
+        "id": "priority-dev-spike/11",
+        "feature": "priority-dev-spike",
+        "n": 11,
+        "title": "**Hooks and tail to the log**",
+        "ends_with": "A Stop hook in the scratch session leads to a `run.stopped` event in the log with `last_assistant_message` and the pane id. The tailer posts transcript records with `file:offset` keys, and a host restart adds no duplicate",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
+        "id": "priority-dev-spike/12",
+        "feature": "priority-dev-spike",
+        "n": 12,
+        "title": "**Send a signed command**",
+        "ends_with": "A signed command pastes text into the scratch pane at an empty prompt, and `command.confirmed` follows. An unsigned command is refused, and a command for a changed prompt gives `command.unknown`",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
+        "id": "priority-dev-spike/13",
+        "feature": "priority-dev-spike",
+        "n": 13,
+        "title": "**Answer from a held hook**",
+        "ends_with": "A PermissionRequest hook waits, a stub command returns allow, and the scratch session runs the tool with no dialog",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
         "id": "review-link/1",
         "feature": "review-link",
         "n": 1,
@@ -4198,6 +4439,15 @@
         "source_path": "docs/plans/options-mode/01-product.md"
       },
       {
+        "id": "priority-dev-spike",
+        "feature_slug": "priority-dev-spike",
+        "gate": 1,
+        "title": "Product: priority-dev-spike",
+        "body_md": "# Product: priority-dev-spike\n\nGrounded in `docs/architecture/designs/priority-dev-spike/intent.json` and ADR-0045.\n\n## Problem\n\nA developer who runs many Claude Code sessions at once cannot tell which session needs them. The design of priority.dev answers that, but it rests on guesses. No one has measured whether a small model can read a session that has stopped and say what is needed. No one has measured what the Claude Code hooks and the terminal pane really do. A wrong guess would reach the part that answers sessions for the developer.\n\n## Success metric\n\nEvery unknown in the design has a measured answer in a committed report. The measure is a count: of the 6 listed unknowns, how many have a report that states a result. The target is 6 of 6, and \"refuted\" counts as a result. A replay report over local transcripts also states the valid-output rate and the quote-found rate of the small model.\n\n## Announcement — the blog post before the feature\n\nWe ran the first spikes of priority.dev. A small model read recorded Claude Code sessions and said what each stopped session needed. Every answer carried an exact quote from the session, and code rejected any quote that was not there. We also learned what the hooks and the terminal pane do, before we built anything that depends on them. Each failure of the model ended in a clear refusal with a reason, never in silence. The next phase now starts from facts.\n\n## Screens\n\nNo UI. The spike prints reports and JSON in a terminal.\n",
+        "approved_date": null,
+        "source_path": "docs/plans/priority-dev-spike/01-product.md"
+      },
+      {
         "id": "review-link",
         "feature_slug": "review-link",
         "gate": 1,
@@ -4335,6 +4585,15 @@
         "source_path": "docs/plans/options-mode/02-architecture.md"
       },
       {
+        "id": "priority-dev-spike",
+        "feature_slug": "priority-dev-spike",
+        "gate": 2,
+        "title": "Architecture: priority-dev-spike",
+        "body_md": "# Architecture: priority-dev-spike\n\nGrounded in `contracts.md`, `intent.json`, and ADR-0045 of the design. Detail lives in `priority-dev/docs/design/`.\n\n## Fit\n\nThe code lives in `priority-dev/`, a folder with its own `pyproject.toml`. It imports nothing from `plugins/` or `shared/`, and the plugin tests never collect it. The repository is a plugin marketplace and not an app, so this isolation is the boundary (ADR-0025, ADR-0045). The workflow state goes through the tracker port (ADR-0040, ADR-0031).\n\n## Endpoints\n\n- `POST /events`: append one event with an idempotency key (epic E3).\n- `GET /events?cursor=N&wait=25`: follow the log from a cursor (epic E3).\n- A command line, `priority`, with `brief`, `interpret`, `digest`, `replay`, and `log` subcommands (epics E2 and E3).\n\n## Data\n\n- `events`: append only, with a unique idempotency key and a `seq` cursor.\n- `interpreter_call`: one row for each model call, with the model id, prompt hash, rendered input, raw reply, and output.\n- Local files: redacted fixtures (ignored by Git for real ones), probe reports, and a replay report.\n\n## Flow\n\nA transcript becomes a stop brief. The stop brief goes to Triage, Pick, Fill, and Card on Nemo, and to Digest on Inkling. Code checks that each quote is in the stop brief. The result is an Interpretation or an Abstain, stored with its call records. In later epics a Stop hook feeds the log, and the interpreter service reads it.\n\n## External\n\n- OpenRouter: `mistralai/mistral-nemo` and `thinkingmachines/inkling:free`. The key is `OPENROUTER_API_KEY`, read by one module from `priority-dev/.env`.\n- Claude Code hooks: `Stop`, `PermissionRequest`, and `PreToolUse` on `AskUserQuestion`.\n- tmux, Postgres 17 in Docker, and a scratch Claude Code session.\n",
+        "approved_date": null,
+        "source_path": "docs/plans/priority-dev-spike/02-architecture.md"
+      },
+      {
         "id": "review-link",
         "feature_slug": "review-link",
         "gate": 2,
@@ -4470,6 +4729,15 @@
         "body_md": "# Program Design: architect options mode\n\n## Files\n\n| File | Action | Why |\n|---|---|---|\n| `plugins/architect/commands/options.md` | create | dispatch line and the list of what the mode writes |\n| `plugins/architect/skills/architecture/SKILL.md` | edit | `### Options Mode`, frontmatter, intro, invocation, layout, Quick Reference |\n| `plugins/architect/skills/architecture/references/options-mode.md` | create | full procedure, stages 0 to 6 |\n| `plugins/architect/skills/architecture/references/reports/options-report-TEMPLATE.html` | create | report skeleton with placeholders and one worked example |\n| `plugins/architect/scripts/check_options_report.py` | create | structure validator |\n| `tests/test_options_report.py`, `tests/fixtures/options_report/*.html` | create | good and broken fixtures |\n| `tests/test_commands.py` | edit | seven modes, and command files equal the declared modes |\n| `DDD-VOCABULARY.md` | edit | `Inquiry` entry |\n| `plugins/architect/.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json` | edit | version 0.7.0, description |\n| `README.md`, `CLAUDE.md`, `plugins/cobuilder-full-lifecycle/skills/cobuilder-full/SKILL.md` | edit | mode count and lists |\n\n## Types & signatures\n\n```python\n# plugins/architect/scripts/check_options_report.py  (PEP 723, no dependencies)\nANCHORS: tuple[str, ...]          # summary, current, flow, inquiries, directions,\n                                  # proposed, gaps, order, decide, evidence\nCONFIDENCE: frozenset[str]        # {\"Verified\", \"ADR only\", \"Hypothesis\"}\n\n@dataclass(frozen=True)\nclass Result:\n    check: int                    # 1..9\n    severity: str                 # \"error\" | \"warning\"\n    message: str\n\ndef check_report(html: str) -> list[Result]: ...\ndef main(argv: list[str] | None = None) -> int: ...   # 0 when no error result, else 1\n```\n\nOutput: one line per result, `ERROR check N: message` or `WARN check N: message`.\n\n## Call stack\n\n`/architect:options` → `commands/options.md` → `Skill(\"architecture\", \"options ...\")` → `references/options-mode.md` stage 0 to 6 → copy template → `check_options_report.py <report>` → print path and inquiry IDs.\n\n## Test plan\n\n- `tests/test_commands.py`: the dispatch of `options.md`, the seven declared modes, and command files equal the declared modes.\n- `tests/test_options_report.py`: the template and a good fixture exit 0. One broken fixture for each error check exits 1 with the check number in the output. A report with only a long SVG text exits 0 and prints a warning.\n- Existing manifest and vocabulary tests stay green.\n\n## Least confident decisions\n\n- The exact set of ten anchors and the `#inquiries` rename come from the brief and the reference report. The reference report is outside this repo and may drift.\n- The validator parses HTML with `html.parser`. A malformed fixture may parse in a way the check does not expect.\n- Whether the viewer files `model.ts` and `sections.tsx` count architect modes with a \"six\" is not yet checked.\n",
         "approved_date": null,
         "source_path": "docs/plans/options-mode/03-program-design.md"
+      },
+      {
+        "id": "priority-dev-spike",
+        "feature_slug": "priority-dev-spike",
+        "gate": 3,
+        "title": "Program Design: priority-dev-spike",
+        "body_md": "# Program Design: priority-dev-spike\n\nThe sketches `priority-dev/docs/design/schemas/interpreter_schemas.py` and `dspy_modules.py` run today and hold the types. They are the starting point, not the layout.\n\n## Files\n\n- `priority-dev/pyproject.toml`: Python 3.11 or later, `uv`, `pytest`, `dspy`, `pydantic`, `psycopg`, `fastapi`, `watchfiles`.\n- `src/priority/config.py`: the only module that reads `OPENROUTER_API_KEY` and other settings.\n- `src/priority/brief/`: the brief builder and the redactor (E2).\n- `src/priority/interpreter/`: the signatures, the `Interpreter` and `DigestRun` modules, and the checks (E2).\n- `src/priority/log/`: the event log client and service (E3).\n- `src/priority/host/`: the hook command, the spool, the tailer, the tmux module, and the puller (E1 probes first, then E4).\n- `probes/`: three probe scripts and their committed reports (E1).\n- `tests/` and `fixtures/` (real ones ignored by Git).\n\n## Types & signatures\n\n- `StopBrief`, `RunItem`, `RunDigest`, `Facts`, `Question`, `Proposal`, `Action` and its 13 kinds, `Abstain`, `Interpretation`, `InterpreterCall` as in `interpreter_schemas.py`.\n- `build_brief(transcript: Path, stop: int, previous: RunDigest | None) -> StopBrief`\n- `Interpreter.forward(brief: StopBrief) -> Interpretation`\n- `DigestRun.forward(brief: StopBrief) -> RunDigest`\n- `append(event: Event) -> int`, and `follow(cursor: int) -> Iterator[Event]`.\n\n## Call stack\n\n`priority interpret` calls `build_brief`, then `Interpreter.forward`. That runs Triage, then Pick, then Fill, then Card, each through one `dspy.Predict`. Code checks the kind and the quote, builds the `Action`, and stores each call in `interpreter_call`.\n\n## Test plan\n\n- Modules run with `DummyLM` for the valid path, the quote-not-in-brief path, and the done path (already in the sketch).\n- The brief builder compares to stored snapshots of the fixtures, and a planted key must be redacted.\n- Failure drills inject 429, malformed JSON, an empty quote, and a timeout. Each must end as an Abstain with a reason.\n- The log has a contract test for the idempotency key and the cursor.\n- A test searches `priority-dev/` for imports from `plugins/` or `shared/`, and the plugin test run must not collect `priority-dev/`.\n- The probes run in a scratch tmux session only.\n\n## Least confident decisions\n\n- Whether Nemo returns valid payloads for most of the 13 kinds. The split into small calls is a bet.\n- Whether `JSONAdapter` or `ChatAdapter` works better on Nemo. The replay compares both.\n- Whether the free Inkling tier sustains the event rate.\n- Whether a held hook leaves the dialog visible. Slice 3 measures it.\n- Whether the transcript lag after Stop is short enough for the brief builder.\n",
+        "approved_date": null,
+        "source_path": "docs/plans/priority-dev-spike/03-program-design.md"
       },
       {
         "id": "review-link",
@@ -4751,6 +5019,42 @@
         "body_md": "# Epic Technical Solution Design: E1 — The /architect:options mode\n\nFeature: options-mode\nEpic ID: E1\n\n## Scope and Intent\n\nAdd `/architect:options` as a seventh architect mode. The mode writes one self-contained HTML report. A validator script checks the structure of the report. The design record is `docs/architecture/designs/options-mode/` and `ADR-0035`. The source requirements are the brief at `/Users/theb/Documents/Windsurf/think-with-ai/.claude/worktrees/think-with-ai-architecture-review/docs/prompts/options-mode/brief.md`, as changed by the decisions in `00-status.md`.\n\n## Files Touched\n\nSee `03-program-design.md`, Files. One epic owns all of them. Slice 1 owns the command, `SKILL.md`, `options-mode.md`, and `tests/test_commands.py`. Slice 2 owns the template, the validator, and its tests and fixtures. Slice 3 owns the glossary, the manifests, and the count wording. Slice 4 owns the one generated report.\n\n## Types & Signatures\n\nThe validator interface is in `03-program-design.md`, Types & signatures. The report contract: ten anchors (`summary`, `current`, `flow`, `inquiries`, `directions`, `proposed`, `gaps`, `order`, `decide`, `evidence`), three figures (`fig-current`, `fig-flow`, `fig-proposed`), one row `row-<ID>` and one block `dir-<ID>` for each inquiry, and the confidence values `Verified`, `ADR only`, and `Hypothesis`.\n\n## Slice Decomposition\n\n1. Slice 1 is the tracer bullet. It makes the mode exist and the test count seven. It needs nothing else.\n2. Slice 2 depends on nothing in slice 1 for its code. `options-mode.md` names the template and the validator by path.\n3. Slice 3 depends on slice 1 (the mode exists) and slice 2 (the validator exists), because the count and glossary text refers to both.\n4. Slice 4 depends on slices 1 to 3. It runs the finished mode.\n\n## Test Plan\n\n- Slice 1: `uv run --with pytest pytest tests/test_commands.py -q`.\n- Slice 2: `uv run --with pytest pytest tests/test_options_report.py -q`, plus a `node --check` of the inline script of the template.\n- Slice 3: `uv run --with pytest pytest tests/ -q`.\n- Slice 4: `uv run plugins/architect/scripts/check_options_report.py <report>` and a `git status` of the working tree.\n\n## Risks & Open Questions\n\n- The reference report lives outside this repo. Slice 2 reads it from the path above. If the path is missing, GREEN stops and reports.\n- The viewer files `plugins/artifact/viewer/src/shell/model.ts` and `plugins/artifact/viewer/src/variations/sections-e/sections.tsx` hold the word \"six\". Slice 3 must check whether it counts architect modes. A change there needs a viewer rebuild, which is out of scope. If a change is needed, record it as a follow-up.\n- A blind run of the mode in slice 4 cannot use the installed plugin, which is version 0.6.1 and has no options mode. The agent reads the skill files from the repo path.\n",
         "approved_date": null,
         "source_path": "docs/plans/options-mode/epic-E1-design.md"
+      },
+      {
+        "id": "priority-dev-spike/E1",
+        "epic_id": "E1",
+        "feature_slug": "priority-dev-spike",
+        "title": "Epic Technical Solution Design: E1 — Probes",
+        "body_md": "# Epic Technical Solution Design: E1 — Probes\n\nFeature: priority-dev-spike\nEpic ID: E1\n\n## Scope and Intent\n\nThree probes measure the model, the hooks, and the pane before any database exists. Each ends in a committed report. A probe may refute its claim. The design source is `priority-dev/docs/design/adapter-host.md` (sections 2, 3, and 7) and `dspy-modules.md`.\n\n## Files Touched\n\n- `priority-dev/probes/model_probe.py`, `hook_probe.py`, `tmux_probe.py`\n- `priority-dev/probes/{model,hook,tmux}-probe.md` and `probes/logs/`\n- `src/priority/host/hook_cli.py` (the hook command, with timeout and bypass)\n- `src/priority/config.py` (the one reader of the key)\n\n## Types & Signatures\n\n- `hook_cli.main(event: str) -> int`: reads JSON on stdin, writes one line to the local file, exits 0 on any failure within 5 seconds, and does nothing when `~/.priority-dev/bypass` exists.\n- `model_probe.run(transcript: Path) -> ProbeResult` with the five facts, a kind, a quote, and `quote_in_text: bool`.\n\n## Slice Decomposition\n\n1. Slice 1: the model probe on 3 redacted real transcripts.\n2. Slice 2: the hook probe in a scratch tmux session, with the timeout and the bypass file. Needs no slice 1.\n3. Slice 3: the tmux probe. Needs the hook command of slice 2 for the held-hook test.\n\n## Test Plan\n\nTests cover the hook command timeout and bypass. The reports are read by the validator against the rubric. Probes run only in a scratch session, and a test checks the target pane id.\n\n## Risks & Open Questions\n\n- Whether `$TMUX_PANE` reaches the hook. The report answers it.\n- A hook installed in a live session may freeze it. Scratch only, with the bypass file first.\n- Real transcripts hold secrets. Redaction runs before any model call.\n",
+        "approved_date": null,
+        "source_path": "docs/plans/priority-dev-spike/epic-E1-design.md"
+      },
+      {
+        "id": "priority-dev-spike/E2",
+        "epic_id": "E2",
+        "feature_slug": "priority-dev-spike",
+        "title": "Epic Technical Solution Design: E2 — Interpreter",
+        "body_md": "# Epic Technical Solution Design: E2 — Interpreter\n\nFeature: priority-dev-spike\nEpic ID: E2\n\n## Scope and Intent\n\nThe interpreter turns a recorded transcript into a stop brief, an Interpretation or an Abstain, and a RunDigest. The source is `schemas.md`, `dspy-modules.md`, and the two running sketches.\n\n## Files Touched\n\n- `src/priority/brief/` (builder, redactor), `src/priority/interpreter/` (signatures, modules, checks), `src/priority/cli.py`\n- `fixtures/` (real ones ignored by Git), `tests/`, `reports/replay.md`\n\n## Types & Signatures\n\n- `build_brief(transcript, stop, previous) -> StopBrief`\n- `Interpreter.forward(brief) -> Interpretation`; `DigestRun.forward(brief) -> RunDigest`\n- Types as in `interpreter_schemas.py`, with `brief_id` for the id.\n\n## Slice Decomposition\n\n1. Slice 4: the stop brief and its snapshots.\n2. Slice 5: Interpret, with call records.\n3. Slice 6: Digest and `previous`.\n4. Slice 7: the replay report with failure drills, then the go or no-go.\n\n## Test Plan\n\nSnapshots for the brief. `DummyLM` for the valid, quote-not-in-brief, kind-not-allowed, and done paths. Real calls only in the replay. Failure drills inject 429, malformed JSON, an empty quote, and a timeout.\n\n## Risks & Open Questions\n\n- Nemo validity on the 13 payloads is unknown. The split into small calls is a bet.\n- `JSONAdapter` against `ChatAdapter` on Nemo is open. The replay compares both.\n- The free Inkling tier may rate-limit. The replay counts the errors.\n",
+        "approved_date": null,
+        "source_path": "docs/plans/priority-dev-spike/epic-E2-design.md"
+      },
+      {
+        "id": "priority-dev-spike/E3",
+        "epic_id": "E3",
+        "feature_slug": "priority-dev-spike",
+        "title": "Epic Technical Solution Design: E3 — Event log",
+        "body_md": "# Epic Technical Solution Design: E3 — Event log\n\nFeature: priority-dev-spike\nEpic ID: E3\n\n## Scope and Intent\n\nPostgres 17 holds an append-only event log with an idempotency key and a cursor. A service reads `run.stopped` events and writes the digest and the interpretation. The source is `components.md` section 3.3.\n\n## Files Touched\n\n- `docker-compose.yml`, `migrations/0001_events.sql`, `src/priority/log/` (client, service), `tests/test_log_*.py`\n\n## Types & Signatures\n\n- `append(event) -> int` (returns `seq`; a repeat key returns the old `seq`)\n- `follow(cursor) -> Iterator[Event]` over LISTEN and NOTIFY\n- `POST /events`, `GET /events?cursor=N&wait=25`\n\n## Slice Decomposition\n\n1. Slice 8: append and read.\n2. Slice 9: ingest and follow.\n3. Slice 10: the interpreter service over the log.\n\n## Test Plan\n\nA contract test for the key and the cursor. A restart test for the follower. Slice 10 uses the fake model.\n\n## Risks & Open Questions\n\n- psycopg 3 async and `LISTEN` handling are as in `components.md`, and are not yet tested here.\n- Docker must run on the development machine.\n",
+        "approved_date": null,
+        "source_path": "docs/plans/priority-dev-spike/epic-E3-design.md"
+      },
+      {
+        "id": "priority-dev-spike/E4",
+        "epic_id": "E4",
+        "feature_slug": "priority-dev-spike",
+        "title": "Epic Technical Solution Design: E4 — Adapter to the log",
+        "body_md": "# Epic Technical Solution Design: E4 — Adapter to the log\n\nFeature: priority-dev-spike\nEpic ID: E4\n\n## Scope and Intent\n\nThe adapter host sends hook events and transcript records to the log through a spool, receives a signed command, and answers from a held hook. The source is `adapter-host.md`.\n\n## Files Touched\n\n- `src/priority/host/` (spool, tailer, puller, tmux module, installer), `tests/test_host_*.py`\n\n## Types & Signatures\n\n- `spool.write(event)`, `spool.flush(post)`; `tmux.send(pane, text) -> SendResult` as the only tmux caller; `verify(command, key) -> bool` over an HMAC.\n\n## Slice Decomposition\n\n1. Slice 11: hooks and tail to the log.\n2. Slice 12: a signed send with confirmation.\n3. Slice 13: an answer from a held hook.\n\n## Test Plan\n\nA test searches the repository for tmux calls outside the tmux module. Scratch session tests for the send and the held hook. A restart test for the tailer keys.\n\n## Risks & Open Questions\n\n- Pane state, newlines, and a lost paste (measured in slice 3).\n- Whether the dialog shows while a hook waits (slice 3). Slice 13 depends on it.\n",
+        "approved_date": null,
+        "source_path": "docs/plans/priority-dev-spike/epic-E4-design.md"
       },
       {
         "id": "review-link/E1",
@@ -5697,6 +6001,110 @@
         "source_path": ".cobuilder/rubrics/options-mode/slice-4.md"
       },
       {
+        "id": "priority-dev-spike/1",
+        "feature_slug": "priority-dev-spike",
+        "n": 1,
+        "title": "Slice 1 — Model probe",
+        "body_md": "# Rubric: Slice 1 — Model probe\n\nFeature: priority-dev-spike\nEpic: E1\nSlice goal: `uv run python priority-dev/probes/model_probe.py <transcript>` runs Nemo on three redacted real transcripts, and the report states the JSON validity and the rate-limit count.\nTest command: `uv run pytest priority-dev/tests -q`\n\n## Criteria\n\n### C1 — The probe prints the five facts, a kind, a quote, and a substring flag for three transcripts [CRITICAL]\n**Must be true:** for each of three fixtures, the output holds the five facts, one action kind, one quote, and `quote_in_text`, and code computes the flag by a substring test.\n**Evidence to check:**\n- Run the probe on each fixture under `priority-dev/fixtures/`.\n- Read the function that sets `quote_in_text`.\n**Scoring:**\n- 1.0 — all three runs print every field, and the flag comes from a substring test in code.\n- 0.5 — the output is complete for two fixtures, or the flag is set by the model.\n- 0.0 — a field is missing, or the probe fails.\n\n### C2 — The report states measured counts, with raw logs committed [CRITICAL]\n**Must be true:** `probes/model-probe.md` states how many replies parsed as valid JSON, how many calls hit a rate limit, and how many quotes were in the text. Raw replies sit in `probes/logs/`.\n**Evidence to check:**\n- Read the report and count the lines in the logs.\n- Compare each count to the logs.\n**Scoring:**\n- 1.0 — every count matches the logs.\n- 0.5 — counts exist, but one does not match the logs.\n- 0.0 — a count is missing, or no logs are committed.\n\n### C3 — The key has one reader and never reaches a log [CRITICAL]\n**Must be true:** only `src/priority/config.py` reads `OPENROUTER_API_KEY`, and no committed file or log holds the key.\n**Evidence to check:**\n- Search `priority-dev/` for `OPENROUTER_API_KEY` and `os.environ`.\n- Search the committed files for the first 8 characters of the key value from `priority-dev/.env`.\n**Scoring:**\n- 1.0 — one reader, and no key in any file.\n- 0.5 — one reader, but the key text appears in an ignored file only.\n- 0.0 — a second reader, or the key in a committed file.\n\n### C4 — The report names the abort condition it informs\n**Must be true:** the report states which `abort_if` condition of `goal.json` it informs, and gives a plain result: held, refuted, or not measured.\n**Evidence to check:**\n- Read the report named in the slice goal.\n- Find the sentence that names the condition and the result.\n**Scoring:**\n- 1.0 — the sentence exists and the result matches the raw logs.\n- 0.5 — the sentence exists, but the result is vague or the logs are missing.\n- 0.0 — no such sentence.\n\n## Regression check\n- All tests that passed before this slice must still pass.\n- Files outside `priority-dev/` must remain unchanged, except the committed reports named in the slice.\n\n## Out of scope — do not penalise\n- Behaviour that belongs to a later slice of the plan.\n- The policy, the actuator, the attention queue, and the notifier.\n",
+        "source_path": ".cobuilder/rubrics/priority-dev-spike/slice-1.md"
+      },
+      {
+        "id": "priority-dev-spike/2",
+        "feature_slug": "priority-dev-spike",
+        "n": 2,
+        "title": "Slice 2 — Hook probe",
+        "body_md": "# Rubric: Slice 2 — Hook probe\n\nFeature: priority-dev-spike\nEpic: E1\nSlice goal: In a scratch tmux session, Stop, PermissionRequest, and AskUserQuestion hooks append lines to a local file, with a timeout and a bypass file, and the report states what the hooks showed.\nTest command: `uv run pytest priority-dev/tests -q`\n\n## Criteria\n\n### C1 — A failing hook exits 0 within 5 seconds, and the bypass file silences every hook [CRITICAL]\n**Must be true:** a hook with a forced error exits 0 in 5 seconds or less. With `~/.priority-dev/bypass` present, each hook writes nothing and exits 0.\n**Evidence to check:**\n- Run the hook command tests.\n- Force an error, time the exit, then create the bypass file and repeat.\n**Scoring:**\n- 1.0 — both behaviours hold on all three hook events.\n- 0.5 — both hold on one or two events.\n- 0.0 — a failing hook exits non-zero or waits longer than 5 seconds.\n\n### C2 — Hooks run only in a scratch session, and the uninstall removes only marked entries [CRITICAL]\n**Must be true:** the installer writes hook entries only into a scratch settings file, marks each entry, and the uninstall leaves unmarked entries intact.\n**Evidence to check:**\n- Run the installer on a copy of a settings file that holds unmarked entries.\n- Diff before and after the uninstall.\n**Scoring:**\n- 1.0 — the diff is empty after the uninstall.\n- 0.5 — the diff shows only whitespace changes.\n- 0.0 — an unmarked entry is lost, or the installer touches the real settings file.\n\n### C3 — The report states what the hooks showed, with numbers\n**Must be true:** `probes/hook-probe.md` states whether `$TMUX_PANE` was set, the fields seen for each event, the transcript lag after Stop in seconds over at least 5 stops, and what the transcript holds when `/goal` clears.\n**Evidence to check:**\n- Read the report.\n- Compare each number to the raw lines in `probes/logs/`.\n**Scoring:**\n- 1.0 — each item is stated and matches the logs.\n- 0.5 — one item is missing or not measured, and the report says so.\n- 0.0 — an item is missing and the report does not say so.\n\n### C4 — The report names the abort condition it informs\n**Must be true:** the report states which `abort_if` condition of `goal.json` it informs, and gives a plain result: held, refuted, or not measured.\n**Evidence to check:**\n- Read the report named in the slice goal.\n- Find the sentence that names the condition and the result.\n**Scoring:**\n- 1.0 — the sentence exists and the result matches the raw logs.\n- 0.5 — the sentence exists, but the result is vague or the logs are missing.\n- 0.0 — no such sentence.\n\n## Regression check\n- All tests that passed before this slice must still pass.\n- Files outside `priority-dev/` must remain unchanged, except the committed reports named in the slice.\n\n## Out of scope — do not penalise\n- Behaviour that belongs to a later slice of the plan.\n- The policy, the actuator, the attention queue, and the notifier.\n",
+        "source_path": ".cobuilder/rubrics/priority-dev-spike/slice-2.md"
+      },
+      {
+        "id": "priority-dev-spike/3",
+        "feature_slug": "priority-dev-spike",
+        "n": 3,
+        "title": "Slice 3 — Tmux probe",
+        "body_md": "# Rubric: Slice 3 — Tmux probe\n\nFeature: priority-dev-spike\nEpic: E1\nSlice goal: `probes/tmux-probe.md` states whether a paste is lost in an idle pane and a busy pane, how newlines behave, and whether the permission dialog shows while a hook waits 20 seconds.\nTest command: `uv run pytest priority-dev/tests -q`\n\n## Criteria\n\n### C1 — The paste trials have counts for an idle and a busy pane\n**Must be true:** the report states at least 10 trials for each of the idle pane and the busy pane, the number lost, and how a newline arrived.\n**Evidence to check:**\n- Read the report and the raw logs.\n- Recount the lost pastes from the logs.\n**Scoring:**\n- 1.0 — counts match the logs.\n- 0.5 — counts exist for one pane only.\n- 0.0 — no counts.\n\n### C2 — The held-hook result has a pane capture as evidence [CRITICAL]\n**Must be true:** the report states yes or no for whether the dialog showed while the hook waited 20 seconds, with a `tmux capture-pane` text taken during the wait.\n**Evidence to check:**\n- Read the report.\n- Open the capture file named in the report.\n**Scoring:**\n- 1.0 — the answer and the capture agree.\n- 0.5 — the answer exists, but the capture is missing.\n- 0.0 — no answer.\n\n### C3 — Only the scratch pane receives keys [CRITICAL]\n**Must be true:** every send in the probe targets the scratch pane id, and a test refuses a pane id that is not the scratch pane.\n**Evidence to check:**\n- Run the test.\n- Search the probe code for a tmux call that takes an id from outside the scratch session.\n**Scoring:**\n- 1.0 — the test passes and no other target exists.\n- 0.5 — the test passes, but one call reads the id from a variable that is not checked.\n- 0.0 — a call can reach another pane.\n\n### C4 — The report names the abort condition it informs\n**Must be true:** the report states which `abort_if` condition of `goal.json` it informs, and gives a plain result: held, refuted, or not measured.\n**Evidence to check:**\n- Read the report named in the slice goal.\n- Find the sentence that names the condition and the result.\n**Scoring:**\n- 1.0 — the sentence exists and the result matches the raw logs.\n- 0.5 — the sentence exists, but the result is vague or the logs are missing.\n- 0.0 — no such sentence.\n\n## Regression check\n- All tests that passed before this slice must still pass.\n- Files outside `priority-dev/` must remain unchanged, except the committed reports named in the slice.\n\n## Out of scope — do not penalise\n- Behaviour that belongs to a later slice of the plan.\n- The policy, the actuator, the attention queue, and the notifier.\n",
+        "source_path": ".cobuilder/rubrics/priority-dev-spike/slice-3.md"
+      },
+      {
+        "id": "priority-dev-spike/4",
+        "feature_slug": "priority-dev-spike",
+        "n": 4,
+        "title": "Slice 4 — Stop brief",
+        "body_md": "# Rubric: Slice 4 — Stop brief\n\nFeature: priority-dev-spike\nEpic: E2\nSlice goal: `uv run priority brief fixtures/run-3.jsonl --stop 2` prints a stop brief that equals the stored snapshot, with grouped replies, paired results, and redacted keys.\nTest command: `uv run pytest priority-dev/tests -q`\n\n## Criteria\n\n### C1 — The brief equals the stored snapshot [CRITICAL]\n**Must be true:** the printed brief for the fixture equals `tests/snapshots/run-3-stop-2.json` after `json.loads`.\n**Evidence to check:**\n- Run the command and compare.\n**Scoring:**\n- 1.0 — equal.\n- 0.5 — equal except for field order that the snapshot does not fix.\n- 0.0 — different.\n\n### C2 — Replies group by message id, and a duplicate id is handled [CRITICAL]\n**Must be true:** several records with one `message.id` give one reply, and a fixture with a duplicated id gives no duplicated text.\n**Evidence to check:**\n- Run the brief tests on the fixtures.\n- Read the duplicate-id fixture.\n**Scoring:**\n- 1.0 — both cases pass.\n- 0.5 — the grouping passes, and the duplicate case is missing.\n- 0.0 — the grouping fails.\n\n### C3 — Each tool call pairs with its full result, and the error flag stays\n**Must be true:** each tool call holds the full result text and `is_error` from the record with the same `tool_use_id`. No result is clipped.\n**Evidence to check:**\n- Run the pairing test.\n- Compare the result length in the brief to the fixture record.\n**Scoring:**\n- 1.0 — the pairing test passes and the lengths match.\n- 0.5 — pairing holds, but one result is clipped.\n- 0.0 — a call has no result, or the flag is lost.\n\n### C4 — A planted secret is redacted before any model call [CRITICAL]\n**Must be true:** a fixture with a planted fake key shows `[redacted]` in the brief, and the redaction count is stored.\n**Evidence to check:**\n- Run the redaction test.\n- Search the brief output for the planted value.\n**Scoring:**\n- 1.0 — the value is absent and the count is right.\n- 0.5 — the value is absent, but the count is wrong.\n- 0.0 — the value appears.\n\n### C5 — The report names the abort condition it informs\n**Must be true:** the report states which `abort_if` condition of `goal.json` it informs, and gives a plain result: held, refuted, or not measured.\n**Evidence to check:**\n- Read the report named in the slice goal.\n- Find the sentence that names the condition and the result.\n**Scoring:**\n- 1.0 — the sentence exists and the result matches the raw logs.\n- 0.5 — the sentence exists, but the result is vague or the logs are missing.\n- 0.0 — no such sentence.\n\n## Regression check\n- All tests that passed before this slice must still pass.\n- Files outside `priority-dev/` must remain unchanged, except the committed reports named in the slice.\n\n## Out of scope — do not penalise\n- Behaviour that belongs to a later slice of the plan.\n- The policy, the actuator, the attention queue, and the notifier.\n",
+        "source_path": ".cobuilder/rubrics/priority-dev-spike/slice-4.md"
+      },
+      {
+        "id": "priority-dev-spike/5",
+        "feature_slug": "priority-dev-spike",
+        "n": 5,
+        "title": "Slice 5 — Interpret a stop",
+        "body_md": "# Rubric: Slice 5 — Interpret a stop\n\nFeature: priority-dev-spike\nEpic: E2\nSlice goal: `uv run priority interpret` runs Triage, Pick, Fill, and Card on Nemo through DSPy, prints an Interpretation or an Abstain, and stores each call with its model id, prompt hash, and raw reply.\nTest command: `uv run pytest priority-dev/tests -q`\n\n## Criteria\n\n### C1 — The valid path gives a one-step proposal [CRITICAL]\n**Must be true:** with a dummy model that answers correctly, the result is an Interpretation with one step and a question card when a human must answer.\n**Evidence to check:**\n- Run the module tests.\n**Scoring:**\n- 1.0 — the test passes.\n- 0.5 — the proposal is built, but the card is missing.\n- 0.0 — the test fails.\n\n### C2 — A quote that is not in the brief gives an Abstain, and so does a kind that is not allowed [CRITICAL]\n**Must be true:** the reasons are `quote_not_in_brief` and `kind_not_allowed`. Neither raises an exception.\n**Evidence to check:**\n- Run the two tests.\n**Scoring:**\n- 1.0 — both pass.\n- 0.5 — one passes.\n- 0.0 — either raises or proposes.\n\n### C3 — Each call is stored with its model id, prompt hash, and raw reply\n**Must be true:** after one run, the store holds one row for each model call with the three fields, and the rendered input.\n**Evidence to check:**\n- Run `priority interpret` on one fixture, then read the store.\n**Scoring:**\n- 1.0 — every call has all fields.\n- 0.5 — one call lacks a field.\n- 0.0 — no rows.\n\n### C4 — A real run on one fixture prints a result\n**Must be true:** with the real model on one local fixture, the command prints an Interpretation or an Abstain and does not crash.\n**Evidence to check:**\n- Run it on one fixture.\n**Scoring:**\n- 1.0 — a result prints.\n- 0.5 — a result prints after a retry by hand.\n- 0.0 — a crash or no output.\n\n### C5 — The report names the abort condition it informs\n**Must be true:** the report states which `abort_if` condition of `goal.json` it informs, and gives a plain result: held, refuted, or not measured.\n**Evidence to check:**\n- Read the report named in the slice goal.\n- Find the sentence that names the condition and the result.\n**Scoring:**\n- 1.0 — the sentence exists and the result matches the raw logs.\n- 0.5 — the sentence exists, but the result is vague or the logs are missing.\n- 0.0 — no such sentence.\n\n## Regression check\n- All tests that passed before this slice must still pass.\n- Files outside `priority-dev/` must remain unchanged, except the committed reports named in the slice.\n\n## Out of scope — do not penalise\n- Behaviour that belongs to a later slice of the plan.\n- The policy, the actuator, the attention queue, and the notifier.\n",
+        "source_path": ".cobuilder/rubrics/priority-dev-spike/slice-5.md"
+      },
+      {
+        "id": "priority-dev-spike/6",
+        "feature_slug": "priority-dev-spike",
+        "n": 6,
+        "title": "Slice 6 — Digest a run",
+        "body_md": "# Rubric: Slice 6 — Digest a run\n\nFeature: priority-dev-spike\nEpic: E2\nSlice goal: `uv run priority digest` calls Inkling and prints a RunDigest that validates, and the next stop brief of the same session carries it as `previous`.\nTest command: `uv run pytest priority-dev/tests -q`\n\n## Criteria\n\n### C1 — The digest validates against its limits\n**Must be true:** the output parses into `RunDigest`: `ran` up to 600 characters, `result` up to 300, up to 5 open items and 5 decisions.\n**Evidence to check:**\n- Run the digest on one fixture and parse the output.\n**Scoring:**\n- 1.0 — it parses.\n- 0.5 — it parses after one repair by code.\n- 0.0 — it does not parse.\n\n### C2 — The next brief carries the digest as previous [CRITICAL]\n**Must be true:** after a digest is stored, the brief of the next stop of the same session holds it in `previous`.\n**Evidence to check:**\n- Run the two-stop fixture.\n**Scoring:**\n- 1.0 — `previous` equals the stored digest.\n- 0.5 — `previous` is set, but from another session.\n- 0.0 — `previous` is empty.\n\n### C3 — A digest failure blocks nothing [CRITICAL]\n**Must be true:** with an injected failure, `previous` stays empty, the reason is logged, and the interpretation still runs.\n**Evidence to check:**\n- Run the failure test.\n**Scoring:**\n- 1.0 — all three hold.\n- 0.5 — the reason is not logged.\n- 0.0 — the interpretation is blocked.\n\n### C4 — The report names the abort condition it informs\n**Must be true:** the report states which `abort_if` condition of `goal.json` it informs, and gives a plain result: held, refuted, or not measured.\n**Evidence to check:**\n- Read the report named in the slice goal.\n- Find the sentence that names the condition and the result.\n**Scoring:**\n- 1.0 — the sentence exists and the result matches the raw logs.\n- 0.5 — the sentence exists, but the result is vague or the logs are missing.\n- 0.0 — no such sentence.\n\n## Regression check\n- All tests that passed before this slice must still pass.\n- Files outside `priority-dev/` must remain unchanged, except the committed reports named in the slice.\n\n## Out of scope — do not penalise\n- Behaviour that belongs to a later slice of the plan.\n- The policy, the actuator, the attention queue, and the notifier.\n",
+        "source_path": ".cobuilder/rubrics/priority-dev-spike/slice-6.md"
+      },
+      {
+        "id": "priority-dev-spike/7",
+        "feature_slug": "priority-dev-spike",
+        "n": 7,
+        "title": "Slice 7 — Replay report with failure drills",
+        "body_md": "# Rubric: Slice 7 — Replay report with failure drills\n\nFeature: priority-dev-spike\nEpic: E2\nSlice goal: `uv run priority replay fixtures/` writes `report.md` with the rates, the abstain reasons, the kinds, and the cost for each stage, and each injected failure ends as an Abstain with a reason.\nTest command: `uv run pytest priority-dev/tests -q`\n\n## Criteria\n\n### C1 — The report holds every listed measure for both adapters [CRITICAL]\n**Must be true:** the report lists the valid-output rate, the quote-found rate, the abstain reasons, the kinds picked, the characters sent, the seconds, and the cost for each stage, for `JSONAdapter` and `ChatAdapter`.\n**Evidence to check:**\n- Run the replay on the local fixtures.\n- Check each measure against the stored call rows.\n**Scoring:**\n- 1.0 — every measure is present and matches the rows.\n- 0.5 — one measure is missing or does not match.\n- 0.0 — several are missing.\n\n### C2 — Four injected failures each end as an Abstain with a reason [CRITICAL]\n**Must be true:** a 429, malformed JSON, an empty quote, and a timeout each give an Abstain with a logged reason, and none gives a crash or silence.\n**Evidence to check:**\n- Run the drill tests.\n**Scoring:**\n- 1.0 — all four pass.\n- 0.5 — three pass.\n- 0.0 — two or fewer pass.\n\n### C3 — The free-tier limit count at the rate of 5 sessions is stated\n**Must be true:** the report states how many limit errors came from a replay at the event rate of 5 sessions.\n**Evidence to check:**\n- Read the report and the raw logs.\n**Scoring:**\n- 1.0 — stated and matches the logs.\n- 0.5 — stated, but with no logs.\n- 0.0 — not stated.\n\n### C4 — The go or no-go section names each abort condition [CRITICAL]\n**Must be true:** the report ends with a section that names each `abort_if` condition and states held, refuted, or not measured.\n**Evidence to check:**\n- Read the last section.\n**Scoring:**\n- 1.0 — both conditions are named with a result.\n- 0.5 — one is named.\n- 0.0 — no section.\n\n### C5 — The report names the abort condition it informs\n**Must be true:** the report states which `abort_if` condition of `goal.json` it informs, and gives a plain result: held, refuted, or not measured.\n**Evidence to check:**\n- Read the report named in the slice goal.\n- Find the sentence that names the condition and the result.\n**Scoring:**\n- 1.0 — the sentence exists and the result matches the raw logs.\n- 0.5 — the sentence exists, but the result is vague or the logs are missing.\n- 0.0 — no such sentence.\n\n## Regression check\n- All tests that passed before this slice must still pass.\n- Files outside `priority-dev/` must remain unchanged, except the committed reports named in the slice.\n\n## Out of scope — do not penalise\n- Behaviour that belongs to a later slice of the plan.\n- The policy, the actuator, the attention queue, and the notifier.\n",
+        "source_path": ".cobuilder/rubrics/priority-dev-spike/slice-7.md"
+      },
+      {
+        "id": "priority-dev-spike/8",
+        "feature_slug": "priority-dev-spike",
+        "n": 8,
+        "title": "Slice 8 — Append and read",
+        "body_md": "# Rubric: Slice 8 — Append and read\n\nFeature: priority-dev-spike\nEpic: E3\nSlice goal: `uv run priority log append` twice with one idempotency key stores one row, and `priority log read --from 0` lists rows in order.\nTest command: `uv run pytest priority-dev/tests -q`\n\n## Criteria\n\n### C1 — A repeated key stores one row [CRITICAL]\n**Must be true:** two appends with the same key give one row and the same `seq`.\n**Evidence to check:**\n- Run the contract test against Postgres.\n**Scoring:**\n- 1.0 — the test passes.\n- 0.5 — the test passes only with a retry.\n- 0.0 — two rows exist.\n\n### C2 — Rows read back in order from a cursor\n**Must be true:** `read --from N` returns rows with `seq` above N in ascending order.\n**Evidence to check:**\n- Run the read test.\n**Scoring:**\n- 1.0 — passes.\n- 0.5 — passes for one case.\n- 0.0 — fails.\n\n### C3 — The database runs in Docker on 127.0.0.1 with a named volume\n**Must be true:** `docker compose up` starts Postgres 17 bound to 127.0.0.1 with a named volume, and the data survives a restart.\n**Evidence to check:**\n- Run compose, append a row, restart, and read.\n**Scoring:**\n- 1.0 — the row survives.\n- 0.5 — the service runs, but the row is lost.\n- 0.0 — the service does not start.\n\n## Regression check\n- All tests that passed before this slice must still pass.\n- Files outside `priority-dev/` must remain unchanged, except the committed reports named in the slice.\n\n## Out of scope — do not penalise\n- Behaviour that belongs to a later slice of the plan.\n- The policy, the actuator, the attention queue, and the notifier.\n",
+        "source_path": ".cobuilder/rubrics/priority-dev-spike/slice-8.md"
+      },
+      {
+        "id": "priority-dev-spike/9",
+        "feature_slug": "priority-dev-spike",
+        "n": 9,
+        "title": "Slice 9 — Ingest and follow",
+        "body_md": "# Rubric: Slice 9 — Ingest and follow\n\nFeature: priority-dev-spike\nEpic: E3\nSlice goal: `POST /events` stores an event, and a follower gets it within one second and resumes from its cursor after a restart.\nTest command: `uv run pytest priority-dev/tests -q`\n\n## Criteria\n\n### C1 — POST stores an event and a repeat key stores one\n**Must be true:** the endpoint returns the `seq`, and a repeat with the same key returns the same `seq`.\n**Evidence to check:**\n- Run the endpoint test.\n**Scoring:**\n- 1.0 — passes.\n- 0.5 — passes for a new key only.\n- 0.0 — fails.\n\n### C2 — A follower sees a new event within 1 second\n**Must be true:** with LISTEN and NOTIFY, a follower receives a posted event in 1 second or less in 10 trials.\n**Evidence to check:**\n- Run the timing test.\n**Scoring:**\n- 1.0 — 10 of 10.\n- 0.5 — 8 or 9 of 10.\n- 0.0 — fewer.\n\n### C3 — A follower restarts from its cursor with no loss and no repeat [CRITICAL]\n**Must be true:** after a restart, the follower resumes at its cursor, and the set of events seen has no gap and no repeat.\n**Evidence to check:**\n- Run the restart test with 100 events.\n**Scoring:**\n- 1.0 — no gap, no repeat.\n- 0.5 — a repeat, but no gap.\n- 0.0 — a gap.\n\n## Regression check\n- All tests that passed before this slice must still pass.\n- Files outside `priority-dev/` must remain unchanged, except the committed reports named in the slice.\n\n## Out of scope — do not penalise\n- Behaviour that belongs to a later slice of the plan.\n- The policy, the actuator, the attention queue, and the notifier.\n",
+        "source_path": ".cobuilder/rubrics/priority-dev-spike/slice-9.md"
+      },
+      {
+        "id": "priority-dev-spike/10",
+        "feature_slug": "priority-dev-spike",
+        "n": 10,
+        "title": "Slice 10 — Interpret from the log",
+        "body_md": "# Rubric: Slice 10 — Interpret from the log\n\nFeature: priority-dev-spike\nEpic: E3\nSlice goal: A `run.stopped` event in the log leads to a `fact.run_digest` event and an `interpretation` event, written by the interpreter service.\nTest command: `uv run pytest priority-dev/tests -q`\n\n## Criteria\n\n### C1 — One stop event gives one digest event and one interpretation event [CRITICAL]\n**Must be true:** with a fake model, one `run.stopped` event gives exactly one of each event, linked by `seq`.\n**Evidence to check:**\n- Run the service test.\n**Scoring:**\n- 1.0 — passes.\n- 0.5 — passes with a duplicate of one event.\n- 0.0 — fails.\n\n### C2 — Replaying the same event adds nothing\n**Must be true:** reading the same `run.stopped` event again adds no event, through the idempotency key.\n**Evidence to check:**\n- Run the replay test.\n**Scoring:**\n- 1.0 — no new rows.\n- 0.5 — one new row.\n- 0.0 — many new rows.\n\n### C3 — A model failure becomes an abstain event [CRITICAL]\n**Must be true:** with an injected failure, the log holds an `abstain` event with a reason, and the service keeps running.\n**Evidence to check:**\n- Run the failure test.\n**Scoring:**\n- 1.0 — both hold.\n- 0.5 — the event exists, but the service stops.\n- 0.0 — no event.\n\n## Regression check\n- All tests that passed before this slice must still pass.\n- Files outside `priority-dev/` must remain unchanged, except the committed reports named in the slice.\n\n## Out of scope — do not penalise\n- Behaviour that belongs to a later slice of the plan.\n- The policy, the actuator, the attention queue, and the notifier.\n",
+        "source_path": ".cobuilder/rubrics/priority-dev-spike/slice-10.md"
+      },
+      {
+        "id": "priority-dev-spike/11",
+        "feature_slug": "priority-dev-spike",
+        "n": 11,
+        "title": "Slice 11 — Hooks and tail to the log",
+        "body_md": "# Rubric: Slice 11 — Hooks and tail to the log\n\nFeature: priority-dev-spike\nEpic: E4\nSlice goal: A Stop hook in the scratch session leads to a `run.stopped` event in the log with `last_assistant_message` and the pane id, and the tailer adds records with no duplicate after a restart.\nTest command: `uv run pytest priority-dev/tests -q`\n\n## Criteria\n\n### C1 — The Stop hook gives a run.stopped event with the text and the pane id [CRITICAL]\n**Must be true:** in the scratch session, one stop gives one event with `last_assistant_message` and `$TMUX_PANE`.\n**Evidence to check:**\n- Run the scratch test and read the log.\n**Scoring:**\n- 1.0 — both fields present.\n- 0.5 — the text is present, and the pane id is empty with a reason in the slice 2 report.\n- 0.0 — no event.\n\n### C2 — A restart adds no duplicate transcript record\n**Must be true:** stopping and starting the host adds no row with a repeated `file:offset` key.\n**Evidence to check:**\n- Run the restart test.\n**Scoring:**\n- 1.0 — no duplicate.\n- 0.5 — a duplicate that the log drops.\n- 0.0 — a stored duplicate.\n\n### C3 — The spool holds events while the service is down [CRITICAL]\n**Must be true:** with the service down, events wait in the spool, and they arrive once after it returns.\n**Evidence to check:**\n- Run the outage test.\n**Scoring:**\n- 1.0 — all arrive once.\n- 0.5 — all arrive, with one repeat dropped by the log.\n- 0.0 — some are lost.\n\n### C4 — The bypass file stops every hook [CRITICAL]\n**Must be true:** with the bypass file present, no event is written.\n**Evidence to check:**\n- Run the bypass test.\n**Scoring:**\n- 1.0 — no event.\n- 0.5 — one event.\n- 0.0 — events continue.\n\n## Regression check\n- All tests that passed before this slice must still pass.\n- Files outside `priority-dev/` must remain unchanged, except the committed reports named in the slice.\n\n## Out of scope — do not penalise\n- Behaviour that belongs to a later slice of the plan.\n- The policy, the actuator, the attention queue, and the notifier.\n",
+        "source_path": ".cobuilder/rubrics/priority-dev-spike/slice-11.md"
+      },
+      {
+        "id": "priority-dev-spike/12",
+        "feature_slug": "priority-dev-spike",
+        "n": 12,
+        "title": "Slice 12 — Send a signed command",
+        "body_md": "# Rubric: Slice 12 — Send a signed command\n\nFeature: priority-dev-spike\nEpic: E4\nSlice goal: A signed command pastes text into the scratch pane at an empty prompt and is confirmed. An unsigned command is refused. A command for a changed prompt gives `command.unknown`.\nTest command: `uv run pytest priority-dev/tests -q`\n\n## Criteria\n\n### C1 — An unsigned or wrongly signed command is refused [CRITICAL]\n**Must be true:** the host sends nothing for a command without a valid HMAC, and logs the refusal.\n**Evidence to check:**\n- Run the signature tests.\n**Scoring:**\n- 1.0 — both refused.\n- 0.5 — one refused.\n- 0.0 — a command is sent.\n\n### C2 — A signed command reaches the scratch pane and is confirmed [CRITICAL]\n**Must be true:** at an empty prompt, the text arrives and `command.confirmed` follows within the timeout, from a transcript user record.\n**Evidence to check:**\n- Run the scratch test.\n**Scoring:**\n- 1.0 — arrives and is confirmed.\n- 0.5 — arrives, with no confirmation.\n- 0.0 — does not arrive.\n\n### C3 — A changed prompt gives command.unknown and no send [CRITICAL]\n**Must be true:** when the pending prompt id differs, nothing is sent and `command.unknown` is logged.\n**Evidence to check:**\n- Run the changed-prompt test.\n**Scoring:**\n- 1.0 — nothing sent, event logged.\n- 0.5 — nothing sent, no event.\n- 0.0 — text sent.\n\n### C4 — Only the tmux module calls tmux\n**Must be true:** a test searches the repository for tmux calls outside `src/priority/host/tmux.py` and finds none.\n**Evidence to check:**\n- Run the search test.\n**Scoring:**\n- 1.0 — none found.\n- 0.5 — one in a test file.\n- 0.0 — one in code.\n\n## Regression check\n- All tests that passed before this slice must still pass.\n- Files outside `priority-dev/` must remain unchanged, except the committed reports named in the slice.\n\n## Out of scope — do not penalise\n- Behaviour that belongs to a later slice of the plan.\n- The policy, the actuator, the attention queue, and the notifier.\n",
+        "source_path": ".cobuilder/rubrics/priority-dev-spike/slice-12.md"
+      },
+      {
+        "id": "priority-dev-spike/13",
+        "feature_slug": "priority-dev-spike",
+        "n": 13,
+        "title": "Slice 13 — Answer from a held hook",
+        "body_md": "# Rubric: Slice 13 — Answer from a held hook\n\nFeature: priority-dev-spike\nEpic: E4\nSlice goal: A PermissionRequest hook waits, a stub command returns allow, and the scratch session runs the tool with no dialog.\nTest command: `uv run pytest priority-dev/tests -q`\n\n## Criteria\n\n### C1 — An allow from the stub runs the tool with no dialog [CRITICAL]\n**Must be true:** the hook returns the decision, and the scratch session runs the tool without a dialog.\n**Evidence to check:**\n- Run the scratch test and capture the pane.\n**Scoring:**\n- 1.0 — the tool runs, with no dialog in the capture.\n- 0.5 — the tool runs, and the capture is missing.\n- 0.0 — a dialog shows.\n\n### C2 — A timeout leaves the normal dialog [CRITICAL]\n**Must be true:** if no verdict arrives in the hold time, the hook returns no decision, and the dialog shows.\n**Evidence to check:**\n- Run the timeout test.\n**Scoring:**\n- 1.0 — the dialog shows.\n- 0.5 — the dialog shows after a delay beyond the hold time.\n- 0.0 — the tool is blocked or allowed.\n\n### C3 — The bypass file skips the wait [CRITICAL]\n**Must be true:** with the bypass file, the hook returns at once with no decision.\n**Evidence to check:**\n- Run the bypass test.\n**Scoring:**\n- 1.0 — returns at once.\n- 0.5 — returns within the timeout.\n- 0.0 — waits.\n\n## Regression check\n- All tests that passed before this slice must still pass.\n- Files outside `priority-dev/` must remain unchanged, except the committed reports named in the slice.\n\n## Out of scope — do not penalise\n- Behaviour that belongs to a later slice of the plan.\n- The policy, the actuator, the attention queue, and the notifier.\n",
+        "source_path": ".cobuilder/rubrics/priority-dev-spike/slice-13.md"
+      },
+      {
         "id": "review-link/1",
         "feature_slug": "review-link",
         "n": 1,
@@ -5872,7 +6280,11 @@
         "via": "epic",
         "path": [
           "cobuilder-implement/E1",
-          "cobuilder-implement/E2"
+          "cobuilder-implement/E2",
+          "priority-dev-spike/E1",
+          "priority-dev-spike/E2",
+          "priority-dev-spike/E3",
+          "priority-dev-spike/E4"
         ]
       },
       "ADR-0013": {
@@ -6145,6 +6557,10 @@
           "beads-storage/E4",
           "beads-storage/E5",
           "beads-storage/E6",
+          "priority-dev-spike/E1",
+          "priority-dev-spike/E2",
+          "priority-dev-spike/E3",
+          "priority-dev-spike/E4",
           "work-drawer/E1",
           "work-drawer/E2"
         ]
@@ -6217,7 +6633,11 @@
           "beads-storage/E3",
           "beads-storage/E4",
           "beads-storage/E5",
-          "beads-storage/E6"
+          "beads-storage/E6",
+          "priority-dev-spike/E1",
+          "priority-dev-spike/E2",
+          "priority-dev-spike/E3",
+          "priority-dev-spike/E4"
         ]
       },
       "ADR-0041": {
@@ -6240,6 +6660,16 @@
           "beads-storage/E4",
           "beads-storage/E5",
           "beads-storage/E6"
+        ]
+      },
+      "ADR-0045": {
+        "pr": null,
+        "via": "epic",
+        "path": [
+          "priority-dev-spike/E1",
+          "priority-dev-spike/E2",
+          "priority-dev-spike/E3",
+          "priority-dev-spike/E4"
         ]
       }
     },
@@ -6364,6 +6794,10 @@
       "plugin-split/E6": "merged",
       "plugin-split/E7": "unstarted",
       "plugin-split/E8": "completed",
+      "priority-dev-spike/E1": "no-pull-request",
+      "priority-dev-spike/E2": "no-pull-request",
+      "priority-dev-spike/E3": "no-pull-request",
+      "priority-dev-spike/E4": "no-pull-request",
       "react-viewer/E1": "unstarted",
       "react-viewer/E2": "unstarted",
       "react-viewer/E3": "unstarted",
@@ -6488,6 +6922,19 @@
       "options-mode/2": "options-mode/E1",
       "options-mode/3": "options-mode/E1",
       "options-mode/4": "options-mode/E1",
+      "priority-dev-spike/1": "priority-dev-spike/E1",
+      "priority-dev-spike/2": "priority-dev-spike/E1",
+      "priority-dev-spike/3": "priority-dev-spike/E1",
+      "priority-dev-spike/4": "priority-dev-spike/E2",
+      "priority-dev-spike/5": "priority-dev-spike/E2",
+      "priority-dev-spike/6": "priority-dev-spike/E2",
+      "priority-dev-spike/7": "priority-dev-spike/E2",
+      "priority-dev-spike/8": "priority-dev-spike/E3",
+      "priority-dev-spike/9": "priority-dev-spike/E3",
+      "priority-dev-spike/10": "priority-dev-spike/E3",
+      "priority-dev-spike/11": "priority-dev-spike/E4",
+      "priority-dev-spike/12": "priority-dev-spike/E4",
+      "priority-dev-spike/13": "priority-dev-spike/E4",
       "review-link/1": "review-link/E1",
       "review-link/2": "review-link/E1",
       "review-link/3": "review-link/E1",
@@ -6573,7 +7020,8 @@
       "ADR-0040": "shared",
       "ADR-0041": "cobuilder-packaging",
       "ADR-0042": "cobuilder-packaging",
-      "ADR-0043": "tracker-port"
+      "ADR-0043": "tracker-port",
+      "ADR-0045": "cobuilder-packaging"
     },
     "adr_to_district": {
       "ADR-0001": "scripts",
@@ -7045,6 +7493,43 @@
           "name": "Slice plan, epic designs, and rubrics",
           "state": "APPROVED 2026-10-01",
           "view": "#/options-mode/build/epics"
+        }
+      ],
+      "priority-dev-spike": [
+        {
+          "n": "1",
+          "name": "Product",
+          "state": "2026-10-24",
+          "view": "#/priority-dev-spike/build/plan/product",
+          "doc": "priority-dev-spike",
+          "doc_kind": "product"
+        },
+        {
+          "n": "2",
+          "name": "Architecture",
+          "state": "2026-10-24",
+          "view": "#/priority-dev-spike/build/plan/architecture",
+          "doc": "priority-dev-spike",
+          "doc_kind": "architecture"
+        },
+        {
+          "n": "2b",
+          "name": "Interaction design",
+          "state": "n/a"
+        },
+        {
+          "n": "3",
+          "name": "Program Design",
+          "state": "2026-10-24",
+          "view": "#/priority-dev-spike/build/plan/program",
+          "doc": "priority-dev-spike",
+          "doc_kind": "program"
+        },
+        {
+          "n": "4",
+          "name": "Slice plan, epic designs, and rubrics",
+          "state": "2026-10-24",
+          "view": "#/priority-dev-spike/build/epics"
         }
       ],
       "review-link": [

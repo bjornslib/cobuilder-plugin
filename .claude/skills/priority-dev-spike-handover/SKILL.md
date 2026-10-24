@@ -40,9 +40,9 @@ Work in the worktree on branch `design/priority-dev`. Its path at the time of wr
 ## Open items you must settle with the engineer
 
 1. **The tracker.** The program is seeded: `priority-dev-spike` with epics E1 to E4 and slices 1 to 13, in the beads tracker. The first read failed because the branch was older than PR #50 (beads-native), so its adapter could not read gate records. The fix was `git merge e40bb0c`. `next-ready` returns nothing until the engineer approves the gates and the program stage moves on. Do not seed again.
-2. **Gate approvals.** Gates 1 to 4 are drafted and are not approved. Check `00-status.md` once it exists. Ask for approval as `/implement:start` describes. Do not write code before gate 4 is approved.
-3. **The design stage.** `goal.json` holds `stage: review`. Stage 7 (one pull request or several, and the branch) is not run.
-4. **The index.** Run `uv run shared/build_index.py` so the viewer shows the design. I did not run it after the merge.
+2. **Gate approvals.** Gates 1 to 4 were approved on 2026-10-24 and are in `00-status.md` and the tracker. `verify_gate.py` reports OK. **The engineer asked to see the final design and program in the viewer (`/artifact:view`) before any implementation starts.** Confirm that this review happened and that the engineer said to start. Do not write code before that.
+3. **The design stage.** `goal.json` holds `stage: approved`. The local branch `design/priority-dev-spike` exists, unpushed, and the engineer chose one pull request. No PR is open.
+4. **The index.** Built after the merge. Rebuild with `uv run shared/build_index.py` after any change to the plan or the design.
 5. **Later programs.** `priority-dev-phase-a` and later phases are planned, not created.
 
 ## First steps

@@ -37,7 +37,7 @@
       "slug": "probes",
       "title": "Probes: a model probe, a hook probe, and a tmux probe in a scratch session.",
       "outcome": "Each unknown of the model, the hooks, and the pane has a measured answer in a committed report.",
-      "branch": null,
+      "branch": "design/priority-dev-spike",
       "pr": null,
       "state": "planned"
     },
@@ -46,7 +46,7 @@
       "slug": "interpreter",
       "title": "Interpreter: the stop brief, Triage, Pick, Fill, Card, Digest, and the replay report.",
       "outcome": "A replay over the fixtures gives a report, and each injected failure ends as an Abstain with a reason.",
-      "branch": null,
+      "branch": "design/priority-dev-spike",
       "pr": null,
       "state": "planned"
     },
@@ -55,7 +55,7 @@
       "slug": "event-log",
       "title": "Event log: Postgres 17 with append, read, ingest, follow, and an interpreter service.",
       "outcome": "A run.stopped event in the log leads to a stored digest and interpretation.",
-      "branch": null,
+      "branch": "design/priority-dev-spike",
       "pr": null,
       "state": "planned"
     },
@@ -64,7 +64,7 @@
       "slug": "adapter-to-log",
       "title": "Adapter to the log: hooks and tail through a spool, a signed send, and an answer from a held hook.",
       "outcome": "A real stop reaches the log, and a signed command reaches the pane and is confirmed.",
-      "branch": null,
+      "branch": "design/priority-dev-spike",
       "pr": null,
       "state": "planned"
     }
@@ -76,7 +76,7 @@
       "note": "Policy, actuator, attention queue, and notifier. A real program is seeded when that phase has its own design."
     }
   ],
-  "stage": "review",
+  "stage": "approved",
   "supersedes": null,
   "rounds": [
     {
