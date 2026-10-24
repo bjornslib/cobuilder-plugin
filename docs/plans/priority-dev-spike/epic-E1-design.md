@@ -5,7 +5,7 @@ Epic ID: E1
 
 ## Scope and Intent
 
-Three probes measure the model, the hooks, and the pane before any database exists. Each ends in a committed report. A probe may refute its claim. The design source is `priority-dev/docs/design/adapter-host.md` (sections 2, 3, and 7) and `dspy-modules.md`.
+Three probes measure the model, the hooks (a Claude Code behaviour), and the tmux paste before any database exists. Each ends in a committed report. A probe may refute its claim. The design source is `priority-dev/docs/design/adapter-host.md` (sections 2, 3, and 7) and `dspy-modules.md`.
 
 ## Files Touched
 
@@ -22,8 +22,8 @@ Three probes measure the model, the hooks, and the pane before any database exis
 ## Slice Decomposition
 
 1. Slice 1: the model probe on 3 redacted real transcripts.
-2. Slice 2: the hook probe in a scratch tmux session, with the timeout and the bypass file. Needs no slice 1.
-3. Slice 3: the tmux probe. Needs the hook command of slice 2 for the held-hook test.
+2. Slice 2: the hook command, its installer, and a scratch Claude Code session in a tmux pane. Claude Code runs the hooks. The pane only hosts the session and supplies `$TMUX_PANE`. Slice 2 also measures the held-hook dialog. Needs no slice 1.
+3. Slice 3: the tmux paste probe. Needs only a scratch pane.
 
 ## Test Plan
 

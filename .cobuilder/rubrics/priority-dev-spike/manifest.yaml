@@ -11,8 +11,8 @@ models:
   validate: sonnet
 slices:
   - {id: 1, name: "E1 model probe", weight: 0.1}
-  - {id: 2, name: "E1 hook probe", weight: 0.09}
-  - {id: 3, name: "E1 tmux probe", weight: 0.08}
+  - {id: 2, name: "E1 hook command and scratch-session probe", weight: 0.09}
+  - {id: 3, name: "E1 tmux paste probe", weight: 0.08}
   - {id: 4, name: "E2 stop brief", weight: 0.09}
   - {id: 5, name: "E2 interpret a stop", weight: 0.1}
   - {id: 6, name: "E2 digest a run", weight: 0.06}

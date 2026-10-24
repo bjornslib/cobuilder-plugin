@@ -1,13 +1,13 @@
 {
   "schema_version": "1.4",
   "sources": {
-    "git_head": "9ea0106caeb31f15300536ba8abaa92040b8c11d",
+    "git_head": "34d2d906100c2ec669651c3daa2be87e09755b5e",
     "trees": {
       "docs/architecture/adr": "sha256:bb7f812ebc6edc4f23883d87cce644a9e9f160532e9e0d334c64e54bd5b9045f",
       "docs/architecture/designs": "sha256:3b6964b529d7a99ca9cd4d918b952aa15806423200293253f260eb9a4d28fc70",
       "docs/architecture/contexts": "sha256:6663ee456e31bfbe31401908ae494017ed864dbb9c72211b6cbdccc44d078482",
-      "docs/plans": "sha256:ad9dfaf4eb73dbb27b02244b39a58ca81e684fb75664d4920b4ff4afcf914015",
-      ".cobuilder/rubrics": "sha256:73bfc67a39f86b504fc8bb2e92544debe4cd193b2cacf3c11b4969ee1fc887fd"
+      "docs/plans": "sha256:2639046622ecbca8d92360ef73932a9fa95bc66a629dceff6f2fa5c0c0404fb5",
+      ".cobuilder/rubrics": "sha256:d5ef3f46c5d02b392d0a79a529bfb1479c4a5b29f360e5ca4fc2e418201f2307"
     }
   },
   "entities": {
@@ -3213,6 +3213,26 @@
         "state": "planned"
       },
       {
+        "id": "beads-storage/29",
+        "feature": "beads-storage",
+        "n": 29,
+        "title": "**`migrate-mapping` with dry run**",
+        "ends_with": "A legacy scratch tracker converts in one sync. A dry run writes nothing. A second run changes nothing.",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
+        "id": "beads-storage/30",
+        "feature": "beads-storage",
+        "n": 30,
+        "title": "**Docs, install, usage**",
+        "ends_with": "The docs name the two operations and the migration. `tracker.py --help` lists them.",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
         "id": "coach-reaches-green/1",
         "feature": "coach-reaches-green",
         "n": 1,
@@ -5025,7 +5045,7 @@
         "epic_id": "E1",
         "feature_slug": "priority-dev-spike",
         "title": "Epic Technical Solution Design: E1 — Probes",
-        "body_md": "# Epic Technical Solution Design: E1 — Probes\n\nFeature: priority-dev-spike\nEpic ID: E1\n\n## Scope and Intent\n\nThree probes measure the model, the hooks, and the pane before any database exists. Each ends in a committed report. A probe may refute its claim. The design source is `priority-dev/docs/design/adapter-host.md` (sections 2, 3, and 7) and `dspy-modules.md`.\n\n## Files Touched\n\n- `priority-dev/probes/model_probe.py`, `hook_probe.py`, `tmux_probe.py`\n- `priority-dev/probes/{model,hook,tmux}-probe.md` and `probes/logs/`\n- `src/priority/host/hook_cli.py` (the hook command, with timeout and bypass)\n- `src/priority/config.py` (the one reader of the key)\n\n## Types & Signatures\n\n- `hook_cli.main(event: str) -> int`: reads JSON on stdin, writes one line to the local file, exits 0 on any failure within 5 seconds, and does nothing when `~/.priority-dev/bypass` exists.\n- `model_probe.run(transcript: Path) -> ProbeResult` with the five facts, a kind, a quote, and `quote_in_text: bool`.\n\n## Slice Decomposition\n\n1. Slice 1: the model probe on 3 redacted real transcripts.\n2. Slice 2: the hook probe in a scratch tmux session, with the timeout and the bypass file. Needs no slice 1.\n3. Slice 3: the tmux probe. Needs the hook command of slice 2 for the held-hook test.\n\n## Test Plan\n\nTests cover the hook command timeout and bypass. The reports are read by the validator against the rubric. Probes run only in a scratch session, and a test checks the target pane id.\n\n## Risks & Open Questions\n\n- Whether `$TMUX_PANE` reaches the hook. The report answers it.\n- A hook installed in a live session may freeze it. Scratch only, with the bypass file first.\n- Real transcripts hold secrets. Redaction runs before any model call.\n",
+        "body_md": "# Epic Technical Solution Design: E1 — Probes\n\nFeature: priority-dev-spike\nEpic ID: E1\n\n## Scope and Intent\n\nThree probes measure the model, the hooks (a Claude Code behaviour), and the tmux paste before any database exists. Each ends in a committed report. A probe may refute its claim. The design source is `priority-dev/docs/design/adapter-host.md` (sections 2, 3, and 7) and `dspy-modules.md`.\n\n## Files Touched\n\n- `priority-dev/probes/model_probe.py`, `hook_probe.py`, `tmux_probe.py`\n- `priority-dev/probes/{model,hook,tmux}-probe.md` and `probes/logs/`\n- `src/priority/host/hook_cli.py` (the hook command, with timeout and bypass)\n- `src/priority/config.py` (the one reader of the key)\n\n## Types & Signatures\n\n- `hook_cli.main(event: str) -> int`: reads JSON on stdin, writes one line to the local file, exits 0 on any failure within 5 seconds, and does nothing when `~/.priority-dev/bypass` exists.\n- `model_probe.run(transcript: Path) -> ProbeResult` with the five facts, a kind, a quote, and `quote_in_text: bool`.\n\n## Slice Decomposition\n\n1. Slice 1: the model probe on 3 redacted real transcripts.\n2. Slice 2: the hook command, its installer, and a scratch Claude Code session in a tmux pane. Claude Code runs the hooks. The pane only hosts the session and supplies `$TMUX_PANE`. Slice 2 also measures the held-hook dialog. Needs no slice 1.\n3. Slice 3: the tmux paste probe. Needs only a scratch pane.\n\n## Test Plan\n\nTests cover the hook command timeout and bypass. The reports are read by the validator against the rubric. Probes run only in a scratch session, and a test checks the target pane id.\n\n## Risks & Open Questions\n\n- Whether `$TMUX_PANE` reaches the hook. The report answers it.\n- A hook installed in a live session may freeze it. Scratch only, with the bypass file first.\n- Real transcripts hold secrets. Redaction runs before any model call.\n",
         "approved_date": null,
         "source_path": "docs/plans/priority-dev-spike/epic-E1-design.md"
       },
@@ -6012,16 +6032,16 @@
         "id": "priority-dev-spike/2",
         "feature_slug": "priority-dev-spike",
         "n": 2,
-        "title": "Slice 2 — Hook probe",
-        "body_md": "# Rubric: Slice 2 — Hook probe\n\nFeature: priority-dev-spike\nEpic: E1\nSlice goal: In a scratch tmux session, Stop, PermissionRequest, and AskUserQuestion hooks append lines to a local file, with a timeout and a bypass file, and the report states what the hooks showed.\nTest command: `uv run pytest priority-dev/tests -q`\n\n## Criteria\n\n### C1 — A failing hook exits 0 within 5 seconds, and the bypass file silences every hook [CRITICAL]\n**Must be true:** a hook with a forced error exits 0 in 5 seconds or less. With `~/.priority-dev/bypass` present, each hook writes nothing and exits 0.\n**Evidence to check:**\n- Run the hook command tests.\n- Force an error, time the exit, then create the bypass file and repeat.\n**Scoring:**\n- 1.0 — both behaviours hold on all three hook events.\n- 0.5 — both hold on one or two events.\n- 0.0 — a failing hook exits non-zero or waits longer than 5 seconds.\n\n### C2 — Hooks run only in a scratch session, and the uninstall removes only marked entries [CRITICAL]\n**Must be true:** the installer writes hook entries only into a scratch settings file, marks each entry, and the uninstall leaves unmarked entries intact.\n**Evidence to check:**\n- Run the installer on a copy of a settings file that holds unmarked entries.\n- Diff before and after the uninstall.\n**Scoring:**\n- 1.0 — the diff is empty after the uninstall.\n- 0.5 — the diff shows only whitespace changes.\n- 0.0 — an unmarked entry is lost, or the installer touches the real settings file.\n\n### C3 — The report states what the hooks showed, with numbers\n**Must be true:** `probes/hook-probe.md` states whether `$TMUX_PANE` was set, the fields seen for each event, the transcript lag after Stop in seconds over at least 5 stops, and what the transcript holds when `/goal` clears.\n**Evidence to check:**\n- Read the report.\n- Compare each number to the raw lines in `probes/logs/`.\n**Scoring:**\n- 1.0 — each item is stated and matches the logs.\n- 0.5 — one item is missing or not measured, and the report says so.\n- 0.0 — an item is missing and the report does not say so.\n\n### C4 — The report names the abort condition it informs\n**Must be true:** the report states which `abort_if` condition of `goal.json` it informs, and gives a plain result: held, refuted, or not measured.\n**Evidence to check:**\n- Read the report named in the slice goal.\n- Find the sentence that names the condition and the result.\n**Scoring:**\n- 1.0 — the sentence exists and the result matches the raw logs.\n- 0.5 — the sentence exists, but the result is vague or the logs are missing.\n- 0.0 — no such sentence.\n\n## Regression check\n- All tests that passed before this slice must still pass.\n- Files outside `priority-dev/` must remain unchanged, except the committed reports named in the slice.\n\n## Out of scope — do not penalise\n- Behaviour that belongs to a later slice of the plan.\n- The policy, the actuator, the attention queue, and the notifier.\n",
+        "title": "Slice 2 — Hook command and scratch-session probe",
+        "body_md": "# Rubric: Slice 2 — Hook command and scratch-session probe\n\nFeature: priority-dev-spike\nEpic: E1\nSlice goal: `priority-hook` appends hook events from a scratch Claude Code session in a tmux pane to a local file, an installer manages marked entries in a scratch project, and `probes/hook-probe.md` states what the hooks showed, including whether the permission dialog shows while a hook waits.\nTest command: `uv run pytest priority-dev/tests -q`\n\n## Criteria\n\n### C1 — A failing hook exits 0 within 5 seconds, and the bypass file silences every hook [CRITICAL]\n**Must be true:** a hook with a forced error exits 0 in 5 seconds or less. With `~/.priority-dev/bypass` present, each hook writes nothing and exits 0.\n**Evidence to check:**\n- Run the hook command tests.\n- Force an error, time the exit, then create the bypass file and repeat.\n**Scoring:**\n- 1.0 — both behaviours hold on all three hook events.\n- 0.5 — both hold on one or two events.\n- 0.0 — a failing hook exits non-zero or waits longer than 5 seconds.\n\n### C2 — Hooks run only in a scratch session, and the uninstall removes only marked entries [CRITICAL]\n**Must be true:** the installer writes hook entries only into a scratch settings file, marks each entry, and the uninstall leaves unmarked entries intact.\n**Evidence to check:**\n- Run the installer on a copy of a settings file that holds unmarked entries.\n- Diff before and after the uninstall.\n**Scoring:**\n- 1.0 — the diff is empty after the uninstall.\n- 0.5 — the diff shows only whitespace changes.\n- 0.0 — an unmarked entry is lost, or the installer touches the real settings file.\n\n### C3 — The report states what the hooks showed, with numbers\n**Must be true:** `probes/hook-probe.md` states whether `$TMUX_PANE` was set, the fields seen for each event, the transcript lag after Stop in seconds over at least 5 stops, what the transcript holds when `/goal` clears, and whether the permission dialog shows while a PermissionRequest hook waits 20 seconds and closes after an allow, with a `tmux capture-pane` text as evidence.\n**Evidence to check:**\n- Read the report.\n- Compare each number to the raw lines in `probes/logs/`.\n**Scoring:**\n- 1.0 — each item is stated and matches the logs.\n- 0.5 — one item is missing or not measured, and the report says so.\n- 0.0 — an item is missing and the report does not say so.\n\n### C4 — The report names the abort condition it informs\n**Must be true:** the report states which `abort_if` condition of `goal.json` it informs, and gives a plain result: held, refuted, or not measured.\n**Evidence to check:**\n- Read the report named in the slice goal.\n- Find the sentence that names the condition and the result.\n**Scoring:**\n- 1.0 — the sentence exists and the result matches the raw logs.\n- 0.5 — the sentence exists, but the result is vague or the logs are missing.\n- 0.0 — no such sentence.\n\n## Regression check\n- All tests that passed before this slice must still pass.\n- Files outside `priority-dev/` must remain unchanged, except the committed reports named in the slice.\n\n## Out of scope — do not penalise\n- Behaviour that belongs to a later slice of the plan.\n- tmux paste behaviour, which slice 3 measures.\n- The policy, the actuator, the attention queue, and the notifier.\n",
         "source_path": ".cobuilder/rubrics/priority-dev-spike/slice-2.md"
       },
       {
         "id": "priority-dev-spike/3",
         "feature_slug": "priority-dev-spike",
         "n": 3,
-        "title": "Slice 3 — Tmux probe",
-        "body_md": "# Rubric: Slice 3 — Tmux probe\n\nFeature: priority-dev-spike\nEpic: E1\nSlice goal: `probes/tmux-probe.md` states whether a paste is lost in an idle pane and a busy pane, how newlines behave, and whether the permission dialog shows while a hook waits 20 seconds.\nTest command: `uv run pytest priority-dev/tests -q`\n\n## Criteria\n\n### C1 — The paste trials have counts for an idle and a busy pane\n**Must be true:** the report states at least 10 trials for each of the idle pane and the busy pane, the number lost, and how a newline arrived.\n**Evidence to check:**\n- Read the report and the raw logs.\n- Recount the lost pastes from the logs.\n**Scoring:**\n- 1.0 — counts match the logs.\n- 0.5 — counts exist for one pane only.\n- 0.0 — no counts.\n\n### C2 — The held-hook result has a pane capture as evidence [CRITICAL]\n**Must be true:** the report states yes or no for whether the dialog showed while the hook waited 20 seconds, with a `tmux capture-pane` text taken during the wait.\n**Evidence to check:**\n- Read the report.\n- Open the capture file named in the report.\n**Scoring:**\n- 1.0 — the answer and the capture agree.\n- 0.5 — the answer exists, but the capture is missing.\n- 0.0 — no answer.\n\n### C3 — Only the scratch pane receives keys [CRITICAL]\n**Must be true:** every send in the probe targets the scratch pane id, and a test refuses a pane id that is not the scratch pane.\n**Evidence to check:**\n- Run the test.\n- Search the probe code for a tmux call that takes an id from outside the scratch session.\n**Scoring:**\n- 1.0 — the test passes and no other target exists.\n- 0.5 — the test passes, but one call reads the id from a variable that is not checked.\n- 0.0 — a call can reach another pane.\n\n### C4 — The report names the abort condition it informs\n**Must be true:** the report states which `abort_if` condition of `goal.json` it informs, and gives a plain result: held, refuted, or not measured.\n**Evidence to check:**\n- Read the report named in the slice goal.\n- Find the sentence that names the condition and the result.\n**Scoring:**\n- 1.0 — the sentence exists and the result matches the raw logs.\n- 0.5 — the sentence exists, but the result is vague or the logs are missing.\n- 0.0 — no such sentence.\n\n## Regression check\n- All tests that passed before this slice must still pass.\n- Files outside `priority-dev/` must remain unchanged, except the committed reports named in the slice.\n\n## Out of scope — do not penalise\n- Behaviour that belongs to a later slice of the plan.\n- The policy, the actuator, the attention queue, and the notifier.\n",
+        "title": "Slice 3 — Tmux paste probe",
+        "body_md": "# Rubric: Slice 3 — Tmux paste probe\n\nFeature: priority-dev-spike\nEpic: E1\nSlice goal: `probes/tmux-probe.md` states, for 10 trials in an idle pane and 10 in a busy pane, whether a paste is lost and how newlines arrive, using `load-buffer` and `paste-buffer` on the scratch pane only.\nTest command: `uv run pytest priority-dev/tests -q`\n\n## Criteria\n\n### C1 — The paste trials have counts for an idle and a busy pane\n**Must be true:** the report states at least 10 trials for each of the idle pane and the busy pane, the number lost, and how a newline arrived.\n**Evidence to check:**\n- Read the report and the raw logs.\n- Recount the lost pastes from the logs.\n**Scoring:**\n- 1.0 — counts match the logs.\n- 0.5 — counts exist for one pane only.\n- 0.0 — no counts.\n\n### C2 — Only the scratch pane receives keys [CRITICAL]\n**Must be true:** every send in the probe targets the scratch pane id, and a test refuses a pane id that is not the scratch pane.\n**Evidence to check:**\n- Run the test.\n- Search the probe code for a tmux call that takes an id from outside the scratch session.\n**Scoring:**\n- 1.0 — the test passes and no other target exists.\n- 0.5 — the test passes, but one call reads the id from a variable that is not checked.\n- 0.0 — a call can reach another pane.\n\n### C3 — The report names the abort condition it informs\n**Must be true:** the report states which `abort_if` condition of `goal.json` it informs, and gives a plain result: held, refuted, or not measured.\n**Evidence to check:**\n- Read the report named in the slice goal.\n- Find the sentence that names the condition and the result.\n**Scoring:**\n- 1.0 — the sentence exists and the result matches the raw logs.\n- 0.5 — the sentence exists, but the result is vague or the logs are missing.\n- 0.0 — no such sentence.\n\n## Regression check\n- All tests that passed before this slice must still pass.\n- Files outside `priority-dev/` must remain unchanged, except the committed reports named in the slice.\n\n## Out of scope — do not penalise\n- Behaviour that belongs to a later slice of the plan.\n- Whether the permission dialog shows while a hook waits, which slice 2 measures.\n- The policy, the actuator, the attention queue, and the notifier.\n",
         "source_path": ".cobuilder/rubrics/priority-dev-spike/slice-3.md"
       },
       {
@@ -7499,7 +7519,7 @@
         {
           "n": "1",
           "name": "Product",
-          "state": "2026-10-24",
+          "state": "APPROVED 2026-10-24",
           "view": "#/priority-dev-spike/build/plan/product",
           "doc": "priority-dev-spike",
           "doc_kind": "product"
@@ -7507,7 +7527,7 @@
         {
           "n": "2",
           "name": "Architecture",
-          "state": "2026-10-24",
+          "state": "APPROVED 2026-10-24",
           "view": "#/priority-dev-spike/build/plan/architecture",
           "doc": "priority-dev-spike",
           "doc_kind": "architecture"
@@ -7515,12 +7535,12 @@
         {
           "n": "2b",
           "name": "Interaction design",
-          "state": "n/a"
+          "state": "n/a (no UI) — Screens: \"No UI. The spike prints reports and JSON in a terminal.\""
         },
         {
           "n": "3",
           "name": "Program Design",
-          "state": "2026-10-24",
+          "state": "APPROVED 2026-10-24",
           "view": "#/priority-dev-spike/build/plan/program",
           "doc": "priority-dev-spike",
           "doc_kind": "program"
@@ -7528,7 +7548,7 @@
         {
           "n": "4",
           "name": "Slice plan, epic designs, and rubrics",
-          "state": "2026-10-24",
+          "state": "APPROVED 2026-10-24",
           "view": "#/priority-dev-spike/build/epics"
         }
       ],

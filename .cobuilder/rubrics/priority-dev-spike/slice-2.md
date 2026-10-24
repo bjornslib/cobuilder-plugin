@@ -1,8 +1,8 @@
-# Rubric: Slice 2 — Hook probe
+# Rubric: Slice 2 — Hook command and scratch-session probe
 
 Feature: priority-dev-spike
 Epic: E1
-Slice goal: In a scratch tmux session, Stop, PermissionRequest, and AskUserQuestion hooks append lines to a local file, with a timeout and a bypass file, and the report states what the hooks showed.
+Slice goal: `priority-hook` appends hook events from a scratch Claude Code session in a tmux pane to a local file, an installer manages marked entries in a scratch project, and `probes/hook-probe.md` states what the hooks showed, including whether the permission dialog shows while a hook waits.
 Test command: `uv run pytest priority-dev/tests -q`
 
 ## Criteria
@@ -28,7 +28,7 @@ Test command: `uv run pytest priority-dev/tests -q`
 - 0.0 — an unmarked entry is lost, or the installer touches the real settings file.
 
 ### C3 — The report states what the hooks showed, with numbers
-**Must be true:** `probes/hook-probe.md` states whether `$TMUX_PANE` was set, the fields seen for each event, the transcript lag after Stop in seconds over at least 5 stops, and what the transcript holds when `/goal` clears.
+**Must be true:** `probes/hook-probe.md` states whether `$TMUX_PANE` was set, the fields seen for each event, the transcript lag after Stop in seconds over at least 5 stops, what the transcript holds when `/goal` clears, and whether the permission dialog shows while a PermissionRequest hook waits 20 seconds and closes after an allow, with a `tmux capture-pane` text as evidence.
 **Evidence to check:**
 - Read the report.
 - Compare each number to the raw lines in `probes/logs/`.
@@ -53,4 +53,5 @@ Test command: `uv run pytest priority-dev/tests -q`
 
 ## Out of scope — do not penalise
 - Behaviour that belongs to a later slice of the plan.
+- tmux paste behaviour, which slice 3 measures.
 - The policy, the actuator, the attention queue, and the notifier.

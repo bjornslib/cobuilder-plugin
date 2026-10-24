@@ -1,8 +1,8 @@
-# Rubric: Slice 3 — Tmux probe
+# Rubric: Slice 3 — Tmux paste probe
 
 Feature: priority-dev-spike
 Epic: E1
-Slice goal: `probes/tmux-probe.md` states whether a paste is lost in an idle pane and a busy pane, how newlines behave, and whether the permission dialog shows while a hook waits 20 seconds.
+Slice goal: `probes/tmux-probe.md` states, for 10 trials in an idle pane and 10 in a busy pane, whether a paste is lost and how newlines arrive, using `load-buffer` and `paste-buffer` on the scratch pane only.
 Test command: `uv run pytest priority-dev/tests -q`
 
 ## Criteria
@@ -17,17 +17,7 @@ Test command: `uv run pytest priority-dev/tests -q`
 - 0.5 — counts exist for one pane only.
 - 0.0 — no counts.
 
-### C2 — The held-hook result has a pane capture as evidence [CRITICAL]
-**Must be true:** the report states yes or no for whether the dialog showed while the hook waited 20 seconds, with a `tmux capture-pane` text taken during the wait.
-**Evidence to check:**
-- Read the report.
-- Open the capture file named in the report.
-**Scoring:**
-- 1.0 — the answer and the capture agree.
-- 0.5 — the answer exists, but the capture is missing.
-- 0.0 — no answer.
-
-### C3 — Only the scratch pane receives keys [CRITICAL]
+### C2 — Only the scratch pane receives keys [CRITICAL]
 **Must be true:** every send in the probe targets the scratch pane id, and a test refuses a pane id that is not the scratch pane.
 **Evidence to check:**
 - Run the test.
@@ -37,7 +27,7 @@ Test command: `uv run pytest priority-dev/tests -q`
 - 0.5 — the test passes, but one call reads the id from a variable that is not checked.
 - 0.0 — a call can reach another pane.
 
-### C4 — The report names the abort condition it informs
+### C3 — The report names the abort condition it informs
 **Must be true:** the report states which `abort_if` condition of `goal.json` it informs, and gives a plain result: held, refuted, or not measured.
 **Evidence to check:**
 - Read the report named in the slice goal.
@@ -53,4 +43,5 @@ Test command: `uv run pytest priority-dev/tests -q`
 
 ## Out of scope — do not penalise
 - Behaviour that belongs to a later slice of the plan.
+- Whether the permission dialog shows while a hook waits, which slice 2 measures.
 - The policy, the actuator, the attention queue, and the notifier.
