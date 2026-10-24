@@ -44,10 +44,10 @@ Each slice ends in one thing that a test asserts or a reader sees. A slice never
 | | **`beads-storage/E7` — Native beads mapping and bd ready.** Native types, human titles and text fields, ordering edges, a pull request milestone that tracks its epics, native ready for slices, `claim-next`, and `migrate-mapping`. It starts after E5 slice 22. E6 stays unbuilt. See `epic-E7-design.md` and ADR-0044. | | | | |
 | 23 | `beads-storage/E7` | **Spike notes into the adapter notes** | The notes hold each spike finding with its command and exit code | 1 (attempt 1) | done |
 | 24 | `beads-storage/E7` | **Type, title, label, and text mapping** | A created issue has the new type, the name as title, the label, and the text fields. A read returns them. `prepare` sets no custom type. | 1 (attempt 2) | done |
-| 25 | `beads-storage/E7` | **Hierarchy and ordering edges** | A seed gives the epic chain and the slice chain, and the deferred epic gets a native defer date | — | pending |
-| 26 | `beads-storage/E7` | **Pull request as a milestone with `tracks`** | A PR holds its epics by `tracks` and blocks nothing. No gate remains. | — | pending |
-| 27 | `beads-storage/E7` | **Native ready for slices, with parity** | `next_ready("slice", under)` runs `bd ready`. `native_ready` is true. The parity test holds on the corpus. | — | pending |
-| 28 | `beads-storage/E7` | **`claim-next`** | One call claims the first ready slice. Nothing ready gives `null` and exit 0. | — | pending |
+| 25 | `beads-storage/E7` | **Hierarchy and ordering edges** | A seed gives the epic chain and the slice chain, and the deferred epic gets a native defer date | 1 (attempt 1) | done |
+| 26 | `beads-storage/E7` | **Pull request as a milestone with `tracks`** | A PR holds its epics by `tracks` and blocks nothing. No gate remains. | 1 (attempt 1) | done |
+| 27 | `beads-storage/E7` | **Native ready for slices, with parity** | `next_ready("slice", under)` runs `bd ready`. `native_ready` is true. The parity test holds on the corpus. | 1 (attempt 1) | done |
+| 28 | `beads-storage/E7` | **`claim-next`** | One call claims the first ready slice. Nothing ready gives `null` and exit 0. | 1 (attempt 1) | done |
 | 29 | `beads-storage/E7` | **`migrate-mapping` with dry run** | A legacy scratch tracker converts in one sync. A dry run writes nothing. A second run changes nothing. | — | pending |
 | 30 | `beads-storage/E7` | **Docs, install, usage** | The docs name the two operations and the migration. `tracker.py --help` lists them. | — | pending |
 

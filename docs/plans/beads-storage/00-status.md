@@ -58,10 +58,10 @@ Initial checks, 2026-10-17:
 
 - [x] Slice 23 — Spike notes into the adapter notes
 - [x] Slice 24 — Type, title, label, and text mapping
-- [ ] Slice 25 — Hierarchy and ordering edges
-- [ ] Slice 26 — Pull request as a milestone with `tracks`
-- [ ] Slice 27 — Native ready for slices, with parity
-- [ ] Slice 28 — `claim-next`
+- [x] Slice 25 — Hierarchy and ordering edges
+- [x] Slice 26 — Pull request as a milestone with `tracks`
+- [x] Slice 27 — Native ready for slices, with parity
+- [x] Slice 28 — `claim-next`
 - [ ] Slice 29 — `migrate-mapping` with dry run
 - [ ] Slice 30 — Docs, install, usage
 

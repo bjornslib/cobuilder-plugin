@@ -1,0 +1,54 @@
+{
+   "captured": "2026-10-24",
+   "source": "design",
+   "design_name": "mechanical-smells",
+   "authorship": "agent-assisted",
+   "problem": "The viewer shell is the largest debt in the habit-hooks scan. Its 346 structural findings sit in about 40 files that top every limit. A split must keep the shell's public surface stable, or the tests that import it break. The standing smells need one catalog that names a cluster, so a later program resolves it by name.",
+   "why_now": "ADR-0038 already made the scan a standing check for review and maintenance. It now reports 2,456 findings the repo has never resolved. The viewer shell is one cluster a bounded program can clear, and a catalog turns the standing scan into work the next program takes by name.",
+   "approach": "Resolve the structural cluster in the viewer shell, split by area, not by smell. Start with the logic layer, model.ts and bundle.ts, because pure logic proves the split pattern and the export-stability contract with the vitest suite alone. Then the atoms and sections, the change surface, and the top-level shell. Each epic keeps the export names, re-exports the moved units, and re-runs habit-sensors on its files. The file limit of 200 and the complexity limit of 10 are hard. The 12-line function limit is a recorded exception. The last epic authors type-surface-sweep and marks the catalog row.",
+   "alternatives": [
+     {
+       "option": "Tune the sensor card for the viewer instead of refactoring the code to the limits",
+       "rejected_because": "It hides the debt behind a higher limit and leaves 1,560-line files. ADR-0023 set the typed component model to make the shell small, and a tuned card throws that away."
+     },
+     {
+       "option": "Split by smell: one epic per smell across the whole repo",
+       "rejected_because": "It reopens each of the 40 files seven times and mixes the shell with the Python scripts and the cobuilder-memory tests. By-area keeps one file's surface stable in one epic."
+     },
+     {
+       "option": "Refactor the whole repo's structural findings now, Python and cobuilder-memory included",
+       "rejected_because": "It widens the blast radius to 105 files across three plugin families. ADR-0016 keeps the plugins as a bundle seam, and a bounded viewer program respects it."
+     },
+     {
+       "option": "Resolve every cluster now, including the 1,283 non-essential-comment findings",
+       "rejected_because": "The comment count is a habit about density, and ADR-0004 ste-writing values explanation. Deleting 1,283 comments on a scan verdict is not safe. The catalog defers it as a decision."
+     }
+   ],
+   "out_of_scope": [
+     "The 1,283 non-essential-comment findings, which the catalog defers as a decision, not a deletion",
+     "The Python and cobuilder-memory structural findings, which stay in their own later programs",
+     "The jscpd duplicate-code clusters, which a de-duplication program must judge after separating the vendored prose",
+     "The per-site narrowing of the 12 swallowed exceptions, which is a decision, not a mechanical pass",
+     "Any change to what the generation scripts write into the bundle, or to the bundle schema"
+   ],
+   "risks": [
+     "A split moves an export the tests import, and the suite breaks. The export-stability contract in the catalog guards it",
+     "A logic split changes the rendered output, so the build and the tests cannot both stay green",
+     "The 12-line function limit forces an atomic render unit to split, and the result reads worse than before",
+     "The byte-equal rebuild guard depends on a pinned toolchain, and a version drift fails it for the wrong reason",
+     "The program is large enough to stall between the logic layer and the shell, leaving half-split files"
+   ],
+   "testing": "Not built yet. E2 uses the vitest suite as the proof that a logic split keeps behavior. E3 to E5 re-run habit-sensors on the split files and keep the section-renderer and drawer tests green. E1 and E6 check that the catalog and the commissioned goal.json exist.",
+   "reviewer_focus": [
+     "E2 first: the logic layer proves the split pattern and the export-stability contract before the render epics depend on them",
+     "The function-line exception: whether a 13-to-30-line residual stays as one unit, or the sensor card tunes",
+     "The byte-equal rebuild guard after the logic epics, and whether the toolchain is pinned",
+     "E6's commissioning: whether type-surface-sweep is the right next cluster, or the duplicate cluster"
+   ],
+   "unknowns": [
+     "Whether the 12-line function limit holds for React components, or the sensor card tunes for the shell",
+     "Whether a byte-identical index.html rebuild holds across the pinned Node and Vite versions after the logic epics",
+     "Whether the cobuilder-memory test any's are deliberate stubs, which E6's program must judge per file",
+     "Whether the jscpd clusters that pair vendored prose across ADR-0017 are a duplicate or an intended copy"
+   ]
+}

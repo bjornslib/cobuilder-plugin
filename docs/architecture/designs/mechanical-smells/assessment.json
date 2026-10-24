@@ -1,0 +1,89 @@
+{
+  "stage": "design",
+  "verdict": "concerns",
+  "risk_tier": "medium",
+  "regret_risk": "If the program ships as written, the team lives with a shell whose public surface, the 30 model exports, the atom vocabulary, and the seven section renderers, now sits split across many files, and with a recorded exception that a 13-to-30-line component may stay. The durable regret is not that the shell is small. It is that the catalog is the only link between the resolved cluster and the deferred ones. If no later program opens it, the 214 duplicate clusters, the 12 swallowed exceptions, and the 1,283 comment findings stay standing, and the next engineer re-runs a fresh scan instead of reading the verdict.",
+  "summary": "The structural cluster is grounded in one scan of 2,456 findings and one catalog that names six clusters with verdicts. The by-area order, logic first, proves the export-stability contract before the render epics depend on it. Three abort conditions guard the three real risks: a moved export, a changed render, and an unowned card tune. The program ends by commissioning type-surface-sweep, so the standing scan becomes work the next program takes by name.",
+  "constraint_introduced": "The viewer shell's public surface is its public contract. model.ts, atoms.tsx, sections.tsx, App.tsx, and the shell hooks export names the tests and other files import. A split keeps every export name and re-exports the moved units, so an import of an old name still resolves. The habit-hooks scan is the standing verifier: a shell file is done when habit-sensors reports no finding for it.",
+  "findings": [
+     {
+       "kind": "prediction",
+       "id": "F1",
+       "severity": "low",
+       "title": "The by-area order with logic first is the right tracer bullet",
+       "detail": "The logic layer, model.ts and bundle.ts, is pure, so the vitest suite alone proves a split keeps behavior. It settles the export-stability contract and the byte-equal rebuild guard before the render epics depend on them. A render epic that lands first would force a browser proof where a unit test would do.",
+       "cites": "ADR-0023, docs/architecture/designs/mechanical-smells/findings-catalog.md section 4"
+     },
+     {
+       "kind": "prediction",
+       "id": "F2",
+       "severity": "high",
+       "title": "The 12-line function limit is the open concern the program must decide",
+       "detail": "The sensor caps a function at 12 lines. A React component of 13 lines is often one atomic render unit, and splitting it harms readability without lowering its complexity. The program records this as an exception rather than forcing a split, and the catalog names the decision. If the sensor card cannot tune, the abort condition fires and the program hands the card change to its owner.",
+       "cites": "findings-catalog.md section 3 cluster S, ADR-0023"
+     },
+     {
+       "kind": "prediction",
+       "id": "F3",
+       "severity": "high",
+       "title": "A split that moves an export breaks the tests that import it",
+       "detail": "The shell's export surface is large: model.ts exports 30 names, atoms.tsx exports the UI vocabulary, sections.tsx exports the seven section renderers, App.tsx exports ShellApp and the Theme type. The catalog section 4 lists these as the contract. The abort condition that a split must change an export name guards the whole program, and E2 proves it holds on the logic layer first.",
+       "cites": "findings-catalog.md section 4, docs/architecture/designs/mechanical-smells/goal.json abort_if"
+     },
+     {
+       "kind": "prediction",
+       "id": "F4",
+       "severity": "low",
+       "title": "Not a duplicate of a live decision, and it answers a standing check",
+       "detail": "ADR-0038 made the scan a findings source, and ADR-0023 set the typed component model the shell uses. No live ADR decides how to clear the standing findings. maintainable-viewer is superseded and never executed, so this program carries no work forward from it. The catalog is new, and it is the first standing record of the findings.",
+       "cites": "ADR-0038, ADR-0023, docs/architecture/designs/maintainable-viewer/goal.json"
+     },
+     {
+       "kind": "prediction",
+       "id": "F5",
+       "severity": "low",
+       "title": "The install surface is untouched",
+       "detail": "The work is a maintainer step under plugins/artifact/viewer/src/ and one catalog under docs/architecture/designs/. No agent, hook, or MCP server installs. ADR-0016 and ADR-0025 keep the install surface to the four shipped hooks, and this design adds none.",
+       "cites": "ADR-0016, ADR-0025, docs/architecture/contexts/cobuilder-packaging/boundary.yaml"
+     },
+     {
+       "kind": "prediction",
+       "id": "F6",
+       "severity": "medium",
+       "title": "The deferrals are named, so deferral is not a silent drop",
+       "detail": "The catalog gives the duplicate, Python-exception, and comment-habit clusters a verdict and a future owner. E6 commissions the type-surface cluster as type-surface-sweep. A cluster that the catalog names is not lost when this program closes, because the next program reads the catalog and opens the named cluster. The risk is that a catalog no one opens, which is why E6 is the last epic.",
+       "cites": "findings-catalog.md section 5, docs/architecture/designs/mechanical-smells/goal.json epics"
+     },
+     {
+       "kind": "prediction",
+       "id": "F7",
+       "severity": "medium",
+       "title": "E6 is the one place a design authors another design's goal.json",
+       "detail": "Design mode stage 5 writes one design's artifacts. E6 authors a second design's goal.json, type-surface-sweep, as its deliverable. That is a new precedent, so E6 writes a skeletal program, not a finished one, and marks its catalog row commissioned. The commissioned design runs its own design mode when it starts.",
+       "cites": "plugins/architect/skills/architecture/references/design-mode.md section 9"
+     }
+   ],
+   "boundary_checks": [
+     {
+       "rule": "no plugin reads another plugin's files",
+       "result": "pass",
+       "detail": "Every path this program touches sits under plugins/artifact/viewer/src/, docs/architecture/designs/, or docs/architecture/adr/."
+     },
+     {
+       "rule": "no agents, hooks, or MCP servers in the install surface",
+       "result": "pass",
+       "detail": "The work is a maintainer refactor and one catalog. Nothing new installs."
+     },
+     {
+       "rule": "ADR-0016: the viewer stays in plugins/artifact/",
+       "result": "pass",
+       "detail": "The split keeps every file under plugins/artifact/viewer/src/. The bundle seam holds."
+     },
+     {
+       "rule": "ADR-0038: the scan is the findings source",
+       "result": "pass",
+       "detail": "The catalog is the standing record the scan feeds, and the program resolves the cluster the scan reports."
+     }
+   ],
+   "drift": []
+}
