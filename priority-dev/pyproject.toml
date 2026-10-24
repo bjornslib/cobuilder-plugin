@@ -1,0 +1,23 @@
+# The priority.dev project. It has its own environment and never imports from plugins/ or shared/.
+[project]
+name = "priority-dev"
+version = "0"
+requires-python = ">=3.11"
+dependencies = ["dspy==3.4.1"]
+
+[build-system]
+requires = ["uv_build>=0.8,<0.13"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "priority"
+
+[dependency-groups]
+dev = ["pytest"]
+
+[tool.uv]
+python-preference = "only-managed"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
