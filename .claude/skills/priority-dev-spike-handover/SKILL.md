@@ -29,7 +29,7 @@ Work in the worktree `/Users/theb/Documents/Windsurf/cobuilder-plugin/.claude/wo
 ## Settled decisions
 
 1. Code lives in `priority-dev/`, with its own `pyproject.toml`. It never imports from `plugins/` or `shared/`, and the plugin tests never collect it (ADR-0045).
-2. No Jev in the spike. Nemo (`openrouter/mistralai/mistral-nemo`) does Triage, Pick, Fill, and Card. Inkling (`openrouter/thinkingmachines/inkling:free`) does Digest. Use DSPy. The skills are in `/Users/theb/Documents/Windsurf/think-with-ai/.claude/skills/dspy-skills` and its sibling skills.
+2. No Jev in the spike. The interpreter model (`openrouter/deepseek/deepseek-v4.1-flash-1017`) does Triage, Pick, Fill, and Card. The digest model (`openrouter/thinkingmachines/inkling-small`) does Digest. The engineer chose both on 2026-10-24, because `inkling:free` refuses direct API calls (403, "only available on agentic harnesses"). Nemo was the first interpreter and slice 1 measured it. Use DSPy. The skills are in `/Users/theb/Documents/Windsurf/think-with-ai/.claude/skills/dspy-skills` and its sibling skills.
 3. The interpreter input is the **stop brief**, never "slice". Slice means a build unit only.
 4. `continue_until` is our action. The Claude Code adapter turns it into the `/goal` command. This is a later phase.
 5. Order: probes first (slices 1 to 3), then the stop brief, Interpret, Digest, and the replay (4 to 7). After slice 7 the engineer decides go or no-go. Then the event log (8 to 10) and the adapter to the log (11 to 13). Build slices 1 to 5 first.

@@ -20,7 +20,7 @@ The interpreter turns a recorded transcript into a stop brief, an Interpretation
 
 ## Slice Decomposition
 
-1. Slice 4: the stop brief and its snapshots.
+1. Slice 4: the stop brief and its snapshots. The brief picks the last non-`<synthetic>` assistant message as the stop. A client message after it goes in a `CLIENT MESSAGE:` section, and the stop source is `client_error`. A transcript with only synthetic assistant records is an Abstain `no_agent_reply`. The RUN section holds the last 40 lines before the stop, counted across ask boundaries, with human asks as `[human]` lines.
 2. Slice 5: Interpret, with call records.
 3. Slice 6: Digest and `previous`.
 4. Slice 7: the replay report with failure drills, then the go or no-go.
@@ -31,6 +31,6 @@ Snapshots for the brief. `DummyLM` for the valid, quote-not-in-brief, kind-not-a
 
 ## Risks & Open Questions
 
-- Nemo validity on the 13 payloads is unknown. The split into small calls is a bet.
+- The interpreter model is `deepseek/deepseek-v4.1-flash-1017` and the digest model is `thinkingmachines/inkling-small`. Validity on the 13 payloads is unknown. The split into small calls is a bet.
 - `JSONAdapter` against `ChatAdapter` on Nemo is open. The replay compares both.
-- The free Inkling tier may rate-limit. The replay counts the errors.
+- Slice 1 found that `inkling:free` refuses direct calls. The replay counts the rate-limit errors of the paid models instead.

@@ -56,6 +56,16 @@ Test command: `uv run pytest priority-dev/tests -q`
 - 0.5 — the sentence exists, but the result is vague or the logs are missing.
 - 0.0 — no such sentence.
 
+### C6 — A client message never becomes the stop, and the run is never empty by accident [CRITICAL]
+**Must be true:** given a transcript whose last assistant record has model `<synthetic>`, the brief picks the last real agent message as the stop and holds the client text in a `CLIENT MESSAGE:` section with stop source `client_error`. A transcript with only synthetic assistant records gives an Abstain `no_agent_reply`. After a bare human ask such as `continue`, the RUN section still shows the work before it, up to 40 lines, with human asks as `[human]` lines.
+**Evidence to check:**
+- Run the brief builder on three made-up fixtures: a client error after a real reply, only synthetic records, and a bare `continue` after earlier work.
+- Compare each output to its stored snapshot, and read the stop source.
+**Scoring:**
+- 1.0 — all three fixtures give the stated result.
+- 0.5 — two of the three give it.
+- 0.0 — a synthetic record becomes the stop, or the run is empty although work precedes it.
+
 ## Regression check
 - All tests that passed before this slice must still pass.
 - Files outside `priority-dev/` must remain unchanged, except the committed reports named in the slice.
