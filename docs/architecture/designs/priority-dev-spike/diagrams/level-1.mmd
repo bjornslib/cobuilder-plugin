@@ -4,7 +4,7 @@ C4Container
     Person(dev, "Developer", "Runs many local Claude Code sessions")
 
     System_Ext(sessions, "Claude Code sessions", "tmux panes, hooks, transcript JSONL")
-    System_Ext(openrouter, "OpenRouter", "Nemo (mistral-nemo) and Inkling (inkling:free)")
+    System_Ext(openrouter, "OpenRouter", "Interpreter model (deepseek-v4.1-flash-1017) and digest model (inkling-small)")
 
     Container_Boundary(adapter, "Adapter host") {
         Container(hook, "priority-hook", "Python CLI", "Receives Stop, PermissionRequest, AskUserQuestion hooks")

@@ -10,14 +10,14 @@ The language model is required. Jev returns typed values only. It cannot write a
 
 | Stage | Model | Input | Output | Calls for each stop brief |
 |---|---|---|---|---|
-| 1. Triage | spikes: `openrouter/mistralai/mistral-nemo`. Later: Jev (`typesafe:jev-latest`) | the stop brief | `Facts`: five typed values | one |
-| 2. Advise | `openrouter/mistralai/mistral-nemo` | the stop brief and the facts | `Advice`: a question card and a proposal | one, when an answer is due |
-| Digest | `openrouter/thinkingmachines/inkling:free` | the stop brief | `RunDigest`: a short summary of the run | one for each finished run, always |
+| 1. Triage | spikes: `openrouter/deepseek/deepseek-v4.1-flash-1017`. Later: Jev (`typesafe:jev-latest`) | the stop brief | `Facts`: five typed values | one |
+| 2. Advise | `openrouter/deepseek/deepseek-v4.1-flash-1017` | the stop brief and the facts | `Advice`: a question card and a proposal | one, when an answer is due |
+| Digest | `openrouter/thinkingmachines/inkling-small` | the stop brief | `RunDigest`: a short summary of the run | one for each finished run, always |
 | Shrink | the Digest model | one oversized tool result | a shorter text | none, unless the stop brief is over the budget (section 2.3) |
 
 The first spikes do not call Jev. You asked for this so that a poor classifier cannot make the design look wrong. The `Facts` type stays the same. Only the stage 1 module changes, so a Jev module can replace it later. `dspy-modules.md` shows the modules.
 
-I checked both models on the OpenRouter model list on 24 October 2026. Mistral Nemo has a 131,072-token window, and it lists `structured_outputs` and `response_format`. Inkling free has a 1,048,576-token window, and it lists `reasoning` but neither of those two. Inkling therefore needs the DSPy text adapter, not a JSON schema. I did not make a call, because no OpenRouter key is set on this machine.
+I checked both models on the OpenRouter model list on 24 October 2026. The interpreter model has a 1,048,576-token window, and it lists `structured_outputs` and `response_format`. Inkling-small has a 524,288-token window, and it lists `reasoning` but neither of those two. Inkling therefore needs the DSPy text adapter, not a JSON schema. The probe of slice 1 later found that DSPy returns a dict with `text` and `reasoning_content` for Inkling, and that `inkling:free` refuses direct calls (403).
 
 One Jev call carries all five questions. A DSPy signature with five decision fields builds one request, `client.system_one(state=..., questions=...)`. The source is `dspy/adapters/decision.py` and `dspy/clients/typesafe.py` in version 3.4.1. I do not know whether Jev prices each question or each call.
 
@@ -72,7 +72,7 @@ Code reads structured JSON. It can group replies, pair each tool call with its r
 Rules that follow:
 
 1. Nothing in a stop brief is clipped. The stop brief keeps the assistant text, each tool call, and each full result. Only the redaction changes the text.
-2. The renderer sets a budget of 160,000 characters for the text that a model reads. This is a guess: about 40,000 tokens, against a 131,072-token window for Mistral Nemo. I did not measure the characters for each token. Over the budget, the Shrink call replaces the largest tool results first. It never touches `ask`, `final`, or the last three exchanges. The stored `InterpreterCall` records how many results it replaced. By the measure in 2.1, about 1 run in 100 passes 100,000 characters.
+2. The renderer sets a budget of 160,000 characters for the text that a model reads. This is a guess: about 40,000 tokens, against a 524,288-token window for the smaller of the two models. I did not measure the characters for each token. Over the budget, the Shrink call replaces the largest tool results first. It never touches `ask`, `final`, or the last three exchanges. The stored `InterpreterCall` records how many results it replaced. By the measure in 2.1, about 1 run in 100 passes 100,000 characters.
 3. The model reads `stop brief.for_model()`. That text leaves out `brief_id`, `cursor`, `redactions`, and `allowed_kinds`. The option `agent_reports_first` copies each sub-agent exchange into a block at the top. It is a lab option, and the lab tests whether it helps.
 4. A prose question has no `pending`. The facts say `waiting_answer`, and `final` holds the question.
 5. A goal run gives one stop brief for each stop attempt. The `goal` field lets the models see that the agent only waits.

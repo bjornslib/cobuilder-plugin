@@ -95,3 +95,13 @@ The interpreter input is named the stop brief, so that slice keeps its CoBuilder
 ## Maps to
 
 Context `cobuilder-packaging`, module `priority-dev/`. The context has no boundary rule for this folder yet. The design records that gap, and describe mode closes it once code exists.
+
+## Amendment, 2026-10-24: the models
+
+The decision text above stays as written. It names Nemo and `inkling:free`. Slice 1 changed the choice of models:
+
+- `inkling:free` refuses direct API calls (403, "only available on agentic harnesses"). It cannot serve as the digest model.
+- The engineer chose `deepseek/deepseek-v4.1-flash-1017` as the interpreter model and `thinkingmachines/inkling-small` as the digest model.
+- Nemo stays as the first model that slice 1 measured. The probe report keeps its results.
+- The probe, the design record, the plan, and the rubrics now say "interpreter model" and "digest model".
+- This amendment does not change the decision that the spike measures its unknowns, probes first.

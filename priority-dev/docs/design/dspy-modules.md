@@ -6,10 +6,10 @@ Status: design, round 10. The sketch is `schemas/dspy_modules.py`. It runs with 
 
 | Job | Model | Why | Adapter |
 |---|---|---|---|
-| Triage, Pick, Fill, Card | `openrouter/mistralai/mistral-nemo` | You chose it. Its OpenRouter entry lists `structured_outputs` and `response_format`. The window is 131,072 tokens. The price is USD 0.029 for a million input tokens and USD 0.03 for a million output tokens (from the list) | `JSONAdapter` is the first try. `ChatAdapter` is the fallback |
-| Digest, Shrink | `openrouter/thinkingmachines/inkling:free` | You chose it. It is free, and the window is 1,048,576 tokens. Its entry lists `reasoning` but no `response_format` | `ChatAdapter`, which parses text fields |
+| Triage, Pick, Fill, Card | `openrouter/deepseek/deepseek-v4.1-flash-1017` | The engineer chose it on 24 October 2026. Its OpenRouter entry lists `structured_outputs` and `response_format`. The window is 1,048,576 tokens. The list price is USD 0.15 for a million input tokens and USD 0.60 for a million output tokens | `JSONAdapter` is the first try. `ChatAdapter` is the fallback |
+| Digest, Shrink | `openrouter/thinkingmachines/inkling-small` | The engineer chose it on 24 October 2026, because `inkling:free` refuses direct calls (403). The window is 524,288 tokens. The list price is USD 0.45 for a million input tokens and USD 1.20 for a million output tokens. Its entry lists `reasoning` but no `response_format`. DSPy returns a dict with `text` and `reasoning_content` | `ChatAdapter`, which parses text fields |
 
-Mistral Nemo is a small model, from my memory and not checked. A small model handles a short schema better than a large one. This drives the design in section 3.
+I do not know the size of the interpreter model. A short schema suits any small or fast model. This drives the design in section 3.
 
 ## 2. What the two skills said, and what I did with it
 
@@ -31,11 +31,11 @@ The old design made one call for stage 2. Its output type was `Advice`, which ho
 
 | Call | Model | Output | Prompt, in characters |
 |---|---|---|---|
-| Triage | Nemo | five `Literal` values and a list of fields it is unsure about | 2,710 |
-| Pick | Nemo | the action `kind`, an exact quote, a confidence | 1,925 |
-| Fill | Nemo | the fields of one action kind | 927 to 1,743, and 3,781 for `ask_human` |
-| Card | Nemo | a `Question` card, when a human must answer | 2,056 |
-| Digest | Inkling | a `RunDigest` | 1,288 |
+| Triage | Interpreter model | five `Literal` values and a list of fields it is unsure about | 2,710 |
+| Pick | Interpreter model | the action `kind`, an exact quote, a confidence | 1,925 |
+| Fill | Interpreter model | the fields of one action kind | 927 to 1,743, and 3,781 for `ask_human` |
+| Card | Interpreter model | a `Question` card, when a human must answer | 2,056 |
+| Digest | Digest model | a `RunDigest` | 1,288 |
 
 The sizes are for an empty stop brief. The stop brief text comes on top. The old single call was 16,903 characters. A chain of Triage, Pick, Fill, and Card is about 7,700 characters for a common kind. It has four calls where the old design had two. The chain is not cheaper in calls. It is shorter in each prompt, and each call has one job. The spike measures whether it is more reliable.
 
@@ -76,7 +76,7 @@ The skill `dspy-evaluation-suite` covers metrics and baselines. I did not read i
 
 ## 6. What stays open
 
-1. Does Nemo follow `JSONAdapter` for the nested payloads? The spike runs both adapters on the same stop briefs and compares the valid-output rate.
-2. Does Inkling's free tier have a rate limit that a goal run with many stops will hit? The documentation I used does not say.
+1. Does the interpreter model follow `JSONAdapter` for the nested payloads? The spike runs both adapters on the same stop briefs and compares the valid-output rate.
+2. Does the digest model have a rate limit that a goal run with many stops will hit, and what does it cost? The replay report counts both.
 3. Does Digest keep the open question of a run? The replay report reads this on a few runs by hand.
 4. Optimisers (`MIPROv2`, `GEPA`) and `Refine` are not in the spikes. They need a metric first.

@@ -2,7 +2,7 @@
 
 Feature: priority-dev-spike
 Epic: E2
-Slice goal: `uv run priority digest` calls Inkling and prints a RunDigest that validates, and the next stop brief of the same session carries it as `previous`.
+Slice goal: `uv run priority digest` calls the digest model and prints a RunDigest that validates, and the next stop brief of the same session carries it as `previous`.
 Test command: `uv run pytest priority-dev/tests -q`
 
 ## Criteria

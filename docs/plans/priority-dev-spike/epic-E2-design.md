@@ -32,5 +32,5 @@ Snapshots for the brief. `DummyLM` for the valid, quote-not-in-brief, kind-not-a
 ## Risks & Open Questions
 
 - The interpreter model is `deepseek/deepseek-v4.1-flash-1017` and the digest model is `thinkingmachines/inkling-small`. Validity on the 13 payloads is unknown. The split into small calls is a bet.
-- `JSONAdapter` against `ChatAdapter` on Nemo is open. The replay compares both.
+- `JSONAdapter` against `ChatAdapter` on the interpreter model is open. The replay compares both.
 - Slice 1 found that `inkling:free` refuses direct calls. The replay counts the rate-limit errors of the paid models instead.

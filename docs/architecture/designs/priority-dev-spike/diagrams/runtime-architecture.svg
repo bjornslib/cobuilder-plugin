@@ -101,10 +101,10 @@
 <text class="nt" x="385.0" y="76" text-anchor="middle">Jev API</text>
 <text class="ns" x="385.0" y="91" text-anchor="middle">System-1 decisions, later</text>
 </g>
-<g id="n-claude"><title>Language model: Nemo and Inkling via OpenRouter</title>
+<g id="n-claude"><title>Language model: interpreter and digest models via OpenRouter</title>
 <rect class="nx" x="490" y="50" width="150" height="55" rx="12"/>
 <text class="nt" x="565.0" y="76" text-anchor="middle">Language model</text>
-<text class="ns" x="565.0" y="91" text-anchor="middle">Nemo and Inkling</text>
+<text class="ns" x="565.0" y="91" text-anchor="middle">Interpreter, digest</text>
 </g>
 <g id="n-tracker"><title>tracker.py + beads: workflow state</title>
 <rect class="nx" x="690" y="50" width="150" height="55" rx="12"/>

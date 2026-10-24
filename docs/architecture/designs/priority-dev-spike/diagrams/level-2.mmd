@@ -4,8 +4,8 @@ sequenceDiagram
     participant P as Spool
     participant L as Event log
     participant I as Interpreter
-    participant N as Nemo (OpenRouter)
-    participant K as Inkling (OpenRouter)
+    participant N as Interpreter model (OpenRouter)
+    participant K as Digest model (OpenRouter)
 
     S->>H: Stop hook fires
     H->>P: Write run.stopped to spool
@@ -13,7 +13,7 @@ sequenceDiagram
     L-->>I: Follow delivers run.stopped
     I->>I: Slicer builds StopBrief from transcript (previous = last RunDigest, if any)
 
-    alt All Nemo calls succeed and checks pass
+    alt All interpreter calls succeed and checks pass
         I->>N: Triage
         N-->>I: Triage reply
         I->>N: Pick

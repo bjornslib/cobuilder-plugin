@@ -20,10 +20,10 @@ The code lives in `priority-dev/`, a folder with its own `pyproject.toml`. It im
 
 ## Flow
 
-A transcript becomes a stop brief. The stop brief goes to Triage, Pick, Fill, and Card on Nemo, and to Digest on Inkling. Code checks that each quote is in the stop brief. The result is an Interpretation or an Abstain, stored with its call records. In later epics a Stop hook feeds the log, and the interpreter service reads it.
+A transcript becomes a stop brief. The stop brief goes to Triage, Pick, Fill, and Card on the interpreter model, and to Digest on the digest model. Code checks that each quote is in the stop brief. The result is an Interpretation or an Abstain, stored with its call records. In later epics a Stop hook feeds the log, and the interpreter service reads it.
 
 ## External
 
-- OpenRouter: `mistralai/mistral-nemo` and `thinkingmachines/inkling:free`. The key is `OPENROUTER_API_KEY`, read by one module from `priority-dev/.env`.
+- OpenRouter: `deepseek/deepseek-v4.1-flash-1017` (interpreter) and `thinkingmachines/inkling-small` (digest). `inkling:free` refuses direct API calls. The key is `OPENROUTER_API_KEY`, read by one module from `priority-dev/.env`.
 - Claude Code hooks: `Stop`, `PermissionRequest`, and `PreToolUse` on `AskUserQuestion`.
 - tmux, Postgres 17 in Docker, and a scratch Claude Code session.

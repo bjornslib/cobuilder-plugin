@@ -2,7 +2,7 @@
 
 Feature: priority-dev-spike
 Epic: E2
-Slice goal: `uv run priority interpret` runs Triage, Pick, Fill, and Card on Nemo through DSPy, prints an Interpretation or an Abstain, and stores each call with its model id, prompt hash, and raw reply.
+Slice goal: `uv run priority interpret` runs Triage, Pick, Fill, and Card on the interpreter model through DSPy, prints an Interpretation or an Abstain, and stores each call with its model id, prompt hash, and raw reply.
 Test command: `uv run pytest priority-dev/tests -q`
 
 ## Criteria

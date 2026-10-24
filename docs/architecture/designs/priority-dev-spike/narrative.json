@@ -11,11 +11,11 @@
     "beats": [
       {
         "kind": "problem",
-        "text": "No one has measured Nemo on real stops, or a hook in a live session."
+        "text": "No one has measured the interpreter model on real stops, or a hook in a live session."
       },
       {
         "kind": "decision",
-        "text": "The probes come first. Slice 1 runs Nemo on three real transcripts. Slices 2 and 3 run hooks and tmux in a scratch session."
+        "text": "The probes come first. Slice 1 runs the interpreter and digest models on three real transcripts. Slices 2 and 3 run hooks and tmux in a scratch session."
       },
       {
         "kind": "decision",
@@ -50,7 +50,7 @@
       },
       {
         "kind": "module",
-        "text": "Triage, Pick, Fill, and Card run on Nemo. Digest runs on Inkling. Code rejects any quote that is not in the brief."
+        "text": "Triage, Pick, Fill, and Card run on the interpreter model. Digest runs on the digest model. Code rejects any quote that is not in the brief."
       },
       {
         "kind": "store",

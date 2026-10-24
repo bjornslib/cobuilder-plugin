@@ -9,7 +9,7 @@
     "ADR-0012"
   ],
   "created": "2026-10-24",
-  "outcome": "On recorded transcripts, priority-dev digests a run with Inkling and interprets it with Nemo into a checked Interpretation or an Abstain. Probes show what the hooks and the pane do. A replay report states the valid-output and quote-found rates, and each injected failure ends as an Abstain.",
+  "outcome": "On recorded transcripts, priority-dev digests a run with the digest model and interprets it with the interpreter model into an Interpretation or an Abstain. Probes show what the hooks and the pane do. A replay report states the valid-output and quote-found rates, and each injected failure ends as an Abstain.",
   "done_when": [
     "a replay over the redacted fixtures writes a report with the valid-output rate, the quote-found rate, the abstain reasons, and the characters, seconds, and cost for each stage",
     "each injected failure (rate limit, malformed JSON, empty quote, timeout) ends as an Abstain with a logged reason",
@@ -17,7 +17,7 @@
     "a Stop event from a scratch session reaches the event log and leads to a stored digest and interpretation"
   ],
   "abort_if": [
-    "Nemo returns valid, grounded output on too few real stops to build on, and Inkling cannot digest either",
+    "the interpreter model returns valid, grounded output on too few real stops to build on, and the digest model cannot digest either",
     "a hook in a live session cannot be made safe: it blocks the session and the bypass file does not release it"
   ],
   "min_work": {

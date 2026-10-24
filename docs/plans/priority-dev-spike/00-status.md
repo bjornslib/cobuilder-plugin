@@ -7,7 +7,7 @@
 - Gate 2b — Interaction design: n/a (no UI) — Screens: "No UI. The spike prints reports and JSON in a terminal."
 - Gate 3 — Program Design: APPROVED 2026-10-24
   view: http://localhost:62583/active/viewer/#/priority-dev-spike/build/plan/program
-- Gate 4 — Slice plan, epic designs, and rubrics: in progress
+- Gate 4 — Slice plan, epic designs, and rubrics: APPROVED 2026-10-24
   view: http://localhost:62583/active/viewer/#/priority-dev-spike/build/epics
   - 4a Slice plan: APPROVED 2026-10-24
     view: http://localhost:62583/active/viewer/#/priority-dev-spike/build/epics

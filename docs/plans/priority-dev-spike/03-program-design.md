@@ -36,8 +36,8 @@ The sketches `priority-dev/docs/design/schemas/interpreter_schemas.py` and `dspy
 
 ## Least confident decisions
 
-- Whether Nemo returns valid payloads for most of the 13 kinds. The split into small calls is a bet.
-- Whether `JSONAdapter` or `ChatAdapter` works better on Nemo. The replay compares both.
-- Whether the free Inkling tier sustains the event rate.
+- Whether the interpreter model returns valid payloads for most of the 13 kinds. The split into small calls is a bet.
+- Whether `JSONAdapter` or `ChatAdapter` works better on the interpreter model. The replay compares both.
+- Whether the digest model sustains the event rate, and what it costs.
 - Whether a held hook leaves the dialog visible. Slice 3 measures it.
 - Whether the transcript lag after Stop is short enough for the brief builder.

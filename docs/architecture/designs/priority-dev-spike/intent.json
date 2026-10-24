@@ -9,7 +9,7 @@
   "alternatives": [
     {
       "option": "A deterministic interpreter with no model, from hook fields and regex",
-      "rejected_because": "It retires no model unknown, and it breaks the decision to use Nemo and Inkling. A hand-labelled rule baseline may come later."
+      "rejected_because": "It retires no model unknown, and it breaks the decision to use language models. A hand-labelled rule baseline may come later."
     },
     {
       "option": "An evidence-grade hash chain over every record, with signed checkpoints",
@@ -43,12 +43,12 @@
     "A real priority-dev-phase-a program, which waits for its own design"
   ],
   "risks": [
-    "Nemo may fail on the nested action payloads. The calls are small, and code checks every quote, so a failure ends as an Abstain",
-    "The free tier of Inkling may rate-limit a goal run. The replay report counts the limit errors",
+    "The interpreter model may fail on the nested action payloads. The calls are small, and code checks every quote, so a failure ends as an Abstain",
+    "The digest model may rate-limit a goal run. The replay report counts the limit errors",
     "A hook that waits may freeze a live session. Every hook has a timeout and a bypass file",
     "Real transcripts hold secrets. Fixtures stay local, git ignores them, and redaction runs before any model call",
     "A probe slice can pass at 0.90 and still refute its claim. The rubric checks that the report is honest and complete, not that the number is good",
-    "The OpenRouter calls to Nemo are paid, though cheap. A replay over many stops needs a spend cap",
+    "The OpenRouter calls to the interpreter and digest models are paid, though cheap. A replay over many stops needs a spend cap",
     "The event log needs Docker and Postgres on the development machine"
   ],
   "testing": [
@@ -63,11 +63,11 @@
     "Does the bypass file release a session in every failure of the hook"
   ],
   "unknowns": [
-    "Whether Nemo returns valid Fill JSON for most of the 13 action kinds",
+    "Whether the interpreter model returns valid Fill JSON for most of the 13 action kinds",
     "Whether $TMUX_PANE reaches a hook, and how long the transcript lags after Stop",
     "Whether the permission dialog shows while a PermissionRequest hook waits",
     "Whether a paste into a busy pane is lost",
-    "Whether the free tier of Inkling sustains the event rate of 5 sessions",
+    "Whether the digest model sustains the event rate of 5 sessions",
     "What the transcript holds when a /goal clears"
   ]
 }

@@ -68,5 +68,5 @@ Work in the worktree `/Users/theb/Documents/Windsurf/cobuilder-plugin/.claude/wo
 ## Facts to check before you rely on them
 
 - The hooks facts come from `hooks.md` and `goal.md` on code.claude.com, read on 24 October 2026. Read them again.
-- Nobody has made a model call yet. Nemo's validity on the 13 action payloads is unknown.
+- Slice 1 made model calls on a near-empty brief, so the validity of the interpreter model on the 13 action payloads is still unknown.
 - `$TMUX_PANE` in a hook, the transcript lag after Stop, and whether the permission dialog shows while a hook waits are untested.
