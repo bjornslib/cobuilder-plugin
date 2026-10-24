@@ -102,6 +102,7 @@ class FilesAdapter:
 
     sync = _refuse
     claim_slice = _refuse
+    claim_next = _refuse
     set_program_stage = _refuse
     set_gate_value = _refuse
     set_epic_state = _refuse

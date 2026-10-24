@@ -98,7 +98,7 @@ $ uv run shared/tracker.py list-epics --program demo
       "description": null,
       "design": null,
       "envelope": {
-        "deferred": "2026-11-01"
+        "deferred": "2099-12-31"
       },
       "external_ref": null,
       "id": "demo-E3",
@@ -129,7 +129,8 @@ Find the command for each workflow moment in this table.
 | Branch created | `set-epic-state <epic> <state> --branch <branch>` |
 | Gate approved | `set-gate-value <program> <gate> <value>`, then `add-note <id> <text>` |
 | Gate 3 seeds slices | `seed-from-files <plans-dir>` |
-| Worker claims a slice | `claim-slice <id> <claimant>` |
+| Worker takes the next slice | `claim-next <claimant> [--under <epic or program>]` |
+| Worker claims a named slice | `claim-slice <id> <claimant>` |
 | Attempt fails | `record-attempt <id> <score> --note <text>` |
 | Slice passes | `set-slice-state <id> closed --score <score> --attempts <n>` |
 | Escalate | `escalate <id> <score> <reason>` |
@@ -193,7 +194,35 @@ $ uv run shared/tracker.py claim-slice demo-E1-s3 agent-2
 }
 ```
 
+```console
+$ uv run shared/tracker.py claim-next agent-2
+{
+  "ok": true,
+  "result": {
+    "acceptance_criteria": null,
+    "assignee": "agent-2",
+    "blocked_by": [
+      "demo-E1-s1"
+    ],
+    "description": null,
+    "design": null,
+    "envelope": {},
+    "external_ref": null,
+    "id": "demo-E1-s3",
+    "kind": "slice",
+    "lifecycle": "in_progress",
+    "parent": "demo-E1",
+    "title": null,
+    "tracks": []
+  }
+}
+```
+
+The `claim-next` operation claims the first ready slice in one call. It also sets the epic of that slice to `in_progress` when the epic is open. When no slice is ready, it prints `null` as the result and exits 0. Use `--under` to limit the claim to one epic or program.
+
 The `next-ready` operation returns the slices that are ready to start. A worker claims a slice with `claim-slice` before it starts work.
+
+On the beads adapter, `native_ready` is true. A slice query asks the tracker to find the ready slices, and the tracker decides. On a tracker in the old mapping, a slice query stops with exit code 3 and tells you to run `migrate-mapping`. The program and epic kinds still use the adapter rule.
 
 To list slices or read one slice, use `list-slices` or `get-slice`.
 

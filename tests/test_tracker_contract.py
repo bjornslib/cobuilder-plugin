@@ -44,12 +44,14 @@ def test_next_ready_excludes_pr_and_deferred(adapter: Any) -> None:
     assert "pr-101" not in ids(adapter.next_ready("slice"))
 
 
-# Case 2: next_ready returns the right records for each kind, with and without under.
+# Case 2 (E7-5): next_ready returns the right records for each kind, with and without under (an epic or a program).
 def test_next_ready_kinds(adapter: Any) -> None:
     assert ids(adapter.next_ready("program")) == ["demo"]
     assert ids(adapter.next_ready("slice")) == ["demo-E1-s3"]
     assert ids(adapter.next_ready("slice", under="demo-E1")) == ["demo-E1-s3"]
+    assert ids(adapter.next_ready("slice", under="demo")) == ["demo-E1-s3"], "under may be the program"
     assert ids(adapter.next_ready("slice", under="demo-E2")) == []
+    assert ids(adapter.next_ready("slice", under="demo-E3")) == [], "a deferred epic holds no ready slice"
     assert ids(adapter.next_ready("epic")) == ["demo-E1"], "E2 waits for E1, and the open pull request holds neither"
 
 

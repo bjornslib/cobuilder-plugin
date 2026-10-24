@@ -22,6 +22,19 @@ def claim_argv(issue_id: str, claimant: str) -> list[str]:
     return ["update", issue_id, "--claim", "--actor", claimant]
 
 
+def ready_argv(*parent: str) -> list[str]:
+    """The one bd call that lists ready slices: tasks with the label cb, under one parent when given."""
+    return ["ready", "-t", "task", "--label", "cb", *(["--parent", parent[0]] if parent else []), "--json", "--limit", "0"]
+
+
+def claim_next_argv(claimant: str, *parent: str) -> list[str]:
+    """The one bd call that claims the first ready slice: tasks with the label cb, under one parent when given."""
+    return [
+        "ready", "-t", "task", "--label", "cb", "--claim", "--actor", claimant,
+        *(["--parent", parent[0]] if parent else []), "--json", "--limit", "0",
+    ]
+
+
 class BdRunner:
     """Runs `bd <args>` with no shell and returns stdout as text."""
 

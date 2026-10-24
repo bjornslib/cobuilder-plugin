@@ -13,6 +13,7 @@ from .fake_support import (
     check_lifecycle,
     envelope_refreshes,
     is_ready,
+    is_under,
     load_corpus,
     load_state,
     now,
@@ -121,7 +122,7 @@ class FakeAdapter(_PullRequestMixin, _FakeSkipMixin):
         return [
             record
             for record in self._of_kind(kind)
-            if (under is None or record.parent == under) and is_ready(record, by_id)
+            if is_under(record, under, by_id) and is_ready(record, by_id)
         ]
 
     def sync(self) -> None:
@@ -133,6 +134,18 @@ class FakeAdapter(_PullRequestMixin, _FakeSkipMixin):
 
     def claim_slice(self, id: str, claimant: str) -> TrackerRecord:
         return self._update(id, "slice", assignee=claimant)
+
+    def claim_next(self, claimant: str, under: str | None = None) -> TrackerRecord | None:
+        if under is not None and self._record_of(under).kind not in ("epic", "program"):
+            raise ArgumentError(f"{under} is not an epic or a program")
+        ready = sorted(self.next_ready("slice", under), key=lambda record: record.id)
+        if not ready:
+            return None
+        record = self._update(ready[0].id, "slice", assignee=claimant, lifecycle="in_progress")
+        epic = next((r for r in self._of_kind("epic") if r.id == record.parent), None)
+        if epic is not None and epic.lifecycle == "open":
+            self.set_epic_state(epic.id, "in_progress")
+        return record
 
     def set_program_stage(self, program: str, stage: str) -> TrackerRecord:
         record = self._update(program, "program", envelope={"stage": stage})

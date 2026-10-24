@@ -127,10 +127,10 @@ in the same retry as everything else.
 
 ## Workflow state calls
 
-Every call has the form `uv run "${CLAUDE_PLUGIN_ROOT}/shared/tracker.py" <operation> args`. Below, `tracker.py` stands for that full call. Before RED starts, claim the slice.
+Every call has the form `uv run "${CLAUDE_PLUGIN_ROOT}/shared/tracker.py" <operation> args`. Below, `tracker.py` stands for that full call. Before RED starts, claim the next slice. To work a named slice, use `claim-slice <id> <claimant>` instead.
 
 ```
-tracker.py claim-slice <id> <claimant>
+tracker.py claim-next <claimant> [--under <epic or program>]
 tracker.py record-attempt <id> <score> --note <text>
 tracker.py set-slice-state <id> closed --score <score> --attempts <n>
 tracker.py escalate <id> <score> <reason>

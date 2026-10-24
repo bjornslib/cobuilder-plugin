@@ -87,8 +87,9 @@ def test_find_record_reads_the_pull_request_by_its_external_ref_and_keeps_tracks
 
 def test_case_5_on_the_replay_a_merge_changes_no_ready_set_and_both_epics_are_ready() -> None:
     def ready(rows: list[dict[str, Any]]) -> dict[str, list[str]]:
+        # The slice kind runs one bd ready (E7-5), so its merge case is the live test in test_tracker_beads_edges_pr_real.py.
         adapter, _ = support.list_adapter(rows)
-        return {kind: sorted(r.id for r in adapter.next_ready(kind)) for kind in ("program", "epic", "slice")}
+        return {kind: sorted(r.id for r in adapter.next_ready(kind)) for kind in ("program", "epic")}
 
     before, after = ready(_open_rows()), ready(_closed_rows())
 

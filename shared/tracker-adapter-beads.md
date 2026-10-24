@@ -64,6 +64,16 @@ The second clone does not need the first-publish steps.
 
 The adapter sets `atomic_claim` to true.
 
+## claim-next
+
+`claim_next` reads the list, then makes one `bd ready` call with the label `cb`, the `--claim` flag, and the claimant as actor. bd makes the claim atomic, and a foreign task never matches the label. With `--under`, the call adds the bd id of the epic or program as parent.
+
+- The adapter builds the record from the list row, with the lifecycle `in_progress` and the claimant as assignee.
+- When the parent epic of the claimed slice is open, the adapter sets it to `in_progress` with one update. It makes no write when the epic is `in_progress` or `closed`.
+- The claim and the epic write go out in one sync.
+- An empty result gives `null`, with no write and no sync.
+- A bd failure raises `claim-next refused: <stderr>`. A legacy tracker raises an error that names `migrate-mapping`.
+
 ## Metadata wrapper
 
 Send every envelope through `--metadata` as `{"cb": {...}}`. The adapter builds this form in `_metadata_arg`.
@@ -210,15 +220,15 @@ Findings:
 - Claim races between two machines. The eight-call test ran on one machine.
 - bd versions other than 1.3.0.
 
-## E5-3: native ready does not reach parity
+## Native ready
 
-> Replaced by ADR-0044.
+> Decided by ADR-0044. This section replaces the E5-3 finding that native ready did not reach parity.
 
-- `bd ready --json --limit 0` on the E1 corpus lists `demo`, `demo-E3`, and `pr-101`. It does not list the slice `demo-E1-s3`. bd treats a child of a blocked parent as blocked, and the epic `demo-E1` is blocked by the open `pr-101`. The transcript is `ready-bd-corpus.json`.
-- `bd ready` also lists the pull request record, which is a task, and the deferred epic `demo-E3`. The adapter rules drop both.
-- The molecule root has the type `molecule`. Plain `bd ready` omits it. `bd ready --mol <root>` lists it. The transcript is `ready-bd-molecule.json`.
-- The slice difference is a difference that bd cannot close. So `native_ready` stays false, and the adapter computes ready itself, as E1 does. The adapter has no `ready_argv` and no hybrid path.
-- The live parity test compares the adapter result with the E1 projector for each kind and for `under`.
+- The command is `bd ready -t task --label cb --json --limit 0`. For `under`, the adapter adds `--parent <bd id>`, and `under` must name an epic or a program. The adapter reads the list first, and it maps each ready row to a cb record through that list. A slice query makes one list read and one ready call.
+- The label `cb` keeps foreign tasks and the molecule rows of a formula out of the result. A failed `bd ready` call raises `AdapterError`, and the adapter does not compute a fallback.
+- The program and epic kinds keep the adapter rule, because `bd ready` lists only tasks.
+- Parity: the live test compares the adapter with the E1 projector for `program`, `epic`, and `slice`, and for `under` an epic and a program. The corpus holds a deferred epic with the date 2099-12-31, an in_progress epic, and an open PR. So `native_ready` is true for beads.
+- Legacy refusal: on a tracker in the old mapping, a slice query raises `AdapterError` that names `migrate-mapping`. The CLI exits with code 3. The adapter sends no ready call in that case.
 
 ## E5-5: slice-loop formula
 
