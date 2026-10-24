@@ -4,7 +4,7 @@ The probe reads a Claude Code transcript, redacts it, and builds a short stop br
 model call. The model returns the five facts, a kind, and an exact quote. Code checks the reply and
 the quote, and it stores the call. A failed call or a bad reply ends as an abstain, not as an error.
 
-    uv run --project priority-dev python priority-dev/probes/model_probe.py <transcript.jsonl> [--log-dir DIR]
+    uv run python priority-dev/probes/model_probe.py <transcript.jsonl> [--log-dir DIR]
 """
 from __future__ import annotations
 
@@ -17,6 +17,15 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import NamedTuple
+
+if __name__ == "__main__":  # the root env has no priority or dspy, so re-run under the priority-dev project
+    try:
+        import priority, dspy  # noqa: E401,F401
+    except ImportError:
+        import os
+        import sys
+        here = Path(__file__).resolve()
+        os.execvp("uv", ["uv", "run", "--project", str(here.parents[1]), "python", str(here), *sys.argv[1:]])
 
 from priority.config import load_key
 
