@@ -34,9 +34,9 @@ def _seed_creates() -> tuple[Any, dict[str, list[str]]]:
 
 
 def test_the_title_rule_is_one_constant_that_names_the_recommended_rule() -> None:
-    from tracker_port import record
+    from tracker_port import beads_title
 
-    assert m.need(record, "TITLE_RULE") == "name"
+    assert m.need(beads_title, "TITLE_RULE") == "name"
 
 
 @pytest.mark.parametrize("cb_id", seed.EXPECTED)

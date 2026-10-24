@@ -1,4 +1,4 @@
-"""Slice 24 (E7-2): one constant, tracker_port.record.TITLE_RULE, sets the title of every create.
+"""Slice 24 (E7-2): one constant, tracker_port.beads_title.TITLE_RULE, sets the title of every create.
 
 The rule `name` sends the bare name. The rule `id-and-name` sends `<cb id> — <name>`. A pull request keeps its
 ref under both rules, and a record with no name keeps its cb id. Both the create_record path and the seed path obey

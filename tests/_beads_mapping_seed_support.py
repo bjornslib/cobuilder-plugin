@@ -65,7 +65,7 @@ def check_design(value: str | None, suffix: str | None) -> None:
         assert value is not None and value.endswith(suffix), value
 
 
-# The two legal values of tracker_port.record.TITLE_RULE. The design names the second one as `<cb id> — <name>`.
+# The two legal values of tracker_port.beads_title.TITLE_RULE. The design names the second one as `<cb id> — <name>`.
 RULE_NAME = "name"
 RULE_ID_AND_NAME = "id-and-name"
 ID_NAME_SEPARATOR = " — "
@@ -73,12 +73,12 @@ ID_NAME_SEPARATOR = " — "
 
 def use_title_rule(monkeypatch, rule: str) -> None:
     """Set the one title-rule constant. It fails on an assertion when the constant does not exist yet."""
-    from tracker_port import record
+    from tracker_port import beads_title
 
     from _beads_mapping_support import need
 
-    need(record, "TITLE_RULE")
-    monkeypatch.setattr(record, "TITLE_RULE", rule)
+    need(beads_title, "TITLE_RULE")
+    monkeypatch.setattr(beads_title, "TITLE_RULE", rule)
 
 
 def expected_title(rule: str, cb_id: str, kind: str, name: str | None) -> str:

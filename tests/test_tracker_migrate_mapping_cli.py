@@ -50,9 +50,9 @@ def test_the_port_names_the_operation_with_the_pinned_signature() -> None:
     from tracker_port.beads import BeadsAdapter
     from tracker_port.fake import FakeAdapter
     from tracker_port.files import FilesAdapter
-    from tracker_port.port import TrackerPort
+    from tracker_port.port import MappingMigrationPort
 
-    for owner in (TrackerPort, FakeAdapter, BeadsAdapter):
+    for owner in (MappingMigrationPort, FakeAdapter, BeadsAdapter):
         parameters = inspect.signature(need(owner, "migrate_mapping")).parameters
         assert list(parameters) == ["self", "dry_run", "plans_dir"], owner.__name__
         assert (parameters["dry_run"].default, parameters["plans_dir"].default) == (False, None), owner.__name__

@@ -19,7 +19,8 @@ from .beads_rows import (
 )
 from .port import AdapterError, ArgumentError
 from .program_state import program_lifecycle
-from .record import TrackerRecord, bd_title
+from .beads_title import bd_title
+from .record import TrackerRecord
 
 
 class _WriteMixin:

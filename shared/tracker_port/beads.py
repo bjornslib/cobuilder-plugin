@@ -29,7 +29,7 @@ from .beads_seed import _SeedMixin
 from .beads_pull_requests import _PullRequestMixin
 from .beads_writes import _WriteMixin
 from .beads_migrate import migrate_mapping
-from .skip_slice import _BeadsSkipMixin
+from .beads_skip import _BeadsSkipMixin
 from .beads_sync import _SyncModeMixin
 from .port import AdapterError, ArgumentError
 from .sync_state import SYNC_MODES, spawn_worker
