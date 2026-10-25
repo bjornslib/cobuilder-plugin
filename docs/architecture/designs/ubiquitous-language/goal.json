@@ -41,7 +41,6 @@
       "note": "Repair the existing drift. Refresh cobuilder-packaging's canvas section 3 and its boundary.yaml public_interface against the shipped five-plugin tree, delete the now-false homonym comment, and reconcile the two glossaries into E1's record."
     }
   ],
-  "stage": "backlog",
   "supersedes": null,
   "rounds": []
 }

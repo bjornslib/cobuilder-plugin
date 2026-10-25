@@ -2,7 +2,11 @@
   "name": "habit-smells",
   "title": "Review and maintenance read habit-hooks smells as a findings source",
   "adr": "ADR-0038",
-  "adrs": ["ADR-0038", "ADR-0025", "ADR-0016"],
+  "adrs": [
+    "ADR-0038",
+    "ADR-0025",
+    "ADR-0016"
+  ],
   "created": "2026-10-08",
   "outcome": "Review and maintenance reports carry a classified Mechanical smells section from habit-sensors, maintenance trends the pairs of smell and file against the previous report, and verify_bundle warns when the last scan is missing or stale.",
   "done_when": [
@@ -18,7 +22,10 @@
     "challenge_stage_run": true,
     "note": "Decided in chat on 2026-10-08 (ADR-0038). The script shells out to the installed habit-sensors through its JSON surface, and tests use a stub on PATH."
   },
-  "limits": { "warn_after_rounds": 3, "cutoff_rounds": 6 },
+  "limits": {
+    "warn_after_rounds": 3,
+    "cutoff_rounds": 6
+  },
   "epics": [
     {
       "id": "E1",
@@ -33,7 +40,6 @@
       "title": "Maintenance mode: the pair diff against the previous report, and the command files"
     }
   ],
-  "stage": "decided",
   "supersedes": null,
   "rounds": 0
 }
