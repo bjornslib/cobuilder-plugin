@@ -24,11 +24,12 @@ from .program_state import program_lifecycle
 from .record import Capabilities, Kind, TrackerRecord
 from .fake_activity import _FakeActivityMixin
 from .fake_pull_requests import _PullRequestMixin
+from .fake_repair import _FakeRepairMixin
 from .skip_slice import _FakeSkipMixin
 from .regenerate import regenerate
 
 
-class FakeAdapter(_PullRequestMixin, _FakeSkipMixin, _FakeActivityMixin):
+class FakeAdapter(_PullRequestMixin, _FakeSkipMixin, _FakeActivityMixin, _FakeRepairMixin):
     name = "fake"
     capabilities = Capabilities(
         native_ready=False,

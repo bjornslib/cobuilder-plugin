@@ -102,6 +102,11 @@ class FilesAdapter:
     def migrate_mapping(self, dry_run: bool = False, plans_dir: Path | None = None) -> None:
         _refuse(self)
 
+    def repair_status(
+        self, dry_run: bool = False, plans_dir: Path | None = None, index: Path | None = None
+    ) -> None:
+        _refuse(self)
+
     sync = _refuse
     claim_slice = _refuse
     claim_next = _refuse

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Protocol
+from typing import Any, Protocol
 
 from .record import Capabilities, TrackerRecord
 
@@ -85,3 +85,9 @@ class MappingMigrationPort(Protocol):
     """
 
     def migrate_mapping(self, dry_run: bool = False, plans_dir: Path | None = None) -> dict[str, object]: ...
+
+
+class StatusRepairPort(Protocol):
+    def repair_status(
+        self, dry_run: bool = False, plans_dir: Path | None = None, index: Path | None = None
+    ) -> dict[str, Any]: ...

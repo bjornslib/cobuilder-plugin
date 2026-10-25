@@ -31,6 +31,7 @@ from .beads_writes import _WriteMixin
 from .beads_migrate import migrate_mapping
 from .beads_skip import _BeadsSkipMixin
 from .beads_sync import _SyncModeMixin
+from .beads_repair import _RepairMixin
 from .port import AdapterError, ArgumentError
 from .sync_state import SYNC_MODES, spawn_worker
 from .record import Capabilities, Kind, TrackerRecord
@@ -39,7 +40,7 @@ from .regenerate import regenerate
 __all__ = ["LIST_ARGS", "BeadsAdapter", "_cb_block", "_metadata_arg"]
 
 
-class BeadsAdapter(_LookupMixin, _ReadyMixin, _ClaimNextMixin, _SyncModeMixin, _WriteMixin, _PullRequestMixin, _SeedMixin, _BeadsSkipMixin):
+class BeadsAdapter(_LookupMixin, _ReadyMixin, _ClaimNextMixin, _SyncModeMixin, _WriteMixin, _PullRequestMixin, _SeedMixin, _BeadsSkipMixin, _RepairMixin):
     name = "beads"
     # A slice is ready when bd says so (beads_ready.py). The claim is atomic: bd update --claim.
     capabilities = Capabilities(native_ready=True, atomic_claim=True, rich_envelope=True, offline_read=True)
