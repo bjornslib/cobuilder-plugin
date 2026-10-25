@@ -323,3 +323,21 @@ Not verified (unverified, with no outcome stated):
 - The restore from `bd export`.
 - Any bd version other than 1.3.0.
 - A defer date in the future that passes by the clock.
+
+## Program stage in the tracker
+
+The spike ran on bd 1.3.0, and the log is `/tmp/e8-spike.md`.
+
+| Finding | Command | Exit code | Result |
+|---|---|---|---|
+| Counts and stage drift between goal.json and the tracker | `for f in list-programs list-epics list-slices list-pull-requests; do uv run shared/tracker.py $f; done; python3 /tmp/e8-analyze.py` | 0 | 31 programs, 116 epics, 146 slices, 2 open pull request records. 11 designs hold a `goal.stage` whose tracker program holds no stage. 0 designs hold two different stage values. 5 programs have no design and no stage |
+| A write to a missing program | `set_program_stage` on a program id that no record holds, in a scratch tracker | 4 | The adapter raises `ArgumentError no record with id newdesign` |
+| A create of a program with its texts | `create_record` with the stage, the title, and the outcome, in a scratch tracker | 0 | `list_programs` returns the stage, the title, and the outcome. A second create in the same store is refused |
+| Duplicate rows with an invisible write | A second create that bypasses the guard, as a clone that has not synced does | 0 | Two rows hold one cb id. `set_program_stage` wrote one row, and `list_programs` read the other, so the write stayed invisible |
+| The bd call count and time of the index build | `uv run --with pyyaml python /tmp/e8-count.py` | 0 | Today the tracker reads of one build make 4 `bd list` calls in about 3.9 s. Each kind as a separate call would give 7 calls in about 6.8 s. One `all_records` read and one `next_ready` give 3 calls in about 2.1 s |
+| The ready call and its time | `time uv run shared/tracker.py next-ready --kind slice` | 0 | One call returned 7 ready slices in 1.3 s, including the uv start. The adapter reads the rows once and runs one `bd ready` call |
+
+Manual cleanup of a duplicate:
+
+- Close the newer row with `bd close <bd id> --force`.
+- Then run `tracker.py sync`.

@@ -33,5 +33,12 @@ class _LookupMixin:
         except BdError:
             return self._sync_details()
         foreign = sum(1 for row in rows if not _is_cb_row(row))
+        counts: dict[str, int] = {}
+        for row in rows:
+            if not _is_cb_row(row):
+                continue
+            cb_id = row["metadata"]["cb"]["id"]
+            counts[cb_id] = counts.get(cb_id, 0) + 1
+        duplicates = sorted(cb_id for cb_id, count in counts.items() if count > 1)
         mapping = "legacy" if legacy_reasons(rows) else "native"
-        return {"foreign_issues": foreign, "mapping": mapping, **self._sync_details()}
+        return {"foreign_issues": foreign, "mapping": mapping, "duplicates": duplicates, **self._sync_details()}

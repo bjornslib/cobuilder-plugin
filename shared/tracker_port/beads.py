@@ -102,13 +102,16 @@ class BeadsAdapter(_LookupMixin, _ReadyMixin, _ClaimNextMixin, _SyncModeMixin, _
 
     @staticmethod
     def _find_row(rows: list[dict[str, Any]], id: str, kinds: tuple[str, ...]) -> dict[str, Any]:
-        for row in rows:
-            cb = _cb_block(row)
-            if cb["id"] == id:
-                if cb["kind"] not in kinds:
-                    raise ArgumentError(f"{id} is a {cb['kind']}, not one of {kinds}")
-                return row
-        raise ArgumentError(f"no record with id {id}")
+        matches = [row for row in rows if _cb_block(row)["id"] == id]
+        if not matches:
+            raise ArgumentError(f"no record with id {id}")
+        if len(matches) > 1:
+            raise AdapterError(f"two bd rows hold the id {id}: {matches[0]['id']} and {matches[1]['id']}")
+        row = matches[0]
+        cb = _cb_block(row)
+        if cb["kind"] not in kinds:
+            raise ArgumentError(f"{id} is a {cb['kind']}, not one of {kinds}")
+        return row
 
     def _after(
         self,
