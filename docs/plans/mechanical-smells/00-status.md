@@ -1,11 +1,11 @@
 # Status: Clear the viewer's habit-hooks findings (mechanical-smells)
 
-- Gate 1 — Product: in progress
-- Gate 2 — Architecture: in progress
+- Gate 1 — Product: APPROVED 2026-10-25
+- Gate 2 — Architecture: APPROVED 2026-10-25
 - Gate 2b — Interaction design: n/a (no UI) — Screens: "no UI change: the viewer renders the same pages"
-- Gate 3 — Program Design: in progress
+- Gate 3 — Program Design: APPROVED 2026-10-25
 - Gate 4 — Slice plan, epic designs, and rubrics: in progress
-  - 4a Slice plan: pending
+  - 4a Slice plan: APPROVED 2026-10-25
   - 4b Epic technical solution designs: pending
   - 4c Blind rubrics: pending
 
