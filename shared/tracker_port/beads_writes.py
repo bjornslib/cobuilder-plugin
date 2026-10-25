@@ -7,6 +7,7 @@ import re
 from typing import Any
 
 from .bd_runner import BdError, claim_argv
+from .plan_program import missing_program_record
 from .beads_rows import (
     CB_VERSION,
     KINDS,
@@ -41,10 +42,16 @@ class _WriteMixin:
         self._publish()
         return record
 
-    def set_program_stage(self, program: str, stage: str) -> TrackerRecord:
+    def set_program_stage(self, program: str, stage: str, plans_dir: Path | None = None) -> TrackerRecord:
         # The stage also sets the program's bd status. The status is written only on a change.
         rows = self._rows()
-        row = self._find_row(rows, program, ("program",))
+        try:
+            row = self._find_row(rows, program, ("program",))
+        except ArgumentError as error:
+            if not (str(error).startswith("no record with id") and plans_dir is not None):
+                raise
+            # The tracker holds no program row, so create one from the plan texts.
+            return self.create_record(missing_program_record(program, stage, plans_dir))
         block = _with_envelope(_cb_block(row), {"stage": stage})
         held = self._after(rows, row, block=block)
         ids = self._cb_ids(rows)

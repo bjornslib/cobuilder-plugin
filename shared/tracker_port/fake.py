@@ -18,6 +18,7 @@ from .fake_support import (
     load_state,
 )
 from .files import seedable_records
+from .plan_program import missing_program_record
 from .port import AdapterError, ArgumentError
 from .program_state import program_lifecycle
 from .record import Capabilities, Kind, TrackerRecord
@@ -147,9 +148,22 @@ class FakeAdapter(_PullRequestMixin, _FakeSkipMixin, _FakeActivityMixin):
             self.set_epic_state(epic.id, "in_progress")
         return record
 
-    def set_program_stage(self, program: str, stage: str) -> TrackerRecord:
+    def set_program_stage(self, program: str, stage: str, plans_dir: Path | None = None) -> TrackerRecord:
+        if self._record_of_kind_or_none(program, "program") is None:
+            if plans_dir is None:
+                raise ArgumentError(f"no program with id {program}")
+            # The fake holds no program, so create one from the plan texts.
+            return self._create_program(missing_program_record(program, stage, plans_dir))
         record = self._update(program, "program", envelope={"stage": stage})
         return self._refollow(record)
+
+    def _record_of_kind_or_none(self, id: str, kind: Kind) -> TrackerRecord | None:
+        return next((record for record in self._records if record.id == id and record.kind == kind), None)
+
+    def _create_program(self, record: TrackerRecord) -> TrackerRecord:
+        self._records.append(record)
+        self._commit()
+        return record
 
     def _refollow(self, program: TrackerRecord) -> TrackerRecord:
         wanted = program_lifecycle(program.envelope.get("stage"), self.list_epics(program.id))

@@ -1,5 +1,4 @@
 """The program record of a plan. It holds the gate values from 00-status.md and the stage of the design."""
-
 from __future__ import annotations
 
 from collections.abc import Sequence
@@ -8,6 +7,7 @@ from pathlib import Path
 from gate_status import approved_date, parse_gate4_substeps, parse_status_gates
 
 from .plan_texts import program_texts
+from .port import ArgumentError
 from .program_state import program_lifecycle
 from .record import TrackerRecord
 
@@ -39,4 +39,26 @@ def _program_record(
         envelope=envelope,
         external_ref=program,
         **program_texts(directory.parent, program),
+    )
+
+
+def missing_program_record(program: str, stage: str, plans_dir: Path) -> TrackerRecord:
+    """The program record for a stage write when the tracker holds no program row."""
+    goal_path = plans_dir.parent / "architecture" / "designs" / program / "goal.json"
+    if not goal_path.is_file():
+        raise ArgumentError(f"no goal.json at {goal_path}")
+    texts = program_texts(plans_dir, program)
+    return TrackerRecord(
+        id=program,
+        kind="program",
+        parent=None,
+        blocked_by=(),
+        lifecycle=program_lifecycle(stage, ()),
+        assignee=None,
+        envelope={"stage": stage},
+        external_ref=program,
+        title=texts["title"],
+        description=texts["description"],
+        acceptance_criteria=texts["acceptance_criteria"],
+        design=texts["design"],
     )

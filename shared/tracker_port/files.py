@@ -105,7 +105,8 @@ class FilesAdapter:
     sync = _refuse
     claim_slice = _refuse
     claim_next = _refuse
-    set_program_stage = _refuse
+    def set_program_stage(self, program: str, stage: str, plans_dir: Path | None = None) -> TrackerRecord:
+        _refuse(self)
     set_gate_value = _refuse
     set_epic_state = _refuse
     set_slice_state = _refuse
