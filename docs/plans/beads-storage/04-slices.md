@@ -53,12 +53,12 @@ Each slice ends in one thing that a test asserts or a reader sees. A slice never
 | | **`beads-storage/E8` — The tracker is the source of stage and status, and the Work board shows it.** The tracker holds a program's stage and creates its record. The index and the Work board read stage, epic and slice status, the next ready slice, and pull request state from the tracker. A repair step brings old records in line. It starts after E7. See `epic-E8-design.md` and ADR-0047. | | | | |
 | 31 | `beads-storage/E8` | **Spike notes into the adapter notes** | The notes hold each spike finding with its command and exit code | 1 (attempt 1) | done |
 | 32 | `beads-storage/E8` | **The tracker creates the program record, and design mode says so** | `set-program-stage --plans-dir` creates a missing record. A write refuses on a duplicate. | 1 (attempt 1) | done |
-| 33 | `beads-storage/E8` | **The index reads the stage from the tracker, with a fallback** | `design.stage` comes from the tracker, then from the file. The build makes at most three bd calls. | — | pending |
-| 34 | `beads-storage/E8` | **The strip step and the schema change** | Design mode writes no `goal.stage` when a tracker exists. The strip script passes its tests. | — | pending |
-| 35 | `beads-storage/E8` | **Epic and slice status on the board** | The words follow the table. `done` counts `completed` epics. | — | pending |
-| 36 | `beads-storage/E8` | **Next ready and pull request state on the board** | A card shows the next ready slice and the state of each pull request record. | — | pending |
-| 37 | `beads-storage/E8` | **`repair-status` with a dry run** | A scratch tracker repairs in one sync. A dry run writes nothing. A second run changes nothing. | — | pending |
-| 38 | `beads-storage/E8` | **Live repair, docs, and install** | The three live steps run in order. The docs name the new operations and the strip. | — | pending |
+| 33 | `beads-storage/E8` | **The index reads the stage from the tracker, with a fallback** | `design.stage` comes from the tracker, then from the file. The build makes at most three bd calls. | 1 (attempt 1) | done |
+| 34 | `beads-storage/E8` | **The strip step and the schema change** | Design mode writes no `goal.stage` when a tracker exists. The strip script passes its tests. | 0.97 (attempt 1) | done |
+| 35 | `beads-storage/E8` | **Epic and slice status on the board** | The words follow the table. `done` counts `completed` epics. | 0.95 (attempt 1) | done |
+| 36 | `beads-storage/E8` | **Next ready and pull request state on the board** | A card shows the next ready slice and the state of each pull request record. | 0.9 (attempt 1) | done |
+| 37 | `beads-storage/E8` | **`repair-status` with a dry run** | A scratch tracker repairs in one sync. A dry run writes nothing. A second run changes nothing. | 0.95 (attempt 1) | done |
+| 38 | `beads-storage/E8` | **Live repair, docs, and install** | The three live steps run in order. The docs name the new operations and the strip. | 0.97 (attempt 1) | done |
 
 ## Escalation and order
 
