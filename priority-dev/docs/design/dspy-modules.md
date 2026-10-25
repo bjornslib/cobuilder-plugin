@@ -45,7 +45,7 @@ Rules for the split:
 2. Code checks the quote. If the quote is not in the stop brief text, the result is an `Abstain` with the reason `quote_not_in_brief`. The kind `ask_human` needs no quote.
 3. Code checks the kind against `allowed_kinds`. A kind that is not allowed gives an `Abstain` with `kind_not_allowed`.
 4. Triage gives no confidence number, because a language model has no calibrated one. It lists the fields it is unsure about. Stage 2 runs when the status needs an answer or when the list is not empty. This replaces the confidence rule of `schemas.md` section 1 for the spikes. The `Facts` type is unchanged. The sketch sets 0.5 for an unsure field and 0.9 for the others, and these numbers are stand-ins and not measurements.
-5. A proposal has one step in the spikes. Multi-step plans come after the single step works.
+5. A proposal holds one to three steps, as `schemas.md` section 4.2 says. Pick returns an ordered list of one to three steps, each with a `kind` and an exact quote. Fill runs once for each step. Code checks the kind and the quote of each step on its own. A step that fails a check gives one `Abstain` for the whole proposal, with the step number in the reason. The replay report counts the proposals by step count.
 
 ## 4. The modules
 

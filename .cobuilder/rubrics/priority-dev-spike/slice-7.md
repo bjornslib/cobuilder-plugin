@@ -8,7 +8,7 @@ Test command: `uv run pytest priority-dev/tests -q`
 ## Criteria
 
 ### C1 — The report holds every listed measure for both adapters [CRITICAL]
-**Must be true:** the report lists the valid-output rate, the quote-found rate, the abstain reasons, the kinds picked, the characters sent, the seconds, and the cost for each stage, for `JSONAdapter` and `ChatAdapter`.
+**Must be true:** the report lists the valid-output rate, the quote-found rate, the abstain reasons, the kinds picked, the count of proposals for each step count, the characters sent, the seconds, and the cost for each stage, for `JSONAdapter` and `ChatAdapter`.
 **Evidence to check:**
 - Run the replay on the local fixtures.
 - Check each measure against the stored call rows.

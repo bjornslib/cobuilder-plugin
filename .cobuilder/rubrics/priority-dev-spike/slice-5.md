@@ -7,22 +7,22 @@ Test command: `uv run pytest priority-dev/tests -q`
 
 ## Criteria
 
-### C1 — The valid path gives a one-step proposal [CRITICAL]
-**Must be true:** with a dummy model that answers correctly, the result is an Interpretation with one step and a question card when a human must answer.
+### C1 — The valid path gives a proposal of one to three steps [CRITICAL]
+**Must be true:** with a dummy model that answers correctly, the result is an Interpretation. A dummy that picks one step gives a proposal of one step. A dummy that picks three steps gives a proposal of three steps, in order, with one Fill call for each step. The result holds a question card when a human must answer. A dummy that picks four steps gives an Abstain.
 **Evidence to check:**
 - Run the module tests.
 **Scoring:**
-- 1.0 — the test passes.
-- 0.5 — the proposal is built, but the card is missing.
-- 0.0 — the test fails.
+- 1.0 — the one-step, three-step, and four-step tests pass.
+- 0.5 — the one-step test passes, but a multi-step test fails.
+- 0.0 — the one-step test fails.
 
-### C2 — A quote that is not in the brief gives an Abstain, and so does a kind that is not allowed [CRITICAL]
-**Must be true:** the reasons are `quote_not_in_brief` and `kind_not_allowed`. Neither raises an exception.
+### C2 — A bad quote or a bad kind in any step gives an Abstain [CRITICAL]
+**Must be true:** a quote that is not in the brief gives `quote_not_in_brief`, and a kind that is not allowed gives `kind_not_allowed`. The check applies to each step, so a fault in step 2 or 3 also gives an Abstain that names the step. None raises an exception.
 **Evidence to check:**
-- Run the two tests.
+- Run the tests for step 1 and for a later step.
 **Scoring:**
-- 1.0 — both pass.
-- 0.5 — one passes.
+- 1.0 — both faults give an Abstain in step 1 and in a later step.
+- 0.5 — the faults give an Abstain in step 1 only.
 - 0.0 — either raises or proposes.
 
 ### C3 — Each call is stored with its model id, prompt hash, and raw reply

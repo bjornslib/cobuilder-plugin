@@ -1,0 +1,115 @@
+"""The Interpreter: Triage, Pick, one Fill for each step, and Card, as small DSPy calls.
+
+Code, not the model, sets the session, the author, the quote, and the confidence of each step, and checks
+the kind and the quote. Every failure ends as an Abstain with a logged reason. No exception leaves forward.
+"""
+from __future__ import annotations
+
+import logging
+from pathlib import Path
+from typing import Any
+
+import dspy
+from dspy.utils.exceptions import AdapterParseError
+from pydantic import ValidationError
+
+from priority import config
+from priority.interpreter.calls import CallRecorder
+from priority.interpreter.checks import check_steps
+from priority.interpreter.models import (ACTION_CLASS, ACTION_KINDS, Abstain, Advice, Facts, Interpretation,
+                                         Proposal, digest)
+from priority.interpreter.signatures import (ANSWER_DUE, FACT_FIELDS, FILL, HINT, RISK, PickStep, TriageLM,
+                                             WriteCard)
+
+INTERPRETER_MODEL = "openrouter/deepseek/deepseek-v4.1-flash-1017"
+MAX_TOKENS = 3000  # a reasoning model spends tokens on its reasoning first, so a low cap cuts the reply
+log = logging.getLogger("priority.interpreter")
+
+
+def interpreter_lm() -> dspy.LM:
+    """The real interpreter model. Only the command line calls this, because it reads the key."""
+    return dspy.LM(INTERPRETER_MODEL, api_key=config.load_key(), temperature=0, max_tokens=MAX_TOKENS,
+                   timeout=120, num_retries=0, cache=False)
+
+
+class _Fault(Exception):
+    """A step of the run failed. It carries the Abstain."""
+
+    def __init__(self, abstain: Abstain):
+        super().__init__(abstain.detail)
+        self.abstain = abstain
+
+
+class Interpreter(dspy.Module):
+    def __init__(self, lm: dspy.LM | None = None, *, allowed_kinds: tuple[str, ...] = ACTION_KINDS,
+                 log_dir: Path | str | None = None, session_id: str = ""):
+        super().__init__()
+        self.lm, self.allowed_kinds, self.log_dir, self.session_id = lm, tuple(allowed_kinds), log_dir, session_id
+        self.triage = dspy.Predict(TriageLM)
+        self.pick = dspy.Predict(PickStep)
+        self.fill = {kind: dspy.Predict(signature) for kind, signature in FILL.items()}
+        self.card = dspy.Predict(WriteCard)
+
+    def forward(self, brief) -> Interpretation:
+        text = brief.for_model()
+        recorder = CallRecorder(self.log_dir)
+        run = _Run(self, text, recorder, digest(text))
+        # The fallback of ChatAdapter would make a second model call after a parse fault. A run makes one.
+        adapter = dspy.ChatAdapter(use_json_adapter_fallback=False)
+        try:
+            with dspy.context(lm=self.lm or dspy.settings.lm, adapter=adapter, callbacks=[recorder]):
+                return run.interpret()
+        except _Fault as fault:
+            log.warning("abstain %s: %s", fault.abstain.reason, fault.abstain.detail)
+            return Interpretation(brief_id=run.brief_id, facts=run.facts, abstained=fault.abstain)
+
+
+class _Run:
+    """The state of one run: the brief text, the facts so far, and the call recorder."""
+
+    def __init__(self, owner: Interpreter, text: str, recorder: CallRecorder, brief_id: str):
+        self.owner, self.text, self.recorder, self.brief_id = owner, text, recorder, brief_id
+        self.facts: Facts | None = None
+
+    def call(self, stage: str, predictor: dspy.Predict, **inputs: Any):
+        """One model call. A parse fault gives invalid_output, and any other error gives model_error."""
+        self.recorder.stage = stage
+        try:
+            return predictor(brief_text=self.text, **inputs)
+        except (AdapterParseError, ValidationError) as error:
+            abstain = Abstain(reason="invalid_output", detail=f"{stage}: {type(error).__name__}: {error}")
+        except Exception as error:  # noqa: BLE001  (a model call may raise anything, and none may escape)
+            abstain = Abstain(reason="model_error", detail=f"{stage}: {type(error).__name__}: {error}")
+        raise _Fault(abstain)
+
+    def interpret(self) -> Interpretation:
+        reply = self.call("triage", self.owner.triage)
+        unsure = [name for name in reply.unsure if name in FACT_FIELDS]
+        self.facts = Facts(status=reply.status, needs_human=reply.needs_human, answer_class=reply.answer_class,
+                           risk=RISK[reply.risk], priority_hint=HINT[reply.priority_hint],
+                           confidence={name: 0.5 if name in unsure else 0.9 for name in FACT_FIELDS})
+        if reply.status not in ANSWER_DUE and not unsure:
+            return Interpretation(brief_id=self.brief_id, facts=self.facts)
+        picked = self.call("pick", self.owner.pick, facts=self.facts.model_dump_json(),
+                           allowed_kinds=list(self.owner.allowed_kinds)).steps
+        abstain = check_steps(self.text, picked, self.owner.allowed_kinds)
+        if abstain:
+            raise _Fault(abstain)
+        steps = [self.step(number, step) for number, step in enumerate(picked, start=1)]
+        card = self.call("card", self.owner.card).card if self.facts.needs_human else None
+        try:
+            proposal = Proposal(proposal_id="p-" + self.brief_id, brief_id=self.brief_id, steps=tuple(steps))
+        except ValidationError as error:
+            raise _Fault(Abstain(reason="invalid_output", detail=f"proposal: {error}")) from error
+        return Interpretation(brief_id=self.brief_id, facts=self.facts, advice=Advice(question=card, proposal=proposal))
+
+    def step(self, number: int, picked):
+        """Run Fill for one step. Code sets the fields that the model must not write."""
+        payload = self.call("fill", self.owner.fill[picked.kind], kind=picked.kind,
+                            evidence_quote=picked.evidence_quote).payload
+        try:
+            return ACTION_CLASS[picked.kind](
+                session_id=self.owner.session_id, author="interpreter", evidence_quote=picked.evidence_quote,
+                confidence=min(max(picked.confidence, 0.0), 1.0), **payload.model_dump())
+        except ValidationError as error:
+            raise _Fault(Abstain(reason="invalid_output", detail=f"step {number}: {error}")) from error

@@ -24,7 +24,7 @@ Three probes measure the model, the hooks (a Claude Code behaviour), and the tmu
 
 ## Slice Decomposition
 
-1. Slice 1: the model probe. It runs the interpreter model and the digest model on 3 redacted real transcripts, 3 calls each, and reports validity, quote-found rate, agreement, and the exact prompt. The brief gets three small fixes only: skip `<synthetic>` client records when it picks the stop, label the human line `HUMAN ASKED:`, and state the model's role. The full stop brief belongs to slice 4.
+1. Slice 1: the model probe. It runs the interpreter model and the digest model on 3 redacted real transcripts, 3 calls each, and reports validity, quote-found rate, agreement, and the exact prompt. Both models get the same classification prompt. The digest model's run checks that it answers and how stable it is. It does not test Digest, which is slice 6. The brief gets three small fixes only: skip `<synthetic>` client records when it picks the stop, label the human line `HUMAN ASKED:`, and state the model's role. The full stop brief belongs to slice 4.
 2. Slice 2: the hook command, its installer, and a scratch Claude Code session in a tmux pane. Claude Code runs the hooks. The pane only hosts the session and supplies `$TMUX_PANE`. Slice 2 also measures the held-hook dialog. Needs no slice 1.
 3. Slice 3: the tmux paste probe. Needs only a scratch pane.
 

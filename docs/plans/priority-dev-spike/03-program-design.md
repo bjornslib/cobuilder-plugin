@@ -23,7 +23,7 @@ The sketches `priority-dev/docs/design/schemas/interpreter_schemas.py` and `dspy
 
 ## Call stack
 
-`priority interpret` calls `build_brief`, then `Interpreter.forward`. That runs Triage, then Pick, then Fill, then Card, each through one `dspy.Predict`. Code checks the kind and the quote, builds the `Action`, and stores each call in `interpreter_call`.
+`priority interpret` calls `build_brief`, then `Interpreter.forward`. That runs Triage, then Pick, then Fill for each picked step, then Card, each through one `dspy.Predict`. Pick returns one to three steps. Code checks the kind and the quote of each step, builds the `Proposal`, and stores each call in `interpreter_call`.
 
 ## Test plan
 
