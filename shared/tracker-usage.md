@@ -125,6 +125,7 @@ Find the command for each workflow moment in this table.
 
 | Workflow moment | Command |
 |---|---|
+| A design is named | `set-program-stage <program> backlog --plans-dir <dir>` |
 | Session start | `doctor`, then `list-programs`. A build also runs `list-epics`. |
 | Design decided | `set-program-stage <program> <stage>` |
 | Branch created | `set-epic-state <epic> <state> --branch <branch>` |
@@ -481,7 +482,7 @@ $ uv run shared/tracker.py add-note demo-E1-s2 'checked the gate'
 }
 ```
 
-`set-program-stage` also sets the program's lifecycle. A program at stage `implemented` or `superseded` is closed. At any other stage, the epics set the lifecycle. On the beads adapter, a change of lifecycle also writes the bd status. The stage wins over an epic: a closed program stays closed when an epic starts.
+`set-program-stage` also sets the program's lifecycle. A program at stage `implemented` or `superseded` is closed. At any other stage, the epics set the lifecycle. On the beads adapter, a change of lifecycle also writes the bd status. The stage wins over an epic: a closed program stays closed when an epic starts. With `--plans-dir`, the call creates the program record when the tracker holds none, and it exits 4 when the design has no `goal.json`.
 
 `seed-from-files` takes the stage of a plan program from the `goal.json` of its design. It reads the design with the plan name first. Else it reads the design that the prefix of the first epic id names. The stage goes into the program envelope, and it sets the lifecycle. A refresh never replaces a stage that the program already holds. A seed repair closes an open program when its held stage is `implemented` or `superseded`, with or without a plan file. It does not close a program that holds the runtime stage `review`.
 

@@ -7,6 +7,7 @@ Run with: uv run pytest tests/test_tracker_program_create.py -q
 from __future__ import annotations
 
 import copy
+import json
 from typing import Any
 
 import pytest
@@ -181,6 +182,128 @@ def test_a_stage_write_on_a_wrong_kind_row_ignores_plans_dir(tmp_path: Any) -> N
         BeadsAdapter(_ListRunner(m.native_rows())).set_program_stage(
             "mapdemo/1", "approved", _mapped_plans(tmp_path)
         )
+
+
+# --- a live duplicate create makes the next stage write refuse ----------------------------------
+
+
+@pytest.mark.slow
+def test_real_bd_two_creates_then_a_write_refuses(tmp_path: Any) -> None:
+    # The spike (/tmp/e8-spike.md, S9) showed that a second create that bypasses
+    # the guard, as a clone that has not synced does, makes two rows for one cb
+    # id. The next stage write must refuse and name both bd ids.
+    import json
+
+    import _program_stage_support as ps
+    from tracker_port.port import AdapterError
+
+    support.require_bd()
+    plans = _mapped_plans(tmp_path)
+    adapter = ps.beads(tmp_path)
+
+    adapter.set_program_stage("mapped", "approved", plans)
+    adapter.set_program_stage("mapped", "approved", plans)
+
+    rows = json.loads(adapter.runner.run(["list", "--json", "--all"]))
+    held = [row for row in rows if row["metadata"]["cb"]["id"] == "mapped"]
+    assert len(held) == 1, f"expected one program row, bd holds {len(held)}"
+
+    # The raw create replays the argv of the first create, so the second row
+    # copies the metadata.cb of the first one (same cb id, same kind).
+    create = next(call for call in adapter.runner.calls if call[0] == "create")
+    adapter.runner.run(create)
+    rows = json.loads(adapter.runner.run(["list", "--json", "--all"]))
+    duplicates = sorted(row["id"] for row in rows if row["metadata"]["cb"]["id"] == "mapped")
+    assert len(duplicates) == 2, f"the raw create made no duplicate: {duplicates}"
+
+    with pytest.raises(AdapterError) as excinfo:
+        adapter.set_program_stage("mapped", "decided", plans)
+
+    message = str(excinfo.value)
+    assert duplicates[0] in message and duplicates[1] in message, message
+
+
+# --- a seed over a held program creates no second program row -----------------------------------
+
+
+class _SeedRunner:
+    """Answers the list read with fixed rows, the ref lookups with none, and the writes with ok.
+
+    A create returns a fresh bd id, and the next list read carries the new row,
+    as real bd does. This lets the seed find the parent it just created.
+    """
+
+    def __init__(self, rows: list[dict[str, Any]]) -> None:
+        self.rows = rows
+        self.calls: list[list[str]] = []
+        self._next = 0
+
+    def run(self, args: list[str]) -> str:
+        from tracker_port.beads import LIST_ARGS
+
+        self.calls.append(list(args))
+        if list(args) == LIST_ARGS:
+            return _json(self.rows)
+        if args[0] == "list":  # the ref lookup of a create
+            return "[]"
+        if args[0] == "create":
+            self._next += 1
+            bd_id = f"t-new{self._next}"
+            block = support.metadata_arg(args)["cb"]
+            self.rows.append(
+                {
+                    "id": bd_id,
+                    "status": "open",
+                    "external_ref": next(
+                        (args[i + 1] for i, flag in enumerate(args) if flag == "--external-ref"), None
+                    ),
+                    "metadata": {"cb": block},
+                }
+            )
+            return f"{bd_id}\n"
+        return ""  # each dep add, close, and the sync
+
+
+def _held_rows() -> list[dict[str, Any]]:
+    """The plan tree's building program, held in the tracker. Its epic and slice are not held."""
+    rows = m.native_rows()
+    by_cb = {row["metadata"]["cb"]["id"]: copy.deepcopy(row) for row in rows}
+    program = by_cb["mapdemo"]
+    program["id"] = "t-p"
+    program["metadata"]["cb"] = {"v": 1, "id": "building", "kind": "program", "envelope": {"stage": "approved"}}
+    program["external_ref"] = "building"
+    return [program]
+
+
+def _held_plans(tmp_path: Any) -> Any:
+    """Copy the plans-planstage tree, but keep only the held plan and its design."""
+    import shutil
+    from pathlib import Path
+
+    tree = support.FIXTURE_DIR / "plans-planstage"
+    root = Path(tmp_path) / "tree"
+    (root / "plans").mkdir(parents=True)
+    shutil.copytree(tree / "plans" / "building", root / "plans" / "building")
+    (root / "architecture" / "designs").mkdir(parents=True)
+    shutil.copytree(tree / "architecture" / "designs" / "building", root / "architecture" / "designs" / "building")
+    return root / "plans"
+
+
+def test_seed_over_a_held_program_creates_no_second_program_row(tmp_path: Any) -> None:
+    from tracker_port.beads import BeadsAdapter
+
+    runner = _SeedRunner(_held_rows())
+    adapter = BeadsAdapter(runner)
+
+    creates = adapter.seed_from_files(_held_plans(tmp_path))
+
+    created = [support.metadata_arg(call)["cb"] for call in runner.calls if call[0] == "create"]
+    # The seed creates the epic and the slice. The held program row stays alone.
+    assert [block["id"] for block in created] == ["building/E1", "building/1"], created
+    assert all(block["kind"] != "program" for block in created), created
+    assert sorted(record.id for record in creates) == ["building/1", "building/E1"]
+    programs = [block for block in created if block["kind"] == "program"]
+    assert programs == [], f"the seed created a program row: {programs}"
 
 
 # --- the fake adapter creates a missing program the same way ------------------------------------

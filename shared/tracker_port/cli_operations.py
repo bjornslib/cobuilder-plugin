@@ -53,6 +53,7 @@ def _claim_next_args(parser: argparse.ArgumentParser) -> None:
 def _set_program_stage_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("program")
     parser.add_argument("stage")
+    parser.add_argument("--plans-dir", type=Path, default=None)
 
 
 def _set_gate_value_args(parser: argparse.ArgumentParser) -> None:
@@ -158,7 +159,7 @@ OPERATIONS: dict[str, tuple[Callable[[argparse.ArgumentParser], None], Callable[
     "claim-slice": (_claim_slice_args, lambda a, n: a.claim_slice(n.id, n.claimant)),
     "claim-next": (_claim_next_args, lambda a, n: a.claim_next(n.claimant, n.under)),
     "migrate-mapping": (_migrate_mapping_args, lambda a, n: a.migrate_mapping(n.dry_run, n.plans_dir)),
-    "set-program-stage": (_set_program_stage_args, lambda a, n: a.set_program_stage(n.program, _design_stage(n.stage))),
+    "set-program-stage": (_set_program_stage_args, lambda a, n: a.set_program_stage(n.program, _design_stage(n.stage), n.plans_dir)),
     "set-gate-value": (_set_gate_value_args, lambda a, n: a.set_gate_value(n.program, n.gate, n.value)),
     "set-epic-state": (_set_epic_state_args, lambda a, n: a.set_epic_state(n.epic, n.state, n.branch)),
     "set-slice-state": (

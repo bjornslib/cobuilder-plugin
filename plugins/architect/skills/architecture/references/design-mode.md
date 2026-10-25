@@ -57,6 +57,12 @@ The engineer states the outcome and names the design **before** the agent
 reads a file. The outcome names a state, not an activity. Write it into
 `goal.outcome` and `goal.done_when`.
 
+When `goal.json` holds `name`, `title`, and `outcome`, run `tracker.py sync`.
+Then run `tracker.py set-program-stage <name> backlog --plans-dir docs/plans`.
+This creates the program record. Run `tracker.py sync` again. Exit 2 means
+that no tracker is configured. In that case write `"stage": "backlog"` into
+`goal.json`.
+
 Then search existing designs for a duplicate. The match is semantic, not
 a keyword grep. For each candidate under `docs/architecture/designs/*/`,
 read `goal.outcome`, `intent.problem`, and the ADR draft. Judge whether
@@ -421,7 +427,7 @@ Do not ask for a budget. An engineer who wants different limits says so.
 Write workflow state only through the tracker script. [shared/tracker-usage.md](../../../../../shared/tracker-usage.md) lists every operation. The call form is `uv run "${CLAUDE_PLUGIN_ROOT}/shared/tracker.py" <operation> args`.
 
 1. When the engineer approves a gate, run `tracker.py set-gate-value <program> <gate> <date>`. Then run `tracker.py add-note <program> <text>`.
-2. When the engineer decides or approves the design, run `tracker.py set-program-stage <program> <stage>`. The stage is one of the stages in the table in section 12.
+2. When the engineer decides or approves the design, run `tracker.py set-program-stage <program> <stage> --plans-dir docs/plans`. The stage is one of the stages in the table in section 12. Exit 2 means no tracker is configured, so write `stage` into `goal.json`. Exit 3 means stop and tell the engineer. Never write `stage` into `goal.json` after an exit 0.
 3. Run `tracker.py regenerate-status-files <program> --plans-dir <dir>` to refresh `00-status.md`. Do not edit `00-status.md` by hand.
 
 Each call exits with a code. Branch on the code only, and never parse the message. [Failure and refusal](../../../../../shared/tracker-usage.md#failure-and-refusal) lists the exit codes.
