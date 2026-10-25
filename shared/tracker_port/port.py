@@ -32,6 +32,9 @@ class TrackerPort(Protocol):
 
     def list_pull_requests(self) -> list[TrackerRecord]: ...
 
+    def all_records(self) -> list[TrackerRecord]:
+        """Every program, epic, slice, and pull request record, from one read."""
+
     def get_slice(self, id: str) -> TrackerRecord: ...
 
     def next_ready(self, kind: str = "slice", under: str | None = None) -> list[TrackerRecord]: ...

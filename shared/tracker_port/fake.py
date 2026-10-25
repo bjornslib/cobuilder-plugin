@@ -76,6 +76,9 @@ class FakeAdapter(_PullRequestMixin, _FakeSkipMixin, _FakeActivityMixin):
     def _of_kind(self, kind: Kind) -> list[TrackerRecord]:
         return [record for record in self._records if record.kind == kind]
 
+    def all_records(self) -> list[TrackerRecord]:
+        return list(self._records)
+
     def _record_of(self, id: str, kind: Kind | None = None) -> TrackerRecord:
         for record in self._records:
             if record.id == id and (kind is None or record.kind == kind):

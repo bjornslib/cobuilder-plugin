@@ -163,6 +163,11 @@ class BeadsAdapter(_LookupMixin, _ReadyMixin, _ClaimNextMixin, _SyncModeMixin, _
     def list_pull_requests(self) -> list[TrackerRecord]:
         return self._of_kind("pr")
 
+    def all_records(self) -> list[TrackerRecord]:
+        rows = self._rows()
+        to_cb_id = self._cb_ids(rows)
+        return sorted((self._record(row, to_cb_id) for row in rows), key=lambda record: record.id)
+
     def get_slice(self, id: str) -> TrackerRecord:
         record = self._records().get(id)
         if record is None or record.kind != "slice":

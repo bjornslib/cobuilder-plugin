@@ -336,7 +336,7 @@ def project_goal(raw: object, rel: Path) -> tuple[dict | None, list[str]]:
             if error:
                 failures.append(f"{rel}: {error}")
     stage = raw.get("stage")
-    if stage not in DESIGN_STAGES:
+    if stage is not None and stage not in DESIGN_STAGES:
         failures.append(
             f"{rel}: `stage` must be one of {', '.join(DESIGN_STAGES)} (got {stage!r}). "
             "The Work board shows no design with any other stage."
@@ -495,23 +495,68 @@ def design_epic_entities(design_id: str, goal: dict, tracker_epics: dict) -> lis
     return entities
 
 
+def resolve_design_stage(
+    design_id: str, goal_stage: object, snapshot: reader.TrackerSnapshot, warnings: list[str]
+) -> tuple[str | None, str]:
+    """Resolve one design's stage: the tracker program first, then the goal stage.
+
+    Returns (stage, stage_source). A stage outside DESIGN_STAGES raises
+    ValueError with the source and the value; the caller reports it as a
+    failure. No stage anywhere also raises ValueError, and its message names
+    the call that sets the stage.
+    """
+    tracker_record = snapshot.programs.get(design_id)
+    tracker_stage = tracker_record.envelope.get("stage") if tracker_record else None
+    if tracker_stage is not None:
+        if tracker_stage not in DESIGN_STAGES:
+            raise ValueError(f"the tracker stage of design {design_id} is not a design stage (got {tracker_stage!r})")
+        if goal_stage is not None:
+            if goal_stage not in DESIGN_STAGES:
+                raise ValueError(
+                    f"the goal.json stage of design {design_id} is not a design stage (got {goal_stage!r})"
+                )
+            if goal_stage != tracker_stage:
+                warnings.append(
+                    f"stage drift: design {design_id} holds {tracker_stage!r} in the tracker "
+                    f"and {goal_stage!r} in goal.json; the tracker wins"
+                )
+        return str(tracker_stage), "tracker"
+    if goal_stage is not None:
+        if goal_stage not in DESIGN_STAGES:
+            raise ValueError(f"the goal.json stage of design {design_id} is not a design stage (got {goal_stage!r})")
+        return str(goal_stage), "goal"
+    raise ValueError(
+        f"design {design_id} holds no stage. Run "
+        f"`tracker.py set-program-stage {design_id} backlog --plans-dir docs/plans` to set one."
+    )
+
+
 def collect_designs(
     repo: Path,
+    snapshot: reader.TrackerSnapshot | None = None,
+    warnings: list[str] | None = None,
 ) -> tuple[list[dict], list[dict], dict[str, dict], list[str]]:
     """Read every design directory.
 
     Returns (design_entities, epic_entities, viewer_records_by_name, failures).
     An epic id is scoped as ``<design>/<epic-id>``, because a bare epic id
-    such as ``E1`` repeats across designs.
+    such as ``E1`` repeats across designs. With no snapshot the callers that
+    predate the snapshot read the tracker themselves. Stage-drift and
+    unreadable-tracker notes go onto ``warnings`` when the caller gives one.
     """
     designs_dir = repo / DESIGN_SOURCE_SUBDIR
     found = discover_goal_files(designs_dir)
     failures: list[str] = []
+    if warnings is None:
+        warnings = []
     viewer_records: dict[str, dict] = {}
     design_entities: list[dict] = []
     epic_entities: list[dict] = []
     # An epic's branch, pr, and state live in the tracker. A missing record or key reads as null.
-    tracker_epics = reader.epic_records(repo)
+    tracker_epics = snapshot.epics if snapshot is not None else reader.epic_records(repo)
+    tracker_error = snapshot.error if snapshot is not None else None
+    if tracker_error:
+        warnings.append(f"the tracker could not be read: {tracker_error}")
 
     for path in found:
         design_id = path.parent.name
@@ -530,11 +575,26 @@ def collect_designs(
             continue
 
         viewer_records[name] = design_viewer_record(repo, path.parent, goal, failures)
+        try:
+            stage, stage_source = resolve_design_stage(design_id, goal.get("stage"), snapshot, warnings)
+        except ValueError as error:
+            if tracker_error:
+                failures.append(f"{rel}: the tracker is unreadable, so no stage could be resolved: {error}")
+            else:
+                failures.append(f"{rel}: {error}")
+            continue
         design_entities.append(
-            {"id": design_id, "name": name, "outcome": goal.get("outcome"), "stage": goal.get("stage")}
+            {
+                "id": design_id,
+                "name": name,
+                "outcome": goal.get("outcome"),
+                "stage": stage,
+                "stage_source": stage_source,
+            }
         )
         epic_entities.extend(design_epic_entities(design_id, goal, tracker_epics))
 
+    # A warning stays a warning: the caller prints it, and it never fails the build.
     return design_entities, epic_entities, viewer_records, failures
 
 
@@ -654,8 +714,12 @@ def collect_districts(bundle_dir: Path) -> tuple[list[dict], list[str]]:
 # With no tracker config, the files adapter reads each 04-slices.md table and its
 # 00-status.md checkbox lines. The projector shapes each slice.
 # STATUS_SLICE_RE lives in tracker_port/files.py.
-def collect_slices(repo: Path) -> tuple[list[dict], list[str]]:
-    records, conflicts = reader.slice_records(repo)
+def collect_slices(repo: Path, snapshot: reader.TrackerSnapshot | None = None) -> tuple[list[dict], list[str]]:
+    if snapshot is None:
+        records, conflicts = reader.slice_records(repo)
+    else:
+        records = list(snapshot.slices.values())
+        conflicts = []
     failures = [f"{conflict['plan']}: {conflict['reason']}" for conflict in conflicts]
     return projector.slice_entities(records), failures
 
@@ -1338,11 +1402,14 @@ def resolve_joins(
     adrs_viewer: dict[str, dict],
     designs_viewer: dict[str, dict],
     entities: dict[str, list[dict]],
+    snapshot: reader.TrackerSnapshot | None = None,
 ) -> tuple[dict, list[str]]:
     """Resolve every join this slice adds. Returns (joins, warnings).
 
     A warning is a degraded-but-visible condition, such as ``gh`` being
     unavailable. It never aborts the build, unlike a ``failures`` entry.
+    With no snapshot the callers that predate the snapshot read the
+    tracker themselves.
     """
     warnings: list[str] = []
 
@@ -1467,11 +1534,19 @@ def build_index(repo: Path, bundle_dir: Path) -> tuple[dict, dict, dict, list[st
     """
     failures: list[str] = []
 
+    # One read of the whole tracker feeds the designs, the slices, and the joins.
+    tracker_snapshot = reader.snapshot(repo)
+
     adr_entities, adrs_viewer, adr_failures = collect_adrs(repo)
     failures.extend(adr_failures)
 
-    design_entities, epic_entities, designs_viewer, design_failures = collect_designs(repo)
+    design_warnings: list[str] = []
+    design_entities, epic_entities, designs_viewer, design_failures = collect_designs(
+        repo, tracker_snapshot, design_warnings
+    )
     failures.extend(design_failures)
+    for design_warning in design_warnings:
+        print(f"warning: {design_warning}", file=sys.stderr)
 
     context_entities, boundary_rule_entities, context_failures = collect_contexts(repo)
     failures.extend(context_failures)
@@ -1479,7 +1554,7 @@ def build_index(repo: Path, bundle_dir: Path) -> tuple[dict, dict, dict, list[st
     district_entities, district_failures = collect_districts(bundle_dir)
     failures.extend(district_failures)
 
-    slice_entities, plan_failures = collect_slices(repo)
+    slice_entities, plan_failures = collect_slices(repo, tracker_snapshot)
     failures.extend(plan_failures)
 
     pull_request_entities, pr_failures = collect_pull_requests(bundle_dir)
@@ -1510,7 +1585,7 @@ def build_index(repo: Path, bundle_dir: Path) -> tuple[dict, dict, dict, list[st
         "rubric": collect_rubrics(repo),
     }
 
-    joins, join_warnings = resolve_joins(repo, adrs_viewer, designs_viewer, entities)
+    joins, join_warnings = resolve_joins(repo, adrs_viewer, designs_viewer, entities, tracker_snapshot)
     for warning in join_warnings:
         print(f"warning: {warning}", file=sys.stderr)
     for name, record in sorted(designs_viewer.items()):
