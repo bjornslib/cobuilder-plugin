@@ -66,7 +66,7 @@ from tracker_port import projector, reader  # noqa: E402
 # Bumped to 1.4 when the index gained the "rubric" entity kind and the
 # .cobuilder/rubrics tracked subtree. Nothing gates on this value; it names the
 # shape for a reader, the way the module docstring names the sources.
-INDEX_SCHEMA_VERSION = "1.4"
+INDEX_SCHEMA_VERSION = "1.5"
 
 SELF_BUNDLE = Path(".cobuilder-architect") / "self"
 ADR_SOURCE_SUBDIR = Path("docs") / "architecture" / "adr"
@@ -1171,16 +1171,87 @@ def refine_epic_status(epic_status: dict[str, str], epic_to_pr: dict[str, int], 
             epic_status[epic_id] = str(state).lower()
 
 
-# A tracker lifecycle of in_progress or closed is an explicit workflow fact. It outranks the pull request join.
-LIFECYCLE_STATUS = {"in_progress": "in_progress", "closed": "completed"}
-
-
-def apply_epic_lifecycle(epic_status: dict[str, str], epics: list[dict]) -> None:
-    """Let an epic's tracker lifecycle replace the pull request status, unless the lifecycle is open."""
+# The word of an epic: a closed lifecycle or an implemented design reads completed, a superseded design
+# reads superseded, and an in_progress lifecycle reads in_progress. An open epic keeps the pull request word.
+def apply_epic_lifecycle(epic_status: dict[str, str], epics: list[dict], stages: dict[str, str]) -> None:
+    """Set each epic's status word from its tracker lifecycle and its design stage."""
     for epic in epics:
-        word = LIFECYCLE_STATUS.get(epic.get("state") or "")
-        if word is not None:
-            epic_status[epic["id"]] = word
+        lifecycle = epic.get("state")
+        stage = stages.get(str(epic["id"]).split("/", 1)[0])
+        if lifecycle == "closed" or stage == "implemented":
+            epic_status[epic["id"]] = "completed"
+        elif stage == "superseded":
+            epic_status[epic["id"]] = "superseded"
+        elif lifecycle == "in_progress":
+            epic_status[epic["id"]] = "in_progress"
+
+
+def _slice_order(record) -> tuple[str, int]:
+    number = record.envelope.get("n")
+    if number is None:
+        tail = re.search(r"(\d+)$", record.id)
+        number = int(tail.group(1)) if tail else 0
+    epic = reader.epic_key(str(record.envelope.get("feature") or ""), record.parent or "")
+    return epic, int(number)
+
+
+def _ready_by_design(snapshot: reader.TrackerSnapshot | None) -> dict[str, list]:
+    """The ready slice records of each design, ordered by epic id, then slice number."""
+    by_design: dict[str, list] = {}
+    for record in (snapshot.ready if snapshot is not None else None) or []:
+        epic, _ = _slice_order(record)
+        by_design.setdefault(epic.split("/", 1)[0], []).append(record)
+    return {design: sorted(rows, key=_slice_order) for design, rows in by_design.items()}
+
+
+def _tracker_pull_requests(snapshot: reader.TrackerSnapshot | None, design_id: str) -> list[dict]:
+    rows: list[dict] = []
+    for record in (snapshot.pull_requests.values() if snapshot is not None else []):
+        epics = [epic for epic in record.tracks if epic.split("/", 1)[0] == design_id]
+        if not epics:
+            continue
+        match = re.fullmatch(r"gh-(\d+)", record.external_ref or "")
+        rows.append(
+            {
+                "ref": record.id,
+                "number": int(match.group(1)) if match else None,
+                "state": "merged" if record.lifecycle == "closed" else "open",
+                "epics": epics,
+            }
+        )
+    return rows
+
+
+def resolve_design_tracker(
+    designs: list[dict], snapshot: reader.TrackerSnapshot | None, warnings: list[str]
+) -> dict[str, dict]:
+    """One entry for each design: its stage source, its next ready slice, and its tracked pull requests."""
+    readable = snapshot is not None and snapshot.error is None
+    ready = _ready_by_design(snapshot) if readable else {}
+    result: dict[str, dict] = {}
+    for design in designs:
+        design_id = design["id"]
+        rows = ready.get(design_id, [])
+        next_ready = rows[0].id if rows else None
+        if rows and design.get("stage") in ("implemented", "superseded"):
+            warnings.append(
+                f"the tracker lists slice {rows[0].id} as ready, but design {design_id} is {design['stage']}"
+            )
+            next_ready = None
+        result[design_id] = {
+            "stage_source": design.get("stage_source") if readable else "goal",
+            "next_ready": next_ready,
+            "pull_requests": _tracker_pull_requests(snapshot, design_id) if readable else [],
+        }
+    return result
+
+
+def tracker_join(snapshot: reader.TrackerSnapshot | None, repo: Path) -> dict:
+    adapter = reader.open_adapter(repo) if snapshot is not None else None
+    return {
+        "adapter": adapter.name if adapter is not None else None,
+        "read": snapshot is not None and snapshot.error is None and adapter is not None,
+    }
 
 
 def adrs_reaching_design(adr_id: str, adr_record: dict, design_records: dict[str, dict]) -> list[str]:
@@ -1415,7 +1486,8 @@ def resolve_joins(
 
     epic_to_pr, epic_status = resolve_epic_pull_requests(entities["epic"], warnings)
     refine_epic_status(epic_status, epic_to_pr, entities["pull_request"])
-    apply_epic_lifecycle(epic_status, entities["epic"])
+    stages = {design["id"]: design.get("stage") for design in entities.get("design", [])}
+    apply_epic_lifecycle(epic_status, entities["epic"], stages)
 
     adr_to_context, adr_to_district = resolve_adr_context_district(adrs_viewer)
 
@@ -1445,6 +1517,8 @@ def resolve_joins(
         "adr_to_context": adr_to_context,
         "adr_to_district": adr_to_district,
         "feature_gates": feature_gates,
+        "tracker": tracker_join(snapshot, repo),
+        "design_tracker": resolve_design_tracker(entities.get("design", []), snapshot, warnings),
     }
     return joins, warnings
 

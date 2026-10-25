@@ -67,7 +67,7 @@ def slice_entities(records: Sequence[TrackerRecord]) -> list[dict[str, Any]]:
                 "ends_with": envelope["ends_with"],
                 "score": _score_text(score),
                 "attempts": envelope.get("attempts", 1 if record.lifecycle == "closed" else 0),
-                "state": "completed" if record.lifecycle == "closed" else "planned",
+                "state": {"closed": "completed", "in_progress": "in_progress"}.get(record.lifecycle, "planned"),
             }
         )
     # A tracker lists records in its own order. The index lists plan folder, then slice number.
