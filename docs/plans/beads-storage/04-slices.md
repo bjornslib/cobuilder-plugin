@@ -51,8 +51,8 @@ Each slice ends in one thing that a test asserts or a reader sees. A slice never
 | 29 | `beads-storage/E7` | **`migrate-mapping` with dry run** | A legacy scratch tracker converts in one sync. A dry run writes nothing. A second run changes nothing. | 1 (attempt 1) | done |
 | 30 | `beads-storage/E7` | **Docs, install, usage** | The docs name the two operations and the migration. `tracker.py --help` lists them. | 1 (attempt 2) | done |
 | | **`beads-storage/E8` — The tracker is the source of stage and status, and the Work board shows it.** The tracker holds a program's stage and creates its record. The index and the Work board read stage, epic and slice status, the next ready slice, and pull request state from the tracker. A repair step brings old records in line. It starts after E7. See `epic-E8-design.md` and ADR-0047. | | | | |
-| 31 | `beads-storage/E8` | **Spike notes into the adapter notes** | The notes hold each spike finding with its command and exit code | — | pending |
-| 32 | `beads-storage/E8` | **The tracker creates the program record, and design mode says so** | `set-program-stage --plans-dir` creates a missing record. A write refuses on a duplicate. | — | pending |
+| 31 | `beads-storage/E8` | **Spike notes into the adapter notes** | The notes hold each spike finding with its command and exit code | 1 (attempt 1) | done |
+| 32 | `beads-storage/E8` | **The tracker creates the program record, and design mode says so** | `set-program-stage --plans-dir` creates a missing record. A write refuses on a duplicate. | 1 (attempt 1) | done |
 | 33 | `beads-storage/E8` | **The index reads the stage from the tracker, with a fallback** | `design.stage` comes from the tracker, then from the file. The build makes at most three bd calls. | — | pending |
 | 34 | `beads-storage/E8` | **The strip step and the schema change** | Design mode writes no `goal.stage` when a tracker exists. The strip script passes its tests. | — | pending |
 | 35 | `beads-storage/E8` | **Epic and slice status on the board** | The words follow the table. `done` counts `completed` epics. | — | pending |
