@@ -72,10 +72,11 @@ word and solve different things, or share no words and collide.
 **Report what you searched and how many designs exist.** Never a bare
 "none found". If the tree is empty, say so and say this is the first
 design. If you searched N designs and none match, say that. On a hit,
-show the match and its `goal.stage`. Let the engineer choose with
-`AskUserQuestion`: resume it, supersede it, or proceed because it is
-genuinely different. A superseded design gets `stage: "superseded"` and
-a pointer to the new name.
+show the match and its stage, read with `tracker.py list-programs`. Let the
+engineer choose with `AskUserQuestion`: resume it, supersede it, or proceed
+because it is genuinely different. For a superseded design, run
+`tracker.py set-program-stage <old name> superseded`, and add a pointer to the
+new name.
 
 ## 4. Stage 1 — Ground
 
@@ -458,7 +459,8 @@ fails, it scans every `goal.json` for a matching `epics[].branch`.
 
 ## 12. `goal.json` schema
 
-Do not keep `branch` as a scalar. The join lives on `epics`.
+`goal.json` holds no workflow state. The tracker holds the stage of the program,
+and the branch, the pull request, and the state of each epic.
 
 ```json
 {
@@ -477,14 +479,9 @@ Do not keep `branch` as a scalar. The join lives on `epics`.
   },
   "limits": { "warn_after_rounds": 3, "cutoff_rounds": 6 },
   "epics": [
-    {"id": "E1", "slug": "guest-checkout",
-     "outcome": "<testable criterion>",
-     "branch": "design/checkout/guest-checkout",
-     "pr": 42, "state": "merged"},
-    {"id": "E2", "slug": "saved-cards",
-     "outcome": "<...>", "branch": null, "pr": null, "state": "planned"}
+    {"id": "E1", "slug": "guest-checkout", "outcome": "<testable criterion>"},
+    {"id": "E2", "slug": "saved-cards", "outcome": "<...>"}
   ],
-  "stage": "approved",
   "supersedes": null,
   "rounds": [
     { "n": 1, "changed": true, "feedback_class": "material" }
@@ -501,9 +498,11 @@ after a stage-6 reviewer round returned, not when the spawn was skipped.
 Design mode writes epic slugs at stage 7. It does not write testable
 criteria. A later factory pass may fill `epics[].outcome`.
 
-`goal.stage` takes one of six values. The Work board reads exactly these
-(`_bundle_meta.DESIGN_STAGES`). `build_index.py` rejects a goal with any other
-value or none, because a design with another stage shows in no lane.
+The program stage lives in the tracker and takes one of six values. The Work
+board reads exactly these (`_bundle_meta.DESIGN_STAGES`). `build_index.py`
+rejects a stage with any other value, and it rejects a design with no stage,
+because such a design shows in no lane. A legacy `stage` in `goal.json` is the
+fallback for a repo with no tracker.
 
 | Value | Meaning |
 |---|---|
@@ -515,7 +514,7 @@ value or none, because a design with another stage shows in no lane.
 | `superseded` | Stage 0 replaced this design with a newer one. |
 
 `design` is a stage of `assessment.json`, not of `goal.json`. Do not write it
-into `goal.stage`. A design reaches `implemented` when every epic has a merged
+as the program stage. A design reaches `implemented` when every epic has a merged
 pull request.
 
 ## 13. What this mode does not do

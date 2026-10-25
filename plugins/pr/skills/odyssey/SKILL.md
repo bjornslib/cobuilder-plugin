@@ -625,7 +625,8 @@ tiers.
 
    After the lookup above finds a design, do not stop there. Collect
    every design whose `epics[].branch` matches the current branch. Add
-   any design whose `goal.stage` is not `implemented` and whose declared
+   any design whose stage is not `implemented` (read it with
+   `tracker.py list-programs`) and whose declared
    modules the diff touches. This gives the full candidate set.
 
    If exactly one design results, behave exactly as today. Nothing
@@ -794,9 +795,12 @@ This stage runs after the PR merges. Run the same steps 1 through 4, then:
    whole ADR. No single PR was going to satisfy all of a multi-epic
    design.
 
-   If this merge completes the last epic, roll `goal.stage` to
-   `implemented`. If some epics remain, set `goal.stage` to
-   `approved`.
+   If this merge completes the last epic, run
+   `tracker.py set-program-stage <design> implemented`. If some epics remain,
+   run `tracker.py set-program-stage <design> approved`. Exit 2 means no
+   tracker is configured, so write `stage` into `goal.json`. Exit 3 means
+   stop and tell the engineer. Never write `stage` into `goal.json` after an
+   exit 0.
 
    Stamp `approved_by` on the ADR this design wrote (the proposed record
    in `docs/architecture/adr/`), now that a human has merged it. An agent
