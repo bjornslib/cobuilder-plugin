@@ -2,16 +2,25 @@
 
 The contract that these tests pin for `priority-dev/probes/model_probe.py`:
 
-- `MODEL_ID`: the model id string, `openrouter/mistralai/mistral-nemo`.
-- `call_model(prompt: str) -> str`: the one function that reaches the model. It returns the raw
-  reply text, and it raises on a failed call. The tests replace it with a stub.
-- `run(transcript, *, log_dir=None) -> ProbeResult`: one model call for each run. The model reply is a
-  JSON object with the keys `status`, `needs_human`, `answer_class`, `risk`, `priority_hint`, `kind`,
-  and `evidence_quote`. `log_dir` holds `calls.jsonl`, one JSON object for each model call.
+- `INTERPRETER_MODEL` is `openrouter/deepseek/deepseek-v4.1-flash-1017`. `DIGEST_MODEL` is
+  `openrouter/thinkingmachines/inkling-small`. The probe has no `MODEL_ID`.
+- `call_model(prompt: str, model=INTERPRETER_MODEL)`: the one function that reaches a model. It returns
+  a str, or a dict with the keys `text` and `reasoning_content`, and it raises on a failed call. The
+  tests replace it with a stub. Any other reply shape ends as an Abstain `invalid_output`.
+- `run(transcript, *, model=INTERPRETER_MODEL, log_dir=None) -> ProbeResult`: one model call for each
+  transcript. The model text is a JSON object with the keys `status`, `needs_human`, `answer_class`,
+  `risk`, `priority_hint`, `kind`, and `evidence_quote`. `log_dir` holds `calls.jsonl`, one JSON object
+  for each model call, with the keys `model_id`, `prompt_hash`, `prompt`, `raw_reply`, `reasoning`, and
+  `error` (on failure).
+- `repeat(transcript, n, *, model=INTERPRETER_MODEL, log_dir=None) -> list[ProbeResult]`: n calls.
+- `agreement(results) -> dict`: for the five facts and `kind`, the share of results that hold the most
+  common value. An Abstain counts as the value `abstain`.
 - `ProbeResult`: the attributes `status`, `needs_human`, `answer_class`, `risk`, `priority_hint`, `kind`,
   `quote`, `quote_in_text`, `abstain_reason`, and `abstain_detail`. `abstain_reason` is None when the
   probe does not abstain.
-- `main(argv) -> int`: prints one `name: value` line for each of the first eight attributes.
+- `main(argv) -> int`: prints one `name: value` line for each of the first eight attributes. With
+  `--repeat N` above 1, it also prints `agreement: <field>=<share>` for each of the six fields.
+  `--model interpreter|digest` picks the model.
 """
 from __future__ import annotations
 
@@ -24,6 +33,9 @@ PRIORITY_DEV = Path(__file__).resolve().parents[1]
 PROBE_PATH = PRIORITY_DEV / "probes" / "model_probe.py"
 FIXTURES = PRIORITY_DEV / "fixtures" / "made-up"
 
+INTERPRETER_MODEL = "openrouter/deepseek/deepseek-v4.1-flash-1017"
+DIGEST_MODEL = "openrouter/thinkingmachines/inkling-small"
+
 # Made-up secrets. They match the planted values in fixtures/made-up/with-secret.jsonl.
 OPENROUTER_KEY = "sk-or-v1-" + "ab12" * 6
 GITHUB_TOKEN = "ghp_" + "Zy9x" * 6
@@ -35,9 +47,19 @@ FINAL_TEXT = ("The helper has no retry. Should I retry three times with a fixed 
               "or use exponential backoff? Reply with fixed or backoff.")
 ASK_TEXT = "Add a retry to the upload helper."
 
+# The text of fixtures/made-up/synthetic-tail.jsonl. It ends on a `<synthetic>` assistant record.
+TAIL_ASK_TEXT = "Rename the config key timeout to timeout_seconds."
+TAIL_FINAL_TEXT = ("I renamed the key in three files. "
+                   "Should I also update the sample config in the docs folder?")
+TAIL_QUOTE = "Should I also update the sample config in the docs folder"
+TAIL_SYNTHETIC_TEXT = "No response requested."
+
 FACTS = {"status": "waiting_answer", "needs_human": True, "answer_class": "decide",
          "risk": "low", "priority_hint": "soon"}
 FACT_NAMES = tuple(FACTS)
+AGREEMENT_FIELDS = (*FACT_NAMES, "kind")
+
+UNSET = object()
 
 
 def reply(**changes) -> str:
@@ -55,15 +77,25 @@ def load_probe():
 
 
 class StubModel:
-    """Stands in for `call_model`. It records each prompt, and it returns or raises as set."""
+    """Stands in for `call_model`. It records each prompt and model, and it returns or raises as set.
 
-    def __init__(self, text: str | None = None, error: Exception | None = None):
-        self.text, self.error, self.prompts = text, error, []
+    `text` is the one reply for every call. It may be any shape, None included. `replies` is a list of
+    replies for successive calls, and the last one repeats. `error` makes every call raise.
+    """
 
-    def __call__(self, prompt: str) -> str:
+    def __init__(self, text=UNSET, error: Exception | None = None, replies: list | None = None):
+        self.text, self.error, self.replies = text, error, replies
+        self.prompts: list[str] = []
+        self.models: list = []
+
+    def __call__(self, prompt: str, model=None):
         self.prompts.append(prompt)
+        self.models.append(model)
         if self.error is not None:
             raise self.error
+        if self.replies is not None:
+            return self.replies[min(len(self.prompts), len(self.replies)) - 1]
+        assert self.text is not UNSET, "the stub has no reply set"
         return self.text
 
 

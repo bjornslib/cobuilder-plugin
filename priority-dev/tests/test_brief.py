@@ -36,10 +36,9 @@ def test_build_brief_signature():
     mod = brief_api()
     sig = inspect.signature(mod.build_brief)
     params = list(sig.parameters.values())
-    assert len(params) == 2
-    assert params[0].name == "transcript"
-    assert params[1].name == "stop"
+    assert [p.name for p in params] == ["transcript", "stop", "previous", "shrink_lm", "log_dir"]
     assert params[1].default is None
+    assert params[2].default is None
 
 
 def test_stop_brief_fields():

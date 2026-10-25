@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from typing import Union
+from typing import Any, Union
 
 BUDGET_CHARS = 160_000
 
@@ -63,6 +63,15 @@ class Abstain:
 
 
 @dataclass(frozen=True)
+class ShrunkEntry:
+    """One text that the Shrink call made shorter: the index in `StopBrief.items`, the part, and the lengths."""
+    item: int
+    part: str  # "input" or "result"
+    before: int
+    after: int
+
+
+@dataclass(frozen=True)
 class StopBrief:
     ask: Ask
     items: tuple[RunItem, ...]
@@ -71,12 +80,14 @@ class StopBrief:
     client_messages: tuple[str, ...]
     after_stop: tuple[AfterLine, ...]
     redactions: int = 0
+    previous: Any = None  # the RunDigest of the run before, or None
+    shrunk: tuple[ShrunkEntry, ...] = ()
 
     def for_model(self) -> str:
         return BriefText(self._render(exclude_older_payloads=False))
 
     def _render(self, exclude_older_payloads: bool = False) -> str:
-        lines: list[str] = ["HUMAN ASKED:", self.ask.text, "RUN:"]
+        lines: list[str] = self._render_previous() + ["HUMAN ASKED:", self.ask.text, "RUN:"]
         tool_items = [it for it in self.items if it.type == "tool"]
         older_tools = set(tool_items[:-3]) if len(tool_items) > 3 else set()
         for item in self.items:
@@ -102,3 +113,12 @@ class StopBrief:
             if line.source == "human":
                 lines.append(f"[human] {line.text}")
         return "\n".join(lines)
+
+    def _render_previous(self) -> list[str]:
+        if self.previous is None:
+            return []
+        lines = ["PREVIOUS RUN:", f"ran: {self.previous.ran}", f"result: {self.previous.result}"]
+        for title, texts in (("open items", self.previous.open_items), ("decisions", self.previous.decisions)):
+            if texts:
+                lines += [f"{title}:", *(f"- {text}" for text in texts)]
+        return lines

@@ -17,6 +17,7 @@ from priority.brief.models import (
     ToolItem,
 )
 from priority.brief.redact import redact_with_count
+from priority.brief.shrink import shrink_brief
 from priority.brief.transcript import (
     classify_records,
     collect_after_stop,
@@ -105,8 +106,13 @@ def _check_budget(brief: StopBrief) -> Abstain | None:
     )
 
 
-def build_brief(transcript: Path, stop: int | None = None) -> StopBrief | Abstain:
-    """Build a StopBrief from a transcript path and optional 1-based stop index."""
+def build_brief(transcript: Path, stop: int | None = None, previous: Any = None, *,
+                shrink_lm: Any = None, log_dir: Path | str | None = None) -> StopBrief | Abstain:
+    """Build a StopBrief from a transcript path and optional 1-based stop index.
+
+    `previous` is the RunDigest of the run before. With `shrink_lm`, an over-budget brief shrinks its largest
+    older inputs and results, one call at a time, until it fits.
+    """
     records = read_records(transcript)
     tool_results = collect_tool_results(records)
     classified = classify_records(records)
@@ -139,7 +145,12 @@ def build_brief(transcript: Path, stop: int | None = None) -> StopBrief | Abstai
         client_messages=client_messages,
         after_stop=tuple(after_stop),
         redactions=after_redactions + ask_redactions + item_redactions,
+        previous=previous,
     )
 
     abstain = _check_budget(brief)
-    return abstain if abstain is not None else brief
+    if abstain is None:
+        return brief
+    if shrink_lm is None or abstain.final:
+        return abstain
+    return shrink_brief(brief, shrink_lm, log_dir)
