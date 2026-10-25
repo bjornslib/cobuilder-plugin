@@ -169,6 +169,15 @@ nothing. A native mapping needs no writes or sync.
 | Epic | the header name in `04-slices.md`, or the `title` in `goal.json` | the `outcome` in `goal.json` | none | the path of `epic-<id>-design.md`, when it exists |
 | Slice | the slice name | none | the `Ends with` cell | none |
 
+## Repair of status
+
+- `set-program-stage --plans-dir` creates a missing program.
+- A duplicate guard stops a second program with the same ref. The `duplicates` field of `doctor` lists such rows.
+- `all_records` is one `bd list` call.
+- The repair closes each row with `bd close <id> --force`, and it syncs once.
+- For the snapshot recipe, see the snapshot step of the `migrate-mapping` section.
+
+
 ## Hierarchy and ordering edges
 
 The seed gives each cb row one `parent` and two chains of `blocks` edges.

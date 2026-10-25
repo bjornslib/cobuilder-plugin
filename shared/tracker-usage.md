@@ -142,6 +142,7 @@ Find the command for each workflow moment in this table.
 | Program done | `set-program-stage <program> <stage>` |
 | Session end | `sync` |
 | Tracker uses the old mapping | `doctor`, then `migrate-mapping --dry-run`, then `migrate-mapping` |
+| Records of finished designs are stale | `repair-status [--dry-run] [--plans-dir <dir>] [--index <path>]` |
 | Status files drift from the tracker | `uv run shared/tracker.py regenerate-status-files <program> --plans-dir <dir>` |
 ```console
 $ uv run shared/tracker.py regenerate-status-files demo --plans-dir docs/plans
@@ -181,7 +182,50 @@ $ uv run shared/tracker.py migrate-mapping
 ```
 
 This example runs on a fake adapter. The fake adapter returns an empty report and keeps its records.
+
 `regenerate-status-files` rewrites only the state lines of `00-status.md` and `04-slices.md`. It keeps every prose line. With no adapter, it exits 2 and writes nothing.
+
+## Repair stale status
+
+`repair-status` fixes records of finished designs. It plans each change first and writes it only without `--dry-run`.
+
+- It stamps a missing program stage from the legacy `goal.json` stage.
+- It creates a missing program record.
+- It closes the open epics and slices of a design at `implemented` or `superseded`, because the tracker stage wins.
+- It holds the epics of live designs.
+- For a design with no stage, it closes an epic only when a closed pull request record or the index shows a merge.
+- It never reads GitHub.
+
+The result has the keys `checked`, `changes`, `holds`, `unresolved`, and `unchecked`. A dry run writes nothing. A second run changes nothing. The command exits 2 with the files adapter. It exits 4 when `--index` names no file.
+
+```console
+$ uv run shared/tracker.py repair-status --dry-run
+{
+  "ok": true,
+  "result": {
+    "changes": [],
+    "checked": {
+      "index": false,
+      "pr_records": true,
+      "stage": true
+    },
+    "holds": [],
+    "unchecked": [],
+    "unresolved": [
+      {
+        "action": "report",
+        "detail": "0 open epics",
+        "id": "demo",
+        "kind": "program",
+        "rule": "no-design-no-stage"
+      }
+    ]
+  }
+}
+```
+
+The strip script `shared/strip_goal_stage.py` removes a legacy `stage` from a `goal.json` only after the tracker holds the same stage. It runs after the repair.
+The index reads the stage from the tracker first and from `goal.json` only as a fallback. `data/index.json` marks the source with `stage_source`.
 
 ## Read patterns
 
