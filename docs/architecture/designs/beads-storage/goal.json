@@ -11,6 +11,7 @@
     "ADR-0001",
     "ADR-0043",
     "ADR-0044",
+    "ADR-0047",
     "ADR-0020"
   ],
   "created": "2026-09-26",
@@ -41,7 +42,14 @@
     "each issue title holds the record name, and external_ref and metadata.cb.id hold the cb id, unless the engineer picks the id-and-name form at review",
     "next_ready for slices runs bd ready -t task, native_ready is true on beads, and a parity test holds on the corpus",
     "claim-next claims one ready slice in one bd call. Nothing ready gives an empty result and exit 0, and a foreign task is never claimed",
-    "migrate-mapping converts a legacy tracker in one sync, a dry run writes nothing, and a second run changes nothing"
+    "migrate-mapping converts a legacy tracker in one sync, a dry run writes nothing, and a second run changes nothing",
+    "design mode creates the program record at stage 0 with set-program-stage, and then writes each stage only through the tracker",
+    "build_index.py takes design.stage from the tracker program record, and from goal.json only when the tracker holds no record or no stage",
+    "goal.json written by design mode holds no stage when a tracker exists, and a one-time strip step removes the field from the existing files",
+    "an epic that the tracker closed reads completed on the board, and the epics of a design at implemented read completed",
+    "each Work board card shows the lane, closed slices over total slices, closed epics over total epics, the next ready slice, and the state of each pull request record",
+    "repair-status closes the epics and slices of a finished design, lists the rule for each record, closes nothing of a live design, and a second run changes nothing",
+    "the index build reads the tracker with one record read and one ready call, and an unreadable tracker gives the legacy stage with a warning, or a named failure"
   ],
   "abort_if": [
     "the metadata envelope cannot round-trip through bd create, bd update, bd export, and bd list --json without loss",
@@ -100,6 +108,12 @@
       "title": "Native beads mapping and bd ready: a program is a feature, an epic is an epic, a slice is a task, and a pull request is a milestone that tracks its epics and blocks none. Blocks edges order the slices and the epics. The title holds the human name, and the seed fills the text fields. Slice readiness comes from bd ready, and the new operation claim-next claims through it. The operation migrate-mapping converts existing trackers. E7 starts after E5 and needs the engineer's approval of its design. E6 stays unbuilt, and E7 does not wait for it.",
       "outcome": "The beads adapter uses native types, hierarchy, edges, and the ready queue, and it hides no structure in metadata.cb. One call claims the next slice. A migration converts the live trackers.",
       "slug": "native-mapping"
+    },
+    {
+      "id": "E8",
+      "title": "The tracker is the source of stage and status, and the Work board shows it: design mode creates the program record at stage 0 and writes the stage only through the tracker. goal.json loses the stage field, and the files adapter keeps a legacy read. The index reads the stage, the epic status, the slice status, the next ready slice, and the pull request records from the tracker with one record read. Each Work board card shows them. The new operation repair-status closes the stale epics and slices once. E8 starts after E7 and needs the engineer's approval of its design. E6 stays unbuilt, and E8 does not wait for it.",
+      "outcome": "A person reads the stage and the status of every program, epic, slice, and pull request from the tracker, and the Work board shows each. A one-time repair closes the records of finished designs.",
+      "slug": "tracker-stage"
     }
   ],
   "stage": "approved",
