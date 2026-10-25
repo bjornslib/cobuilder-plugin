@@ -337,3 +337,14 @@ def test_the_fake_without_plans_dir_keeps_the_current_error(tmp_path: Any) -> No
     adapter = FakeAdapter(ps.CORPUS_DIR, state_file=tmp_path / "state.json")
     with pytest.raises(ArgumentError, match="no program with id mapped"):
         adapter.set_program_stage("mapped", "approved")
+
+
+def test_a_bold_table_cell_gives_a_plain_title() -> None:
+    from tracker_port.plan_texts import clean_name
+
+    assert clean_name("**Epic and slice status**") == "Epic and slice status"
+    assert clean_name("**`repair-status` with a dry run**") == "`repair-status` with a dry run"
+    assert clean_name("Plain name") == "Plain name"
+    assert clean_name("Native beads mapping.** Native types, then more") == "Native beads mapping"
+    assert clean_name("**Tracer bullet: the logic layer.** Split it") == "Tracer bullet: the logic layer"
+    assert clean_name(None) is None

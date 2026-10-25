@@ -1,13 +1,13 @@
 {
-  "schema_version": "1.4",
+  "schema_version": "1.5",
   "sources": {
-    "git_head": "552b5c598c7d5c7acb41991bad0cb7653a3f7c1d",
+    "git_head": "1d6be1e0d53f77ef1c7d0103aeca9af1632cc8cd",
     "trees": {
       "docs/architecture/adr": "sha256:4c229d7b738685fdf5a81e25174d080cab0865a36e65ef9e62ec5ccfc662c3e6",
       "docs/architecture/designs": "sha256:2fd31cbe9035fab6213fa654c1e831b60276910c28edad03bcf49bcf84c2f32a",
       "docs/architecture/contexts": "sha256:6663ee456e31bfbe31401908ae494017ed864dbb9c72211b6cbdccc44d078482",
-      "docs/plans": "sha256:017e70af90ea5ebb2e6308eeb92f61836a417051104dd19116276bce10d4e7e7",
-      ".cobuilder/rubrics": "sha256:8d3fb9c5c081261e9c056766f8f39e6a0ee6ccf9420100b15dff54d7c9bac38a"
+      "docs/plans": "sha256:9430082cc198b2be0eea6f217beac32ff88bd96ccd4eef4c77bfd59a3699a084",
+      ".cobuilder/rubrics": "sha256:83bbd35e0a3806802ecea195ca1f32a6740c7628670ee2eda50f4dea8f699126"
     }
   },
   "entities": {
@@ -243,145 +243,169 @@
         "id": "beads-storage",
         "name": "beads-storage",
         "outcome": "A tracker port sits between CoBuilder and the task system, and beads is its first adapter. Programs, epics, slices, and pull requests live in one proposed central store, which no test verifies yet. The same data/index.json serves the viewer, and one next-ready call answers what is next.",
-        "stage": "approved"
+        "stage": "approved",
+        "stage_source": "tracker"
       },
       {
         "id": "book-index-tiering",
         "name": "book-index-tiering",
         "outcome": "book-index.md offers nano, mini, and full tiers for all 14 vendored books, with a 3-nano-minimum judgment-gated escalation rule; Review/Maintenance's mandatory 14-file security corpus load gets the same cheap-signal-before-expensive-read shape, opposite default bias, no vendoring.",
-        "stage": "review"
+        "stage": "review",
+        "stage_source": "tracker"
       },
       {
         "id": "build-workflow-polish",
         "name": "build-workflow-polish",
         "outcome": "An engineer running architect:design into implement:start never loses the handoff, 04-slices.md is always written in the shape verify_gate.py actually parses, a validated slice is committed without an extra prompt, and the bundle viewer borrows the tab-based Diagram / Data flow / Data types layout a colleague prototyped.",
-        "stage": "superseded"
+        "stage": "superseded",
+        "stage_source": "tracker"
       },
       {
         "id": "cobuilder-implement",
         "name": "cobuilder-implement",
         "outcome": "The architecture design produced by cobuilder-architect carries directly into implementation: its intent is decomposed into testable epics, and each epic ships as vertical slices that an independent validator scores at 0.90 or better before the next one starts.",
-        "stage": "approved"
+        "stage": "approved",
+        "stage_source": "tracker"
       },
       {
         "id": "cobuilder-memory",
         "name": "cobuilder-memory",
         "outcome": "plugins/cobuilder-memory installs from this marketplace and gives the main agent the consult tool. Haiku writes the recall query, picks a knowledge page, and writes reflect questions, all through the Hindsight MCP tools. Design and build call the tool, and a pane shows each run.",
-        "stage": "implemented"
+        "stage": "implemented",
+        "stage_source": "tracker"
       },
       {
         "id": "cobuilder-viewer",
         "name": "cobuilder-viewer",
         "outcome": "A reader opens the bundle on three goal-shaped surfaces, built as TypeScript and React and compiled to one file. FlightDeck, the surface that replaces the Pull requests tab, shows a single pull request at today's parity, or lets the reviewer select several open pull requests to get a validated merge-path recommendation and a narrative for that set.",
-        "stage": "review"
+        "stage": "review",
+        "stage_source": "tracker"
       },
       {
         "id": "design-mode",
         "name": "design-mode",
         "outcome": "An engineer can design a change with the plugin before writing it, and the resulting intent, ADR, and diagrams carry through to the pull request that implements it.",
-        "stage": "implemented"
+        "stage": "implemented",
+        "stage_source": "tracker"
       },
       {
         "id": "gate-doc-surfacing",
         "name": "gate-doc-surfacing",
         "outcome": "Gate documents (03-program-design.md, epic-<id>-design.md) are readable from the viewer's Builds view, not just from docs/plans/ or a one-off Artifact publish.",
-        "stage": "decided"
+        "stage": "decided",
+        "stage_source": "tracker"
       },
       {
         "id": "gate-state-resolution",
         "name": "gate-state-resolution",
         "outcome": "A gate line reads as approved, as not applicable, or as open in both Builds views, and a view opens only a document that the plan holds.",
-        "stage": "approved"
+        "stage": "approved",
+        "stage_source": "tracker"
       },
       {
         "id": "habit-smells",
         "name": "habit-smells",
         "outcome": "Review and maintenance reports carry a classified Mechanical smells section from habit-sensors, maintenance trends the pairs of smell and file against the previous report, and verify_bundle warns when the last scan is missing or stale.",
-        "stage": "decided"
+        "stage": "decided",
+        "stage_source": "tracker"
       },
       {
         "id": "implementation-conformance",
         "name": "implementation-conformance",
         "outcome": "A reviewer of a pull request reads which of the program's targets the change met and where it did something different, in what the generating or the reviewing agent writes. The agent reached those targets from the program's own records rather than from the diff.",
-        "stage": "backlog"
+        "stage": "backlog",
+        "stage_source": "tracker"
       },
       {
         "id": "inflight-record-store",
         "name": "inflight-record-store",
         "outcome": "A reader on the main branch sees every piece of in-flight work across all open pull requests, and no pull request owner hits a merge conflict caused by that view.",
-        "stage": "backlog"
+        "stage": "backlog",
+        "stage_source": "tracker"
       },
       {
         "id": "interaction-design-gate",
         "name": "interaction-design-gate",
         "outcome": "A session that builds a user interface writes an interaction design specification before implementation starts, and a browser check inside the slice loop catches the defects that specification exists to prevent.",
-        "stage": "decided"
+        "stage": "decided",
+        "stage_source": "tracker"
       },
       {
         "id": "lean-bundle-diffs",
         "name": "lean-bundle-diffs",
         "outcome": "A fresh clone of this repo is not weighed down by every merged PR's full diff text, and the viewer still shows a diff for any PR a reader opens.",
-        "stage": "backlog"
+        "stage": "backlog",
+        "stage_source": "tracker"
       },
       {
         "id": "maintainable-viewer",
         "name": "maintainable-viewer",
         "outcome": "An engineer changes one view mode of the bundle viewer by opening one file of a few hundred lines, and the file that ships is still one self-contained HTML page that publishes as an Artifact unchanged.",
-        "stage": "superseded"
+        "stage": "superseded",
+        "stage_source": "tracker"
       },
       {
         "id": "nexus-borrowings",
         "name": "nexus-borrowings",
         "outcome": "A design drafted in design mode carries its runtime structure. The design directory holds a runtime architecture diagram as a named diagram slot beside the three narrative levels, a contracts file when the design touches a public interface, and stage 6 runs a draft review subagent that validates against a blind rubric and re-explores alternatives before the engineer reads.",
-        "stage": "implemented"
+        "stage": "implemented",
+        "stage_source": "tracker"
       },
       {
         "id": "options-mode",
         "name": "options-mode",
         "outcome": "An engineer runs /architect:options and gets one self-contained HTML report of inquiries about the flow, the technology, and the gaps of the whole system, with alternatives and diagrams. The engineer pastes the decisions text into /architect:design.",
-        "stage": "implemented"
+        "stage": "implemented",
+        "stage_source": "tracker"
       },
       {
         "id": "plugin-split",
         "name": "plugin-split",
         "outcome": "A user installs one stage of the architecture lifecycle without the other three, and four independently-installed plugins write into one bundle without a stale copy destroying authored or paid content.",
-        "stage": "implemented"
+        "stage": "implemented",
+        "stage_source": "tracker"
       },
       {
         "id": "react-viewer",
         "name": "react-viewer",
         "outcome": "A reader opens the bundle on three goal-shaped surfaces instead of five record-type tabs, an engineer changes one surface by opening one typed React component, and the file that ships is still one self-contained HTML page that publishes as an Artifact unchanged.",
-        "stage": "superseded"
+        "stage": "superseded",
+        "stage_source": "tracker"
       },
       {
         "id": "review-flight-deck",
         "name": "review-flight-deck",
         "outcome": "On every pull request change, the flightdeck simulates possible paths to close the whole open set, replays the best one or two with real git, and shows the reviewer one validated path. The reviewer reads what they would have when it is done, then what each pull request adds, then whether the merges hold.",
-        "stage": "superseded"
+        "stage": "superseded",
+        "stage_source": "tracker"
       },
       {
         "id": "review-link",
         "name": "review-link",
         "outcome": "Each time a workflow asks the user to approve a document, the user gets a checked link to that document's page in the viewer before the question.",
-        "stage": "backlog"
+        "stage": "backlog",
+        "stage_source": "tracker"
       },
       {
         "id": "slice-agents-and-vocabulary",
         "name": "slice-agents-and-vocabulary",
         "outcome": "A slice built with /implement:start gets structural coaching while GREEN writes, and a vocabulary verdict beside its score, against one root glossary that design mode keeps current.",
-        "stage": "decided"
+        "stage": "decided",
+        "stage_source": "tracker"
       },
       {
         "id": "ubiquitous-language",
         "name": "ubiquitous-language",
         "outcome": "One term means one thing across every plugin, skill, design, and ADR in the repo, and a new or colliding term cannot reach a merged pull request undetected.",
-        "stage": "backlog"
+        "stage": "backlog",
+        "stage_source": "tracker"
       },
       {
         "id": "work-drawer",
         "name": "work-drawer",
         "outcome": "The Work board stops being a page the reader travels to and becomes a drawer over whatever Build or Review surface they were reading: one press on the Work icon opens a vaul drawer at sixty percent of the viewport, holding the bundle's work on a kanban of five collapsible lanes — needs a decision, ready to build, in review, shipped, superseded — behind a state filter and an incremental search. Decision records and unfinished pull requests are held out of the board by rule. A search that resolves to exactly one work item reads that item's record in the detail pane without a second press, and the arrow keys walk both the rows and the filter strip.",
-        "stage": "decided"
+        "stage": "decided",
+        "stage_source": "tracker"
       }
     ],
     "epic": [
@@ -431,7 +455,7 @@
         "epic_id": "E5",
         "branch": "feature/beads-native-e5",
         "pr": null,
-        "state": "in_progress",
+        "state": "closed",
         "note": null,
         "design_doc": "beads-storage/E5"
       },
@@ -451,7 +475,7 @@
         "epic_id": "E7",
         "branch": "feature/beads-mapping",
         "pr": null,
-        "state": "in_progress",
+        "state": "closed",
         "note": null,
         "design_doc": "beads-storage/E7"
       },
@@ -459,9 +483,9 @@
         "id": "beads-storage/E8",
         "design": "beads-storage",
         "epic_id": "E8",
-        "branch": null,
+        "branch": "feature/work-board-alignment",
         "pr": null,
-        "state": null,
+        "state": "in_progress",
         "note": null,
         "design_doc": "beads-storage/E8"
       },
@@ -1077,7 +1101,7 @@
         "epic_id": "E7",
         "branch": null,
         "pr": null,
-        "state": "open",
+        "state": "closed",
         "note": "Threads read as conversations. The drawer renders a reply under the comment it answers. Deferred past E6 on purpose: E6 ships the record shape, so this epic adds no migration and carries no slice yet."
       },
       {
@@ -2915,7 +2939,7 @@
         "id": "beads-storage/1",
         "feature": "beads-storage",
         "n": 1,
-        "title": "**Tracer bullet: fake adapter and golden index**",
+        "title": "Tracer bullet: fake adapter and golden index",
         "ends_with": "A test loads the fixture corpus through the fake adapter, matches `expected-index.json`, and one next-ready case passes.",
         "score": "1.00",
         "attempts": 1,
@@ -2925,7 +2949,7 @@
         "id": "beads-storage/2",
         "feature": "beads-storage",
         "n": 2,
-        "title": "**Full contract suite on the fake adapter**",
+        "title": "Full contract suite on the fake adapter",
         "ends_with": "Contract cases 1 to 6 pass on the fake adapter, and a write with no configured adapter exits 2.",
         "score": "1.00",
         "attempts": 2,
@@ -2935,7 +2959,7 @@
         "id": "beads-storage/3",
         "feature": "beads-storage",
         "n": 3,
-        "title": "**Files adapter reads the plans tree and backfill dry run**",
+        "title": "Files adapter reads the plans tree and backfill dry run",
         "ends_with": "The files adapter lists the miniature plans tree and projects it to the same index shape as the fake corpus with no `bd` on the path, and every state write it receives exits 2. The backfill dry run on the fake adapter lists the creates, the list equals a checked-in file, and a second run creates nothing. The reference `shared/tracker-backfill.md` names each of its seven steps.",
         "score": "1.00",
         "attempts": 1,
@@ -2945,7 +2969,7 @@
         "id": "beads-storage/4",
         "feature": "beads-storage",
         "n": 4,
-        "title": "**Command prints JSON and exit codes**",
+        "title": "Command prints JSON and exit codes",
         "ends_with": "`shared/tracker.py list-programs` prints the corpus as JSON, and the CLI test shows exit codes 0, 2, 3, and 4. A spy shows zero opens of `docs/plans` during `list-programs` and `next-ready`. With `--state-file`, a write in one call shows in the next call.",
         "score": "0.92",
         "attempts": 1,
@@ -2955,7 +2979,7 @@
         "id": "beads-storage/5",
         "feature": "beads-storage",
         "n": 5,
-        "title": "**Usage reference matches the command**",
+        "title": "Usage reference matches the command",
         "ends_with": "A reader runs each example in `shared/tracker-usage.md` and gets the output that the reference shows.",
         "score": "1.00",
         "attempts": 3,
@@ -2965,7 +2989,7 @@
         "id": "beads-storage/6",
         "feature": "beads-storage",
         "n": 6,
-        "title": "**Beads reads match the fake adapter**",
+        "title": "Beads reads match the fake adapter",
         "ends_with": "The beads adapter maps the recorded `bd list --json` transcript to the same records as the fake corpus, the read cases pass, and contract case 7 (projector parity) passes.",
         "score": "1.00",
         "attempts": 2,
@@ -2975,7 +2999,7 @@
         "id": "beads-storage/7",
         "feature": "beads-storage",
         "n": 7,
-        "title": "**Beads writes on recorded transcripts**",
+        "title": "Beads writes on recorded transcripts",
         "ends_with": "The beads write cases pass on recorded transcripts, including the claim read-back and the `metadata.cb` value round trip. Closing slice n makes slice n+1 the answer of `next-ready`.",
         "score": "1.00",
         "attempts": 5,
@@ -2985,7 +3009,7 @@
         "id": "beads-storage/8",
         "feature": "beads-storage",
         "n": 8,
-        "title": "**Beads dry run matches the backfill file**",
+        "title": "Beads dry run matches the backfill file",
         "ends_with": "The beads adapter implements `seed-from-files`. On the recorded transcripts, its dry run lists the same creates as the checked-in file of slice 3.",
         "score": "1.00",
         "attempts": 2,
@@ -2995,7 +3019,7 @@
         "id": "beads-storage/9",
         "feature": "beads-storage",
         "n": 9,
-        "title": "**Fresh clone initializes, syncs, and seeds**",
+        "title": "Fresh clone initializes, syncs, and seeds",
         "ends_with": "After explicit consent, the first publish runs `bd sync -y`, one `bd dolt push`, and `bd sync`, which exits 0. A fresh git clone runs `bd init --skip-agents --skip-hooks` and `bd sync` and sees the state. The backfill's write step then seeds the miniature plans tree there. A second run creates nothing, and the `bd list --json` count equals the dry-run count. The command output is pasted into the slice evidence.",
         "score": "1.00",
         "attempts": 1,
@@ -3005,7 +3029,7 @@
         "id": "beads-storage/10",
         "feature": "beads-storage",
         "n": 10,
-        "title": "**Bundle index unchanged after the port**",
+        "title": "Bundle index unchanged after the port",
         "ends_with": "`build_index.py` writes the same `data/index.json` for this repo as before the change, and the viewer `index.html` is byte equal.",
         "score": "1.00",
         "attempts": 3,
@@ -3015,7 +3039,7 @@
         "id": "beads-storage/11",
         "feature": "beads-storage",
         "n": 11,
-        "title": "**Gate check and builds view read the port**",
+        "title": "Gate check and builds view read the port",
         "ends_with": "`verify_gate.py` and `build_builds_view.py` return the same result for every plan under `docs/plans` as before the change.",
         "score": "1.00",
         "attempts": 3,
@@ -3025,7 +3049,7 @@
         "id": "beads-storage/12",
         "feature": "beads-storage",
         "n": 12,
-        "title": "**Status files regenerate from records**",
+        "title": "Status files regenerate from records",
         "ends_with": "Regenerating the fixture corpus writes `00-status.md` and `04-slices.md` files that equal their golden files.",
         "score": "1.00",
         "attempts": 1,
@@ -3035,7 +3059,7 @@
         "id": "beads-storage/13",
         "feature": "beads-storage",
         "n": 13,
-        "title": "**Implement writes slice state**",
+        "title": "Implement writes slice state",
         "ends_with": "A fixture slice run writes its claim, attempts, score, and state through `tracker.py`, and the status file shows the new score.",
         "score": "0.97",
         "attempts": 1,
@@ -3045,7 +3069,7 @@
         "id": "beads-storage/14",
         "feature": "beads-storage",
         "n": 14,
-        "title": "**Architect writes gate values**",
+        "title": "Architect writes gate values",
         "ends_with": "A fixture program records each gate value and the program stage through `tracker.py`, and the status file shows each approval date.",
         "score": "0.95",
         "attempts": 1,
@@ -3055,7 +3079,7 @@
         "id": "beads-storage/15",
         "feature": "beads-storage",
         "n": 15,
-        "title": "**Pull request blocks two epics**",
+        "title": "Pull request blocks two epics",
         "ends_with": "A pull request record blocks two fixture epics until its state is set to merged, and then both epics show as ready.",
         "score": "0.93",
         "attempts": 1,
@@ -3065,7 +3089,7 @@
         "id": "beads-storage/16",
         "feature": "beads-storage",
         "n": 16,
-        "title": "**Goal file drops epic state fields**",
+        "title": "Goal file drops epic state fields",
         "ends_with": "`goal.json` holds no `branch`, `pr`, or `state` key after the migration, and the artifact view lists the same epics.",
         "score": "0.97",
         "attempts": 1,
@@ -3075,7 +3099,7 @@
         "id": "beads-storage/17",
         "feature": "beads-storage",
         "n": 17,
-        "title": "**Docs test guards the port and install asks first**",
+        "title": "Docs test guards the port and install asks first",
         "ends_with": "`tests/test_tracker_docs.py` passes on this repo, and it fails when a `bd` call appears outside `shared/tracker_port/`. The install command runs the backfill dry run after adapter config and asks for consent before any write.",
         "score": "0.97",
         "attempts": 1,
@@ -3085,7 +3109,7 @@
         "id": "beads-storage/18",
         "feature": "beads-storage",
         "n": 18,
-        "title": "**Spike: claim flags, exit codes, lease expiry**",
+        "title": "Spike: claim flags, exit codes, lease expiry",
         "ends_with": "The beads notes list each flag set, exit code, and lease result, with the command that produced it.",
         "score": "1.00",
         "attempts": 1,
@@ -3095,7 +3119,7 @@
         "id": "beads-storage/19",
         "feature": "beads-storage",
         "n": 19,
-        "title": "**Atomic claim**",
+        "title": "Atomic claim",
         "ends_with": "Contract case 3 passes on beads with one write, and eight concurrent claims give one winner.",
         "score": "1.00",
         "attempts": 1,
@@ -3105,7 +3129,7 @@
         "id": "beads-storage/20",
         "feature": "beads-storage",
         "n": 20,
-        "title": "**Native ready, with parity**",
+        "title": "Native ready, with parity",
         "ends_with": "Ready parity holds for each kind on the recorded corpus, and contract cases 1 and 2 pass on beads.",
         "score": "0.92",
         "attempts": 1,
@@ -3115,7 +3139,7 @@
         "id": "beads-storage/21",
         "feature": "beads-storage",
         "n": 21,
-        "title": "**Pull request gate**",
+        "title": "Pull request gate",
         "ends_with": "The gate resolves when the pull request merges, and the slice 15 test stays green.",
         "score": "1.00",
         "attempts": 1,
@@ -3125,7 +3149,7 @@
         "id": "beads-storage/22",
         "feature": "beads-storage",
         "n": 22,
-        "title": "**Slice-loop formula**",
+        "title": "Slice-loop formula",
         "ends_with": "The formula cooks and pours, a failed attempt adds a wisp, and squash with `--keep-children` keeps the attempt history.",
         "score": "1.00",
         "attempts": 1,
@@ -3135,7 +3159,7 @@
         "id": "beads-storage/23",
         "feature": "beads-storage",
         "n": 23,
-        "title": "**Spike notes into the adapter notes**",
+        "title": "Spike notes into the adapter notes",
         "ends_with": "The notes hold each spike finding with its command and exit code",
         "score": "1.00",
         "attempts": 1,
@@ -3145,7 +3169,7 @@
         "id": "beads-storage/24",
         "feature": "beads-storage",
         "n": 24,
-        "title": "**Type, title, label, and text mapping**",
+        "title": "Type, title, label, and text mapping",
         "ends_with": "A created issue has the new type, the name as title, the label, and the text fields. A read returns them. `prepare` sets no custom type.",
         "score": "1.00",
         "attempts": 2,
@@ -3155,7 +3179,7 @@
         "id": "beads-storage/25",
         "feature": "beads-storage",
         "n": 25,
-        "title": "**Hierarchy and ordering edges**",
+        "title": "Hierarchy and ordering edges",
         "ends_with": "A seed gives the epic chain and the slice chain, and the deferred epic gets a native defer date",
         "score": "1.00",
         "attempts": 1,
@@ -3165,7 +3189,7 @@
         "id": "beads-storage/26",
         "feature": "beads-storage",
         "n": 26,
-        "title": "**Pull request as a milestone with `tracks`**",
+        "title": "Pull request as a milestone with `tracks`",
         "ends_with": "A PR holds its epics by `tracks` and blocks nothing. No gate remains.",
         "score": "1.00",
         "attempts": 1,
@@ -3175,7 +3199,7 @@
         "id": "beads-storage/27",
         "feature": "beads-storage",
         "n": 27,
-        "title": "**Native ready for slices, with parity**",
+        "title": "Native ready for slices, with parity",
         "ends_with": "`next_ready(\"slice\", under)` runs `bd ready`. `native_ready` is true. The parity test holds on the corpus.",
         "score": "1.00",
         "attempts": 1,
@@ -3185,7 +3209,7 @@
         "id": "beads-storage/28",
         "feature": "beads-storage",
         "n": 28,
-        "title": "**`claim-next`**",
+        "title": "`claim-next`",
         "ends_with": "One call claims the first ready slice. Nothing ready gives `null` and exit 0.",
         "score": "1.00",
         "attempts": 1,
@@ -3195,7 +3219,7 @@
         "id": "beads-storage/29",
         "feature": "beads-storage",
         "n": 29,
-        "title": "**`migrate-mapping` with dry run**",
+        "title": "`migrate-mapping` with dry run",
         "ends_with": "A legacy scratch tracker converts in one sync. A dry run writes nothing. A second run changes nothing.",
         "score": "1.00",
         "attempts": 1,
@@ -3205,11 +3229,91 @@
         "id": "beads-storage/30",
         "feature": "beads-storage",
         "n": 30,
-        "title": "**Docs, install, usage**",
+        "title": "Docs, install, usage",
         "ends_with": "The docs name the two operations and the migration. `tracker.py --help` lists them.",
         "score": "1.00",
         "attempts": 2,
         "state": "completed"
+      },
+      {
+        "id": "beads-storage/31",
+        "feature": "beads-storage",
+        "n": 31,
+        "title": "Spike notes into the adapter notes",
+        "ends_with": "The notes hold each spike finding with its command and exit code",
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
+      },
+      {
+        "id": "beads-storage/32",
+        "feature": "beads-storage",
+        "n": 32,
+        "title": "The tracker creates the program record, and design mode says so",
+        "ends_with": "`set-program-stage --plans-dir` creates a missing record. A write refuses on a duplicate.",
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
+      },
+      {
+        "id": "beads-storage/33",
+        "feature": "beads-storage",
+        "n": 33,
+        "title": "The index reads the stage from the tracker, with a fallback",
+        "ends_with": "`design.stage` comes from the tracker, then from the file. The build makes at most three bd calls.",
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
+      },
+      {
+        "id": "beads-storage/34",
+        "feature": "beads-storage",
+        "n": 34,
+        "title": "The strip step and the schema change",
+        "ends_with": "Design mode writes no `goal.stage` when a tracker exists. The strip script passes its tests.",
+        "score": "0.97",
+        "attempts": 1,
+        "state": "completed"
+      },
+      {
+        "id": "beads-storage/35",
+        "feature": "beads-storage",
+        "n": 35,
+        "title": "Epic and slice status on the board",
+        "ends_with": "The words follow the table. `done` counts `completed` epics.",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
+        "id": "beads-storage/36",
+        "feature": "beads-storage",
+        "n": 36,
+        "title": "Next ready and pull request state on the board",
+        "ends_with": "A card shows the next ready slice and the state of each pull request record.",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
+        "id": "beads-storage/37",
+        "feature": "beads-storage",
+        "n": 37,
+        "title": "`repair-status` with a dry run",
+        "ends_with": "A scratch tracker repairs in one sync. A dry run writes nothing. A second run changes nothing.",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
+        "id": "beads-storage/38",
+        "feature": "beads-storage",
+        "n": 38,
+        "title": "Live repair, docs, and install",
+        "ends_with": "The three live steps run in order. The docs name the new operations and the strip.",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
       },
       {
         "id": "coach-reaches-green/1",
@@ -3245,7 +3349,7 @@
         "id": "cobuilder-family/1",
         "feature": "cobuilder-family",
         "n": 1,
-        "title": "**Tracer bullet: two plugins, one shared module**",
+        "title": "Tracer bullet: two plugins, one shared module",
         "ends_with": "Two throwaway plugins install from a local marketplace and both resolve the shared module from their own cache",
         "score": "1.00",
         "attempts": 1,
@@ -3485,7 +3589,7 @@
         "id": "cobuilder-viewer/1",
         "feature": "cobuilder-viewer",
         "n": 1,
-        "title": "**Tracer bullet: a publish survives a marker rename**",
+        "title": "Tracer bullet: a publish survives a marker rename",
         "ends_with": "The exporter matches the built file's named markers, and a real publish of the current viewer still succeeds after the marker names move",
         "score": "—",
         "attempts": 0,
@@ -3925,7 +4029,7 @@
         "id": "mechanical-smells/1",
         "feature": "mechanical-smells",
         "n": 1,
-        "title": "**Tracer bullet: the logic layer.** Split `data/bundle.ts`, `data/joins.ts`, `data/types.ts`, `data/works.ts`, and `shell/model.ts`.",
+        "title": "Tracer bullet: the logic layer",
         "ends_with": "`habit-sensors` reports no finding for those five files. The viewer tests pass, the exported names of `model.ts` and the data layer match the list taken before the slice, and the committed `index.html` rebuilds byte-identically.",
         "score": "—",
         "attempts": 0,
@@ -3935,7 +4039,7 @@
         "id": "mechanical-smells/2",
         "feature": "mechanical-smells",
         "n": 2,
-        "title": "The atoms and sections: split `shell/atoms.tsx`, `shell/sections.tsx`, and the three `shell/panels/*` files.",
+        "title": "The atoms and sections: split `shell/atoms.tsx`, `shell/sections.tsx`, and the three `shell/panels/*` files",
         "ends_with": "`habit-sensors` reports no finding for those five files. The seven section renderers and the atom vocabulary import from their old files, and the section tests pass.",
         "score": "—",
         "attempts": 0,
@@ -3945,7 +4049,7 @@
         "id": "mechanical-smells/3",
         "feature": "mechanical-smells",
         "n": 3,
-        "title": "The change surface: split the five `shell/change/*` files, `shell/DiagramTiles.tsx`, and `shell/Pager.tsx`, and fix the `react-hooks/exhaustive-deps` finding.",
+        "title": "The change surface: split the five `shell/change/*` files, `shell/DiagramTiles.tsx`, and `shell/Pager.tsx`, and fix the `react-hooks/exhaustive-deps` finding",
         "ends_with": "`habit-sensors` reports no finding for those seven files, the change-view tests pass, and the diagram tiles still render.",
         "score": "—",
         "attempts": 0,
@@ -3955,7 +4059,7 @@
         "id": "mechanical-smells/4",
         "feature": "mechanical-smells",
         "n": 4,
-        "title": "The shell and chrome: split `ShellApp`, the sheet, the drawer, the rail, the top bar, the hooks, the work board, and the long tail of 17 files. Fix the `jsx-a11y/media-has-caption` finding and the 2 non-null assertions in `shell/App.tsx`.",
+        "title": "The shell and chrome: split `ShellApp`, the sheet, the drawer, the rail, the top bar, the hooks, the work board, and the long tail of 17 files. Fix the `jsx-a11y/media-has-caption` finding and the 2 non-null assertions in `shell/App.tsx`",
         "ends_with": "`habit-sensors` reports no finding for those 17 files, `ShellApp` and `Theme` still export from `shell/App.tsx`, and the full viewer suite and the build pass.",
         "score": "—",
         "attempts": 0,
@@ -3965,7 +4069,7 @@
         "id": "mechanical-smells/5",
         "feature": "mechanical-smells",
         "n": 5,
-        "title": "The viewer test files: split large `describe` blocks by concern in the 20 `*.test.*` files. Remove the 2 `any`, the 10 non-null assertions, and the 8 duplicate imports.",
+        "title": "The viewer test files: split large `describe` blocks by concern in the 20 `*.test.*` files. Remove the 2 `any`, the 10 non-null assertions, and the 8 duplicate imports",
         "ends_with": "`habit-sensors` reports no finding for the 20 test files, apart from each recorded 13-to-30-line callback. The test count and every assertion stay the same, and the suite passes.",
         "score": "—",
         "attempts": 0,
@@ -3975,7 +4079,7 @@
         "id": "mechanical-smells/6",
         "feature": "mechanical-smells",
         "n": 6,
-        "title": "The comments in viewer source: review each of the 658 flagged comments in 42 files. Delete it, or keep it reworded when it explains why.",
+        "title": "The comments in viewer source: review each of the 658 flagged comments in 42 files. Delete it, or keep it reworded when it explains why",
         "ends_with": "`habit-sensors` reports no `non-essential-comment` finding for the 42 source files. A reviewer sample of at least 20 deleted comments finds no more than one that explained why.",
         "score": "—",
         "attempts": 0,
@@ -3985,7 +4089,7 @@
         "id": "mechanical-smells/7",
         "feature": "mechanical-smells",
         "n": 7,
-        "title": "The comments in viewer tests: review each of the 422 flagged comments in 20 files, with the same rule.",
+        "title": "The comments in viewer tests: review each of the 422 flagged comments in 20 files, with the same rule",
         "ends_with": "`habit-sensors` reports no `non-essential-comment` finding for the 20 test files, and the reviewer sample meets the same limit. The viewer then reports no finding apart from the recorded residual.",
         "score": "—",
         "attempts": 0,
@@ -4119,7 +4223,7 @@
         "ends_with": "`uv run python priority-dev/probes/model_probe.py <transcript>` runs Nemo on three redacted real transcripts and prints the five facts, an action kind, a quote, and whether the quote is in the text. `probes/model-probe.md` states the JSON validity and the rate-limit count",
         "score": "0.875",
         "attempts": 5,
-        "state": "planned"
+        "state": "in_progress"
       },
       {
         "id": "priority-dev-spike/2",
@@ -4490,6 +4594,15 @@
         "source_path": "docs/plans/level-page-restructure/01-product.md"
       },
       {
+        "id": "mechanical-smells",
+        "feature_slug": "mechanical-smells",
+        "gate": 1,
+        "title": "Product: Clear the viewer's habit-hooks findings (mechanical-smells)",
+        "body_md": "# Product: Clear the viewer's habit-hooks findings (mechanical-smells)\n\n## Problem\n\nA maintainer who opens the viewer code meets files of 1,500 lines, functions of\n100 lines, and more than a thousand comments that the standing scan flags. The\nscan reports 2,340 findings in the repo. The viewer holds 1,637 of them. Review\nand maintenance list the findings each time, and nobody owns them, so the count\ndoes not fall. A change to the viewer is slow and risky, because each file is\nlarge and each export has many importers.\n\n## Success metric\n\nThe scan reports no finding in the viewer, apart from a short list of recorded\nresiduals. The engineer measures it with `habit-sensors --all`. The viewer count\nfalls from 1,637 to the residual list, and the viewer tests and the build still\npass. The other 703 findings sit in one named epic, so no finding is unowned.\n\n## Announcement — the blog post before the feature\n\nThe viewer is now small enough to change with confidence. Each file stays under\n200 lines, each path stays simple, and the comments that remain explain why, not\nwhat. The scan that reports on the repo now reads clean for the viewer. The\ngenerated parts of the viewer no longer count against it. The remaining findings\nin the repo have a named epic, with a count and an approach for each group. A\nlater pass cuts that epic into slices.\n\n## Screens\n\nno UI change: the viewer renders the same pages\n",
+        "approved_date": null,
+        "source_path": "docs/plans/mechanical-smells/01-product.md"
+      },
+      {
         "id": "nexus-borrowings",
         "feature_slug": "nexus-borrowings",
         "gate": 1,
@@ -4627,6 +4740,15 @@
         "source_path": "docs/plans/level-page-restructure/02-architecture.md"
       },
       {
+        "id": "mechanical-smells",
+        "feature_slug": "mechanical-smells",
+        "gate": 2,
+        "title": "Architecture: Clear the viewer's habit-hooks findings (mechanical-smells)",
+        "body_md": "# Architecture: Clear the viewer's habit-hooks findings (mechanical-smells)\n\n## Fit\n\nThe work sits in the `artifact` context, under `plugins/artifact/viewer/src/`.\nThe viewer has four layers. The data layer in `data/` loads and joins the bundle.\nThe model layer in `shell/model.ts` holds routes, keys, and pure helpers. The\nrender layer holds the atoms, the sections, the panels, and the change surface.\nThe shell holds `App.tsx`, the sheet, the drawer, the rail, and the top bar.\nThe committed `plugins/artifact/viewer/index.html` is the build output, and a\ntest rebuilds it from source.\n\nTwo other files change. `.habit-hooks/config.toml` already excludes the generated\n`components/ui` and `components/smoothui` folders. The catalog at\n`docs/architecture/designs/mechanical-smells/findings-catalog.md` records the\nscan, the clusters, and the verdicts.\n\n## Endpoints\n\nnone\n\n## Data\n\nNo table or bundle schema changes. The catalog is a Markdown file. The sensor\nconfig is a TOML file.\n\n## Flow\n\n1. The engineer picks the next ready slice from the tracker.\n2. RED writes a check that runs `habit-sensors --file <path>` for each file of\n   the slice. The check fails while any finding remains.\n3. GREEN splits the files by concern. Each moved unit is re-exported from the\n   old file under its old name.\n4. The vitest suite, the build, and the byte-identical rebuild test run. The\n   sensor check passes.\n5. VALIDATE scores the slice against the blind rubric.\n6. The comment slices add a reviewer sample. The reviewer counts deleted\n   comments that explained why.\n\n## External\n\n`habit-sensors` (habit-hooks v1.5.0), with `eslint`, `knip`, `ruff`, and `jscpd`\nunder it. `vitest` and `vite` run the viewer tests and the build. No API, no\nenvironment variable, and no webhook.\n",
+        "approved_date": null,
+        "source_path": "docs/plans/mechanical-smells/02-architecture.md"
+      },
+      {
         "id": "nexus-borrowings",
         "feature_slug": "nexus-borrowings",
         "gate": 2,
@@ -4762,6 +4884,15 @@
         "body_md": "# Program Design: Level page restructure\n\n## Files\n\n- `plugins/artifact/viewer/src/shell/inShort.ts` (new): the pure source rule for the strip.\n- `plugins/artifact/viewer/src/shell/InShort.tsx` (new): the strip and the Listen control.\n- `plugins/artifact/viewer/src/shell/model.ts`: `carriedSectionIndex`, `readInLabel`, the new rail shape.\n- `plugins/artifact/viewer/src/shell/Rail.tsx`: draws the new rail.\n- `plugins/artifact/viewer/src/shell/TopBar.tsx`: branch and supersedes.\n- `plugins/artifact/viewer/src/shell/App.tsx`: removes `TopLinePanel` and `AccountRule`, wires the strip, the link, and the carry.\n- `plugins/artifact/viewer/src/shell/atoms.tsx`: `Panel` reads `PanelActionContext`.\n- `plugins/artifact/viewer/src/shell/change/sections.tsx`: drops the narration block.\n- `plugins/artifact/viewer/src/shell/panels/ProblemSolution.tsx`: drops the gap lines.\n- `shared/build_index.py`: record-gap warnings.\n- `docs/architecture/adr/ADR-0037-*.md` (new).\n\n## Types & signatures\n\n```ts\n// inShort.ts\nexport interface InShort { text: string; audio: string | null; voice: string | null }\nexport function inShortOf(input: {\n  account: AccountId;               // \"program\" | \"change\"\n  level: SharedKey;                 // \"intent\" | \"problem-and-solution\" | \"architecture\"\n  work: WorkItem | null;\n  changeLevels: ChangeLevel[];\n}): InShort | null;                 // null: show no strip\n\n// model.ts\nexport function carriedSectionIndex(names: string[], carried: string | null): number;\nexport function readInLabel(from: AccountId, pr: number | null): string | null;\n//   program -> \"Read in PR 12 ›\", change -> \"Read in the work item ›\", no PR -> null\n\nexport interface RailSource { /* existing fields */ account: AccountId }\nexport function railGroups(source: RailSource): RailGroup[];\n//   groups: \"levels\" (Intent, Problem & Solution, Architecture, addressed in source.account)\n//           \"also\"   (Plan, Epics, Rubrics: program rows; File Diffs: change row)\n//   an \"also\" row carries its own account, so a press switches the account\n```\n\n```ts\n// atoms.tsx\nexport const PanelActionContext: React.Context<React.ReactNode>;\n// Panel renders its own `action` first, then the context action, in the heading band.\n```\n\n```python\n# shared/build_index.py\ndef record_gap_warnings(design_id: str, record: dict) -> list[str]\n```\n\n## Call stack\n\n- `Shell` -> `PagedLevel(sections, targets, routeKey, lead, action, carry)` -> `<InShort/>`, `<SectionStrip/>`, `<SectionStage/>`.\n- A press on the link -> `go(href)` + `setCarry(sectionName)` -> the destination `PagedLevel` mounts -> `useEffect` picks `carriedSectionIndex(names, carry)` then clears the carry.\n- `build_index.main` -> `collect_designs` -> `record_gap_warnings` per design -> `warning:` lines on stderr.\n\n## Test plan\n\nCode tests (RED agents write these):\n- `inShort.test.ts`: the source rule for both accounts, the three levels, absent text.\n- `carryAndLabel.test.ts`: `carriedSectionIndex`, `readInLabel`.\n- `rail.test.ts` (and updates to the rail rows in `App.test.tsx`): the new `railGroups` shape and the walk.\n- `tests/test_build_index.py`: each record-gap warning, and that a complete record warns nothing.\n\nLayout and copy are not pinned by RED tests. Existing tests that assert removed\nUI (the top line, the account rule, the second rail group) are updated by GREEN\nand each change is listed in its report.\n\n## Least confident decisions\n\n- The carry is stored in `Shell` state and consumed on mount. A deep link to a level opened by hand has no carry and starts on the first section, as today.\n- A work item with no PR shows no link and no Review rows.\n- Work narration has no audio: Listen appears only for a PR level whose file the bundle serves.\n",
         "approved_date": null,
         "source_path": "docs/plans/level-page-restructure/03-program-design.md"
+      },
+      {
+        "id": "mechanical-smells",
+        "feature_slug": "mechanical-smells",
+        "gate": 3,
+        "title": "Program Design: Clear the viewer's habit-hooks findings (mechanical-smells)",
+        "body_md": "# Program Design: Clear the viewer's habit-hooks findings (mechanical-smells)\n\n## Files\n\nAll paths sit under `plugins/artifact/viewer/src/` unless noted. Each file sits in\nexactly one slice.\n\n| Slice | Files | Work |\n|---|---|---|\n| 1 | `data/bundle.ts`, `data/joins.ts`, `data/types.ts`, `data/works.ts`, `shell/model.ts` | Split by concern into new files next to each original. Re-export every moved name from the original. |\n| 2 | `shell/atoms.tsx`, `shell/sections.tsx`, `shell/panels/*` (3 files) | Split by render unit. Keep the atom vocabulary and the seven section renderers importable from the old files. |\n| 3 | `shell/change/*` (5 files), `shell/DiagramTiles.tsx`, `shell/Pager.tsx` | Split by render unit. Fix the `react-hooks/exhaustive-deps` finding in `DiagramTiles.tsx`. |\n| 4 | `App.tsx`, `shell/App.tsx`, `shell/Sheet.tsx`, `shell/WorkDrawer.tsx`, `shell/Rail.tsx`, `shell/TopBar.tsx`, `shell/hooks.ts`, `shell/InShort.tsx`, `shell/jump.tsx`, `shell/markdown.tsx`, `shell/readiness.ts`, `shell/workDeck.ts`, `components/work/*` (3 files), `hooks/use-mobile.ts`, `vite.config.ts` | Split `ShellApp` and its hooks. Fix the `jsx-a11y/media-has-caption` finding in `InShort.tsx`. Remove the 2 non-null assertions in `shell/App.tsx`. |\n| 5 | The 20 viewer `*.test.*` files | Split large `describe` blocks into files by concern. Remove the 2 `any`, the 10 non-null assertions, and the 8 duplicate imports. |\n| 6 | The 42 viewer source files with comment findings | Review each flagged comment. |\n| 7 | The 20 viewer test files with comment findings | Review each flagged comment. |\n\nNew: `tests/test_viewer_habit_clean.py`. It holds one entry per slice, listing the\nslice's files.\n\n## Types & signatures\n\nThe contract is the export surface, not a new type. A split follows one rule: a\nmoved unit keeps its name, and the original file re-exports it.\n\n```ts\n// shell/model.ts, after slice 1 (shape, not final names)\nexport { readRoute, routeHref, boardHref } from \"./model/routes\";\nexport { SECTION_KEYS, LEVEL_KEYS } from \"./model/keys\";\n```\n\nThe surfaces that must not change:\n\n- `shell/model.ts`: more than 40 exported names, among them `SECTION_KEYS`,\n  `LEVEL_KEYS`, `Route`, `readRoute`, `routeHref`, and the `*Href` helpers.\n- `shell/atoms.tsx`: 38 exports, among them `Chip`, `Panel`, `Box`, `Tile`,\n  `SectionHeading`, and the `toneFor*` helpers.\n- `shell/sections.tsx`: `EpicGroupSection`, `UnresolvedSlicesSection`,\n  `RubricsSection`, `PlanSection`, `PullRequestsSection`, `FlightDeckPanel`,\n  `ShippedSection`.\n- `shell/App.tsx`: the default export `ShellApp` and the type `Theme`.\n\nThe check, in Python:\n\n```python\ndef slice_findings(files: list[str]) -> list[dict]:\n    \"\"\"Run habit-sensors --file for each file. Keep only issues whose details.file is that file.\"\"\"\n```\n\n## Call stack\n\nDependency order, top imports below: `App` imports `sections` and `atoms`;\n`sections` imports `atoms` and `model`; `model` imports `data/*`. A split keeps\nthis order, so slice 1 changes nothing above it, and each later slice depends\nonly on a surface that an earlier slice left stable.\n\n## Test plan\n\n- **Sensor check.** `tests/test_viewer_habit_clean.py` runs `habit-sensors --file`\n  for each file of a slice. It keeps the issues whose `details.file` is that\n  file, because jscpd reports repo-wide clusters in `--file` mode. It fails on\n  any finding. The test skips when `habit-sensors` or `node_modules` is absent.\n  RED writes the entry for its slice, so the test fails before GREEN starts.\n- **Behavior.** The existing vitest suite stays green. No test changes except in\n  slice 5, where the tests themselves split. Slice 5 keeps every assertion.\n- **Build.** The test that rebuilds `index.html` from source stays green. After\n  slice 1 the rebuild is byte-identical.\n- **Exports.** Before slice 1, the engineer lists the exported names of the four\n  surfaces. The list stays in the slice evidence. After each slice the same list\n  matches.\n- **Comments.** After slices 6 and 7, a reviewer samples 5% of the deleted\n  comments, at least 20 per slice. The reviewer counts those that explained why.\n  More than one in twenty fires the abort condition.\n- **Prior art.** The `consult` tool is absent in this session. No prior-art\n  record exists for either call.\n\n## Least confident decisions\n\n- Whether the 12-line function limit holds for React components and test\n  callbacks. The plan records a 13-to-30-line residual when it is one unit.\n- Whether a byte-identical `index.html` rebuild holds across the pinned Node and\n  Vite versions after slice 1.\n- Whether `tests/test_viewer_habit_clean.py` stays after the epic as a standing\n  guard, or the `habit.smells` gate replaces it.\n- Slice 4 is large: 17 files, 141 findings. A third slice-cut may be needed.\n- Whether `habit-sensors --file` behaves the same on CI, where `node_modules`\n  may be absent. The skip covers it.\n",
+        "approved_date": null,
+        "source_path": "docs/plans/mechanical-smells/03-program-design.md"
       },
       {
         "id": "nexus-borrowings",
@@ -5399,6 +5530,70 @@
         "title": "Slice 30 — E7 docs, install, usage",
         "body_md": "Kind: behavioral\n\n# Rubric: Slice 30 — E7 docs, install, usage\n\nFeature: beads-storage\nEpic: beads-storage/E7\nSlice goal: The usage guide names `claim-next` and `migrate-mapping` as moment rows. `slice-loop.md` names `claim-next` as the way to take the next slice. `install.md` says that an existing tracker needs `migrate-mapping`, and that a snapshot comes first. The adapter notes drop the obsolete sections. Each tracker.py operation that a doc names is a subcommand.\nTest command: `uv run pytest tests/test_tracker_docs.py tests/test_tracker_usage_doc.py tests/test_install_tracker_config.py tests/test_install_command.py tests/test_prose_budget.py -q`\n\nThe slice changes docs and one hook reminder. It changes no adapter code.\n\n## Criteria\n\n### C1 — Each operation a doc names is a subcommand of `tracker.py` [CRITICAL]\n\n**Must be true:** Every `tracker.py` operation that the usage guide, `slice-loop.md`, `install.md`, and the hook reminder name appears in the output of `uv run shared/tracker.py --help`, and it includes `claim-next` and `migrate-mapping`. A reader who runs the usage examples gets the output that the guide shows.\n\n**Evidence to check:** Run `tracker.py --help`. Extract the operation names from the four texts, and check each against the help. Run `tests/test_tracker_usage_doc.py`.\n\n**Scoring:**\n- 1.0: every name resolves, and the usage test passes.\n- 0.5: every name resolves, but the usage test was not run.\n- 0.0: a doc names an operation that is not a subcommand.\n\n### C2 — The docs name no bd command outside the adapter notes [CRITICAL]\n\n**Must be true:** `tests/test_tracker_docs.py` passes, and a grep finds no `bd` command in `tracker-usage.md`, `slice-loop.md`, `install.md`, or the hook reminder. The port rule holds: only `shared/tracker_port/` calls bd.\n\n**Evidence to check:** Run the test and the grep. Read the result.\n\n**Scoring:**\n- 1.0: the test passes and the grep is empty.\n- 0.5: the test passes, but one doc holds a bd command in an example.\n- 0.0: the test fails, or a doc tells the reader to run bd.\n\n### C3 — The obsolete sections are dropped and the build still runs [CRITICAL]\n\n**Must be true:** The adapter notes no longer hold the sections that ADR-0044 lists under \"Obsolete after this ADR\", or they carry a pointer to ADR-0044 in place of the text. `uv run shared/build_index.py` exits 0, and `ste-lint.py` scores each changed doc no worse than its base (`prose_budget.py check` takes only the design JSON files, so it does not apply to these docs).\n\n**Evidence to check:** Run `build_index.py` and `ste-lint.py`. Read each exit code and compare the lint score with the base. Compare the notes with the list in ADR-0044.\n\n**Scoring:**\n- 1.0: both commands pass and no listed section remains as live text.\n- 0.5: the commands pass, but one listed section remains as live text.\n- 0.0: a command fails.\n\n### C4 — `install.md` asks for a snapshot first\n\n**Must be true:** `install.md` states, for an existing tracker, that a `bd export` snapshot comes first, then `migrate-mapping --dry-run`, then the run. The install tests pass with that text.\n\n**Evidence to check:** Run `tests/test_install_command.py`. Check the order of the three steps in the file.\n\n**Scoring:**\n- 1.0: the order is right and the tests pass.\n- 0.5: the order is right, but a test needed a change that is not explained.\n- 0.0: the dry run or the snapshot step is missing.\n\n## Regression check\n\n- `uv run pytest tests/test_tracker_docs.py tests/test_install_command.py -q` passes.\n- The Hindsight allow rules in the setup skill still match the names in `hindsight.ts`, so `tests/test_install_command.py` stays green.\n\n## Out of scope — do not penalise\n\n- The wording of the docs, when the checks pass.\n- The adapter code. Slices 24 to 29 own it.\n",
         "source_path": ".cobuilder/rubrics/beads-storage/slice-30.md"
+      },
+      {
+        "id": "beads-storage/31",
+        "feature_slug": "beads-storage",
+        "n": 31,
+        "title": "Slice 31 — E8 spike notes into the adapter notes",
+        "body_md": "Kind: behavioral\n\n# Rubric: Slice 31 — E8 spike notes into the adapter notes\n\nFeature: beads-storage\nEpic: beads-storage/E8\nSlice goal: The adapter notes hold a new section, \"Program stage in the tracker\". Each spike finding has its command and its exit code. The slice changes no code.\nTest command: `uv run pytest tests/test_tracker_docs.py -q` (regression only. The slice has no suite test of its own.)\n\n## Criteria\n\n### C1 — Each finding has a command and an exit code [CRITICAL]\n\n**Must be true:** The section \"Program stage in the tracker\" in `shared/tracker-adapter-beads.md` holds one row for each of these findings: the counts and the drift between `goal.json` and the tracker, the write to a missing program (exit 4), the create of a program with its texts, the duplicate rows with the invisible write, the bd call count and time of the index build, and the ready call. Each row gives the command and the observed exit code.\n\n**Evidence to check:** Read the section. Count the six findings. For each row, find the command and the exit code.\n\n**Scoring:**\n- 1.0: all six findings appear, and each has a command and an exit code.\n- 0.5: all six appear, but one row has no exit code or no command.\n- 0.0: a finding is missing, or an exit code comes from the design text and no run.\n\n### C2 — The notes name the version and the manual cleanup [CRITICAL]\n\n**Must be true:** The section names bd 1.3.0. It records the manual cleanup of a duplicate program row: close the newer row with `bd close <bd id> --force`, then sync.\n\n**Evidence to check:** Read the section for the version and the cleanup steps.\n\n**Scoring:**\n- 1.0: the version and both cleanup steps appear.\n- 0.5: the cleanup appears, but the version is missing.\n- 0.0: the cleanup is missing.\n\n### C3 — The slice changes no code\n\n**Must be true:** The slice changes no file under `shared/tracker_port/`, `plugins/`, or `tests/`. Only `shared/tracker-adapter-beads.md` changes.\n\n**Evidence to check:** List the files that the slice changed (`git show --stat` of its commit).\n\n**Scoring:**\n- 1.0: only the adapter notes changed.\n- 0.5: a comment-only change in a code file.\n- 0.0: behavior changed in a code file.\n\n## Regression check\n\n- `uv run pytest tests/test_tracker_docs.py -q` passes.\n- `ste-lint.py` scores `shared/tracker-adapter-beads.md` no worse than its base.\n\n## Out of scope — do not penalise\n\n- Any change to the port, the index, or design mode. Slices 32 to 38 own those.\n- The wording of the notes, when each row carries its command and exit code.\n",
+        "source_path": ".cobuilder/rubrics/beads-storage/slice-31.md"
+      },
+      {
+        "id": "beads-storage/32",
+        "feature_slug": "beads-storage",
+        "n": 32,
+        "title": "Slice 32 — E8 the tracker creates the program record, and design mode says so",
+        "body_md": "Kind: test-suite\n\n# Rubric: Slice 32 — E8 the tracker creates the program record, and design mode says so\n\nFeature: beads-storage\nEpic: beads-storage/E8\nSlice goal: `set-program-stage <program> <stage> --plans-dir DIR` creates a missing program record. A write refuses when two rows hold one cb id. `doctor` lists the duplicates. The engineer allowed skipping the RED stage, so the GREEN work adds the tests itself.\nTest command: `uv run pytest tests/test_tracker_program_create.py tests/test_tracker_contract.py tests/test_tracker_docs.py tests/test_tracker_usage_doc.py -q -m ''`\n\nThe new test file is `tests/test_tracker_program_create.py`. Its real-bd test carries the `slow` mark, so the command needs `-m ''`. A skip counts as no evidence for C3.\n\n## Criteria\n\n### C1 — A missing program is created with its stage and texts [CRITICAL]\n\n**Must be true:** `set_program_stage(program, stage, plans_dir)` on a missing program, with an existing `goal.json`, calls `create_record` once. The new record holds the stage, the title, the outcome as `description`, the done-when list as `acceptance_criteria`, `external_ref` equal to the program id, and the lifecycle of `program_lifecycle(stage, ())`. A closing stage closes the record. A held program behaves as before.\n\n**Evidence to check:** Read the replay test of the whole create argv and the fake-adapter test. Run the test file.\n\n**Scoring:**\n- 1.0: both adapters are tested for each field above and the tests pass.\n- 0.5: the create is tested, but one field is not asserted.\n- 0.0: no create, or a held program changes behavior.\n\n### C2 — The refusals exit 4 and the CLI takes `--plans-dir` [CRITICAL]\n\n**Must be true:** A missing program with no `plans_dir` exits 4 with the existing message. A missing `goal.json` exits 4 and names the path. The files adapter still refuses. `tracker.py set-program-stage --help` lists `--plans-dir`.\n\n**Evidence to check:** Read the CLI tests for the exit codes. Run `uv run shared/tracker.py set-program-stage --help`.\n\n**Scoring:**\n- 1.0: both refusals assert exit 4, and the flag is in the help.\n- 0.5: one refusal is untested.\n- 0.0: a refusal exits 0, or the flag is missing.\n\n### C3 — A duplicate row makes the write refuse [CRITICAL]\n\n**Must be true:** `_find_row` raises `AdapterError` when two rows hold the cb id, and the text names both bd ids. `doctor` has a field `duplicates` that lists the cb ids with two rows. A live test in a scratch tracker makes a second row with a raw create and checks that the write refuses.\n\n**Evidence to check:** Run the live test with `-m ''`. Read the assertion on both bd ids and on `duplicates`.\n\n**Scoring:**\n- 1.0: the live test ran, passed, and asserts the refusal and the doctor field.\n- 0.5: the replay test asserts it, and the live test skipped.\n- 0.0: a duplicate row still lets a write through.\n\n### C4 — A seed over a held program creates no second program\n\n**Must be true:** `seed-from-files` over a plan whose program the tracker holds creates the epics and slices, and it creates no second program row.\n\n**Evidence to check:** Read the seed test. It must count program rows before and after.\n\n**Scoring:**\n- 1.0: the count stays one, and the test passes.\n- 0.0: no test, or a second row appears.\n\n## Regression check\n\n- `uv run pytest tests/test_tracker_contract.py tests/test_tracker_beads_seed.py -q` passes.\n- A grep finds no `bd` call outside `shared/tracker_port/` (`tests/test_tracker_docs.py`).\n\n## Out of scope — do not penalise\n\n- The index change. That belongs to slice 33.\n- The edits to section 12 of `design-mode.md`. Slice 34 owns them. Slice 32 owns edits 1 and 2 only.\n",
+        "source_path": ".cobuilder/rubrics/beads-storage/slice-32.md"
+      },
+      {
+        "id": "beads-storage/33",
+        "feature_slug": "beads-storage",
+        "n": 33,
+        "title": "Slice 33 — E8 the index reads the stage from the tracker, with a fallback",
+        "body_md": "Kind: test-suite\n\n# Rubric: Slice 33 — E8 the index reads the stage from the tracker, with a fallback\n\nFeature: beads-storage\nEpic: beads-storage/E8\nSlice goal: `design.stage` in `data/index.json` comes from the tracker program, then from a legacy `goal.json` stage. The build reads one snapshot and makes at most three bd calls. The GREEN work adds the tests itself, since the RED stage is skipped.\nTest command: `uv run pytest tests/test_index_stage_source.py tests/test_build_index.py tests/test_build_index_port.py tests/test_sparse_design_corpus.py -q -m ''`\n\nThe new test file is `tests/test_index_stage_source.py`. The fixtures are under `tests/fixtures/tracker/stage/`. The sparse-design test fails while another session leaves an untracked design folder: the scorer sets such folders aside first.\n\n## Criteria\n\n### C1 — The six cases of the stage table give the stated result [CRITICAL]\n\n**Must be true:** On the fake adapter, with a corpus under `tests/fixtures/tracker/stage/`:\n- the tracker holds a valid stage: `design.stage` is that stage and `stage_source` is `tracker`;\n- no tracker program or no stage, and a valid `goal.json` stage: the goal stage, `stage_source` is `goal`;\n- both valid and different: the tracker wins, and the build adds a warning that names both values;\n- a value outside `DESIGN_STAGES` in either source: a failure that names the source and the value;\n- no stage anywhere: a failure that names the design and the call `tracker.py set-program-stage <design> backlog --plans-dir docs/plans`;\n- the tracker cannot be read: a warning with the error text, and each design uses its goal stage.\n\n**Evidence to check:** Read the test for each case. Run the file.\n\n**Scoring:**\n- 1.0: all six cases have a passing test that asserts the stated result.\n- 0.5: five cases are tested.\n- 0.0: fewer than five, or the tracker does not win in the differing case.\n\n### C2 — One snapshot and at most three bd calls [CRITICAL]\n\n**Must be true:** `all_records()` exists on the port. The beads adapter implements it with one `bd list`. `reader.snapshot(repo)` returns one `TrackerSnapshot`, catches `AdapterError`, runs `next_ready(\"slice\")` once for a non-files adapter, and sets `ready` to `None` for the files adapter. A counting runner shows at most three bd calls for one build.\n\n**Evidence to check:** Read the counting test and `reader.py`. Run the test.\n\n**Scoring:**\n- 1.0: the counting test passes with a limit of three, and the snapshot is one object.\n- 0.5: the count is tested, but the limit is four or more.\n- 0.0: no count test, or the build still reads the tracker four times.\n\n### C3 — The other readers still work\n\n**Must be true:** `project_goal` no longer requires `stage`. The old calls `reader.epic_records` and `reader.slice_records` still work and use `all_records()`. The existing stage tests in `test_build_index.py` pass with the new failure text.\n\n**Evidence to check:** Run `tests/test_build_index.py` and `tests/test_build_index_port.py`.\n\n**Scoring:**\n- 1.0: both pass.\n- 0.5: they pass, but an assertion was weakened without a reason.\n- 0.0: one fails.\n\n## Regression check\n\n- `uv run pytest tests/test_tracker_contract.py -q -m ''` passes, including a contract case for `all_records` on the fake, the files, and the beads replay.\n- `uv run shared/build_index.py` on this repo exits 0 (set another session's untracked folders aside first).\n\n## Out of scope — do not penalise\n\n- The strip step and the `design-mode.md` schema edits. Slice 34 owns them.\n- Board display. Slices 35 and 36 own it.\n",
+        "source_path": ".cobuilder/rubrics/beads-storage/slice-33.md"
+      },
+      {
+        "id": "beads-storage/34",
+        "feature_slug": "beads-storage",
+        "n": 34,
+        "title": "Slice 34 — E8 the strip step and the schema change",
+        "body_md": "Kind: behavioral\n\n# Rubric: Slice 34 — E8 the strip step and the schema change\n\nFeature: beads-storage\nEpic: beads-storage/E8\nSlice goal: `shared/strip_goal_stage.py` removes `stage` from a `goal.json` only when the tracker holds the same value. Design mode writes no `goal.stage` when a tracker exists. The engineer allowed skipping the RED stage, so the checks below are smoke runs and the tests that the GREEN work adds.\nTest command: `uv run pytest tests/test_strip_goal_stage.py tests/test_sparse_design_corpus.py tests/test_tracker_docs.py -q`\n\nThe new test file is `tests/test_strip_goal_stage.py`. Another session may leave an untracked design folder that breaks the sparse-design test. The scorer sets it aside first.\n\n## Criteria\n\n### C1 — The strip removes the key only when the tracker agrees [CRITICAL]\n\n**Must be true:** With a fake tracker and three designs (same stage, a different stage, no program), only the first loses the `stage` key. The report lists `stripped`, `kept` with its reason (`no program`, `no stage`, or `differs`), and `no stage field`. With no tracker config, the script exits 0 and reports each file as `kept: no tracker`. The script never reads the files adapter as a tracker.\n\n**Evidence to check:** Run the test file. Then copy a design folder to a temp dir and run the script with `--dry-run` and without it.\n\n**Scoring:**\n- 1.0: the three-design test passes and the no-tracker run exits 0 with the stated report.\n- 0.5: the three designs pass, but the no-tracker case is untested.\n- 0.0: a key is removed while the tracker holds another value or none.\n\n### C2 — The strip keeps the file shape and is idempotent [CRITICAL]\n\n**Must be true:** The script keeps the key order and the indent of the file. A dry run writes nothing. A second run strips nothing.\n\n**Evidence to check:** Compare the file bytes before and after a dry run. Run the script twice and read the second report.\n\n**Scoring:**\n- 1.0: the dry run leaves the bytes equal, and the second run strips nothing.\n- 0.5: one of the two holds.\n- 0.0: a dry run writes, or the key order changes.\n\n### C3 — Design mode and the other prose write no `goal.stage`\n\n**Must be true:** Edits 3 to 8 of the E8 design land in `design-mode.md` and in the architect `SKILL.md`. The §12 schema example holds no `stage`, and no `branch`, `pr`, or `state` in `epics[]`. The odyssey `SKILL.md` reads the stage with `tracker.py list-programs`, and calls `tracker.py set-program-stage <design> implemented` or `approved`. `CLAUDE.md` says the resolved stage must be one of `DESIGN_STAGES`. Each `tracker.py` operation a doc names is a subcommand of `tracker.py --help`.\n\n**Evidence to check:** Read the schema block and the three prose files. Run `tests/test_tracker_docs.py`.\n\n**Scoring:**\n- 1.0: every listed edit is present and the docs test passes.\n- 0.5: one edit is missing.\n- 0.0: design mode still tells the reader to write `goal.stage` when a tracker exists.\n\n### C4 — A design with no goal stage is accepted\n\n**Must be true:** `tests/test_sparse_design_corpus.py` accepts a design with no goal stage when `stage_source` is `tracker`.\n\n**Evidence to check:** Run the test with another session's folders set aside.\n\n**Scoring:**\n- 1.0: the test passes.\n- 0.0: it fails.\n\n## Regression check\n\n- `uv run pytest tests/test_build_index.py -q` passes.\n- `ste-lint.py` scores each edited doc no worse than its base.\n\n## Out of scope — do not penalise\n\n- Running the strip on the live repo. Slice 38 does that, by hand.\n",
+        "source_path": ".cobuilder/rubrics/beads-storage/slice-34.md"
+      },
+      {
+        "id": "beads-storage/35",
+        "feature_slug": "beads-storage",
+        "n": 35,
+        "title": "Slice 35 — E8 epic and slice status on the board",
+        "body_md": "Kind: test-suite\n\n# Rubric: Slice 35 — E8 epic and slice status on the board\n\nFeature: beads-storage\nEpic: beads-storage/E8\nSlice goal: The epic status words in `joins.epic_status` follow the table of the E8 design, and the Work board counts epics by the word `completed`. The GREEN work adds the tests itself, since the RED stage is skipped.\nTest command: `uv run pytest tests/test_epic_status_words.py tests/test_epic_state_in_tracker.py tests/test_build_index.py -q` and `cd plugins/artifact/viewer && npm run test`\n\nThe new test file is `tests/test_epic_status_words.py`. Read the status word table in `epic-E8-design.md` for the expected words.\n\n## Criteria\n\n### C1 — The status words follow the table [CRITICAL]\n\n**Must be true:** `apply_epic_lifecycle` takes the resolved design stage as a second input. A build over a fixture with one design at each stage gives the word of the table for each epic. A closed epic reads `completed` for every stage. `projector.slice_entities` gives `in_progress` for a slice whose lifecycle is `in_progress`.\n\n**Evidence to check:** Read the fixture and the test. Check each stage row against the table. Run the Python tests.\n\n**Scoring:**\n- 1.0: every row of the table has an assertion and the tests pass.\n- 0.5: all rows are tested, but the slice `in_progress` case is not.\n- 0.0: a word differs from the table.\n\n### C2 — The viewer counts `completed` epics only [CRITICAL]\n\n**Must be true:** In the viewer, `EpicState` gains `superseded`. `DONE_STATES` holds `completed` only, so it no longer holds `merged`. `DesignRow.done` counts the epics whose word is `completed`. The detail pane and the deck row show the same count. The card says \"closed\", as in \"3 of 5 epics closed\".\n\n**Evidence to check:** Read `types.ts`, `bundle.ts`, `WorkDrawer.tsx`. Run `npm run test` in `plugins/artifact/viewer`. Open the Work board in the viewer and read one card.\n\n**Scoring:**\n- 1.0: the tests pass, the count agrees in both places, and the card text uses \"closed\".\n- 0.5: the count is right, but the card text still says \"done\".\n- 0.0: `merged` still counts as done.\n\n### C3 — The board never says merged for a join number\n\n**Must be true:** The drawer text does not say `merged` for a pull request number from the join. The green merge icon is gone from the deck row.\n\n**Evidence to check:** Grep the drawer source for the word `merged`. Read the deck row.\n\n**Scoring:**\n- 1.0: no such text or icon remains.\n- 0.0: it remains.\n\n## Regression check\n\n- `cd plugins/artifact/viewer && npm run build` writes the new `index.html`, and `uv run pytest tests/test_viewer_build.py -q` passes.\n- `uv run pytest tests/test_epic_state_in_tracker.py -q` passes.\n\n## Out of scope — do not penalise\n\n- The next ready slice and the pull request chips. Slice 36 owns them.\n",
+        "source_path": ".cobuilder/rubrics/beads-storage/slice-35.md"
+      },
+      {
+        "id": "beads-storage/36",
+        "feature_slug": "beads-storage",
+        "n": 36,
+        "title": "Slice 36 — E8 next ready and pull request state on the board",
+        "body_md": "Kind: test-suite\n\n# Rubric: Slice 36 — E8 next ready and pull request state on the board\n\nFeature: beads-storage\nEpic: beads-storage/E8\nSlice goal: A Work board card shows the closed and total slices, the next ready slice, and one chip for each pull request record, all from the tracker. The GREEN work adds the tests itself, since the RED stage is skipped.\nTest command: `uv run pytest tests/test_index_design_tracker.py tests/test_viewer_build.py -q` and `cd plugins/artifact/viewer && npm run test`\n\nThe new test file is `tests/test_index_design_tracker.py`. Read the `design_tracker` index shape in `epic-E8-design.md`.\n\n## Criteria\n\n### C1 — The index holds `design_tracker` for each design [CRITICAL]\n\n**Must be true:** `build_index.py` fills `design_tracker` from the snapshot. Each design gets its slice counts, its first ready slice (by epic id, then `n`), and its pull request records. A record belongs to a design when it tracks one of the design's epics. On the fake adapter, a design with a ready slice gives that slice, a design at `implemented` gives `null`, and with the files adapter every design gives `null`. A counting runner shows at most three bd calls for the build.\n\n**Evidence to check:** Read the build test and the counting test. Run the file. Read `design_tracker` of two designs in the rebuilt `data/index.json`.\n\n**Scoring:**\n- 1.0: all three cases and the count are asserted and pass.\n- 0.5: the cases pass, but the call count is not asserted.\n- 0.0: `next_ready` is wrong for a design, or the build makes four or more calls.\n\n### C2 — The card shows the tracker values [CRITICAL]\n\n**Must be true:** The deck row shows `slicesDone/slicesTotal`, the epic meter, the next ready slice (id and title, one line), and one chip for each pull request. A chip reads `#43 open` or `#43 merged`. The merge icon shows for `merged` only. A viewer test renders a card with an open and a merged record and checks the icon.\n\n**Evidence to check:** Read the viewer test. Run `npm run test`. Open the Work board in the viewer and read two cards.\n\n**Scoring:**\n- 1.0: the test passes and the screen shows the chips.\n- 0.5: the test passes, but the screen was not checked.\n- 0.0: a chip says `merged` for an open record.\n\n### C3 — An unread tracker shows nothing wrong\n\n**Must be true:** When `trackerRead` is false, the card shows no next ready slice and no chip, and the drawer footer says the tracker was not read. With the files adapter the footer says that next ready needs a tracker. `resolvedJoinsOf` gives the two answers `designTracker(designId)` and `trackerRead()`, and no file outside `src/data/` reads a join table.\n\n**Evidence to check:** Read the viewer tests for the unread state. Grep `src` outside `src/data/` for the join table names.\n\n**Scoring:**\n- 1.0: both states are tested and the grep is empty.\n- 0.5: one state is untested.\n- 0.0: a card shows a ready slice while the tracker was not read.\n\n## Regression check\n\n- `cd plugins/artifact/viewer && npm run build` writes `index.html` in both places, and `uv run pytest tests/test_viewer_build.py -q` passes.\n- The `shipped` lane blurb in `workDeck.ts` says \"The tracker holds the stage implemented.\"\n- The field `DesignRow.pullRequests` is removed when no reader remains (grep result in the evidence).\n\n## Out of scope — do not penalise\n\n- The status words and the epic count. Slice 35 owns them.\n- Repair of old records. Slice 37 owns it.\n",
+        "source_path": ".cobuilder/rubrics/beads-storage/slice-36.md"
+      },
+      {
+        "id": "beads-storage/37",
+        "feature_slug": "beads-storage",
+        "n": 37,
+        "title": "Slice 37 — E8 repair-status with a dry run",
+        "body_md": "Kind: test-suite\n\n# Rubric: Slice 37 — E8 repair-status with a dry run\n\nFeature: beads-storage\nEpic: beads-storage/E8\nSlice goal: `tracker.py repair-status [--dry-run] [--plans-dir DIR] [--index PATH]` stamps missing program stages and closes stale epics and slices by stated rules. A dry run writes nothing. A second run changes nothing. The GREEN work adds the tests itself, since the RED stage is skipped.\nTest command: `uv run pytest tests/test_repair_status.py tests/test_repair_status_real.py tests/test_tracker_contract.py -q -m ''`\n\nThe new test files are `tests/test_repair_status.py` and `tests/test_repair_status_real.py` (slow). The fixtures are under `tests/fixtures/tracker/repair/`. A skip counts as no evidence for C3.\n\n## Criteria\n\n### C1 — The rules and the holds give the stated result [CRITICAL]\n\n**Must be true:** `plan_repair(records, legacy_stages, merged)` is a pure function that returns `changes`, `holds`, `unresolved`, and `unchecked`. The fixture corpus covers each rule and each hold. A design at `approved`, `review`, `backlog`, or `decided` never gets a close, whatever the evidence says. An epic and its slices close when the design stage is `implemented` or `superseded`, or when a closed pull request record tracks the epic, or when the index file shows `joins.epic_status[epic] == \"merged\"`. The engineer states that `cobuilder-memory` is implemented, so a stage that the engineer stated closes its epics: the guard of the design (choice E) must not hold an epic of a design whose stage the engineer set. Every change carries its rule name.\n\n**Evidence to check:** Read the rule test over the repair fixture. Check each rule name and each hold in the result.\n\n**Scoring:**\n- 1.0: every rule and every hold has an assertion, and the live designs never close.\n- 0.5: the rules pass, but one hold is untested.\n- 0.0: a live design gets a close.\n\n### C2 — No GitHub call and the evidence sources are stated [CRITICAL]\n\n**Must be true:** No code in `shared/tracker_port/` calls `gh`. The merged-pull-request evidence comes only from a closed pull request record and from the `--index` file. The CLI lists `repair-status` in `--help`, and the files adapter refuses it.\n\n**Evidence to check:** Grep `shared/tracker_port/` for `gh ` and `subprocess`. Run `uv run shared/tracker.py --help`. Read the files-adapter test.\n\n**Scoring:**\n- 1.0: the grep is empty, the help lists the operation, and the files adapter refuses.\n- 0.5: one of the three fails.\n- 0.0: the port calls `gh`.\n\n### C3 — A dry run writes nothing, and the run is idempotent [CRITICAL]\n\n**Must be true:** A dry run leaves the fake state file unchanged and makes no write and no sync. A live run sets `_batching`, makes the writes, and publishes once. A second run returns an empty `changes`. A scratch tracker with a real bd repairs a corpus, runs again, and finds no change. A replay test stops after the stamps and resumes. A contract case checks the dry run on both adapters.\n\n**Evidence to check:** Run the live file with `-m ''`. Read the call list of the dry run.\n\n**Scoring:**\n- 1.0: the live test ran and passed, and the dry run, the second run, and the resume tests pass.\n- 0.5: the replay tests pass, and the live test skipped.\n- 0.0: a dry run writes, or a second run changes a record.\n\n### C4 — Stamps use the existing path\n\n**Must be true:** A stamp or a create uses the code path of `set_program_stage`. A close uses `close --force` on a bd row, and the fake adapter sets the lifecycle.\n\n**Evidence to check:** Read the call list in the replay test.\n\n**Scoring:**\n- 1.0: the calls match.\n- 0.5: the result matches, but a separate code path is used.\n- 0.0: the stamp skips the lifecycle rule.\n\n## Regression check\n\n- `uv run pytest tests/test_tracker_contract.py tests/test_tracker_cli.py -q` passes.\n- `tests/test_tracker_docs.py` passes: no bd call appears outside `shared/tracker_port/`.\n\n## Out of scope — do not penalise\n\n- Running the repair on the live tracker. Slice 38 does that, by hand.\n",
+        "source_path": ".cobuilder/rubrics/beads-storage/slice-37.md"
+      },
+      {
+        "id": "beads-storage/38",
+        "feature_slug": "beads-storage",
+        "n": 38,
+        "title": "Slice 38 — E8 live repair, docs, and install",
+        "body_md": "Kind: behavioral\n\n# Rubric: Slice 38 — E8 live repair, docs, and install\n\nFeature: beads-storage\nEpic: beads-storage/E8\nSlice goal: The usage guide, the adapter notes, and the install command describe the new operations and the three live steps in order. Each operation a doc names is a subcommand. The live steps ran on this repo with a snapshot first.\nTest command: `uv run pytest tests/test_tracker_docs.py tests/test_tracker_usage_doc.py tests/test_install_command.py tests/test_plugin_manifests.py -q`\n\n## Criteria\n\n### C1 — Each operation a doc names is a subcommand [CRITICAL]\n\n**Must be true:** Every `tracker.py` operation that `tracker-usage.md`, `install.md`, and the setup skill name appears in `uv run shared/tracker.py --help`, and this includes `repair-status`. The usage guide has the moments \"A design is named\" (`set-program-stage <program> backlog --plans-dir <dir>`) and \"Records of finished designs are stale\" (`repair-status`). It states the strip and its order. The usage examples run and match their output.\n\n**Evidence to check:** Run `tracker.py --help`. Extract the names from the three texts. Run `tests/test_tracker_usage_doc.py`.\n\n**Scoring:**\n- 1.0: every name resolves, both moments exist, and the usage test passes.\n- 0.5: the names resolve, but a moment row is missing.\n- 0.0: a doc names an operation that is not a subcommand.\n\n### C2 — The install order is snapshot, repair, strip [CRITICAL]\n\n**Must be true:** `install.md` says that an existing tracker needs three steps in this order: a snapshot, then `repair-status --dry-run` and `repair-status`, then `strip_goal_stage.py --dry-run` and `strip_goal_stage.py`. The docs name no bd command outside the adapter notes (`tests/test_tracker_docs.py`). The word \"consent\" does not appear before a `--dry-run` step.\n\n**Evidence to check:** Read the three steps in `install.md` and the setup skill. Run the install and docs tests.\n\n**Scoring:**\n- 1.0: the order is right and the tests pass.\n- 0.5: the order is right, but the setup skill is missing a step.\n- 0.0: a step is missing, or the strip runs before the repair.\n\n### C3 — The live run left the tracker in the stated state [CRITICAL]\n\n**Must be true:** The engineer ran, on this repo: a snapshot (`bd export` to a file outside the repo), `repair-status --dry-run`, `repair-status`, `sync`, an index rebuild, `strip_goal_stage.py --dry-run`, `strip_goal_stage.py`, and a second rebuild. After the first rebuild, no design shows a `stage drift` warning, and each `stage_source` reads `tracker`. After the strip, the stage of each design equals its stage before the strip, apart from stages the engineer changed.\n\n**Evidence to check:** Read the snapshot file name, the dry-run list, and `data/index.json` (`design.stage_source` for each design). Run `uv run shared/tracker.py repair-status --dry-run ...` again and read an empty `changes`.\n\n**Scoring:**\n- 1.0: the snapshot exists, the second dry run is empty, and every `stage_source` is `tracker`.\n- 0.5: the repair ran, but a design still shows a drift warning.\n- 0.0: no snapshot, or a live design was closed.\n\n### C4 — Plugin versions rise together\n\n**Must be true:** The version of each changed plugin rises in `plugin.json` and in `marketplace.json`, and the two match.\n\n**Evidence to check:** Run `tests/test_plugin_manifests.py`. Compare the versions with the base.\n\n**Scoring:**\n- 1.0: the versions rose and match.\n- 0.0: a changed plugin keeps its version, or the two files differ.\n\n## Regression check\n\n- `uv run shared/build_index.py` exits 0. Another session's untracked folders may need to be set aside first.\n- `ste-lint.py` scores each changed doc no worse than its base.\n\n## Out of scope — do not penalise\n\n- The code of the repair and the strip. Slices 34 and 37 own it.\n- The same live steps on think-with-ai. The engineer runs them there.\n",
+        "source_path": ".cobuilder/rubrics/beads-storage/slice-38.md"
       },
       {
         "id": "book-index-tiering/1",
@@ -6724,20 +6919,20 @@
       "beads-storage/E2": "in_progress",
       "beads-storage/E3": "in_progress",
       "beads-storage/E4": "in_progress",
-      "beads-storage/E5": "in_progress",
+      "beads-storage/E5": "completed",
       "beads-storage/E6": "unstarted",
-      "beads-storage/E7": "in_progress",
-      "beads-storage/E8": "unstarted",
+      "beads-storage/E7": "completed",
+      "beads-storage/E8": "in_progress",
       "book-index-tiering/E1": "open",
       "build-workflow-polish/E1": "completed",
       "build-workflow-polish/E2": "completed",
       "build-workflow-polish/E3": "completed",
-      "build-workflow-polish/E4": "unstarted",
+      "build-workflow-polish/E4": "superseded",
       "cobuilder-implement/E1": "merged",
       "cobuilder-implement/E2": "merged",
-      "cobuilder-memory/E1": "open",
-      "cobuilder-memory/E2": "unstarted",
-      "cobuilder-memory/E3": "unstarted",
+      "cobuilder-memory/E1": "completed",
+      "cobuilder-memory/E2": "completed",
+      "cobuilder-memory/E3": "completed",
       "cobuilder-viewer/E1": "open",
       "cobuilder-viewer/E2": "open",
       "cobuilder-viewer/E3": "open",
@@ -6757,7 +6952,7 @@
       "cobuilder-viewer/E17": "open",
       "cobuilder-viewer/E18": "open",
       "cobuilder-viewer/E19": "open",
-      "design-mode/E1": "merged",
+      "design-mode/E1": "completed",
       "gate-doc-surfacing/E1": "open",
       "gate-doc-surfacing/E2": "open",
       "gate-state-resolution/E1": "unstarted",
@@ -6778,39 +6973,39 @@
       "lean-bundle-diffs/E1": "unstarted",
       "lean-bundle-diffs/E2": "unstarted",
       "lean-bundle-diffs/E3": "completed",
-      "maintainable-viewer/E1": "unstarted",
-      "maintainable-viewer/E2": "unstarted",
-      "maintainable-viewer/E3": "unstarted",
-      "maintainable-viewer/E4": "unstarted",
-      "nexus-borrowings/E1": "open",
-      "nexus-borrowings/E2": "open",
-      "nexus-borrowings/E3": "open",
-      "nexus-borrowings/E4": "open",
-      "options-mode/E1": "open",
-      "plugin-split/E1": "merged",
-      "plugin-split/E2": "merged",
-      "plugin-split/E3": "merged",
-      "plugin-split/E4": "merged",
-      "plugin-split/E5": "merged",
-      "plugin-split/E6": "merged",
-      "plugin-split/E7": "unstarted",
+      "maintainable-viewer/E1": "superseded",
+      "maintainable-viewer/E2": "superseded",
+      "maintainable-viewer/E3": "superseded",
+      "maintainable-viewer/E4": "superseded",
+      "nexus-borrowings/E1": "completed",
+      "nexus-borrowings/E2": "completed",
+      "nexus-borrowings/E3": "completed",
+      "nexus-borrowings/E4": "completed",
+      "options-mode/E1": "completed",
+      "plugin-split/E1": "completed",
+      "plugin-split/E2": "completed",
+      "plugin-split/E3": "completed",
+      "plugin-split/E4": "completed",
+      "plugin-split/E5": "completed",
+      "plugin-split/E6": "completed",
+      "plugin-split/E7": "completed",
       "plugin-split/E8": "completed",
-      "react-viewer/E1": "unstarted",
-      "react-viewer/E2": "unstarted",
-      "react-viewer/E3": "unstarted",
-      "react-viewer/E4": "unstarted",
-      "react-viewer/E5": "unstarted",
-      "react-viewer/E6": "unstarted",
-      "react-viewer/E7": "unstarted",
-      "react-viewer/E8": "unstarted",
-      "react-viewer/E9": "unstarted",
-      "review-flight-deck/F0": "no-pull-request",
-      "review-flight-deck/F1": "no-pull-request",
-      "review-flight-deck/F2": "no-pull-request",
-      "review-flight-deck/F3": "no-pull-request",
-      "review-flight-deck/F4": "no-pull-request",
-      "review-flight-deck/F5": "no-pull-request",
-      "review-flight-deck/F6": "no-pull-request",
+      "react-viewer/E1": "superseded",
+      "react-viewer/E2": "superseded",
+      "react-viewer/E3": "superseded",
+      "react-viewer/E4": "superseded",
+      "react-viewer/E5": "superseded",
+      "react-viewer/E6": "superseded",
+      "react-viewer/E7": "superseded",
+      "react-viewer/E8": "superseded",
+      "react-viewer/E9": "superseded",
+      "review-flight-deck/F0": "superseded",
+      "review-flight-deck/F1": "superseded",
+      "review-flight-deck/F2": "superseded",
+      "review-flight-deck/F3": "superseded",
+      "review-flight-deck/F4": "superseded",
+      "review-flight-deck/F5": "superseded",
+      "review-flight-deck/F6": "superseded",
       "review-link/E1": "no-pull-request",
       "slice-agents-and-vocabulary/E1": "unstarted",
       "slice-agents-and-vocabulary/E2": "unstarted",
@@ -6855,6 +7050,14 @@
       "beads-storage/28": "beads-storage/E7",
       "beads-storage/29": "beads-storage/E7",
       "beads-storage/30": "beads-storage/E7",
+      "beads-storage/31": "beads-storage/E8",
+      "beads-storage/32": "beads-storage/E8",
+      "beads-storage/33": "beads-storage/E8",
+      "beads-storage/34": "beads-storage/E8",
+      "beads-storage/35": "beads-storage/E8",
+      "beads-storage/36": "beads-storage/E8",
+      "beads-storage/37": "beads-storage/E8",
+      "beads-storage/38": "beads-storage/E8",
       "cobuilder-family/4": "plugin-split/E1",
       "cobuilder-family/5": "plugin-split/E1",
       "cobuilder-family/6": "plugin-split/E1",
@@ -6952,7 +7155,14 @@
       "level-page-restructure/2": "epic header names 'level-page-restructure/E1', which no design declares.",
       "level-page-restructure/3": "epic header names 'level-page-restructure/E1', which no design declares.",
       "level-page-restructure/4": "epic header names 'level-page-restructure/E2', which no design declares.",
-      "level-page-restructure/5": "epic header names 'level-page-restructure/E3', which no design declares."
+      "level-page-restructure/5": "epic header names 'level-page-restructure/E3', which no design declares.",
+      "mechanical-smells/1": "epic header names 'mechanical-smells/E1', which no design declares.",
+      "mechanical-smells/2": "epic header names 'mechanical-smells/E1', which no design declares.",
+      "mechanical-smells/3": "epic header names 'mechanical-smells/E1', which no design declares.",
+      "mechanical-smells/4": "epic header names 'mechanical-smells/E1', which no design declares.",
+      "mechanical-smells/5": "epic header names 'mechanical-smells/E1', which no design declares.",
+      "mechanical-smells/6": "epic header names 'mechanical-smells/E1', which no design declares.",
+      "mechanical-smells/7": "epic header names 'mechanical-smells/E1', which no design declares."
     },
     "context_verifies_district": {
       "architect": [
@@ -7414,6 +7624,39 @@
           "view": "#/level-page-restructure/build/plan/epics`"
         }
       ],
+      "mechanical-smells": [
+        {
+          "n": "1",
+          "name": "Product",
+          "state": "APPROVED 2026-10-25",
+          "doc": "mechanical-smells",
+          "doc_kind": "product"
+        },
+        {
+          "n": "2",
+          "name": "Architecture",
+          "state": "APPROVED 2026-10-25",
+          "doc": "mechanical-smells",
+          "doc_kind": "architecture"
+        },
+        {
+          "n": "2b",
+          "name": "Interaction design",
+          "state": "n/a (no UI) — Screens: \"no UI change: the viewer renders the same pages\""
+        },
+        {
+          "n": "3",
+          "name": "Program Design",
+          "state": "APPROVED 2026-10-25",
+          "doc": "mechanical-smells",
+          "doc_kind": "program"
+        },
+        {
+          "n": "4",
+          "name": "Slice plan, epic designs, and rubrics",
+          "state": "in progress"
+        }
+      ],
       "nexus-borrowings": [
         {
           "n": "1",
@@ -7609,6 +7852,160 @@
           "view": "#/work-drawer/build/plan/epics`"
         }
       ]
+    },
+    "tracker": {
+      "adapter": "beads",
+      "read": true
+    },
+    "design_tracker": {
+      "beads-storage": {
+        "stage_source": "tracker",
+        "next_ready": "beads-storage/35",
+        "pull_requests": [
+          {
+            "ref": "pr-43",
+            "number": 43,
+            "state": "open",
+            "epics": [
+              "beads-storage/E3",
+              "beads-storage/E2",
+              "beads-storage/E4",
+              "beads-storage/E1"
+            ]
+          },
+          {
+            "ref": "pr-50",
+            "number": 50,
+            "state": "merged",
+            "epics": [
+              "beads-storage/E5"
+            ]
+          },
+          {
+            "ref": "pr-51",
+            "number": 51,
+            "state": "merged",
+            "epics": [
+              "beads-storage/E7"
+            ]
+          }
+        ]
+      },
+      "book-index-tiering": {
+        "stage_source": "tracker",
+        "next_ready": null,
+        "pull_requests": []
+      },
+      "build-workflow-polish": {
+        "stage_source": "tracker",
+        "next_ready": null,
+        "pull_requests": []
+      },
+      "cobuilder-implement": {
+        "stage_source": "tracker",
+        "next_ready": null,
+        "pull_requests": []
+      },
+      "cobuilder-memory": {
+        "stage_source": "tracker",
+        "next_ready": null,
+        "pull_requests": []
+      },
+      "cobuilder-viewer": {
+        "stage_source": "tracker",
+        "next_ready": "cobuilder-viewer/1",
+        "pull_requests": []
+      },
+      "design-mode": {
+        "stage_source": "tracker",
+        "next_ready": null,
+        "pull_requests": []
+      },
+      "gate-doc-surfacing": {
+        "stage_source": "tracker",
+        "next_ready": null,
+        "pull_requests": []
+      },
+      "gate-state-resolution": {
+        "stage_source": "tracker",
+        "next_ready": null,
+        "pull_requests": []
+      },
+      "habit-smells": {
+        "stage_source": "tracker",
+        "next_ready": null,
+        "pull_requests": []
+      },
+      "implementation-conformance": {
+        "stage_source": "tracker",
+        "next_ready": null,
+        "pull_requests": []
+      },
+      "inflight-record-store": {
+        "stage_source": "tracker",
+        "next_ready": null,
+        "pull_requests": []
+      },
+      "interaction-design-gate": {
+        "stage_source": "tracker",
+        "next_ready": null,
+        "pull_requests": []
+      },
+      "lean-bundle-diffs": {
+        "stage_source": "tracker",
+        "next_ready": null,
+        "pull_requests": []
+      },
+      "maintainable-viewer": {
+        "stage_source": "tracker",
+        "next_ready": null,
+        "pull_requests": []
+      },
+      "nexus-borrowings": {
+        "stage_source": "tracker",
+        "next_ready": null,
+        "pull_requests": []
+      },
+      "options-mode": {
+        "stage_source": "tracker",
+        "next_ready": null,
+        "pull_requests": []
+      },
+      "plugin-split": {
+        "stage_source": "tracker",
+        "next_ready": null,
+        "pull_requests": []
+      },
+      "react-viewer": {
+        "stage_source": "tracker",
+        "next_ready": null,
+        "pull_requests": []
+      },
+      "review-flight-deck": {
+        "stage_source": "tracker",
+        "next_ready": null,
+        "pull_requests": []
+      },
+      "review-link": {
+        "stage_source": "tracker",
+        "next_ready": null,
+        "pull_requests": []
+      },
+      "slice-agents-and-vocabulary": {
+        "stage_source": "tracker",
+        "next_ready": null,
+        "pull_requests": []
+      },
+      "ubiquitous-language": {
+        "stage_source": "tracker",
+        "next_ready": null,
+        "pull_requests": []
+      },
+      "work-drawer": {
+        "stage_source": "tracker",
+        "next_ready": null,
+        "pull_requests": []
+      }
     }
   }
 }
