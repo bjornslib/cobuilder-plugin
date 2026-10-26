@@ -133,7 +133,7 @@ def _reflection_lm() -> object | None:
 def _build_optimiser(optimiser: str, cls: object, budget: int, seed: int) -> object:
     """One optimiser with the run budget and seed recorded in its settings."""
     if optimiser == "gepa":
-        settings: dict = {"metric": gepa_feedback, "max_full_evals": budget}
+        settings: dict = {"metric": gepa_feedback, "max_full_evals": budget, "seed": seed}
         reflection = _reflection_lm()
         if reflection is not None:
             settings["reflection_lm"] = reflection
@@ -147,7 +147,7 @@ def _settings_line(optimiser: str, budget: int, seed: int) -> str:
     """The per-optimiser settings for the report."""
     if optimiser == "gepa":
         from priority.interpreter.module import INTERPRETER_MODEL
-        return f"candidates: {budget} (max_full_evals); reflection model: {INTERPRETER_MODEL} (same as the interpreter)"
+        return f"candidates: {budget} (max_full_evals); reflection model: {INTERPRETER_MODEL} (same as the interpreter); seed {seed}"
     if optimiser == "miprov2":
         found = importlib.util.find_spec("optuna") is not None
         state = "present" if found else "absent (not installed; no install attempted)"

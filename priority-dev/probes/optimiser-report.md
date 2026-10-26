@@ -17,12 +17,11 @@ compiled programs, so a small gain is weak evidence.
 
 ## GEPA
 
-- Budget 5, seed 7. Reflection model: the interpreter model.
-- The run completed 42 iterations and 162 rollouts and saved `probes/programs/gepa-budget5-seed7.json`.
+- Budget 5, seed 7 requested. The run used GEPA's default seed 0: the flag never reached the teleprompter. Fixed after the run, so a rerun would use seed 7. Reflection model: the interpreter model.
+- The run completed 42 iterations and 162 rollouts and saved `probes/programs/gepa-budget5-seed0.json` (named seed7 at first, renamed after the seed fix).
 - Held-out score after: not measured. Scoring the saved program failed on all 15 stops with OpenRouter 402: the account has insufficient credits. The failure is in billing, not in the program.
 - Cost: the 162 rollouts are not metered. This was the most expensive run of the three by far.
-- Verdict: compiled but unscored. Score it after a top-up with `priority eval --split holdout --program probes/programs/gepa-budget5-seed7.json`.
-
+- Verdict: compiled but unscored. Score it after a top-up with `priority eval --split holdout --program probes/programs/gepa-budget5-seed0.json`.
 ## MIPROv2
 
 - Not run. The project env has no optuna, and nothing was installed for this spike. The constructor also needs prompt and task models wired. The report records this instead of a score.
