@@ -6,6 +6,7 @@ the kind and the quote. Every failure ends as an Abstain with a logged reason. N
 from __future__ import annotations
 
 import logging
+import re
 from pathlib import Path
 from typing import Any
 
@@ -17,7 +18,7 @@ from priority import config
 from priority.interpreter.calls import CallRecorder
 from priority.interpreter.checks import check_steps
 from priority.interpreter.models import (ACTION_CLASS, ACTION_KINDS, Abstain, Advice, Facts, Interpretation,
-                                         Proposal, digest)
+                                         Notify, Proposal, digest)
 from priority.interpreter.signatures import (ANSWER_DUE, FACT_FIELDS, FILL, HINT, RISK, PickStep, TriageLM,
                                              WriteCard)
 
@@ -26,6 +27,16 @@ MAX_TOKENS = 3000  # a reasoning model spends tokens on its reasoning first, so 
 log = logging.getLogger("priority.interpreter")
 # The fallback of ChatAdapter would make a second model call after a parse fault. A run makes one.
 ADAPTERS = {"chat": lambda: dspy.ChatAdapter(use_json_adapter_fallback=False), "json": dspy.JSONAdapter}
+
+
+NOTIFY_LIMIT = 600
+
+
+def notify_excerpt(final: str, limit: int = NOTIFY_LIMIT) -> str:
+    """The first `limit` characters of the final reply, cut back to the last sentence end."""
+    head = final[:limit]
+    ends = [match.end() for match in re.finditer(r"[.!?]", head)]
+    return head[: ends[-1]] if ends else head
 
 
 def interpreter_lm() -> dspy.LM:
@@ -58,7 +69,7 @@ class Interpreter(dspy.Module):
     def forward(self, brief) -> Interpretation:
         text = brief.for_model()
         recorder = CallRecorder(self.log_dir, self.adapter_name)
-        run = _Run(self, text, recorder, digest(text))
+        run = _Run(self, text, recorder, digest(text), brief.final)
         adapter = ADAPTERS[self.adapter_name]()
         try:
             with dspy.context(lm=self.lm or dspy.settings.lm, adapter=adapter, callbacks=[recorder]):
@@ -71,8 +82,9 @@ class Interpreter(dspy.Module):
 class _Run:
     """The state of one run: the brief text, the facts so far, and the call recorder."""
 
-    def __init__(self, owner: Interpreter, text: str, recorder: CallRecorder, brief_id: str):
+    def __init__(self, owner: Interpreter, text: str, recorder: CallRecorder, brief_id: str, final: str):
         self.owner, self.text, self.recorder, self.brief_id = owner, text, recorder, brief_id
+        self.final = final
         self.facts: Facts | None = None
 
     def call(self, stage: str, predictor: dspy.Predict, **inputs: Any):
@@ -97,6 +109,8 @@ class _Run:
         self.facts = Facts(status=reply.status, needs_human=reply.needs_human, answer_class=reply.answer_class,
                            risk=RISK[reply.risk], priority_hint=HINT[reply.priority_hint],
                            confidence={name: 0.5 if name in unsure else 0.9 for name in FACT_FIELDS})
+        if reply.status == "done" and not unsure:
+            return self.done_outcome()
         if reply.status not in ANSWER_DUE and not unsure:
             return Interpretation(brief_id=self.brief_id, facts=self.facts)
         picked = self.call("pick", self.owner.pick, facts=self.facts.model_dump_json(),
@@ -111,6 +125,21 @@ class _Run:
         except ValidationError as error:
             raise _Fault(Abstain(reason="invalid_output", detail=f"proposal: {error}")) from error
         return Interpretation(brief_id=self.brief_id, facts=self.facts, advice=Advice(question=card, proposal=proposal))
+
+    def done_outcome(self) -> Interpretation:
+        """A done stop gives one notify step built by code. No Pick, Fill, or Card call runs."""
+        if not self.final:
+            raise _Fault(Abstain(reason="no_agent_reply",
+                                 detail="the final reply is empty, so there is nothing to notify"))
+        excerpt = notify_excerpt(self.final)
+        try:
+            step = Notify(session_id=self.owner.session_id, author="interpreter", evidence_quote=excerpt,
+                          confidence=1.0, excerpt=excerpt)
+            proposal = Proposal(proposal_id="p-" + self.brief_id, brief_id=self.brief_id, steps=(step,))
+        except ValidationError as error:
+            raise _Fault(Abstain(reason="invalid_output", detail=f"notify: {error}")) from error
+        return Interpretation(brief_id=self.brief_id, facts=self.facts,
+                              advice=Advice(question=None, proposal=proposal))
 
     def step(self, number: int, picked):
         """Run Fill for one step. Code sets the fields that the model must not write."""

@@ -57,7 +57,8 @@ RUN_QUOTE = "I will read the helper first"
 NOT_IN_BRIEF = "words that never appear in the brief"
 
 ALL_KINDS = ("reply", "continue", "continue_until", "approve_permission", "deny_permission", "pick_option",
-             "approve_gate", "send_feedback", "interrupt", "ask_human", "snooze", "dismiss", "set_priority_hint")
+             "approve_gate", "send_feedback", "interrupt", "ask_human", "snooze", "dismiss", "set_priority_hint",
+             "notify")
 
 CARD = {"ask": "Retry with a fixed delay or with backoff?",
         "options": [{"label": "fixed"}, {"label": "backoff"}], "agent_recommendation": "fixed"}

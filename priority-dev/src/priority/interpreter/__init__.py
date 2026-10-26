@@ -6,6 +6,7 @@ from priority.interpreter.models import (
     Advice,
     Facts,
     Interpretation,
+    Notify,
     Proposal,
 )
 from priority.interpreter.module import Interpreter, interpreter_lm
@@ -19,6 +20,7 @@ __all__ = [
     "Facts",
     "Interpretation",
     "Interpreter",
+    "Notify",
     "Proposal",
     "RunDigest",
     "digest_lm",

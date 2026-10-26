@@ -137,14 +137,14 @@ PLANS = {
     "echo": Plan(fault="malformed", digest_fault="malformed"),
     "foxtrot": Plan(fault="empty_quote"),
     "golf": Plan(fault="timeout"),
-    "hotel": Plan(status="done", needs_human=False),  # Triage alone ends the run
+    "hotel": Plan(status="done", needs_human=False),  # one code-built notify step, no Pick call
     "india": Plan(fault="429"),
     "zulu": Plan(),  # the file holds no agent reply, so the brief is an Abstain
 }
 # (abstain reason, steps) of each session of PLANS, the same for both adapters
 OUTCOMES = {"alpha": (None, 1), "bravo": (None, 2), "charlie": (None, 3), "delta": ("model_error", 0),
             "echo": ("invalid_output", 0), "foxtrot": ("quote_not_in_brief", 0), "golf": ("model_error", 0),
-            "hotel": (None, 0), "india": ("model_error", 0), "zulu": ("no_agent_reply", 0)}
+            "hotel": (None, 1), "india": ("model_error", 0), "zulu": ("no_agent_reply", 0)}
 CALLS_PER_STAGE = {"triage": 9, "pick": 8, "fill": 6, "card": 2}  # for each adapter, from PLANS
 
 

@@ -1,4 +1,4 @@
-"""The typed output of the interpreter: facts, question card, the 13 actions, and the Interpretation.
+"""The typed output of the interpreter: facts, question card, the 14 actions, and the Interpretation.
 
 The types follow docs/design/schemas/interpreter_schemas.py, sections 2 to 5.
 """
@@ -152,6 +152,12 @@ class Dismiss(ActionBase):
     reason: Literal["done", "stale", "duplicate", "fyi_read"]
 
 
+class Notify(ActionBase):
+    """A finished run becomes a notice. Code sets the excerpt from the final reply."""
+    kind: Literal["notify"] = "notify"
+    excerpt: str = Field(max_length=600)
+
+
 class SetPriorityHint(ActionBase):
     kind: Literal["set_priority_hint"] = "set_priority_hint"
     hint: float = Field(ge=0, le=1)
@@ -159,7 +165,7 @@ class SetPriorityHint(ActionBase):
 
 Action = Annotated[
     Union[Reply, Continue, ContinueUntil, ApprovePermission, DenyPermission, PickOption,
-          ApproveGate, SendFeedback, Interrupt, AskHuman, Snooze, Dismiss, SetPriorityHint],
+          ApproveGate, SendFeedback, Interrupt, AskHuman, Snooze, Dismiss, SetPriorityHint, Notify],
     Field(discriminator="kind"),
 ]
 ACTION_CLASS = {c.model_fields["kind"].default: c for c in get_args(get_args(Action)[0])}

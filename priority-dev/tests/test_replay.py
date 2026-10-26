@@ -144,7 +144,7 @@ def test_the_proposals_are_counted_by_step_count(run, report, name):
     lines = split(report[f"Adapter: {name}"], "### ")["Proposals by step count"]
     shown = counts(lines, r"- (\d) steps?: (\d+)$")
     from_results = Counter(r["steps"] for r in run.results() if r["adapter"] == name and r["steps"])
-    assert {int(k): v for k, v in shown.items()} == {1: 1, 2: 1, 3: 1} == dict(from_results)
+    assert {int(k): v for k, v in shown.items()} == {1: 2, 2: 1, 3: 1} == dict(from_results)
 
 
 @pytest.mark.parametrize("name", ADAPTERS)

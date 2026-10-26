@@ -42,6 +42,13 @@ def digest(transcript: Path, stop: int | None, log_dir: Path | None) -> int:
     return 0
 
 
+def fixtures_check(args: argparse.Namespace) -> int:
+    """Check the labelled fixture set: labels, split, manifest cover, git ignore."""
+    from priority.evaluation import check
+
+    return check.run(args.manifest, args.labels, args.real_dir)
+
+
 def replay(args: argparse.Namespace) -> int:
     """Replay each transcript of a folder, and write the report. Each model error ends as an Abstain."""
     from priority.replay import runner  # a lazy import: only this command needs dspy and the key
@@ -78,6 +85,16 @@ def main(argv: list[str] | None = None) -> int:
                                help="Stops in flight at once on the interpreter model (default: 5)")
     replay_parser.add_argument("--goal", type=Path, default=options.DEFAULT_GOAL, help="goal.json with the abort_if list")
 
+    fixtures_parser = subparsers.add_parser("fixtures", help="Work with the labelled fixture set")
+    fixtures_sub = fixtures_parser.add_subparsers(dest="fixtures_command")
+    check_parser = fixtures_sub.add_parser("check", help="Verify the labels, the split, and the git ignore")
+    check_parser.add_argument("--manifest", type=Path, default=Path("fixtures/set-manifest.json"),
+                              help="Manifest with session ids and stop numbers")
+    check_parser.add_argument("--labels", type=Path, default=Path("fixtures/real/labels-confirmed.json"),
+                              help="Confirmed labels file")
+    check_parser.add_argument("--real-dir", type=Path, default=Path("fixtures/real"),
+                              help="Folder with the real sessions, must be Git-ignored")
+
     args = parser.parse_args(argv)
     if args.command == "brief":
         res = build_brief(args.transcript, stop=args.stop)
@@ -93,6 +110,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "replay":
         return replay(args)
+
+    if args.command == "fixtures" and args.fixtures_command == "check":
+        return fixtures_check(args)
 
     parser.print_help()
     return 0

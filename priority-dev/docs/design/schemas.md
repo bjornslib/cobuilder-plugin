@@ -29,7 +29,7 @@ Stage 2 runs when the facts say that an answer is due. The rule is plain Python:
 
 Stage 2 runs even when `needs_human` is true. The human then sees a card with a recommended answer and does not start from nothing.
 
-The stage 2 system prompt holds the JSON schema of `Advice`. That schema is 16,071 characters, because the `Action` type has 13 kinds. Every call sends it. Prompt caching at the provider may lower the cost. I did not check that.
+The stage 2 system prompt holds the JSON schema of `Advice`. That schema is 16,071 characters, because the `Action` type has 14 kinds. Every call sends it. Prompt caching at the provider may lower the cost. I did not check that.
 
 ## 2. Input: the stop brief
 
@@ -113,7 +113,7 @@ The petekp/inbox README does not show a field called `helps`. It says that a tas
 
 ## 4. All the proposed actions
 
-Thirteen kinds. Nine touch the session, and four change only the inbox. The policy file owns the starting verdict. The column shows the proposed default and the reason.
+Fourteen kinds. Nine touch the session, and five change only the inbox. The policy file owns the starting verdict. The column shows the proposed default and the reason.
 
 | Kind | Effect | Payload | Borrowed from | Starting verdict |
 |---|---|---|---|---|
@@ -130,6 +130,7 @@ Thirteen kinds. Nine touch the session, and four change only the inbox. The poli
 | `snooze` | hides an item until a time or an event | `until`, `until_event` | agentbox away gating | ALLOW |
 | `dismiss` | closes an item | `reason` | petekp/inbox skip | ALLOW |
 | `set_priority_hint` | proposes a new hint after the advisor reads the full text | `hint` | agentbox: an agent cannot change its own priority | ALLOW. A rule still sets the rank |
+| `notify` | files a finished run as a notice | `excerpt`: the first 600 characters of the final reply, cut at a sentence end | our addition for a done stop | ALLOW |
 
 The name `approve_gate` stays. A gate is a CoBuilder gate, not a generic approval stage. `approve_permission` answers a tool prompt of the harness, and it is a different thing.
 

@@ -29,7 +29,7 @@ from brief_support import FIXTURES, require
 def test_interpreter_module_exports():
     api = interpreter_api()
     assert tuple(sorted(api.ACTION_KINDS)) == tuple(sorted(ALL_KINDS))
-    assert len(api.ACTION_KINDS) == 13
+    assert len(api.ACTION_KINDS) == 14
     assert callable(api.interpreter_lm)
     assert issubclass(api.Interpreter, dspy.Module)
 
@@ -64,12 +64,15 @@ def test_no_card_when_no_human_must_answer():
     assert len(lm.history) == 3
 
 
-def test_done_status_ends_after_triage():
+def test_done_status_gives_one_code_built_notify_step():
     lm = dummy([DONE])
     out = interpret(lm)
     assert out.facts.status == "done"
-    assert out.advice is None
     assert out.abstained is None
+    assert [s.kind for s in out.advice.proposal.steps] == ["notify"]
+    final = make_brief().final
+    step = out.advice.proposal.steps[0]
+    assert step.excerpt and step.excerpt in final and len(step.excerpt) <= 600
     assert len(lm.history) == 1
 
 
