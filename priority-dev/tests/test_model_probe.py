@@ -269,7 +269,7 @@ def test_call_model_normalizes_structured_and_text_replies(monkeypatch, tmp_path
             return [output]
 
     monkeypatch.setitem(sys.modules, "dspy", SimpleNamespace(LM=StubLM))
-    monkeypatch.setattr(probe, "load_key", lambda: "test-key")
+    monkeypatch.setattr(probe, "load_nvidia_key", lambda: "test-key")
     result = probe.run(QUESTION_TRANSCRIPT, log_dir=tmp_path)
 
     assert result.status == "waiting_answer"
@@ -297,7 +297,7 @@ def test_call_model_keeps_empty_text_envelope_metadata(monkeypatch):
             return [{"text": None, "reasoning_content": reasoning}]
 
     monkeypatch.setitem(sys.modules, "dspy", SimpleNamespace(LM=StubLM))
-    monkeypatch.setattr(probe, "load_key", lambda: "test-key")
+    monkeypatch.setattr(probe, "load_nvidia_key", lambda: "test-key")
 
     assert probe.call_model("prompt") == {
         "text": None,

@@ -33,7 +33,7 @@ PRIORITY_DEV = Path(__file__).resolve().parents[1]
 PROBE_PATH = PRIORITY_DEV / "probes" / "model_probe.py"
 FIXTURES = PRIORITY_DEV / "fixtures" / "made-up"
 
-INTERPRETER_MODEL = "openrouter/deepseek/deepseek-v4.1-flash-1017"
+INTERPRETER_MODEL = "nvidia_nim/minimaxai/minimax-m3.1-flash"
 DIGEST_MODEL = "nvidia_nim/minimaxai/minimax-m3.1-flash"
 
 # Made-up secrets. They match the planted values in fixtures/made-up/with-secret.jsonl.
