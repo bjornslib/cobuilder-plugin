@@ -9,10 +9,11 @@ from priority.interpreter.models import (
     Notify,
     Proposal,
 )
-from priority.interpreter.module import Interpreter, interpreter_lm
+from priority.interpreter.module import CombinedInterpreter, Interpreter, interpreter_lm
 
 __all__ = [
     "ACTION_KINDS",
+    "CombinedInterpreter",
     "Abstain",
     "Advice",
     "DIGEST_MODEL",

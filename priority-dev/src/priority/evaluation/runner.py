@@ -52,14 +52,27 @@ def to_prediction(result: object) -> dict:
             steps.append(action.kind)
             if action.kind != "ask_human" and action.evidence_quote:
                 quotes.append(action.evidence_quote)
-    prediction.update({"steps": steps, "quotes": quotes, "abstain": None})
+    question = advice.question if advice is not None else None
+    prediction.update({"steps": steps, "quotes": quotes, "question": question, "card": question,
+                       "abstain": None})
     abstained = getattr(result, "abstained", None)
     if abstained is not None:
         prediction["abstain"] = {"reason": abstained.reason, "detail": abstained.detail}
     return prediction
 
 
-def _make_interpreter(log_dir: Path | str | None = None):
+def contradiction_count(predictions: list) -> int:
+    """How many predictions pair a question card with a first step that avoids the human."""
+    count = 0
+    for prediction in predictions:
+        steps = prediction.get("steps") or []
+        has_card = prediction.get("question") is not None or prediction.get("card") is not None
+        if steps and steps[0] == "snooze" and has_card:
+            count += 1
+    return count
+
+
+def _make_interpreter(log_dir: Path | str | None = None, variant: str = "chain"):
     """The real interpreter, or one without a model when the key is missing.
 
     The caller may stub the Interpreter class (as the tests do); then the
@@ -72,7 +85,7 @@ def _make_interpreter(log_dir: Path | str | None = None):
     except Exception as exc:  # noqa: BLE001 (offline runs still report, as abstains)
         log.warning("eval runs without a model: %s", exc)
         lm = None
-    return interpreter.Interpreter(lm, log_dir=log_dir)
+    return interpreter.Interpreter(lm, log_dir=log_dir, variant=variant)
 
 
 def _match_labels(labels_by_session: dict, session_id: str):
@@ -123,7 +136,7 @@ def _stored_rows(path: Path | None, start: int) -> list[dict]:
 
 
 def run(manifest: Path, labels: Path, real_dir: Path, split_name: str,
-        log_dir: Path | str | None = None) -> int:
+        log_dir: Path | str | None = None, variant: str = "chain") -> int:
     """Score one split of the fixture set and print the report. Return exit code."""
     try:
         entries = json.loads(Path(manifest).read_text())
@@ -142,8 +155,8 @@ def run(manifest: Path, labels: Path, real_dir: Path, split_name: str,
     wanted = set(parts[split_name])
     calls_path = Path(log_dir) / "calls.jsonl" if log_dir is not None else None
     start = len(calls_path.read_text().splitlines()) if calls_path is not None and calls_path.exists() else 0
-    model = _make_interpreter(log_dir)
-    rows = []
+    model = _make_interpreter(log_dir, variant)
+    rows, predictions = [], []
     for entry in entries:
         session_id = entry["session"]
         if session_id not in wanted:
@@ -172,6 +185,7 @@ def run(manifest: Path, labels: Path, real_dir: Path, split_name: str,
             example = {field: label[field] for field in FACT_FIELDS} | {
                 "steps": label["steps"], "ambiguous": label["ambiguous"], "brief_text": brief_text}
             value, _ = score(example, prediction)
+            predictions.append(prediction)
             rows.append({"session": session_id, "stop": key, "overall": value,
                          **components(example, prediction), "ambiguous": _is_ambiguous(label)})
     if not rows:
@@ -193,6 +207,7 @@ def run(manifest: Path, labels: Path, real_dir: Path, split_name: str,
         hits = sum(1 for row in rows if row["fact_ok"][field])
         print(f"fact {field}: {hits / len(rows):.3f} ({hits}/{len(rows)})")
     print(f"steps: {_mean(rows, 'steps'):.3f}")
+    print(f"contradictions: {contradiction_count(predictions)} ({len(predictions)} stops)")
     print(f"grounding: {_mean(rows, 'grounding'):.3f}")
     print(f"overall including ambiguous: {_mean(rows, 'overall'):.3f} ({len(rows)} stops)")
     if plain:

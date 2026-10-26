@@ -66,6 +66,23 @@ class WriteCard(dspy.Signature):
     card: Question = dspy.OutputField()
 
 
+class CombinedAction(BaseModel):
+    """One step of the one-call variant. The kind stays plain so the code check names the step."""
+    kind: str = Field(description="The kind of this step")
+    evidence_quote: str = Field(default="", description="Exact words from the stop brief. Empty for a human task")
+    confidence: float = Field(default=0.0, description="0 to 1")
+    payload: dict = Field(default_factory=dict, description="The fields of the action")
+
+
+class WriteCombined(dspy.Signature):
+    """Write the steps, their payloads, and the question card in one call."""
+    brief_text: str = dspy.InputField()
+    facts: str = dspy.InputField(desc="The facts from the triage step, as JSON")
+    allowed_kinds: list[str] = dspy.InputField(desc="Choose the kind of each step from these kinds only")
+    actions: list[CombinedAction] = dspy.OutputField(desc="One to three steps with payloads, in order")
+    card: Question | None = dspy.OutputField(desc="The question card, or null when no card is due")
+
+
 def payload_model(cls: type[ActionBase]) -> type[Strict]:
     """The fields of an action that the model writes. Code sets the session, author, quote, and confidence."""
     skip = set(ActionBase.model_fields) | {"kind"}

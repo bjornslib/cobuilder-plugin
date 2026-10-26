@@ -53,7 +53,7 @@ def eval_split(args: argparse.Namespace) -> int:
     """Score one split of the labelled set against the interpreter."""
     from priority.evaluation import runner  # a lazy import: only this command needs dspy and the key
 
-    return runner.run(args.manifest, args.labels, args.real_dir, args.split, args.log_dir)
+    return runner.run(args.manifest, args.labels, args.real_dir, args.split, args.log_dir, args.variant)
 
 
 def replay(args: argparse.Namespace) -> int:
@@ -102,6 +102,8 @@ def main(argv: list[str] | None = None) -> int:
     check_parser.add_argument("--real-dir", type=Path, default=Path("fixtures/real"),
                               help="Folder with the real sessions, must be Git-ignored")
     eval_parser = subparsers.add_parser("eval", help="Score one split of the labelled set")
+    eval_parser.add_argument("--variant", default="chain", choices=("chain", "combined"),
+                             help="The interpreter variant to score (default: chain)")
     eval_parser.add_argument("--split", default="train", choices=("train", "holdout"),
                              help="The split to score (default: train)")
     eval_parser.add_argument("--manifest", type=Path, default=Path("fixtures/set-manifest.json"),
