@@ -68,3 +68,4 @@ plugins/cobuilder-memory/.claude-plugin/types/
 *.gate.lock*
 priority-dev/fixtures/real/
 priority-dev/reports/logs/
+.lavish/priority-dev-interpret-digest.html
