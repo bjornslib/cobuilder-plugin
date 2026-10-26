@@ -16,11 +16,7 @@ beforeEach(() => {
 
 afterEach(cleanup);
 
-/*
-  The rail's Work entry is gone (ADR-0034), so the top bar's icon is the
-  one control that opens the deck from a Work surface. `href="#/"` was
-  the old way back; the icon is the new one.
-*/
+/* ADR-0034 removed the rail's Work entry. The top bar icon is now the only way to open the deck. */
 async function opensDrawerFromWorkIcon() {
   renderAt("#/cobuilder-viewer/intent");
   const icon = await waitFor(() => screen.getByRole("button", { name: "Work board" }));
@@ -30,11 +26,9 @@ async function opensDrawerFromWorkIcon() {
 }
 
 /*
-  The harness used to answer `#/variations` and one address per variation, and the
-  shell handed those addresses back whole. Slice 4 of cobuilder-viewer removes the
-  harness from the shipped graph, so `#/variations` is an id the bundle lacks and
-  nothing else: the shell states that, and it draws no variation switcher. The
-  prototypes were removed from `src/variations/` on 2026-10-08.
+  The harness once answered `#/variations`, and the shell handed those addresses back.
+  Slice 4 of cobuilder-viewer removed the harness (2026-10-08), so `#/variations` is now
+  only an unknown id. The shell says so and draws no variation switcher.
 */
 async function handsNoAddressToHarness() {
   renderAt("#/variations");
@@ -53,16 +47,10 @@ async function openInflightThroughSearch(dialog: HTMLElement) {
   fireEvent.click(link);
 }
 
-/*
-  The deck's own path: the bare route opens the drawer, the search
-  narrows to one row, the sole result reads itself, and the pane's link
-  opens the surface the shell routes. The drawer closes as it leaves.
-*/
 async function opensWorkItemThroughDrawer() {
   renderAt("#/");
   await waitFor(() => expect(screen.getByRole("dialog", { name: "WORK" })).toBeTruthy());
   await openInflightThroughSearch(screen.getByRole("dialog", { name: "WORK" }));
-  /* The drawer closed on its way out, and the surface it opened resolves. */
   await waitFor(() => expect(levelHeading()).toBe("Intent"));
   expect(workItemName()).toBe("inflight-record-store");
   expect(screen.getByText("The join resolves an open pull request.")).toBeTruthy();
@@ -71,7 +59,7 @@ async function opensWorkItemThroughDrawer() {
 async function opensRowAddressWithNoDrawer() {
   renderAt("#/");
   await waitFor(() => expect(screen.getByRole("dialog", { name: "WORK" })).toBeTruthy());
-  /* A fresh page load of that address, the way a new tab would open it. */
+  /* A fresh page load, as a new tab would open it. */
   cleanup();
   renderAt("#/inflight-record-store/intent");
   await waitFor(() => expect(levelHeading()).toBe("Intent"));

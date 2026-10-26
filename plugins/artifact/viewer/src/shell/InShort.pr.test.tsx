@@ -45,7 +45,6 @@ async function showsNarrationAndKeepsItOnSectionChange() {
   fireEvent.click(screen.getByRole("button", { name: "Next" }));
   await waitFor(() => expect(screen.getByText("Section 2 of 4")).toBeTruthy());
   expect(strip()?.textContent).toBe(before);
-  /* The narration is not repeated as the lead of a section. */
   expect(screen.getAllByText("PR intent in short.")).toHaveLength(1);
 }
 

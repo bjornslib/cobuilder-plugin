@@ -16,7 +16,6 @@ beforeEach(() => {
 
 afterEach(cleanup);
 
-/** One rail row, by the label it carries. */
 function rowNamed(label: string): HTMLElement {
   const row = railRows().find((candidate) => labelOf(candidate) === label);
   expect(row, `a rail row names ${label}`).toBeTruthy();
@@ -30,16 +29,14 @@ async function opensAlsoRow() {
   await waitFor(() =>
     expect(window.location.hash).toBe("#/cobuilder-viewer/pull-requests/11/file-diffs"),
   );
-  /* From the change account, a work row opens the program account's row. */
   fireEvent.click(rowNamed("Epics, the work item, 1 epics"));
   await waitFor(() => expect(window.location.hash).toBe("#/cobuilder-viewer/build/epics"));
 }
 
 /*
-  Epics and Rubrics both name the Build section, so the reader's own row is the row
-  they arrived on and not the section they share. A match on the section alone would
-  find Epics below Rubrics, and the press would step onto the row the reader is
-  already on. The row below Rubrics is the pull request's Intent row.
+  Epics and Rubrics both name the Build section, so the reader's row is the row they
+  arrived on. A match on the section alone would find Epics below Rubrics, and the
+  press would step onto the row the reader is already on.
 */
 async function stepsDownFromRubrics() {
   renderAt("#/cobuilder-viewer/build/rubrics");
@@ -53,7 +50,6 @@ async function stepsDownFromRubrics() {
 async function stepsUpFromRubrics() {
   renderAt("#/cobuilder-viewer/build/rubrics");
   await waitFor(() => expect(levelHeading()).toBe("Build"));
-  /* The same shared section, in the other direction. The row above Rubrics is Epics. */
   press("ArrowUp");
   await waitFor(() => {
     expect(window.location.hash).toBe(hrefOf(rowNamed("Epics, the work item, 1 epics")));
@@ -67,25 +63,17 @@ const DISABLED_LABELS = [
   "File Diffs, the pull request",
 ];
 
-/*
-  This design holds `goal.json` alone, so two level rows read disabled. It holds no plan
-  document either, so the Plan row reads disabled too. It carries no pull request, so
-  the File Diffs row reads disabled.
-*/
+/* This design holds `goal.json` alone: no second level, no plan document, and no pull request. */
 function expectDisabledRows() {
   const disabled = railRows().filter(disabledOf);
   expect(disabled.map(labelOf)).toEqual(DISABLED_LABELS);
   expect(disabled.map(hrefOf)).toEqual(["#", "#", "#", "#"]);
-  /* A disabled row names its account, then its reason. */
   for (const row of disabled) {
     expect(row.getAttribute("aria-label") ?? "").toMatch(/, the (work item|pull request)/);
   }
 }
 
-/*
-  The next row a press can reach is Epics, two rows below. Architecture is not a step:
-  its row carries `#`, and a step onto it would open the board.
-*/
+/* Architecture is not a step: its row carries `#`, and a step onto it would open the board. */
 async function stepsAroundDisabledRows() {
   press("ArrowDown");
   await waitFor(() =>

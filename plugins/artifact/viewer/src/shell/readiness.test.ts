@@ -1,19 +1,6 @@
 /**
- * The readiness rule, on its own.
- *
- * `recordVerdicts` turns one design's authored records into a verdict per record kind.
- * `presentCount` counts how many of the six records exist. Both are pure, so this file
- * needs no DOM, no bundle, and no runner setup beyond Vitest itself.
- *
- * Every fixture is written the way `data/designs.js` writes a record. The fixtures reach
- * `DesignRecord` through `unknown` on purpose: this file fixes what the rule reads, not
- * how the record type spells its optionality.
- *
- * Slice 18 adds the board's own row rules to this file: which status a row states, which
- * statuses the strip names, which rows a status tab and a kind tab keep, and which pull
- * requests the board lists alone. Those rules are pure, so they need no DOM either, and
- * the file is where `readiness.ts` keeps them. They read the module through the
- * `BoardRules` shape below, because the file fixes the contract before the code exists.
+ * The fixtures reach `DesignRecord` through `unknown` on purpose. This file fixes what
+ * the rule reads, not how the record type spells its optionality.
  */
 
 import { describe, expect, it } from "vitest";

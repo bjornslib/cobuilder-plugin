@@ -1,17 +1,10 @@
-/**
- * The top bar's branch and supersedes marks, per slice 1 of level-page-restructure.
- *
- * The branch is quiet text next to the status badge. Nothing draws when there is no
- * branch, and the supersedes mark draws only when the work item supersedes a design.
- */
-
 import { cleanup, screen } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it } from "vitest";
 
 import { installMatchMedia } from "./testSupport/jsdom";
 import { renderBar } from "./testSupport/TopBar/renderBar";
 
-/* jsdom has no `matchMedia`, and the sidebar provider asks for it on mount. */
+/* jsdom has no `matchMedia`. The sidebar provider calls it on mount. */
 beforeAll(installMatchMedia);
 
 afterEach(cleanup);

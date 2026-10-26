@@ -28,11 +28,9 @@ function expectSrOnlyHeading(heading: HTMLElement) {
 }
 
 /*
-  C5's first two pieces of evidence. A paged level repeats nothing: the strip names the
-  sections, so the banner above them is gone, and the level's one `h1` survives as
-  `sr-only` for a screen reader and for the focus move. The case reads the heading's tag,
-  its class, its words, and whether a `<header>` band still wraps it — the last of which
-  is exactly the difference between a paged level and a stacked one.
+  C5: a paged level repeats nothing. The strip names the sections, so the banner is gone,
+  and the level's one `h1` stays as `sr-only` for a screen reader and the focus move. The
+  `<header>` check is what tells a paged level from a stacked one.
 */
 async function dropsBandKeepsHeading() {
   await open(PAGED[0].hash);
@@ -42,11 +40,6 @@ async function dropsBandKeepsHeading() {
   expect(document.querySelectorAll("h1"), "the document keeps one h1").toHaveLength(1);
 }
 
-/*
-  The other half of C5's rule, and the reason the case above can fail. Pull requests
-  stacks its panels in the pane's own scroll, so it draws the band the paged level drops
-  and keeps its heading in the flow rather than out of it.
-*/
 async function keepsBandOnStackedLevel() {
   await open(`#/${DESIGN}/pull-requests`);
   await waitFor(() => expect(levelTitle()).toBe("Pull requests"));
@@ -61,29 +54,22 @@ function expectFocusOnArchitectureHeading() {
 }
 
 /*
-  THE RAIL'S ROW IS THE ONE THIS FIXTURE FILLS. The work's own epics carry no pull
-  request, so this bundle holds no change's account and the rail draws one
-  Architecture row: the program's. Its accessible name carries the row's own account
-  and the count it read, so the name is matched on its opening words rather than on
-  the bare section word, which no row carries any more.
+  The work's epics carry no pull request, so this bundle holds no change's account, and the
+  rail draws one Architecture row: the program's. Its accessible name carries the row's
+  account and count, so the name is matched on its opening words.
 */
 function pressArchitectureRow() {
   fireEvent.click(screen.getByRole("link", { name: /^Architecture,/ }));
 }
 
 /*
-  C5's third piece of evidence. A level change is a section change in the shell's own
-  vocabulary, and the shell moves focus to the level's heading for it. The address is
-  opened first, so the case proves the move rather than the first paint.
+  A level change is a section change, and the shell moves focus to the level's heading for
+  it. The address is opened first, so the case proves the move and not the first paint.
 
-  THIS CASE PASSES, AND THE MOUNT IS WHY. The hook that moves focus is
-  `useFocusOnMount`, and it focuses the heading the arriving subtree owns when that
-  subtree mounts. The hook used to run one animation frame after the route changed and
-  resolve its target by id. `AnimatePresence mode="wait"` in `App.tsx` keeps the
-  outgoing subtree mounted until its exit animation finishes, and that subtree owns the
-  `h1#work-section-heading` of the level being left. So that frame focused the old
-  heading, and the exit then let focus fall to the body. The id is ambiguous during the
-  transition, so the move now belongs to the arriving heading inside the keyed subtree.
+  The mount is why this passes. `useFocusOnMount` focuses the heading of the arriving
+  subtree when it mounts. A move one frame after the route change found the old heading by
+  id, because `AnimatePresence mode="wait"` keeps the outgoing subtree mounted for its
+  exit, and then focus fell to the body.
 */
 async function movesFocusOnLevelChange() {
   await open(PAGED[0].hash);
@@ -127,11 +113,9 @@ async function openRubrics() {
 }
 
 /*
-  C6's first evidence. The Rubrics sub-view is not paged: it draws none of the three
-  controls, and the one progress bar on the page is the pane's own reading strip, which
-  sits beside the jump bar in the pane's sticky band rather than inside a paged column.
-  A level progress bar is the only one of the two that a paged level draws, so its
-  position in the tree is what tells them apart here.
+  C6: the Rubrics sub-view is not paged. It draws none of the three controls, and its one
+  progress bar is the pane's reading strip, which sits beside the jump bar. A paged level
+  draws the other kind of bar, so the position in the tree tells them apart.
 */
 async function drawsNoPagedControls() {
   await openRubrics();
@@ -161,11 +145,9 @@ async function expectPagedRootBounded() {
 }
 
 /*
-  C6's second evidence. The pane owns its scroll, and the tree states why: the Rubrics
-  content root carries no height of its own, so it may stand taller than the pane and the
-  pane takes the overflow. The paged column does carry one, and its absence here is the
-  difference. The scroll heights themselves are jsdom's zero and belong to the browser,
-  which the report says.
+  C6: the pane owns its scroll. The Rubrics content root carries no height of its own, so it
+  may stand taller than the pane, and the pane takes the overflow. The paged column does
+  carry one. The scroll heights are jsdom's zero and belong to the browser.
 */
 async function keepsPaneScroll() {
   await openRubrics();

@@ -38,14 +38,12 @@ function expectFilledRow(row: RailRow): void {
   const rendered = rowNamed(row.label);
   expectOpensAddress(row, rendered);
 
-  /* What the row holds is on the row, where a reader reads it. */
   expect(rendered.getAttribute("aria-label"), `${row.label} states what it holds`).toBe(
     accessibleNameOf(row),
   );
 }
 
 function expectIntentCount(design: SparseDesign, filled: RailRow[]): void {
-  /* The Intent row holds the one record the sparse design carries. */
   const intent = filled.find((row) => row.key === "program-intent");
   expect(intent, `${design.id} fills its Intent row`).toBeTruthy();
   expect(
@@ -55,7 +53,6 @@ function expectIntentCount(design: SparseDesign, filled: RailRow[]): void {
 }
 
 function expectEpicsCount(design: SparseDesign, filled: RailRow[]): void {
-  /* The Epics row counts the epics the goal itself plans. */
   const epics = filled.find((row) => row.key === "program-epics");
   const planned = (design.goal.epics ?? []).length;
   if (planned > 0) {
@@ -65,10 +62,6 @@ function expectEpicsCount(design: SparseDesign, filled: RailRow[]): void {
 }
 
 function expectSurfaceOpensOnIntent(design: SparseDesign): void {
-  /*
-   * THE LEVEL THE ROUTE NAMED RENDERS ITS OWN RECORD. The work item resolves, the level
-   * opens on Intent, and the goal's own outcome is what the reader meets there.
-   */
   expect(workItemName(), "the surface names the sparse design").toBe(design.id);
   expect(levelHeading(), "the surface opens on Intent").toBe("Intent");
 }

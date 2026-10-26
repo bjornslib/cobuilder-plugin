@@ -6,34 +6,34 @@
  * the rail gates the levels it cannot." The rail carries two accounts now, and a "level" is
  * one of its rows, so this file holds the same claim against the row list the shell builds.
  *
- * THE SLICE'S END, IN TWO PARTS, AND ONE CASE HOLDS EACH.
+ * The slice's end has two parts, and one case holds each:
  *
  *   1. Every row the design can fill renders, and it renders the record's own content. A
  *      row that fills and shows nothing is the defect this part exists to find.
  *   2. Every row it cannot fill stays in the rail, reads disabled, and states the records
  *      it could not read in place. An absence must read as a state, never as a blank box.
  *
- * THE FIXTURE IS THE REPOSITORY'S OWN. A design directory under
+ * The fixture is the repository's own. A design directory under
  * `docs/architecture/designs/` that holds `goal.json` alone is a sparse design, and this
  * file reads every one of them from disk. Nothing about a design is written by hand here:
  * the id, the goal record, the epics it plans, and the decisions it names all come from the
  * authored file. A design that stops being sparse, or a corpus that loses its last sparse
  * design, fails the first case rather than passing in silence.
  *
- * THE ROW SET COMES FROM THE SHELL, NOT FROM THIS FILE. `railGroups` in `./model` is the one
- * list, and this file asks it for the rows rather than naming them. A row added to the
+ * The row set comes from the shell, not from this file. `railGroups` in `./model` is the
+ * one list, and this file asks it for the rows rather than naming them. A row added to the
  * program's account reaches the cases below without an edit here. Only the promise each row
  * keeps is written down, and `promised` states it from the fixture's own facts: the record
  * body decides whether Problem & Solution is backed, and `goal.adrs[]` decides whether
  * Architecture is.
  *
- * THAT SPLIT IS WHAT LETS A CASE FAIL. A case that compared the rail against `railGroups`
+ * That split is what lets a case fail. A case that compared the rail against `railGroups`
  * alone would move with the code it measures, so a rule that stopped gating a row would
  * carry its own expectation along with it. The promise here is derived from the authored
  * design, and the rail is read through a browser-shaped DOM, so a change to either side is
  * visible.
  *
- * WHAT THIS FILE DOES NOT MEASURE. jsdom holds no layout engine, so the disabled row's 45
+ * What this file does not measure: jsdom holds no layout engine, so the disabled row's 45
  * percent opacity, the tooltip's placement, and the strip's geometry are browser readings
  * and belong to the Gate 4c rubrics. The rule and the markup that produce them are here.
  * The browser reading was taken on 2026-09-25, on the built bundle served at
@@ -78,7 +78,6 @@ function expectCorpusIsSparse(): void {
 }
 
 function expectShellRows(design: SparseDesign): RailRow[] {
-  /* The rows are the shell's own list. This file names none of them. */
   const rows = rowsOfShell(design);
   expect(rows.length, "the rail holds rows for a sparse design").toBeGreaterThan(0);
   expect(railRows().map(labelOf)).toEqual(rows.map((row) => row.label));
@@ -86,13 +85,12 @@ function expectShellRows(design: SparseDesign): RailRow[] {
 }
 
 function expectDisabled(row: RailRow, rendered: HTMLElement): void {
-  /* THE ROW IS DISABLED. A row that is not disabled is a control that leads nowhere. */
   expect(disabledOf(rendered), `${row.label} reads disabled`).toBe(true);
   expect(hrefOf(rendered), `${row.label} opens no address`).toBe("#");
 }
 
 function expectAbsenceStated(row: RailRow, rendered: HTMLElement, absent: string[]): void {
-  /* THE ABSENCE IS STATED IN PLACE, on the row, and not only in a tooltip. */
+  /* The row states the absence itself, and not only in a tooltip. */
   const said = saidOn(rendered);
   expect(
     (rendered.textContent ?? "").trim().length,
@@ -104,7 +102,6 @@ function expectAbsenceStated(row: RailRow, rendered: HTMLElement, absent: string
 }
 
 function expectPressStaysPut(row: RailRow, rendered: HTMLElement, design: SparseDesign): void {
-  /* A PRESS ON A GATED ROW GOES NOWHERE, and it does not move the address. */
   fireEvent.click(rendered);
   expect(window.location.hash, `a press on ${row.label} stays put`).toBe(`#/${design.id}/intent`);
 }

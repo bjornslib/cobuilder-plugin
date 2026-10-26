@@ -8,9 +8,9 @@ import { hasStrip, onScreenIndex, pagerText } from "./testSupport/Pager/queries"
 setupPagerHooks();
 
 /*
-  C4's first evidence, and it is read as a pair: the index moved AND the hash did not.
-  Either half alone is vacuous — a key that did nothing would keep the address, and a
-  key that wrote a route would move the reader without stepping the section.
+  The case reads a pair: the index moved AND the hash did not. Either half alone is vacuous.
+  A key that did nothing would keep the address, and a key that wrote a route would move
+  the reader without stepping the section.
 */
 async function stepsRight(hash: string) {
   press("ArrowRight");
@@ -43,10 +43,9 @@ async function focusFilterField(): Promise<HTMLElement> {
 }
 
 /*
-  ONE PRESS, AND ONLY FORWARD. A forward press and a backward press would cancel, and the
-  case would read the same whether the guard held or not — a staged run of this file
-  proved exactly that, and this is the fix. A single ArrowRight steps forward if anything
-  lets it through.
+  One press, and only forward. A forward press and a backward press would cancel, so the
+  case would read the same whether the guard held or not. A staged run of this file proved
+  that. A single ArrowRight steps forward if anything lets it through.
 */
 async function fieldPressDoesNotStep(field: HTMLElement) {
   fireEvent.keyDown(field, { key: "ArrowRight" });
@@ -55,10 +54,9 @@ async function fieldPressDoesNotStep(field: HTMLElement) {
 }
 
 /*
-  C4's second evidence. The page carries one real text field: the work-item switcher's
-  filter, inside its popover. The case opens that field, focuses it, presses the arrow
-  key, and reads the section. It then presses the same key at the body, so a shell that
-  had stopped stepping altogether would fail this case rather than pass it.
+  The page carries one real text field: the filter of the work-item switcher, inside its
+  popover. The case presses the arrow key in that field, then at the body, so a shell that
+  had stopped stepping altogether would fail rather than pass.
 */
 async function ignoresTextFieldPress() {
   await open(PAGED[0].hash);
@@ -78,10 +76,9 @@ const MODIFIED: Array<Record<string, boolean>> = [
 ];
 
 /*
-  C4's third evidence, held to the same pair as the field's. Each modifier is pressed on
-  its own and forward only, so a guard that let a modified press through would walk the
-  level four boxes along and fail here. A plain press then steps, so the case cannot pass
-  by the keys being broken.
+  Each modifier is pressed on its own and forward only, so a guard that let a modified press
+  through would walk the level four boxes along and fail. A plain press then steps, so the
+  case cannot pass by the keys being broken.
 */
 async function ignoresModifiedPress() {
   await open(PAGED[0].hash);
@@ -106,10 +103,9 @@ function expectFieldPressTaken(tag: string) {
 }
 
 /*
-  The guard itself, called directly. It is one function shared by the pager's keys and
-  the rail's traversal, and its rule is two lines: a field owns its caret keys, and a
-  modifier names a command. Each branch is read in both directions, so a guard widened
-  to swallow every key fails on the arrow keys below it.
+  The guard is one function shared by the keys of the pager and the traversal of the rail.
+  Its rule: a field owns its caret keys, and a modifier names a command. Each branch is read
+  in both directions, so a guard widened to swallow every key fails on the arrow keys.
 */
 function takesFieldAndModifierPresses() {
   for (const tag of ["INPUT", "TEXTAREA", "SELECT"]) {

@@ -1,22 +1,19 @@
 /**
- * review-link slice 3 — the rubrics page at `#/<work>/build/rubrics`.
+ * review-link slice 3: the rubrics page at `#/<work>/build/rubrics`.
  *
- * The page keeps the gate-steps panel and gains the rubric reading surface: one row per
- * slice, in slice order. A row with a rubric is a button that opens the whole document in
- * the Sheet, the same way an epic's technical solution design opens. A slice with no
- * rubric keeps its row and states the absence in place, and it is not a button, so a
- * press cannot open an empty Sheet.
+ * The page keeps the gate-steps panel and gains one row per slice, in slice order. A row
+ * with a rubric is a button that opens the whole document in the Sheet, as an epic's
+ * technical solution design does. A slice with no rubric keeps its row and states the
+ * absence in place. That row is not a button, so a press cannot open an empty Sheet.
  *
- * THE CONTRACT THESE CASES READ. The prose is not pinned. A row that opens a rubric
- * carries `aria-label="Open the acceptance rubric for slice <n>"`. An absent rubric's
- * row carries `data-testid="rubric-empty"`. The Sheet is the dialog the shell opens over
- * the pane, found by role, the way `Sheet.test.tsx` finds it. The page is reached
- * through `Shell`, at a real address, so a missing page fails on an assertion and not on
- * an import.
+ * The cases do not pin the prose. A row that opens a rubric carries
+ * `aria-label="Open the acceptance rubric for slice <n>"`. An absent rubric's row carries
+ * `data-testid="rubric-empty"`. The Sheet is found by its dialog role, as in
+ * `Sheet.test.tsx`. The page is reached through `Shell` at a real address, so a missing
+ * page fails on an assertion and not on an import.
  *
  * The fixture holds one work, `review-link`, with three slices. Slices 1 and 2 carry
- * rubrics. Slice 3 carries none, so the absent case reads on the same page as the two
- * present ones.
+ * rubrics. Slice 3 carries none, so the absent case reads on the same page as the others.
  */
 
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
@@ -42,19 +39,16 @@ beforeEach(installRecords);
 
 afterEach(cleanup);
 
-/** The button that opens one slice's rubric, by the label the row carries. */
 function rubricRow(n: number): HTMLElement {
   return screen.getByRole("button", { name: `Open the acceptance rubric for slice ${n}` });
 }
 
-/** The row that states a slice's absent rubric. */
 function absentRow(): HTMLElement {
   const found = screen.queryByTestId("rubric-empty");
   expect(found, "the page renders one absent-rubric row").toBeTruthy();
   return found as HTMLElement;
 }
 
-/** The record sheet, which is the dialog the shell opens over the pane. */
 async function openSheet(): Promise<HTMLElement> {
   await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeNull());
   return screen.getByRole("dialog");
@@ -69,13 +63,11 @@ async function openPage(hash: string): Promise<void> {
 }
 
 function expectGateRecordKept() {
-  /* The gate-steps panel keeps its own rows, unchanged. */
   expect(screen.getByText("The slice plan is approved")).toBeTruthy();
   expect(screen.getByText("The technical solution design is approved")).toBeTruthy();
 }
 
 function expectRubricRowsAndAbsence() {
-  /* Two rows open a rubric; the third slice states its absence in place. */
   expect(rubricRow(1).textContent).toContain(SLICE_TITLES[0]);
   expect(rubricRow(2).textContent).toContain(SLICE_TITLES[1]);
   expect(absentRow().textContent).toContain("No rubric document exists for slice 3");
@@ -86,10 +78,7 @@ function expectRubricRowsAndAbsence() {
 }
 
 function expectSliceOrder() {
-  /*
-   * The rows read in slice order: 1, 2, then the absent 3. jsdom has no layout
-   * engine, so the order is read from the document, not from any position.
-   */
+  /* jsdom has no layout engine, so the order is read from the document, not from position. */
   const first = rubricRow(1);
   const second = rubricRow(2);
   const third = absentRow();
@@ -116,7 +105,6 @@ function expectSheetHoldsSliceOne(sheet: HTMLElement) {
   expect(within(sheet).getAllByText(RUBRIC_TITLES[0]).length).toBeGreaterThan(0);
   expect(within(sheet).getByText(RUBRIC_BODIES[0])).toBeTruthy();
   expect(within(sheet).getByText("slice 1")).toBeTruthy();
-  /* The sheet holds one rubric, and the page's other rubric stays off it. */
   expect(within(sheet).queryByText(RUBRIC_BODIES[1])).toBeNull();
 }
 

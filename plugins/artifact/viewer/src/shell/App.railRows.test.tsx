@@ -44,10 +44,6 @@ const TEN_HREFS = [
   "#/cobuilder-viewer/pull-requests/11/file-diffs",
 ];
 
-/*
-  The Levels group holds the work's three levels. The Also group follows with Plan,
-  Epics, and Rubrics. The Review group holds the pull request's four rows.
-*/
 async function rendersTenRows() {
   renderAt("#/cobuilder-viewer/intent");
   await waitFor(() => expect(levelHeading()).toBe("Intent"));
@@ -64,10 +60,6 @@ async function groupsRail() {
   expect(labels).toEqual(["Levels", "Also", "Pull request 11"]);
 }
 
-/*
-  `railGroups` is the one list. Its rows carry these three facts at least, and the
-  rail and the traversal both read them here.
-*/
 function railEntries(): RailStep[] {
   return railGroups(railSource("cobuilder-viewer")).flatMap(
     (group: { entries: RailStep[] }) => group.entries,
@@ -75,14 +67,9 @@ function railEntries(): RailStep[] {
 }
 
 /*
-  The rail renders the rows this one function returns, in this one order. The board
-  row is gone (ADR-0034): the rail and the walk now read the same list with no row
-  added back by hand. A second copy of the order is what lost every row below
-  Architecture.
-*/
-/*
-  `entries` holds the rows a press can reach, so the rendered side drops the disabled
-  rows. The "ten rows" case holds the disabled Plan row in place.
+  A second copy of the row order once lost every row below Architecture, so the rail
+  and the walk read one list (ADR-0034 removed the board row). `entries` holds the rows
+  a press can reach, so the rendered side drops the disabled ones.
 */
 async function holdsOneRowList() {
   renderAt("#/cobuilder-viewer/intent");
@@ -97,24 +84,12 @@ async function holdsOneRowList() {
 }
 
 /*
- * The rail's rows, walked with the up and down arrows.
- *
- * EVERY ROW IS A STEP. The first cut of this traversal moved between the three level rows
- * alone, and the engineer found the hole: a reader could not reach Epics from
- * Architecture. So the traversal covers every row the rail renders, in render order: the
- * board's Work row, then the five rows of Build, then the four of Review.
- *
- * ONE LIST SERVES BOTH. The rail renders the rows `railGroups` returns and the traversal
- * steps the same list, so the two cannot drift. The second case compares them.
- *
- * A DISABLED ROW IS NOT A STEP. A level is disabled rather than gated, so a row whose
- * record is absent stays in the rail with `href="#"`. A step onto it would open the
- * board, so the traversal steps the rows that carry a real address.
- *
- * THE GUARD IS THE PAGER'S OWN. A field owns its caret keys and a modifier names a
- * command, so both kinds of press are left to the pager's key handler and to nothing
- * else. The pager's own two keys keep working beside these two.
- */
+  Every row is a step. The first cut of the traversal moved between the three level rows
+  only, so a reader could not reach Epics from Architecture. The rail and the traversal
+  read the one `railGroups` list, so they cannot drift. A disabled row keeps `href="#"`,
+  and a step onto it would open the board, so the traversal skips it. A field owns its
+  caret keys and a modifier names a command, so the pager's key handler guards both.
+*/
 describe("The rail's arrow keys", () => {
   it("renders the ten rows in the rail's own order: Levels, Also, then Review", rendersTenRows);
   it("groups the rail as Levels, Also, and the pull request", groupsRail);

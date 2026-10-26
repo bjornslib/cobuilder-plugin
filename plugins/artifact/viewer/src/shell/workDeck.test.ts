@@ -1,17 +1,7 @@
 /**
- * The Work drawer's rules, run pure.
- *
- * ADR-0034 states four facts the drawer answers on screen — the search owns
- * the result set, a sole result reads itself, the arrows step the strip, and
- * the lanes' vocabulary holds the rows the walk steps through — and the
- * exclusion rule holds the decisions and unmerged pull requests out. Each one
- * is pure beside the data layer's readers, so the drawer cannot disagree with
- * its own tests.
- *
- * The rows here are shaped like the real bundle's rows: a design with an id,
- * a name, a stage, an outcome, epics with ids and branches, and the pull
- * requests the data layer resolved for it. No join is resolved here; C1
- * forbids that outside `src/data`, and these rules read none.
+ * ADR-0034 rules: the search owns the result set, a sole result reads itself, the arrows
+ * step the strip, and the lanes' vocabulary holds the walked rows. Decisions and unmerged
+ * pull requests stay out. No join is resolved here, because C1 forbids that outside `src/data`.
  */
 
 import { describe, expect, it } from "vitest";

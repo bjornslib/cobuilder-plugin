@@ -2,20 +2,16 @@ import type { DesignRow, PullRequest } from "@/data/types";
 
 import { ROW_BASE } from "../designRow";
 
-/** One board row, whether it carries a design or a pull request of its own. */
 export type Source =
   | { kind: "design"; row: DesignRow }
   | { kind: "pull-request"; row: PullRequest };
 
 export type PullRequestSource = Extract<Source, { kind: "pull-request" }>;
 
-/**
- * The board's own row rules, as slice 18 fixes them.
- *
- * The shape is declared here and the module is read through it, so this file fixes the
- * contract before the code exists and keeps the contract after. A rule that is missing
- * fails the assertion that names it rather than throwing somewhere later in a case.
- */
+/*
+  Slice 18's board row rules. The shape is declared here and the module is read through it,
+  so a missing rule fails the assertion that names it, not a later case.
+*/
 export interface BoardRules {
   ROW_KINDS: string[];
   ROW_KIND_LABEL: Record<string, string>;

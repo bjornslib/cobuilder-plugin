@@ -6,10 +6,9 @@ export const ADR_TITLE = "One section on screen";
 export const ADR_STATE = "accepted";
 /**
  * The second decision this work names, and the one the record file does not carry.
- *
- * `data/adrs.js` writes one entry per decision, and a bundle can name a decision its
- * record file did not write. The index still holds the row, so the panel lists it and
- * carries a `no body` chip, and the sheet is the surface that states the absence.
+ * `data/adrs.js` writes one entry per decision, and a bundle can name a decision that its
+ * record file did not write. The index still holds the row, so the panel lists it with a
+ * `no body` chip, and the sheet is the surface that states the absence.
  */
 export const ADR_ABSENT = "ADR-0099";
 export const ADR_ABSENT_TITLE = "A decision with no body";

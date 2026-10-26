@@ -79,15 +79,11 @@ export const INDEX: RecordIndex = {
   },
 };
 
-/**
- * The one rich work item, `cobuilder-viewer` itself.
- *
- * It holds every record the bundle writes for a design, and its epic reaches one pull
- * request that one publication names. So all three levels of its Work surface fill, every
- * group of the rail appears, and the whole rail is nine entries from Work to Release
- * status. Its three diagram levels are the corpus's own, and the container drawing is
- * level 1.
- */
+/*
+  The one rich work item. It holds every record kind and its epic reaches one pull request
+  that one publication names, so every level fills and every rail group appears. Its
+  diagram levels are the corpus's own, and level 1 is the container drawing.
+*/
 export const VIEWER: DesignRecord = {
   goal: {
     name: "cobuilder-viewer",
@@ -153,14 +149,10 @@ export const ADRS = {
 };
 
 /*
- * The decision global is declared by no module, because `src/data/bundle.ts` leaves it
- * to whoever reads the file. The shell's `./records` reads it through a cast and so does
- * this line.
- *
- * It needs one entry. Its guard reads the first value's `title`, so an empty map reads
- * as a file that assigned nothing, and the loader then asks the dev server for one. One
- * entry keeps the whole bundle in memory, where a published file keeps it too.
- */
+  No module declares the decision global, so the read goes through a cast, as the shell's
+  `./records` does. It needs one entry: the guard reads the first value's `title`, and an
+  empty map looks like a file that assigned nothing, so the loader would ask the dev server.
+*/
 export function installAdrs(): void {
   (window as unknown as Record<string, unknown>).ADRS = ADRS;
 }

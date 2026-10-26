@@ -22,7 +22,6 @@ export const GATES = {
   gateSteps: null,
 };
 
-/** A source whose account and change are the two variables of this file. */
 export function source(extra: Partial<RailSource> & { account?: AccountId } = {}): RailSource {
   return {
     work: WORK,

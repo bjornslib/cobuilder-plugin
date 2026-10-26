@@ -1,33 +1,9 @@
-/**
- * The shell's own cases: the surfaces the boot picks.
- *
- * `src/main.tsx` mounts `src/shell/App.tsx`, so this file fixes what a reader meets at
- * each address, and it fixes it against the globals a published file inlines. Nothing
- * here reaches the network: `loadIndex`, `loadDesigns`, and `loadAdrs` all prefer the
- * global when one exists, so the three fixtures below are the whole bundle.
- *
- * The board is the subject of most of these cases, because it is the surface the shell
- * had to gain. `Board.test.tsx` fixes the row's own claims and takes its data as props.
- * This file fixes the route decisions around it: the bare route lands on the board, the
- * board draws no strip and no pager, an unknown id keeps its own error, the rail's `Work`
- * entry returns to the board, and the comparison harness answers no address at all. The
- * prototypes it compared were removed from `src/variations/` on 2026-10-08.
- *
- * The last two cases are slice 7's, and they fix the address in motion: a press on a
- * row's link lands on that design's Work surface at the level the row named, and one
- * row's address opens the same surface on its own, with no board first.
- *
- * One group follows the board's cases. "The rail's arrow keys" fixes the traversal a
- * reader makes with the up and down arrows, over every row the rail renders. Its design
- * therefore holds a record of every kind: the rail's rows appear only when the work fills
- * them, and the walk needs all ten rows.
- * `IntentDrawing.test.tsx` fixes which drawing level the Intent level draws.
- *
- * jsdom implements neither `matchMedia` nor `ResizeObserver`, and the shell asks both
- * questions on its first render: `useCollapsedRail` reads a media query and the diagram
- * tiles observe their box. The stubs answer the query false and observe nothing, which
- * is the desktop rail and a diagram tile whose box is never measured.
- */
+/*
+  jsdom implements neither `matchMedia` nor `ResizeObserver`, and the shell asks both on its
+  first render. The stubs answer the query false and observe nothing. `loadIndex`,
+  `loadDesigns`, and `loadAdrs` prefer the inlined globals, so the three fixtures are the
+  whole bundle and nothing reaches the network.
+*/
 
 import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
@@ -50,17 +26,11 @@ beforeEach(() => {
 
 afterEach(cleanup);
 
-/*
-  The board is the drawer now (ADR-0034): the bare route renders the muted
-  landing behind it and the drawer opens itself, so a deep link to `#/`
-  lands in the deck — five lanes, the state strip, the search — over the
-  shell.
-*/
+/* ADR-0034: the board is the drawer, so the bare route opens it over a muted landing. */
 async function opensDrawerOnBareRoute() {
   renderAt("#/");
   await waitFor(() => expect(screen.getByRole("dialog", { name: "WORK" })).toBeTruthy());
   const dialog = screen.getByRole("dialog", { name: "WORK" });
-  /* The deck's rows are the fixture's own designs, in the lanes they carry. */
   expect(
     within(dialog).getByRole("button", { name: "cobuilder-viewer, stage approved" }),
   ).toBeTruthy();
@@ -68,25 +38,21 @@ async function opensDrawerOnBareRoute() {
 }
 
 function foldLane(dialog: HTMLElement, lane: HTMLElement) {
-  /* Fold: the header says closed, and the row is still on the board. */
   fireEvent.click(lane);
   expect(lane.getAttribute("aria-expanded")).toBe("false");
   expect(within(dialog).getByRole("button", { name: SUPERSEDED_ROW })).toBeTruthy();
 }
 
 function currentLaneRefusesFold(dialog: HTMLElement) {
-  /* The current lane cannot fold: the control refuses. */
   fireEvent.click(within(dialog).getByRole("button", { name: SUPERSEDED_ROW }));
   const lane = present(supersededLane(dialog));
   expect(lane.getAttribute("aria-expanded")).toBe("true");
 }
 
 /*
-  A FOLD IS A DISPLAY CHOICE, NOT AN EXCLUSION — the rule the rail's
-  groups already hold, and the deck now holds too (the engineer caught
-  the deck removing folded rows entirely from the board). The folded
-  lane collapses to its header; the rows stay mounted, in the walk and
-  in the counts. The lane holding the current row refuses the fold.
+  A fold is a display choice, not an exclusion. The engineer caught the deck removing
+  folded rows from the board. A folded lane keeps its rows mounted, in the walk and in
+  the counts, and the lane that holds the current row refuses the fold.
 */
 async function foldsLaneAndRemovesNothing() {
   renderAt("#/");
@@ -99,7 +65,7 @@ async function foldsLaneAndRemovesNothing() {
 }
 
 function stepDeckDown(lane: HTMLElement) {
-  /* The deck takes its own keys; the walk steps the folded row. */
+  /* The deck takes its own keys, so the press goes to its body. */
   const deckBody = lane.closest("div.min-h-0.min-w-0.flex-1") as HTMLElement;
   fireEvent.keyDown(deckBody, { key: "ArrowDown", bubbles: true });
   fireEvent.keyDown(deckBody, { key: "ArrowDown", bubbles: true });
@@ -115,7 +81,6 @@ async function walkReopensFoldedLane() {
   renderAt("#/");
   await waitFor(() => expect(drawerScope()).toBeTruthy());
   const dialog = drawerScope();
-  /* Fold the only lane the walk's second step needs. */
   const lane = present(supersededLane(dialog));
   fireEvent.click(lane);
   expect(lane.getAttribute("aria-expanded")).toBe("false");
@@ -123,11 +88,7 @@ async function walkReopensFoldedLane() {
   await waitFor(() => expectLaneReopened(dialog));
 }
 
-/*
-  The landing is an empty pane per ADR-0034: the drawer is the board, so
-  the pane behind it carries no copy and no second control. What must
-  not exist on it is the old board's own apparatus.
-*/
+/* ADR-0034 made the landing an empty pane: the drawer is the board, so no old board part may remain. */
 function expectNoBoardApparatus() {
   expect(screen.queryByRole("heading", { name: "Work" })).toBeNull();
   expect(screen.queryByRole("button", { name: "Open the Work board" })).toBeNull();
@@ -140,7 +101,6 @@ function expectNoBoardApparatus() {
 async function landingDrawsNoStripNoPagerNoProgress() {
   renderAt("#/");
   await waitFor(() => expect(screen.getByRole("dialog", { name: "WORK" })).toBeTruthy());
-  /* Close the drawer, so the landing answers for itself. */
   fireEvent.keyDown(document.body, { key: "Escape" });
   await waitFor(() => expect(screen.queryByRole("dialog", { name: "WORK" })).toBeNull());
   expectNoBoardApparatus();

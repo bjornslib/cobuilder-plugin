@@ -1,9 +1,6 @@
 import { blankRanges, commentRanges, isIndexKey, literalRanges, type SourceFile } from "./ranges";
 
-/**
- * The two projections of one source file. Everything the two absence criteria read comes
- * from here, and neither criterion reads the file's own text.
- */
+/** The two projections of one source file. The two absence criteria read only these. */
 export interface Projections {
   /** Comments blanked, every literal kept. C4 reads this one. */
   withStrings: string;
@@ -12,27 +9,17 @@ export interface Projections {
 }
 
 /**
- * Project one source file twice.
+ * Project one source file twice. The TypeScript parser reads the comments, not a scanner
+ * that tracks quotes. A hand-rolled scanner left its string state early on a regex literal
+ * that holds a backtick, and from there it read comments as code and code as comments. The
+ * parser has already decided which characters are literal text when it reports a comment.
  *
- * WHY THE TYPESCRIPT PARSER, AND NOT A SCANNER THAT TRACKS QUOTES. This file used to blank
- * comments with a hand-rolled scanner that entered a string state on any quote character
- * and left it on the matching one. A regular-expression literal holding a backtick ends
- * that state early, and from there on the scanner reads comments as code and code as
- * comments. The record-mosaic and flightdeck prototypes, since removed from
- * `src/variations/`, held files that contain exactly that, and the defect went unseen
- * because the criteria were passing or failing for reasons other than the ones they state.
- * The parser answers the question the scanner was guessing at: it has already decided which
- * characters are literal text by the time it reports a comment.
+ * The two criteria need two projections. C4 asks whether a file reaches a bundle global, and
+ * a global's name in a string literal is how a generic reader reaches it, so C4 keeps
+ * literals. C1 asks whether a file resolves a join, and a join key in a literal resolves
+ * nothing: `title="joins.slice_to_epic"` is a tooltip. So C1 blanks literal text.
  *
- * WHY TWO PROJECTIONS. The two criteria ask different questions, and one projection cannot
- * answer both. C4 asks whether a file reaches a bundle global, and a global's name inside a
- * string literal is how a generic reader reaches it, so C4 needs the literal kept. C1 asks
- * whether a file resolves a join, and a join key inside a string literal resolves nothing:
- * `title="joins.slice_to_epic"` is a tooltip, and a glossary is prose. So C1 needs the
- * literal's text blanked.
- *
- * LINE NUMBERS SURVIVE BOTH. Literal text and comment text become spaces, and newlines
- * stay, so a hit reads `path:line: text` and a failure shows the line it found.
+ * Comment and literal text become spaces and newlines stay, so a hit keeps its line number.
  */
 function projectionsFor(file: SourceFile): Projections {
   const text = file.text;
@@ -46,7 +33,6 @@ function projectionsFor(file: SourceFile): Projections {
   };
 }
 
-/** One projection per file, built on first use. Parsing a file twice serves no purpose. */
 const PROJECTIONS = new Map<string, Projections>();
 
 function projected(file: SourceFile): Projections {
@@ -69,12 +55,7 @@ export function lineAt(text: string, index: number): number {
   return text.slice(0, index).split("\n").length;
 }
 
-/**
- * Every line of a file that matches, with its own number, so a failure shows what it found.
- *
- * The pattern runs against one projection of the source, line by line, so a hit names the
- * line a reader would open. See the projection block above for what each one erases.
- */
+/** Every line of a file that matches, with its own number, so a failure shows what it found. */
 export function hitsByLine(pattern: RegExp, files: SourceFile[], which: Projection): string[] {
   const found: string[] = [];
   for (const file of files) {

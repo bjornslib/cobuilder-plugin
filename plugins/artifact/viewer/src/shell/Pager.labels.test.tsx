@@ -43,10 +43,9 @@ async function checkLevelLabels(level: PagedLevel) {
 }
 
 /*
-  The strip's list is the panels the boxes rendered, read by `useJumpTargets`, so the
-  labels and the headings are one fact stated twice. This case reads both, in order, and
-  the pager's count beside them. A strip that held a list of its own — the shape C3
-  scores zero — fails on the first level whose headings it did not match.
+  `useJumpTargets` reads the strip's list from the panels the boxes rendered, so the labels
+  and the headings are one fact stated twice. A strip that held a list of its own, the
+  shape C3 scores zero, fails on the first level whose headings it did not match.
 */
 async function namesStripWithOwnHeadings() {
   for (const level of PAGED) {
@@ -55,11 +54,9 @@ async function namesStripWithOwnHeadings() {
 }
 
 /*
-  C3's third evidence, and the one that separates a read list from a written one. One
-  panel of the second box renames its heading in the DOM, which is what a record change
-  looks like from the pane's side, and the strip's own link takes the new words. A strip
-  built from a constant, or from anything but the pane, keeps the old label and fails
-  here.
+  This case separates a read list from a written one. One panel of the second box renames
+  its heading in the DOM, as a record change looks from the pane's side. A strip built from
+  a constant, or from anything but the pane, keeps the old label and fails.
 */
 function renameSecondBox() {
   const box = boxesOf()[1];

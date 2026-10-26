@@ -1,10 +1,3 @@
-/**
- * The In Short strip: a level's short summary above the section tabs.
- *
- * The fixtures are the Shell test's own work item, `cobuilder-viewer`, and a pull request 11
- * whose level records come from a stub of the change bundle hook.
- */
-
 import { cleanup, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 

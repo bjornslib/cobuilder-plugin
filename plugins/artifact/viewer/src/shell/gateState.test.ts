@@ -1,11 +1,3 @@
-/**
- * The gate state split, on its own.
- *
- * `splitGateState` reads one gate state and returns the short pill text and the full
- * tooltip text. The short text keeps the status word and the date. A note in
- * parentheses or after a dash moves to the full text only.
- */
-
 import { describe, expect, it } from "vitest";
 
 import { splitGateState } from "./gateState";

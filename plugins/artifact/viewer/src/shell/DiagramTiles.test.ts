@@ -1,16 +1,9 @@
-/**
- * The tile title rule, on its own.
- *
- * `labelFor` reads one Mermaid source and returns the one word the tile shows. It is
- * pure, so this file needs no DOM, no runtime, and no bundle: the import pulls in the
- * module for this function alone, and no test here calls `loadMermaid`.
- *
- * A source may open with a `%%` comment. That comment names the drawing for a human, and
- * it is not the grammar. The word for the grammar sits on the line below it, so the rule
- * skips the comment. A tile that showed the comment text would put a sentence where the
- * shell promises one word, and it would give the tile that sentence as its accessible
- * name.
- */
+/*
+  A source may open with a `%%` comment that names the drawing for a human. The word for
+  the grammar sits on the line below, so the rule skips the comment. A tile that showed
+  the comment would put a sentence where the shell promises one word, and that sentence
+  would become the tile's accessible name.
+*/
 
 import { describe, expect, it } from "vitest";
 

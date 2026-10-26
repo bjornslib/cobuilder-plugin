@@ -1,9 +1,10 @@
-"""Unit checks for the kept-comments table helpers that slice 6 relies on."""
+"""Unit checks for the kept-comments table helpers that slices 6 and 7 rely on."""
 from __future__ import annotations
 
 import pytest
 from _viewer_kept_comments import (
-    kept_limits, kept_rows, over_kept, row_problems, source_files_with_comments, table_rows,
+    commented_test_side_files, comment_counts, kept_limits, kept_rows, over_kept, row_problems,
+    source_files_with_comments, table_rows,
 )
 
 TABLE = "intro text\n\n| File | Kept | Original |\n|---|---|---|\n| `src/a.ts` | 2 | 5 |\n"
@@ -46,3 +47,15 @@ def test_slice_six_lists_only_source_files_with_comments():
     files = source_files_with_comments()
     assert len(files) == 183
     assert not [f for f in files if ".test." in f or "/testSupport/" in f]
+
+
+def test_slice_seven_lists_only_commented_test_side_files():
+    files = commented_test_side_files()
+    assert len(files) == 85
+    assert all(".test." in f or "/testSupport/" in f for f in files)
+    assert not set(files) & set(source_files_with_comments())
+
+
+def test_start_of_slice_7_counts_total_349_findings():
+    counts = comment_counts()
+    assert sum(counts[f.removeprefix("plugins/artifact/viewer/")] for f in commented_test_side_files()) == 349

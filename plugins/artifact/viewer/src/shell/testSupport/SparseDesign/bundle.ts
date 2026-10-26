@@ -4,18 +4,14 @@ import type { AdrEntity, DesignEntity, EpicEntity, RecordIndex } from "@/data/ty
 import { EMPTY_ENTITIES, EMPTY_JOINS } from "../emptyIndex";
 import { SPARSE, type SparseDesign } from "./corpus";
 
-/** The record body `data/designs.js` carries for a sparse design: the goal and nothing else. */
 export function recordOf(design: SparseDesign): DesignRecord {
   return { goal: design.goal };
 }
 
 /**
- * One decision the fixture's index carries, so the `ADRS` global holds an entry to read.
- *
- * `src/data/bundle.ts` reads that global through a guard that looks at the first value's
- * `title`, so an empty map reads as a file that assigned nothing and the loader then asks
- * the dev server for one. No sparse design's goal names this id, so it adds no linked
- * decision to any work item.
+ * `src/data/bundle.ts` reads the `ADRS` global through a guard on the first value's
+ * `title`. An empty map looks like a file that assigned nothing, so the loader then asks
+ * the dev server for one. No sparse design names this id, so it links to no work item.
  */
 const STANDIN_ADR: AdrEntity = {
   id: "ADR-0001",
@@ -23,7 +19,6 @@ const STANDIN_ADR: AdrEntity = {
   state: "accepted",
 };
 
-/** The decisions one sparse design's goal names, as the index would project them. */
 function adrsOf(design: SparseDesign): AdrEntity[] {
   return (design.goal.adrs ?? []).map((id) => ({ id, title: `Decision ${id}`, state: "accepted" }));
 }
@@ -50,17 +45,15 @@ function epicsOf(design: SparseDesign): EpicEntity[] {
 }
 
 /**
- * The record index every sparse design resolves against, and nothing else.
+ * The record index every sparse design resolves against.
  *
- * THE INDEX CARRIES NO DIAGRAM, NO DISTRICT, NO CONTEXT, AND NO BOUNDARY RULE. A sparse
- * design's authored directory holds no `diagrams` key, and no district or context record
- * names it, so the fixture mirrors that. Architecture is therefore backed by a linked
- * decision alone, which is the arm `interaction-design.md` states for these designs.
+ * It carries no diagram, district, context, or boundary rule. A sparse design's directory
+ * holds no `diagrams` key, and no record names it. Architecture is then backed by a linked
+ * decision alone, the arm `interaction-design.md` states for these designs.
  *
- * ONE BUNDLE HOLDS EVERY SPARSE DESIGN, THE WAY A REAL BUNDLE DOES. `loadDesigns` caches
- * its promise in module state, so a fixture that published one design at a time would hand
- * the second case the first case's records. The globals below are set once, and every case
- * reads the same bundle through the route it names.
+ * One bundle holds every sparse design, as a real bundle does. `loadDesigns` caches its
+ * promise in module state, so a fixture that published one design at a time would hand
+ * the second case the first case's records.
  */
 export const INDEX: RecordIndex = {
   schema_version: "1.3",
@@ -74,20 +67,17 @@ export const INDEX: RecordIndex = {
   joins: EMPTY_JOINS,
 };
 
-/** Every sparse design's record body, keyed by the id the index carries. */
 export const DESIGNS: DesignRecords = Object.fromEntries(
   SPARSE.map((design) => [design.id, recordOf(design)]),
 );
 
-/** Every decision the fixture names, as the `ADRS` global holds them. */
 const ADRS: Record<string, AdrEntity> = Object.fromEntries(
   [STANDIN_ADR, ...SPARSE.flatMap(adrsOf)].map((adr) => [adr.id, adr]),
 );
 
 export function installBundleGlobals(): void {
-  /* Hand the shell the whole bundle in memory, the way a published file inlines it. */
   window.INDEX = INDEX;
   window.DESIGNS = DESIGNS;
-  /* The decision global is declared by no module, so this line reads it through a cast. */
+  /* No module declares the `ADRS` global, so a cast reaches it. */
   (window as unknown as Record<string, unknown>).ADRS = ADRS;
 }

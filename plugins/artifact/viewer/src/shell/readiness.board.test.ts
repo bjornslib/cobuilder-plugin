@@ -17,7 +17,7 @@ import {
 
 const rules = readiness as unknown as BoardRules;
 
-/** One rule, or a failure that names it. A missing rule reads as an assertion. */
+/** Returns one rule. A missing rule fails with its name. */
 function rule<K extends keyof BoardRules>(name: K): BoardRules[K] {
   const found = rules[name];
   expect(typeof found, `readiness.ts must export ${String(name)}`).toBe("function");

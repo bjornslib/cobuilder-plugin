@@ -1,19 +1,16 @@
 import ts from "typescript";
 
-/** One source file, with its path relative to the package root: `src/shell/model.ts`. */
+/** `path` is relative to the package root, such as `src/shell/model.ts`. */
 export interface SourceFile {
   path: string;
   text: string;
 }
 
 /**
- * The literal node kinds: every range of text that is data rather than code.
- *
- * A template is the one kind worth naming. `TemplateHead`, `TemplateMiddle`, and
- * `TemplateTail` are the three text chunks of `` `a${x}b${y}c` ``, and the two `${}`
- * substitutions sit between them as ordinary expression nodes. Blanking the chunks alone
- * therefore keeps the substitutions as code, which is what C1 needs: a join read inside a
- * `${}` is a read of it.
+ * The literal node kinds: every range of text that is data rather than code. A template
+ * has three text chunks (`TemplateHead`, `TemplateMiddle`, `TemplateTail`), and each
+ * `${}` substitution sits between them as ordinary code. Blanking the chunks alone keeps
+ * the substitutions as code, which C1 needs: a join read inside a `${}` is a read of it.
  */
 const LITERAL_KINDS = new Set<ts.SyntaxKind>([
   ts.SyntaxKind.StringLiteral,
@@ -22,7 +19,7 @@ const LITERAL_KINDS = new Set<ts.SyntaxKind>([
   ts.SyntaxKind.TemplateMiddle,
   ts.SyntaxKind.TemplateTail,
   ts.SyntaxKind.RegularExpressionLiteral,
-  /* JSX text is prose a reader sees, so it is data for the same reason a string is. */
+  /* JSX text is prose a reader sees, so it is data, as a string is. */
   ts.SyntaxKind.JsxText,
 ]);
 
@@ -41,7 +38,6 @@ function sourceOf(file: SourceFile): ts.SourceFile {
   );
 }
 
-/** Every range of literal text in one file, in source order. */
 export function literalRanges(file: SourceFile): Array<[number, number]> {
   const source = sourceOf(file);
   const ranges: Array<[number, number]> = [];
@@ -68,16 +64,12 @@ function newScanner(text: string): ts.Scanner {
 }
 
 /**
- * Every range of comment trivia, read from text whose literals are already blanked.
- *
- * THE ORDER MATTERS, AND IT IS THE WHOLE FIX. The TypeScript scanner decides what a `/`
- * is from the tokens around it, and it does not re-scan a slash as the start of a regular
- * expression on its own. A regex holding a backtick, such as the markdown-fence matcher in
- * the record-mosaic prototype's `records.ts`, since removed, therefore ends the scanner's string state
- * early, and every comment after it in that file is read as code. Blanking the literals
- * first removes the characters that could mislead it, and blanking changes no offset, so
- * the ranges still name the right lines. A comment cannot sit inside a literal, so no real
- * comment is lost by reading them in this order.
+ * Every range of comment trivia, read from text whose literals are already blanked. The
+ * order matters. The scanner does not re-scan a slash as the start of a regular expression,
+ * so a regex that holds a backtick ends its string state early, and every later comment in
+ * the file is read as code. Blanking the literals first removes the characters that could
+ * mislead it. Blanking changes no offset, and a comment cannot sit inside a literal, so no
+ * real comment is lost.
  */
 export function commentRanges(text: string): Array<[number, number]> {
   const scanner = newScanner(text);
@@ -88,7 +80,6 @@ export function commentRanges(text: string): Array<[number, number]> {
   return ranges;
 }
 
-/** Replace every character in every range with a space, and keep every newline. */
 export function blankRanges(text: string, ranges: Array<[number, number]>): string {
   const chars = text.split("");
   for (const [start, end] of ranges) {
@@ -100,11 +91,9 @@ export function blankRanges(text: string, ranges: Array<[number, number]>): stri
 }
 
 /**
- * True when the literal starting at `start` is an element-access key: `joins["KEY"]`.
- *
- * That is the same read as `joins.KEY`, spelled another way, so the code projection keeps
- * it and the pattern matches the bracket form. C1's rule says "however the call site
- * spells it", so a spelling the projection erased would be a hole rather than a mention.
+ * True when the literal starting at `start` is an element-access key: `joins["KEY"]`. That
+ * is the same read as `joins.KEY`, so the code projection keeps it. C1 says "however the
+ * call site spells it", so an erased spelling would be a hole rather than a mention.
  */
 export function isIndexKey(text: string, start: number): boolean {
   let i = start - 1;

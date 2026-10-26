@@ -3,13 +3,11 @@ import type { RecordIndex } from "@/data/types";
 
 import { EMPTY_ENTITIES, EMPTY_JOINS } from "../emptyIndex";
 
-/**
- * The three designs the cases read, one record shape each.
- *
- * `whole-work` carries the three levels the corpus writes. `mechanisms-only` carries the
- * two mechanism levels and no container drawing. `no-drawings` carries no diagram level
- * at all, which is the shape a design that stopped at stage 1 has.
- */
+/*
+  `whole-work` carries the three levels the corpus writes. `mechanisms-only` has levels 2
+  and 3 and no container drawing. `no-drawings` has no diagram level, as a design that
+  stopped at stage 1 does.
+*/
 export const DESIGNS: DesignRecords = {
   "whole-work": {
     goal: {
@@ -96,11 +94,7 @@ const INDEX: RecordIndex = {
 export function installRecords(): void {
   window.INDEX = INDEX;
   window.DESIGNS = DESIGNS;
-  /*
-   * The decision global needs one entry, because `./records` reads the first value's
-   * `title` to tell a file that assigned nothing from one that assigned a map. No case
-   * here opens a decision record.
-   */
+  /* `./records` reads the first value's `title` to tell an empty file from a map, so the global needs one entry. */
   (window as unknown as Record<string, unknown>).ADRS = {
     "ADR-0028": { id: "ADR-0028", title: "One section on screen", state: "accepted" },
   };

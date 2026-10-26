@@ -1,4 +1,4 @@
-"""Helpers for the slice 6 check of the viewer's kept why-comments.
+"""Helpers for the slice 6 and 7 check of the viewer's kept why-comments.
 
 The kept-comments folder holds one table for each group of source folders.
 A row reads `| File | Kept | Original |`, and File is relative to the viewer.
@@ -41,11 +41,20 @@ def comment_counts() -> dict[str, int]:
     return json.loads(COUNTS_FIXTURE.read_text(encoding="utf-8"))
 
 
-def source_files_with_comments() -> list[str]:
-    counts = comment_counts()
+def _files_with_comments(test_side: bool) -> list[str]:
     return sorted(
-        f"{VIEWER_PREFIX}{rel}" for rel, n in counts.items() if n and not is_test_side(rel)
+        f"{VIEWER_PREFIX}{rel}"
+        for rel, n in comment_counts().items()
+        if n and is_test_side(rel) == test_side
     )
+
+
+def source_files_with_comments() -> list[str]:
+    return _files_with_comments(test_side=False)
+
+
+def commented_test_side_files() -> list[str]:
+    return _files_with_comments(test_side=True)
 
 
 def _cells(line: str) -> list[str]:

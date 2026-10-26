@@ -1,13 +1,13 @@
 {
   "schema_version": "1.5",
   "sources": {
-    "git_head": "84b6cf6802b32f2011dc453a3ff7509616f74ac0",
+    "git_head": "ccc3c174a7bfff92810c2016af6742f5139ecd75",
     "trees": {
       "docs/architecture/adr": "sha256:a305fe9bf8e85df82ab7a47275ca93bdb79a5221b085cb30a73f987e251453d1",
-      "docs/architecture/designs": "sha256:c476d484d0211a263ecf2c859ee2a620fa43d889b29c87a3b213345a828b6de9",
+      "docs/architecture/designs": "sha256:f869c1bf84810efb172a1da6d783afa5898f57b21227e08a2a7e0cc8d71d0abc",
       "docs/architecture/contexts": "sha256:6663ee456e31bfbe31401908ae494017ed864dbb9c72211b6cbdccc44d078482",
-      "docs/plans": "sha256:01d4aa21a32793d6d0edf9ab80e500f5107df9bc732ca20a6bd6a8a960b17d0f",
-      ".cobuilder/rubrics": "sha256:095605860f23a5b57b7fbbe2684e5faa5cdaee1048aaeed3087fc0685e093a19"
+      "docs/plans": "sha256:0429cdba8dbd223e0645e2cd7b1cfe592b204e36311599be080ea80e5187a95c",
+      ".cobuilder/rubrics": "sha256:a8dd0f1c696b75fc70fdf4e32c7ca9789d052e59e9232b5d37e52c0b7952e778"
     }
   },
   "entities": {
@@ -4122,9 +4122,9 @@
         "n": 7,
         "title": "The comments in viewer tests: review each of the 422 flagged comments in 20 files, with the same rule",
         "ends_with": "`habit-sensors` reports no `non-essential-comment` finding for the 20 test files, and the reviewer sample meets the same limit. The viewer then reports no finding apart from the recorded residual.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "nexus-borrowings/1",
@@ -8137,7 +8137,7 @@
       },
       "mechanical-smells": {
         "stage_source": "tracker",
-        "next_ready": "mechanical-smells/7",
+        "next_ready": null,
         "pull_requests": []
       },
       "nexus-borrowings": {

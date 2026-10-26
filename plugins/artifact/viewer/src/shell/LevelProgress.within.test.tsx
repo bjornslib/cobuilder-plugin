@@ -52,20 +52,19 @@ async function expectHalfOfFirstQuarter() {
 }
 
 /*
-  C1's rule at its smallest: `withinOf` states how far through ONE box the reader is.
-  The function is called directly against a synthetic element, so its four branches are
-  each read in both directions: a partway box, its top, its bottom, past its end, a box
-  with no range, and no box at all.
+  C1's rule at its smallest: `withinOf` states how far through ONE box the reader is. The
+  function is called directly against a synthetic element, so each branch is read in both
+  directions: a partway box, its top, its bottom, past its end, a box with no range, and no
+  box at all.
 
-  The composite line at the end is what makes this a level reading rather than a unit
-  test: a half-scrolled FIRST box reads 13, which is half of a quarter rounded. A
-  reading taken from a page, or from the pane whose own offset is zero, would read 0.
+  The composite line at the end makes this a level reading and not a unit test: a
+  half-scrolled FIRST box reads 13, which is half of a quarter rounded. A reading taken
+  from a page, or from the pane whose own offset is zero, would read 0.
 */
 async function readsFractionInsideBox() {
   expectWithinThroughBox();
   expectWithinBeyondBox();
 
-  /* The same fraction, through the level: a half-scrolled first box of four. */
   await expectHalfOfFirstQuarter();
 }
 
@@ -89,14 +88,14 @@ async function expectBoxReadsEndOfItsShare(boxes: HTMLElement[], step: number) {
 }
 
 /*
-  C3's rule. Every box jsdom renders has no scroll range at all, so this case is
-  measured rather than staged: the reading is the END of each section's share, and the
-  strip never stalls part way through a section that has nothing to scroll.
+  C3's rule. Every box jsdom renders has no scroll range at all, so this case is measured
+  and not staged: the reading is the END of each section's share, and the strip never
+  stalls part way through a section that has nothing to scroll.
 
-  A box whose `scrollHeight` equals its `clientHeight` is set explicitly beside it, so
-  the rule is read at the point it is decided rather than inferred from jsdom's zeros.
-  Remove the range guard in `withinOf` and the reading becomes `0 / 0`, which is `NaN`:
-  the first line of this case fails on `NaN` at the first section instead of 25.
+  A box whose `scrollHeight` equals its `clientHeight` is set explicitly beside it, so the
+  rule is read where it is decided, not inferred from jsdom's zeros. Remove the range guard
+  in `withinOf` and the reading becomes `0 / 0`, which is `NaN`: the first line of this case
+  fails on `NaN` at the first section instead of 25.
 */
 async function givesBoxWithNoRangeItsWholeShare() {
   expectFlatBoxFullyRead();

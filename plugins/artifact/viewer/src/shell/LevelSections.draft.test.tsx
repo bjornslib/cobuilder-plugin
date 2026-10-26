@@ -42,10 +42,9 @@ function expectDraftAndRealPullRequest() {
 }
 
 /*
-  C2's rule. The draft panel is the level's first panel, and the work's real pull
-  requests come after it. The case reads the index of each in the pane's document
-  order, so a draft moved below the real ones fails here even though the level still
-  holds all three panels.
+  C2's rule. The case reads the index of each panel in the pane's document order, so a
+  draft moved below the real pull requests fails here even though the level still holds
+  all three panels.
 */
 async function readsFirstAboveRealPullRequests() {
   await openLevel(`#/${DESIGN}/pull-requests`, "Pull requests");
@@ -67,15 +66,10 @@ function expectLeadLine(draft: HTMLElement) {
 }
 
 /*
-  C2's second piece of evidence. The heading is the design's own words and the lead
-  states what a draft is.
-
-  THE PANEL IS READ BY ITS POSITION, AND NOT BY ITS OWN TITLE. The claim is that the
-  first block's heading says what it is, and a lookup by the words being tested would
-  make the test pass on whatever the heading happened to say. So the heading is read
-  from the level's first panel, and the shape is asserted before the wording: a heading
-  of `PR 3`, or any heading that claimed the pull request exists, fires the first
-  assertion below rather than the last.
+  The panel is read by its position, not by its own title. A lookup by the words under
+  test would pass on whatever the heading said. So the heading is read from the level's
+  first panel, and the shape is asserted before the wording: a heading of `PR 3`, or any
+  heading that claimed the pull request exists, fires the first assertion and not the last.
 */
 async function namesItselfADraft() {
   await openLevel(`#/${DESIGN}/pull-requests`, "Pull requests");
@@ -86,10 +80,8 @@ async function namesItselfADraft() {
 }
 
 /*
-  C2's third piece of evidence, and the negative half. The other work carries a real
-  pull request and no draft, so its level fills and its first block is the real one. A
-  draft panel that rendered unconditionally, with empty content, fails the first
-  assertion here.
+  C2's negative half. The other work carries a real pull request and no draft. A draft
+  panel that rendered unconditionally, with empty content, fails the first assertion.
 */
 async function rendersNoDraftBlock() {
   await openLevel(`#/${OTHER}/pull-requests`, "Pull requests");

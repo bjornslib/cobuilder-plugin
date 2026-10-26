@@ -26,17 +26,17 @@ function installBundleGlobals(): void {
   window.INDEX = INDEX;
   window.DESIGNS = DESIGNS;
   /*
-   * The decision global is declared by no module, because `src/data/bundle.ts` leaves it to
-   * whoever reads the file. One entry is enough for the guard, and the three below are the
-   * three the index links.
+   * No module declares the decision global, because `src/data/bundle.ts` leaves it to the
+   * reader of the file. One entry would pass the guard. The three here are the ones the
+   * index links.
    */
   (window as unknown as Record<string, unknown>).ADRS = ADRS;
 }
 
 /*
- * jsdom implements neither `matchMedia` nor `ResizeObserver`, and the shell asks both
- * questions on its first render. The stubs answer the query false and observe nothing,
- * which is the desktop rail and a diagram tile whose box is never measured.
+ * jsdom has no `matchMedia` or `ResizeObserver`, and the shell uses both on its first
+ * render. The stubs answer false and observe nothing: a desktop rail, and a diagram tile
+ * whose box is never measured.
  */
 export function useLevelFixture(): void {
   beforeAll(installJsdomStubs);

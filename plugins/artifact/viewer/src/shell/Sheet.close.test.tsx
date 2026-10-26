@@ -26,10 +26,6 @@ beforeEach(installBundle);
 
 afterEach(cleanup);
 
-/*
- * The sheet is a modal surface with one close control. A pointer reader closes it the
- * same way a keyboard reader does, and the record goes with it.
- */
 async function closesOnCloseControl() {
   await openDecision();
 
@@ -46,7 +42,6 @@ const OPENERS = [
 ];
 
 function focusOpener(label: string): HTMLButtonElement {
-  /* The reader has tabbed to the control, so it holds focus before the press. */
   const opener = control(label);
   opener.focus();
   expect(document.activeElement, `${label} holds focus before the press`).toBe(opener);
@@ -74,11 +69,9 @@ async function openAndCloseFrom({ hash, level, label }: (typeof OPENERS)[number]
 }
 
 /*
- * Focus comes home when the record closes. The Sheet is modal, so opening a record takes
- * focus into it, and a keyboard reader who closes the record must land on the control
- * they opened it from — in the list they were reading — rather than on the body. The
- * three record kinds share one close path, so all three are read here rather than one of
- * them standing for the rest.
+ * The Sheet is modal, so opening a record takes focus into it. A keyboard reader who closes
+ * the record must land on the control that opened it, in the list they were reading, and not
+ * on the body. The three record kinds share one close path, so all three are read here.
  */
 async function returnsFocusToOpener() {
   for (const opener of OPENERS) {
@@ -86,10 +79,6 @@ async function returnsFocusToOpener() {
   }
 }
 
-/*
- * The sheet is a modal surface. Escape closes it, and the reader is left where they were
- * in the work rather than on a stale record.
- */
 async function closesOnEscape() {
   await openArchitecture();
   const pane = document.getElementById("work-scroll-pane") as HTMLElement;

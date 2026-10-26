@@ -1,5 +1,5 @@
 /**
- * Slice 10 — every level renders its own sections, stated as cases.
+ * Slice 10: every level renders its own sections, stated as cases.
  *
  * The slice's end, from the ladder in `docs/plans/cobuilder-viewer/04-slices.md`: "A
  * reader walks Intent, Problem & Solution, Architecture, Build, Pull requests, and Shipped
@@ -7,28 +7,20 @@
  * rubric that scores it is `.cobuilder/rubrics/cobuilder-viewer/slice-10.md`, and its five
  * criteria are the five groups below.
  *
- * THE SUBJECT IS THE SIX LEVELS AND THE PANELS THEY PAGE. `panels/` holds one entry point
+ * The subject is the six levels and the panels they page. `panels/` holds one entry point
  * per level, `sections.tsx` holds the Build, Pull requests, and Shipped sections, and
  * `App.tsx` assembles them. A section with no level around it is not a state a reader can
- * meet, so every case below renders `Shell` at a real address and reads the panes it
- * built.
+ * meet, so every case renders `Shell` at a real address and reads the panes it built.
  *
- * SLICE 8 AND SLICE 9 ALREADY OWN THE MODEL AND THE READING. `Pager.test.tsx` owns the
- * box, the index, the strip, the pager, and the arrow keys. `LevelProgress.test.tsx` owns
- * the progress reading. No case here restates one of theirs. What is here is the content:
- * which sections each level lays down, what each section holds, which order the reader
- * meets them in, and where the envisioned pull request sits.
+ * Slices 8 and 9 own the model and the reading. `Pager.test.tsx` owns the box, the index,
+ * the strip, the pager, and the arrow keys. `LevelProgress.test.tsx` owns the progress
+ * reading. No case here restates one of theirs. This file reads the content: which
+ * sections each level lays down, what each holds, and where the envisioned pull request
+ * sits.
  *
- * THE PORTED SHELL ALREADY SATISFIES MOST OF THIS SLICE, AND THAT IS THE HONEST READING.
- * The six levels and their panels landed with the port in slice 5, so these cases are a
- * statement of the contract rather than a report of new work. Each green case below names
- * in its own comment what carries it. The staged runs named in the report are what show
- * the cases can fail.
- *
- * WHAT A DOM CANNOT CARRY, SAID PLAINLY. jsdom has no layout engine: every height reads
- * zero, every bounding rect reads zero, and no stylesheet is applied. Three claims of this
- * slice's rubric are therefore out of this file's reach, and each one is named beside the
- * case that carries its contract instead:
+ * What a DOM cannot carry: jsdom has no layout engine, so every height and bounding rect
+ * reads zero and no stylesheet is applied. Three claims of the rubric are therefore out of
+ * this file's reach, and each one is named beside the case that carries its contract:
  *
  * 1. **A section fits one screen.** C4 states that each Build section fits one screen.
  *    The case here reads the cut and the row count, which is the contract the screen
@@ -39,9 +31,9 @@
  * 3. **A reader sees one section at a time.** Slice 8 owns that geometry, and its file
  *    says so. This file reads the tree and never a rect.
  *
- * WHAT A VALIDATOR SHOULD MEASURE IN A BROWSER, to score the rest of the rubric. Serve the
- * bundle rooted at `.cobuilder-architect/self/`, open the Work surface at
- * `#/cobuilder-viewer`, and read the DOM at each level:
+ * A validator should measure the rest of the rubric in a browser. Serve the bundle rooted
+ * at `.cobuilder-architect/self/`, open the Work surface at `#/cobuilder-viewer`, and read
+ * the DOM at each level:
  * - For each of the four paged levels, the box on screen is the box the strip marks
  *   active, and the reader meets each section by pressing Next. Take a snapshot of each
  *   section and read the records it holds.
@@ -50,18 +42,16 @@
  * - On each paged level, read the panel body's rendered height and opacity. Every panel
  *   body is at its full height, and no disclosure control sits in a panel header. The one
  *   fold count that is NOT zero is the record disclosures inside a body: the Architecture
- *   level's decisions and the Build level's epics each disclose a record, and those are
- *   accordion rows rather than panel folds.
+ *   decisions and the Build epics are accordion rows, not panel folds.
  * - Read the console across the walk. No message reports an error.
  * - Compare one section against the bundle: the decisions the Architecture level lists are
  *   the decisions `data/index.json` links to that design.
  *
- * THE FIXTURE HOLDS TWO WORKS, AND THE SECOND ONE CARRIES THE ABSENCES. The rich work
- * fills every level, so each section has its own record to show. The other work is the
- * same shape with no assessment, no risk, no unknown, and no drafted pull request, so the
- * cases for an absence in place and for the draft's own absence have something to read.
- * Both live in one `DESIGNS` map, because `loadDesigns` caches its answer for the whole
- * file and a record a case swapped in would never be read.
+ * The fixture holds two works, and the second carries the absences. The rich work fills
+ * every level. The other work is the same shape with no assessment, risk, unknown, or
+ * drafted pull request, so the cases for an absence in place and for the draft's own
+ * absence have something to read. Both live in one `DESIGNS` map, because `loadDesigns`
+ * caches its answer for the whole file and a record a case swapped in would never be read.
  */
 
 import { within } from "@testing-library/react";
@@ -104,10 +94,9 @@ function expectNoAbsenceMarks() {
 }
 
 /*
-  C1's first level. The four panels are the four parts of the contract, in the order
-  the design lists them, and each one carries the value the record holds. `Why` also
-  holds the container drawing, which is the design's own regrouping: this level renders
-  no section named Diagrams, so its four panels are the four below.
+  C1's first level. The four panels are the four parts of the contract, in the order the
+  design lists them. `Why` also holds the container drawing, which is the design's own
+  regrouping: this level renders no section named Diagrams.
 */
 async function rendersIntentSections() {
   await openPaged(`#/${DESIGN}/intent`, "Intent");
@@ -128,9 +117,8 @@ function expectProblemSolutionValues() {
 }
 
 /*
-  C1's second level. The four panels carry the authored prose, the two lists, and the
-  verdict. The verdict is the one value that also reads in the panel's own header, and
-  the sample of it belongs to C5.
+  C1's second level. The verdict is the one value that also reads in the panel's own
+  header, and the sample of it belongs to C5.
 */
 async function rendersProblemSolutionSections() {
   await openPaged(`#/${DESIGN}/problem-and-solution`, "Problem and solution");

@@ -36,11 +36,11 @@ function expectVerdictAndSummary() {
 
 /*
   C5's three samples, one per record file the rubric names: a contract outcome from
-  `designs.js`, a decision rule from `adrs.js`, and an assessment verdict from
-  `designs.js`. The rule is the one value the index's own `adr` entity does not carry,
-  so it can only come from the decision's record body. It sits inside a body the
-  accordion closed on arrival, and the case presses the row and reads the region, so a
-  rule that rendered without the record fails on the press.
+  `designs.js`, a decision rule from `adrs.js`, and an assessment verdict from `designs.js`.
+  The rule is the one value the index's `adr` entity does not carry, so it can only come
+  from the decision's record body. It sits inside a body the accordion closed on arrival,
+  so the case presses the row and reads the region, and a rule that rendered without the
+  record fails on the press.
 */
 async function showsThreeSampledValues() {
   await openPaged(`#/${DESIGN}/intent`, "Intent");
@@ -75,11 +75,10 @@ async function showChangedOutcome() {
 }
 
 /*
-  C5's rule against a fixture that never moves. The panel reads the record the bundle
-  hands it, so a value changed in that record reaches the panel on the next render. A
-  panel that held the value as a constant, or one that had cached it, keeps the old
-  words and fails the second assertion. The record is put back in the same case, so no
-  other case reads the changed value.
+  C5's rule against a fixture that never moves. The panel reads the record the bundle hands
+  it, so a changed value reaches the panel on the next render. A panel that held the value
+  as a constant, or had cached it, keeps the old words and fails the second assertion. The
+  record is put back in the same case, so no other case reads the changed value.
 */
 async function followsChangedRecord() {
   await openPaged(`#/${DESIGN}/intent`, "Intent");

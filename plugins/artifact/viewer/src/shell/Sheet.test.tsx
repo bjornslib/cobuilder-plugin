@@ -1,42 +1,35 @@
 /**
- * Slice 12 — a record opens in the Sheet, stated as cases.
+ * Slice 12: a record opens in the Sheet, stated as cases. The slice's end, from the ladder
+ * in `docs/plans/cobuilder-viewer/04-slices.md`: "Pressing a decision, a boundary rule, or
+ * an epic's design opens the whole record, and a part link scrolls the record and moves
+ * focus to that heading." The E5 design names one case for this slice,
+ * `test_record_opens_in_the_sheet`, and three record kinds: the decision, the boundary
+ * rule, and the epic's technical solution design.
  *
- * The slice's end, from the ladder in `docs/plans/cobuilder-viewer/04-slices.md`: "Pressing
- * a decision, a boundary rule, or an epic's design opens the whole record, and a part link
- * scrolls the record and moves focus to that heading." The one case the E5 design names for
- * this slice is `test_record_opens_in_the_sheet`, and the three record kinds it names are
- * the decision, the boundary rule, and the epic's technical solution design.
- *
- * THE SUBJECT IS THE WHOLE PATH, NOT THE SHEET COMPONENT ALONE. A RecordSheet that renders
- * a fixture subject is not a reader's state. What a reader meets is a control inside a
- * panel, the pane that stays where it was, and the record that opens over it. So every case
- * below renders `Shell` at a real address, presses the control the panel itself rendered,
- * and reads the surface that arrived.
- *
- * WHERE THE CONTROLS LIVE, and the address each one answers to:
+ * The subject is the whole path, not the Sheet component alone. A RecordSheet that renders a
+ * fixture subject is not a reader's state. A reader meets a control inside a panel, a pane
+ * that stays where it was, and a record that opens over it. So every case renders `Shell` at
+ * a real address, presses the control that the panel rendered, and reads the surface that
+ * arrived. The controls live at these addresses:
  *
  *   - the decision            `#/cobuilder-viewer/architecture`, Architecture Decisions
  *   - the boundary rule       `#/cobuilder-viewer/architecture`, Boundaries
  *   - the epic's design       `#/cobuilder-viewer/build`, an epic's disclosure
  *
- * WHAT A DOM CANNOT CARRY, SAID PLAINLY. jsdom has no layout engine, so every bounding
- * rect reads zero. The part link's own geometry — that the record lands with the heading
- * at the container's top — is therefore read as the call the sheet makes, not as a
- * position. The heading itself is a real element in this DOM, so its own offset is
- * read from a rect this file states, and the scroll request is asserted against it. The
- * focus move needs no layout and is read whole.
+ * jsdom has no layout engine, so every bounding rect reads zero. The geometry of the part
+ * link, that the record lands with the heading at the top of the container, is read as the
+ * call the sheet makes and not as a position. The heading offset is read from a rect that
+ * this file states, and the scroll request is asserted against it. The focus move needs no
+ * layout and is read whole.
  *
- * jsdom implements neither `matchMedia` nor `ResizeObserver`, and the shell asks both
- * questions on its first render. The stubs answer the query false and observe nothing.
+ * jsdom implements neither `matchMedia` nor `ResizeObserver`, and the shell asks both on its
+ * first render. The stubs answer the query false and observe nothing.
  *
- * ONE BRANCH OF THE JUMP IS OUT OF THIS FILE'S REACH. The design's call stack states
- * `behavior: reduce ? instant : smooth`, and the smooth branch is asserted below. The
- * instant branch cannot be reached from this file: `motion` reads the reduced-motion
- * query once and caches the answer in a module-level value on first use, so a stub
- * installed inside a case arrives after the first render has already read the default.
- * A case for it needs its own test file, where the stub sits in `beforeAll` and the file's
- * first render reads it. That is a case worth writing, and this file states the smoother
- * branch rather than pretending to state both.
+ * One branch of the jump is out of reach. The design's call stack states
+ * `behavior: reduce ? instant : smooth`, and the smooth branch is asserted here. `motion`
+ * reads the reduced-motion query once and caches the answer in a module-level value, so a
+ * stub installed inside a case arrives after the first render has read the default. A case
+ * for the instant branch needs its own test file, where the stub sits in `beforeAll`.
  */
 
 import { cleanup, screen } from "@testing-library/react";
@@ -78,9 +71,8 @@ beforeEach(installBundle);
 afterEach(cleanup);
 
 /*
- * C1 — the decision. The panel shows the rule and the modules, and the record's whole
- * body is one press away. The record carries the problem, the decision, the rule, the
- * forces, and the authored body, and every one of them is in the sheet and not only in
+ * C1: the panel shows the rule and the modules, and the whole record is one press away. The
+ * problem, decision, rule, forces, and authored body must be in the sheet, and not only in
  * the index row.
  */
 async function opensDecision() {
@@ -97,9 +89,8 @@ async function opensDecision() {
 }
 
 /*
- * C1 — the boundary rule. The tile shows the kind, the target, and one line of the
- * reason. The sheet states the rule, the reason in full, and every other field the
- * record carries, which is the field the tile never shows.
+ * C1: the tile shows the kind, the target, and one line of the reason. The sheet states the
+ * rule, the full reason, and every other field, which the tile never shows.
  */
 async function opensBoundaryRule() {
   await openArchitecture();
@@ -114,10 +105,6 @@ async function opensBoundaryRule() {
   expect(body).toContain(RULE_EXTRA_VALUE);
 }
 
-/*
- * C1 — the epic's technical solution design. The Build level discloses the epic, and
- * the design opens beside it.
- */
 async function opensEpicDesign() {
   await openLevel(`#/${DESIGN}/build`, "Build");
   await press(OPEN_EPIC_DESIGN);
@@ -128,19 +115,14 @@ async function opensEpicDesign() {
   expect(body).toContain("The shell reads the index and derives no join.");
 }
 
-/*
- * The pane does not move and the record does not exist before the press. A record that
- * rendered on arrival would leave the reader in a sheet they never asked for.
- */
 async function opensNothingBeforePress() {
   await openArchitecture();
   expect(screen.queryByRole("dialog")).toBeNull();
 }
 
 /*
- * C1 — the pane does not move when a record opens, so a reader keeps their place in the
- * work while they read. The record is a surface over the pane, not a route the pane
- * follows, so the address stays the one that opened the level.
+ * C1: the record is a surface over the pane and not a route the pane follows, so the
+ * address stays the one that opened the level and the reader keeps their place.
  */
 async function leavesPaneAndAddress() {
   await openArchitecture();
@@ -155,9 +137,8 @@ async function leavesPaneAndAddress() {
 }
 
 /*
- * C1 — the record's own absence. A bundle can name a decision whose record file wrote
- * no entry. The panel lists the row and says so, and the sheet states the absence rather
- * than failing to open or inventing a field.
+ * C1: a bundle can name a decision whose record file wrote no entry. The panel lists the
+ * row and says so, and the sheet states the absence and does not fail or invent a field.
  */
 async function opensUnresolvedDecision() {
   await openArchitecture();

@@ -32,20 +32,13 @@ const DECISION_PARTS = [
   "History",
 ];
 
-/*
- * C2 — the row names the record's own parts. The record decides the list, so a record
- * with different parts gets its own row with no list to keep in step.
- */
 async function listsOneLinkPerPart() {
   await openDecision();
 
   expect(jumpLabels()).toEqual(DECISION_PARTS);
 }
 
-/*
- * C2 — a part link carries the heading's own id, so the link and the heading cannot
- * drift. The heading the link names is in the record's own box.
- */
+/* C2: a part link carries the heading's own id, so the link and the heading cannot drift. */
 function expectRenderedHeading(id: string) {
   expect(id).not.toBe("");
   expect(document.getElementById(id)).not.toBeNull();
@@ -63,7 +56,7 @@ async function pointsAtRenderedHeadings() {
 }
 
 function stateRects(scroll: HTMLElement, heading: HTMLElement) {
-  /* jsdom states no rect, so the two the jump reads are stated here. */
+  /* jsdom states no rect, so the two rects the jump reads are stated here. */
   scroll.getBoundingClientRect = () => ({ top: 100 }) as DOMRect;
   heading.getBoundingClientRect = () => ({ top: 460 }) as DOMRect;
 }
@@ -77,8 +70,8 @@ function expectSmoothScroll(scroll: HTMLElement) {
 }
 
 /*
- * C2 — the press scrolls the record's own box, and not the document. The pane does not
- * move, and a hash write would move the document instead.
+ * C2: the press scrolls the record's own box and not the document. The pane does not move,
+ * and a hash write would move the document instead.
  */
 async function scrollsRecordBox() {
   await openDecision();
@@ -94,8 +87,8 @@ async function scrollsRecordBox() {
 }
 
 /*
- * C2 — the heading keeps focus, so a keyboard reader lands where the pointer did. The
- * heading takes a tabindex of -1 so it can hold focus at all.
+ * C2: the heading keeps focus, so a keyboard reader lands where the pointer did. The heading
+ * takes `tabindex="-1"` so it can hold focus at all.
  */
 async function movesFocusToHeading() {
   await openDecision();
@@ -110,9 +103,9 @@ async function movesFocusToHeading() {
 }
 
 /*
- * C2 — the row re-reads when another record opens. The scroll container arrives with the
- * portal and the reader is a callback ref, so a row that only ever read the first record
- * would leave the second record with a stale list or none at all.
+ * C2: the row re-reads when another record opens. The scroll container arrives with the
+ * portal, and the reader is a callback ref. A row that read only the first record would
+ * leave the second with a stale list or none.
  */
 async function readsPartsAgain() {
   await openDecision();
@@ -124,10 +117,7 @@ async function readsPartsAgain() {
   expect(jumpLabels()).toEqual(DECISION_PARTS);
 }
 
-/*
- * C2 — a record with no anchored part carries no link row. The boundary rule's own body
- * is one rule, one reason, and a field map, and no part of it takes a link.
- */
+/* The boundary rule's body is one rule, one reason, and a field map, with no anchored part. */
 async function carriesNoLinkRow() {
   await openArchitecture();
   await press(OPEN_RULE);

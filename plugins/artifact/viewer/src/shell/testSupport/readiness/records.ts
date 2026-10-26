@@ -4,7 +4,7 @@ function record(parts: Record<string, unknown>): DesignRecord {
   return parts as unknown as DesignRecord;
 }
 
-/** A whole goal, so a fixture can vary one record and leave the other five whole. */
+/* A whole goal, so a fixture can vary one record and keep the other five whole. */
 export const GOAL = {
   name: "cobuilder-viewer",
   title: "The Work board",
@@ -18,12 +18,10 @@ export const GOAL = {
   adrs: ["ADR-0028"],
 };
 
-/** The goal above, plus the records a fixture chooses to add. */
 export function withGoal(parts: Record<string, unknown> = {}): DesignRecord {
   return record({ goal: GOAL, ...parts });
 }
 
-/** A whole record of every kind, as the richest design in the bundle writes one. */
 export const EVERY_RECORD = withGoal({
   intent: {
     problem: "An open pull request is no entity in the index.",

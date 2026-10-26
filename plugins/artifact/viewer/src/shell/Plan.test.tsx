@@ -1,18 +1,16 @@
 /**
- * review-link slice 2 — the plan page at `#/<work>/build/plan`.
+ * The plan page at `#/<work>/build/plan` shows the three plan documents of one work in gate
+ * architecture (Gate 2), and program design (Gate 3). A present document shows its source
+ * path and its markdown body. An absent one shows an empty state.
  *
- * The page shows the three plan documents of one work, in gate order: product (Gate 1),
- * architecture (Gate 2), and program design (Gate 3). A present document shows its
- * source path and its own markdown body. An absent document shows an empty state.
+ * The prose is not pinned. Each block carries
+ * `data-plan-block="<product|architecture|program>"`. An absent document's block holds one
+ * element with `data-testid="plan-empty"`. The page is reached through `Shell` at a real
+ * address, so a missing page fails on an assertion and not on an import.
  *
- * THE CONTRACT THESE CASES READ. The prose is not pinned. Each block carries
- * `data-plan-block="<product|architecture|program>"`. An absent document's block holds
- * one element with `data-testid="plan-empty"`. The page is reached through `Shell`, at a
- * real address, so a missing page fails on an assertion and not on an import.
- *
- * The fixture holds two works in one index, because the data module caches its answer
- * for the whole file. `alpha` has all three documents. `beta` has the architecture
- * document only.
+ * The fixture holds two works in one index, because the data module caches its answer for
+ * the whole file. `alpha` has all three documents. `beta` has the architecture document
+ * only.
  */
 
 import { cleanup, within } from "@testing-library/react";

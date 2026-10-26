@@ -13,7 +13,6 @@ function firstBraceAt(text: string, start: number): number {
   return found === -1 ? Infinity : found;
 }
 
-/** One declaration's text, from its keyword to the end of its own block. */
 function declarationText(text: string, start: number): string {
   const braceAt = firstBraceAt(text, start);
   let depth = 0;
@@ -41,7 +40,6 @@ function declarationsIn(file: SourceFile, pattern: RegExp): Declaration[] {
   });
 }
 
-/** Every `interface X` or `type X =` declaration of `name`, with its line number. */
 export function declarationsOf(name: string, files: SourceFile[]): Declaration[] {
   const pattern = declarationPattern(name);
   return files.flatMap((file) => declarationsIn(file, pattern));

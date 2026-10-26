@@ -12,19 +12,16 @@ export function setupPagerHooks(): void {
   afterEach(cleanup);
 }
 
-/** One press on the page's own arrow keys, at the body of the document. */
 export function press(key: string, init: Record<string, boolean> = {}): void {
   fireEvent.keyDown(document.body, { key, ...init });
 }
 
-/** The route, and a fresh render of the shell at it. */
 export async function open(hash: string): Promise<void> {
   window.location.hash = hash;
   render(<Shell />);
   await waitFor(() => expect(levelTitle()).not.toBe(""));
 }
 
-/** The four addresses that page their sections, and the count each one lays down. */
 export interface PagedLevel {
   label: string;
   hash: string;

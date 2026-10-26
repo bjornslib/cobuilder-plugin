@@ -34,9 +34,8 @@ function expectRealPullRequests() {
 }
 
 /*
-  C1's fifth level. The level stacks three panels in the pane's own scroll: the draft,
-  this work's own pull requests, and the whole open set. The draft's own order is C2's
-  subject and this case reads only that all three are there.
+  The draft's own order is C2's subject, so this case reads only that all three panels are
+  there.
 */
 async function rendersPullRequestSections() {
   await openLevel(`#/${DESIGN}/pull-requests`, "Pull requests");
@@ -56,11 +55,6 @@ function expectDeployGapStated(panel: HTMLElement) {
   ).toContain("No deploy record exists in this corpus.");
 }
 
-/*
-  C1's sixth level. One panel, and it states the stage the design entity carries, the
-  publications the bundle holds for this work's own pull requests, and the deploy
-  record the corpus does not have.
-*/
 async function rendersShippedSection() {
   await openLevel(`#/${DESIGN}/shipped`, "Shipped");
 
@@ -100,11 +94,9 @@ async function walkAllLevels(logged: string[]) {
 }
 
 /*
-  C1's third piece of evidence: "Read the console messages across the walk. None
-  reports an error." A DOM carries this one, so it is read here rather than left to the
-  browser. The six levels are opened one after the other, and every message React or a
-  component writes to the console is collected. React's own warnings count, because a
-  duplicate key or a bad prop is a defect the walk would otherwise hide.
+  C1's third piece of evidence: "Read the console messages across the walk. None reports
+  an error." A DOM carries this one, so it is read here. React's own warnings count,
+  because a duplicate key or a bad prop is a defect the walk would otherwise hide.
 */
 async function logsNothingAcrossWalk() {
   const logged: string[] = [];

@@ -49,9 +49,9 @@ function expectNoGapSentences(text: string) {
 }
 
 /*
-  The build reports a missing record part (record_gap_warnings in build_index.py).
-  The viewer states none. A record with no beats, and a record with a beat of an
-  unknown kind, both leave the cards free of gap sentences.
+  The build reports a missing record part (record_gap_warnings in build_index.py). The
+  viewer states none. A record with no beats, and a record with a beat of an unknown kind,
+  both leave the cards free of gap sentences.
 */
 async function statesNoRecordGap() {
   const original = RICH.narrative?.problem_solution?.beats;
@@ -75,9 +75,8 @@ function expectArchitectureValues() {
 
 /*
   C1's third level. The level draws the mechanism drawings, so its Diagrams panel holds
-  levels 2 and 3 and never the container drawing, which belongs to Intent. The
-  Boundaries panel reads the rules of the contexts a linked decision lands in, and the
-  last panel holds the reach and the rejected alternative.
+  levels 2 and 3 and never the container drawing, which belongs to Intent. The Boundaries
+  panel reads the rules of the contexts a linked decision lands in.
 */
 async function rendersArchitectureSections() {
   await openPaged(`#/${DESIGN}/architecture`, "Architecture");
@@ -105,8 +104,8 @@ function expectIndexLinks() {
 }
 
 /*
-  The other work's decision is read first, so that a panel which listed every decision
-  in the bundle fires here rather than on the order check below it.
+  The other work's decision is read first, so that a panel which listed every decision in
+  the bundle fires here and not on the order check below it.
 */
 function expectOtherDecisionAbsent() {
   expect(pane().textContent, "the other work's decision is not this work's").not.toContain(
@@ -116,11 +115,10 @@ function expectOtherDecisionAbsent() {
 }
 
 /*
-  C1's second piece of evidence, and the one that compares a section against the
-  bundle. `work.linkedAdrs` resolves `goal.adrs[]` through the index's `adr` entities,
-  and the level lists what that returns. The other work names a third decision, so a
-  panel that listed every decision in the bundle, or one that carried a list of its own,
-  fails on one half of this case or the other.
+  C1's second piece of evidence, the one that compares a section against the bundle.
+  `work.linkedAdrs` resolves `goal.adrs[]` through the index's `adr` entities. The other
+  work names a third decision, so a panel that listed every decision in the bundle, or
+  carried a list of its own, fails on one half of this case or the other.
 */
 async function listsOnlyThisWorksDecisions() {
   expectIndexLinks();

@@ -30,12 +30,6 @@ function expectMovedToSecondSection() {
   ).toEqual([boxesOf()[0]]);
 }
 
-/*
-  The three pieces of C2's first evidence, read at once. One press on Next moves the box
-  the stage leaves reachable, the words the pager states, and the link the strip marks
-  active. The case asserts all three rather than the pager's text alone, so a control
-  that printed the right number while the track stood still would fail it.
-*/
 async function movesOneIndexOnNext() {
   await open(PAGED[3].hash);
   await waitFor(() => expect(hasStrip()).toBe(true));
@@ -63,12 +57,6 @@ async function walkBack(previous: HTMLElement) {
   }
 }
 
-/*
-  "One index, both directions, and each step exactly one box." Next walks the level to
-  its last box, where the control is disabled and a further press moves nothing. Previous
-  walks it back to the first, where the same holds. Every step is checked against the box
-  on screen, so a step of two fails here as loudly as a step of none.
-*/
 function expectDisabled(button: HTMLElement, message: string) {
   expect((button as HTMLButtonElement).disabled, message).toBe(true);
 }
@@ -95,12 +83,10 @@ async function walksBackAndClamps() {
 }
 
 /*
-  C2's second evidence. A press on the strip's fourth heading moves three boxes in one
-  step, and the case reads it three ways: the box on screen, the pager's words, and the
-  link the strip marks. It also reads the address, because the strip's links are
-  anchors and a press that let the anchor act would move the document. That is the one
-  half of this case a browser would see and jsdom would not, so it is asserted here
-  rather than left to the served page.
+  A press on the strip's fourth heading moves three boxes in one step. The case also reads
+  the address, because the strip's links are anchors, and a press that let the anchor act
+  would move the document. A browser would see that half and jsdom would not, so it is
+  asserted here.
 */
 function expectJumpedToFourth(hash: string) {
   expect(pagerText()).toBe("Section 4 of 4");
@@ -127,9 +113,8 @@ async function arrowStepsTo(key: string, wanted: number) {
 }
 
 /*
-  C2's third evidence. ArrowRight then ArrowLeft each move one box, and the level ends
-  where it began. The route is read at each press, so a key that stepped the index by
-  writing the hash would fail here rather than pass on the state alone.
+  The route is read at each press, so a key that stepped the index by writing the hash
+  would fail here rather than pass on the state alone.
 */
 async function stepsForwardThenBack(hash: string) {
   await arrowStepsTo("ArrowRight", 1);

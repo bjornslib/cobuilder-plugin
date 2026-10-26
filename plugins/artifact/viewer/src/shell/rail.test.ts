@@ -1,11 +1,3 @@
-/**
- * The rail's row list: each level once, then the "Also" group (slice 3).
- *
- * `railGroups` returns three groups. "Levels" holds Intent, Problem & Solution, and
- * Architecture of the work. "Also" holds Plan, Epics, and Rubrics. "Review" holds the pull
- * request's three levels and File Diffs. `rowsOf` flattens them in reading order.
- */
-
 import { describe, expect, it } from "vitest";
 
 import { changeHref, programHref, railGroups, rowsOf, type RailRow } from "./model";
@@ -75,7 +67,6 @@ function holdsDisabledFileDiffs() {
   expect(review?.label).toBe("Pull request");
   expect(labelsOf(review?.rows)).toEqual(["File Diffs"]);
   expectDisabledDiffsRow(review?.rows[0]);
-  /* The row is not a step, and the walk skips it. */
   expect(review?.entries).toEqual([]);
   expect(rowsOfShellLabels(groups)).not.toContain("File Diffs");
 }

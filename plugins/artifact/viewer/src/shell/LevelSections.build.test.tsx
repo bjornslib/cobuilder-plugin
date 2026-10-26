@@ -44,10 +44,9 @@ function expectMiddleRun(box: HTMLElement) {
 }
 
 /*
-  C1's fourth level, and the one whose sections come from the corpus rather than from a
-  fixed list. Eighteen epics cut six to a section give three sections, and each box's
-  panel is the run it holds. The second run's rows are read one by one, so a panel that
-  repeated the first run fails here rather than passing on the count.
+  C1's fourth level. Its sections come from the corpus, not from a fixed list. The second
+  run's rows are read one by one, so a panel that repeated the first run fails here and
+  does not pass on the count.
 */
 async function rendersEpicRuns() {
   const boxes = await openPaged(`#/${DESIGN}/build/epics`, "Build");
@@ -67,10 +66,9 @@ function expectGateRows(panel: HTMLElement) {
 }
 
 /*
-  C1's fourth level, second sub-view. The Rubrics entry is a sub-view of Build rather
-  than a section of the track, so it stacks in the pane's own scroll and carries one
-  panel. Its rows are the steps `joins.feature_gates` holds for this work's plan slug,
-  read in order with each step's own state.
+  C1's fourth level, second sub-view. The Rubrics entry is a sub-view of Build, not a
+  section of the track, so it stacks in the pane's own scroll and carries one panel. Its
+  rows are the steps `joins.feature_gates` holds for this work's plan slug.
 */
 async function rendersRubricsSubView() {
   await openLevel(`#/${DESIGN}/build/rubrics`, "Build");
@@ -89,10 +87,8 @@ function epicIdsOf(work: WorkItem): string[] {
 }
 
 /*
-  C4's rule as the derivation, read directly. Eighteen epics cut six to a section give
-  three runs, and the runs joined in order are the epic list with nothing moved and
-  nothing dropped. The epics arrive in delivery order from the index, and this asserts
-  that the fixture's order is the one the design assumes: E1 through E18.
+  C4's rule as the derivation. The epics arrive in delivery order from the index, and this
+  asserts that the fixture's order is the one the design assumes: E1 through E18.
 */
 function cutsEpicsIntoRuns() {
   const work = workOf(DESIGN);
@@ -114,9 +110,7 @@ function expectEachEpicOnce(seen: string[], work: WorkItem) {
 }
 
 /*
-  C4's first two pieces of evidence. The box count is the run count, each box's panel
-  names its own range, and the rows read out of each box are that run and no other. The
-  union is read as a list and as a set, so an epic that appeared twice fails the second
+  The union is read as a list and as a set, so an epic that appeared twice fails the second
   check and a run that dropped one fails the first.
 */
 async function rendersOneSectionPerRun() {
@@ -129,12 +123,6 @@ async function rendersOneSectionPerRun() {
   expectEachEpicOnce(runs.flat(), work);
 }
 
-/*
-  C4's second piece of evidence, at the level of what the reader sees. The strip's three
-  labels are the three ranges, in order, and the pager states the same count. A level
-  that laid all eighteen epics in one section fails the count, and one that numbered its
-  sections rather than naming their ranges fails the labels.
-*/
 async function givesEachSectionARange() {
   await openPaged(`#/${DESIGN}/build/epics`, "Build");
 

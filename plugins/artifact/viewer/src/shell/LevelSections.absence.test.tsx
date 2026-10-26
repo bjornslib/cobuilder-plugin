@@ -35,10 +35,9 @@ function expectOtherAbsences() {
 }
 
 /*
-  C3's first piece of evidence. The other work carries no assessment, no risk, and no
-  unknown, so three of the level's four panels state an absence. Each one keeps its own
-  box on the track, which is what puts the absence where the record would have read,
-  and each one carries the `not present` pill beside that sentence.
+  C3's first piece of evidence. The other work carries no assessment, risk, or unknown, so
+  three of the level's four panels state an absence. Each keeps its own box on the track,
+  which puts the absence where the record would have read.
 */
 async function statesAbsentRecordInPlace() {
   const boxes = await openPaged(`#/${OTHER}/problem-and-solution`, "Problem and solution");
@@ -50,9 +49,9 @@ async function statesAbsentRecordInPlace() {
 }
 
 /*
-  The body is read first and the header second. A staged run of this case shows
-  which half fires: `collapsible` alone gives the header a toggle and leaves the
-  body open, and `collapsible` with `defaultOpen={false}` closes the body as well.
+  The body is read first and the header second. A staged run shows which half fires:
+  `collapsible` alone gives the header a toggle and leaves the body open, and `collapsible`
+  with `defaultOpen={false}` closes the body as well.
 */
 function expectOpenWithoutFold(level: (typeof PAGED)[number], box: HTMLElement, position: number) {
   const panel = panelOf(box);
@@ -69,9 +68,9 @@ function expectOpenWithoutFold(level: (typeof PAGED)[number], box: HTMLElement, 
 /*
   C3's second piece of evidence, read as the panel contract. `epic-E5-design.md` states
   it: "A paged section carries no fold. Every panel of a paged section renders open, so
-  `Panel` receives no `collapsible` prop on these levels." Both halves are read here:
-  no panel header holds a disclosure control, and no panel body is inert, which is the
-  attribute that hides a closed body from a reader.
+  `Panel` receives no `collapsible` prop on these levels." No panel header holds a
+  disclosure control, and no panel body is inert, the attribute that hides a closed body
+  from a reader.
 */
 async function carriesNoFoldOnPagedLevels() {
   for (const level of PAGED) {
@@ -82,12 +81,11 @@ async function carriesNoFoldOnPagedLevels() {
 }
 
 /*
-  C3's second piece of evidence at its strongest, on the one level whose panels disclose
-  no record of their own. The four Intent sections hold prose and a list each, so not
-  one `aria-expanded` control renders inside any of the four boxes. The other three
-  paged levels are not read this way: the Architecture level's decisions and the Build
-  level's epics each disclose a record inside a body, and those controls are records
-  rather than panel folds. The report states that reading.
+  C3's second piece of evidence at its strongest, on the one level whose panels disclose no
+  record of their own. The Intent sections hold prose and a list, so no `aria-expanded`
+  control renders in any box. The other paged levels are not read this way: the Architecture
+  decisions and the Build epics each disclose a record inside a body, and those controls
+  are records, not panel folds. The report states that reading.
 */
 async function drawsNoDisclosureControl() {
   const boxes = await openPaged(`#/${DESIGN}/intent`, "Intent");

@@ -4,14 +4,12 @@ import type { RailRow } from "../../model";
 import { INDEX } from "./bundle";
 import type { SparseDesign } from "./corpus";
 
-/** The three records Problem & Solution is backed by, and the file each one lives in. */
 const BACKING_RECORDS: Record<string, string> = {
   intent: "intent.json",
   narrative: "narrative.json",
   assessment: "assessment.json",
 };
 
-/** The record files one sparse record body does not carry, in the order the rail names them. */
 function absentRecords(record: DesignRecord): string[] {
   const body = record as Record<string, unknown>;
   return Object.keys(BACKING_RECORDS)
@@ -27,7 +25,7 @@ interface Keep {
 type Rule = (design: SparseDesign, record: DesignRecord) => Keep;
 
 function intentKeep(_design: SparseDesign, record: DesignRecord): Keep {
-  /* Intent reads the record file, and a sparse design's record file carries its goal. */
+  /* Intent reads the record file, which carries the goal. */
   return { available: record.goal !== undefined, absent: ["designs.js"] };
 }
 
@@ -37,11 +35,7 @@ function problemKeep(_design: SparseDesign, record: DesignRecord): Keep {
 }
 
 function architectureKeep(design: SparseDesign): Keep {
-  /*
-   * ARCHITECTURE IS BACKED BY A DECISION THIS DESIGN NAMES. The fixture's index carries
-   * no diagram, no district, and no context for the design, so `goal.adrs[]` is the whole
-   * of the rule here.
-   */
+  /* The index has no diagram, district, or context here, so `goal.adrs[]` is the whole rule. */
   const named = (design.goal.adrs ?? []).length > 0;
   return {
     available: named,
@@ -67,10 +61,7 @@ function planDocuments(): unknown[] {
 }
 
 function planKeep(design: SparseDesign): Keep {
-  /*
-   * PLAN IS BACKED BY A PLAN DOCUMENT. The fixture's index holds the plan documents a
-   * work carries, so any entry there that names this design is a plan.
-   */
+  /* The index holds the plan documents a work carries, so an entry that names this design is its plan. */
   const planned =
     planDocuments().some((doc) => JSON.stringify(doc).includes(design.id)) ||
     Object.keys(INDEX.joins.feature_gates).includes(design.id);
@@ -94,10 +85,9 @@ function unpromisedRow(row: RailRow): Error {
   );
 }
 
-/** What the slice promises one row reads, derived from the authored design alone. */
 export function promised(row: RailRow, design: SparseDesign, record: DesignRecord): Keep {
-  /* The change's File Diffs row is disabled when no pull request is carried. The reason is
-     asserted apart, in the no-change test, so no fixed words are promised here. */
+  /* The File Diffs row is disabled when no pull request is carried. The no-change test
+     asserts the reason, so no words are promised here. */
   if (row.label === "File Diffs") return { available: false, absent: [] };
 
   const rule: Rule | undefined = RULES[row.key.replace(/^program-/, "")];

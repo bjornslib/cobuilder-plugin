@@ -31,13 +31,11 @@ function changeRowOf(groups: RailGroup[]): RailRow {
 }
 
 function expectRowNotEntry(groups: RailGroup[]): void {
-  /* It is a row, and not an entry. */
   const entries = groups.flatMap((group) => group.entries);
   expect(entries.map((entry) => entry.label)).not.toContain("File Diffs");
 }
 
 function expectDrawnDisabled(diffs: RailRow): void {
-  /* It is drawn disabled, names its account, then states its reason. */
   const rendered = railRows().find((row) =>
     (row.getAttribute("aria-label") ?? "").startsWith("File Diffs, the pull request"),
   );
@@ -68,7 +66,6 @@ function expectProblemGated(design: SparseDesign): void {
 }
 
 function expectRedirectedToIntent(design: SparseDesign): void {
-  /* The shell lands on a level the design fills, and it states the move. */
   expect(window.location.hash).toBe(routeHref(design.id, "intent"));
   expect(pageText()).toContain("The route named problem-and-solution");
   expect(pageText()).toMatch(/redirected to intent\./i);

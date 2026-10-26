@@ -54,12 +54,10 @@ const GOAL: DesignRecord["goal"] = {
 };
 
 /**
- * The one work item, and it fills every level the section model reads.
- *
- * The three fixed paged levels are lists of four, so Intent, Problem & Solution, and
- * Architecture each page four boxes with no help from this record. The Build level's
- * sections come from the epic count above. The record's three diagram levels are the
- * corpus's shape, and the container drawing is level 1.
+ * The one work item. The three fixed paged levels are lists of four, so Intent, Problem &
+ * Solution, and Architecture each page four boxes with no help from this record. The Build
+ * level's sections come from the epic count above. The three diagram levels have the shape
+ * of the corpus, and the container drawing is level 1.
  */
 const VIEWER: DesignRecord = {
   goal: GOAL,
@@ -96,10 +94,10 @@ export function installFixtures(): void {
   window.INDEX = INDEX;
   window.DESIGNS = DESIGNS;
   /*
-   * The decision global is declared by no module, because `src/data/bundle.ts` leaves it to
-   * whoever reads the file. One entry is enough: its guard reads the first value's `title`,
-   * so an empty map reads as a file that assigned nothing and the loader then asks the dev
-   * server for one.
+   * No module declares the decision global, because `src/data/bundle.ts` leaves it to
+   * whoever reads the file. One entry is enough. Its guard reads the `title` of the first
+   * value, so an empty map reads as a file that assigned nothing, and the loader would then
+   * ask the dev server for one.
    */
   (window as unknown as Record<string, unknown>).ADRS = ADRS;
 }

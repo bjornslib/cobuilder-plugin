@@ -9,24 +9,16 @@ import { installJsdomStubs } from "@/shell/testSupport/jsdom";
 import type { DesignRecords } from "./bundle";
 import { BUNDLE_DATA } from "./testSupport/bundle/sources";
 
-/**
- * The bundle files the shell reads, taken from the committed corpus.
- *
- * The bundle is outside this package, at the repository root, and the dev server mounts
- * it at `/bundle/` for the same reader. A case that reads the corpus states what a reader
- * meets rather than what a fixture says.
- *
- * Two siblings assign a global rather than hold JSON. `designs.js` writes
- * `window.DESIGNS`, and `adrs.js` writes `window.ADRS`. Each one is run here, exactly as
- * the script tag the shell appends would run it. The third reader, the index, comes over
- * the stubbed fetch below.
- */
-/** The part of the corpus this case reads. */
 interface CorpusIndex {
   schema_version: string;
   entities: { design: { id: string; name: string; outcome: string; stage: string }[] };
 }
 
+/**
+ * The bundle sits outside this package, at the repository root. `designs.js` and `adrs.js`
+ * assign `window.DESIGNS` and `window.ADRS` instead of holding JSON. Each runs here as the
+ * shell's script tag would run it.
+ */
 function runSiblingScripts(): void {
   for (const sibling of ["designs.js", "adrs.js"]) {
     const run = new Function(readFileSync(join(BUNDLE_DATA, sibling), "utf8"));
@@ -41,11 +33,7 @@ function loadBundle(): { index: CorpusIndex; designs: DesignRecords } {
   return { index, designs: designs ?? ({} as DesignRecords) };
 }
 
-/*
-  The index reaches the shell the way a dev server serves it: one fetch, and no
-  `window.INDEX` anywhere. A published file inlines the global instead, and the shell
-  reads either one.
-*/
+/** The index arrives by one fetch, with no `window.INDEX`. A published file inlines the global instead. */
 function serveIndexByFetch(index: CorpusIndex): void {
   delete (window as unknown as { INDEX?: unknown }).INDEX;
   const served = JSON.stringify(index);

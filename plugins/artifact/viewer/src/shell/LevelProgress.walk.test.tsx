@@ -60,7 +60,6 @@ function expectNeverLowersOrResets(walk: Walk, readings: number[]) {
 function expectEndsCompleteOneShareEach(walk: Walk, readings: number[]) {
   const count = readings.length;
   expect(readings[count - 1], `${walk.label}: the walk ends complete`).toBe(100);
-  /* Bottomed out, each step is strictly one share: no hold, no skip. */
   expect(readings, `${walk.label}: one share per step, in order`).toEqual(
     Array.from({ length: count }, (_, index) => endOfShare(index, count)),
   );
@@ -79,14 +78,14 @@ async function expectForwardWalk(walk: Walk) {
 
 /*
   C2's invariant, walked twice. Every box is bottomed out as it arrives, which is the
-  protocol the rubric states, and the walk is taken once by the pager's Next button and
-  once by the ArrowRight key.
+  protocol the rubric states. The walk is taken once by the pager's Next button and once by
+  the ArrowRight key.
 
-  THE WALK RECORDS AND THEN ASSERTS, on purpose. Each step's reading is taken as it
+  The walk records and then asserts, on purpose. Each step's reading is taken as it
   settles, and the four checks below run over the whole sequence afterwards, so the
-  invariant is the thing that fires and not a value expectation standing in front of it.
-  A staged run of this file with the level reading inverted showed the non-decrease
-  check firing on the first step, at 75 then 50.
+  invariant is the thing that fires, not a value expectation in front of it. A staged run
+  with the level reading inverted showed the non-decrease check firing on the first step,
+  at 75 then 50.
 */
 async function neverDecreasesOnForwardWalk() {
   for (const walk of WALKS) await expectForwardWalk(walk);
@@ -107,10 +106,9 @@ async function stepBack(boxes: HTMLElement[]): Promise<number> {
 }
 
 /*
-  C2's other half. The rubric asks for the backward step explicitly, because a strip
-  that never moved down would satisfy "never decreases" by standing still. From the
-  last section at 100, one step back reads the previous section's share: it falls, and
-  it is not 0.
+  C2's other half. The rubric asks for the backward step explicitly, because a strip that
+  never moved down would satisfy "never decreases" by standing still. From the last section
+  at 100, one step back reads the previous section's share: it falls, and it is not 0.
 */
 async function fallsOnBackwardStep() {
   await openPaged(PAGED[1].hash);

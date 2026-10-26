@@ -135,10 +135,8 @@ const RECORD: DesignRecord = {
 export const DESIGNS: DesignRecords = { [DESIGN]: RECORD };
 
 /**
- * The decision's own record, as `data/adrs.js` carries it.
- *
- * The record holds three anchored parts the index does not carry at all, so a Sheet that
- * opened the index row alone would show none of them.
+ * The decision's own record, as `data/adrs.js` carries it. It holds three anchored parts
+ * that the index does not carry, so a Sheet that opened the index row alone would show none.
  */
 export const ADRS = {
   [ADR_ID]: {

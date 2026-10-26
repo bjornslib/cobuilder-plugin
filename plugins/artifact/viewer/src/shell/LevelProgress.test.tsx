@@ -1,5 +1,5 @@
 /**
- * Slice 9 — the level's progress, stated as cases.
+ * Slice 9: the level's progress, stated as cases.
  *
  * The slice's end, from the ladder in `docs/plans/cobuilder-viewer/04-slices.md`: "The
  * strip reads 0 at the first section's top, 25 percent at its bottom, 50 on the second,
@@ -7,29 +7,24 @@
  * `.cobuilder/rubrics/cobuilder-viewer/slice-9.md`, and its five criteria are the five
  * groups below.
  *
- * THE SUBJECT IS THE PROGRESS HALF OF `Pager.tsx`: `withinOf` and `LevelProgress`. Slice
- * 8's file, `Pager.test.tsx`, owns the index, the strip, the pager, the boxes and the
- * arrow keys, and no case here restates one of its cases. What is here is the reading
- * those pieces produce: the number the strip states, where it comes from, and how it
- * moves.
+ * The subject is the progress half of `Pager.tsx`: `withinOf` and `LevelProgress`.
+ * `Pager.test.tsx` owns the index, the strip, the pager, the boxes and the arrow keys, so no
+ * case here restates one of its cases.
  *
- * THE READING IS READ FROM `aria-valuenow`. The rubric reads it there, because the
- * vendored `ScrollProgress` states its own number in that attribute, and it is the only
- * reading a reader of any kind can hear. The bar's fill is motion's and jsdom holds no
- * value for it, so the attribute is also the only reading a DOM without a layout engine
- * can carry.
+ * The reading is read from `aria-valuenow`. The vendored `ScrollProgress` states its number
+ * there, and it is the only reading a reader of any kind can hear. The bar's fill is
+ * motion's and jsdom holds no value for it.
  *
- * WHAT A DOM CANNOT CARRY, SAID PLAINLY. jsdom has no layout engine: every height reads
- * zero, so `scrollHeight - clientHeight` is zero for every box and every scroll event has
- * to be dispatched by hand. Four of this slice's claims are therefore out of this file's
- * reach, and each one is named below beside the case that carries its contract instead:
+ * What a DOM cannot carry: jsdom has no layout engine, so every height reads zero and every
+ * scroll event has to be dispatched by hand. Four claims are therefore out of this file's
+ * reach, and each one is named beside the case that carries its contract instead:
  *
- * 1. **A real box has a scroll range at all.** This file gives a box a range by hand,
- *    with `Object.defineProperty`. That proves the arithmetic and the listener; it does
- *    not prove that the box a reader meets is taller than its stage.
+ * 1. **A real box has a scroll range at all.** This file gives a box a range by hand, with
+ *    `Object.defineProperty`. That proves the arithmetic and the listener, not that the box
+ *    a reader meets is taller than its stage.
  * 2. **A real scroll raises the event.** jsdom does not fire `scroll` when `scrollTop` is
- *    assigned, so this file dispatches it. The listener is therefore proven; the browser's
- *    own dispatch is not.
+ *    assigned, so this file dispatches it. The listener is proven; the browser's own
+ *    dispatch is not.
  * 3. **The pane, the window, and the track stay put.** jsdom measures no geometry and
  *    motion writes no inline transform under it, so the three readings the rubric compares
  *    before and after a box scroll are jsdom's own constants here. The case that reads them
@@ -37,9 +32,9 @@
  * 4. **The fraction is a true proportion.** 13 at a half-scrolled box is this file's
  *    arithmetic against a range it declared. On the served page it is the box's real range.
  *
- * WHAT A VALIDATOR SHOULD MEASURE IN A BROWSER, to score the rest of the rubric. Serve the
- * bundle rooted at `.cobuilder-architect/self/`, open the Work surface's Intent level, and
- * read the `progressbar` named `Reading progress`:
+ * A validator should measure the rest of the rubric in a browser. Serve the bundle rooted at
+ * `.cobuilder-architect/self/`, open the Work surface's Intent level, and read the
+ * `progressbar` named `Reading progress`:
  * - at the first section's top, with `scrollTop` at 0: the reading is 0.
  * - after `scrollTop = scrollHeight - clientHeight` on that box, and a second's wait for
  *   the spring: 25. On the second section, bottomed the same way: 50. On the last: 100.
@@ -49,12 +44,9 @@
  * - the pane's `scrollTop`, `window.scrollY`, and the track's own transform are unchanged
  *   by a box scroll, and the reading climbs.
  *
- * THE FIXTURE CARRIES SEVEN EPICS, as slice 8's does. Six fill one section of the paged
- * Build level, so seven give that level two sections and none of these cases is a
- * one-count special case. The other three paged levels are fixed lists of four.
- *
- * jsdom implements neither `matchMedia` nor `ResizeObserver`, and the shell asks both
- * questions on its first render. The stubs answer the query false and observe nothing.
+ * The fixture carries seven epics, as slice 8's does. Six fill one section of the paged
+ * Build level, so seven give that level two sections and no case here is a one-count
+ * special case. The other three paged levels are fixed lists of four.
  */
 
 import { cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
@@ -120,19 +112,17 @@ async function expectLevelStepsByShare(level: PagedLevel) {
 }
 
 /*
-  C1's rule as arithmetic. The reading is `(index + within) / count`, so a level of
-  four steps by one quarter and a level of two steps by one half. jsdom gives every box
-  no scroll range, which counts as fully read (C3), so the reading here is the END of
-  each section's share: 25, 50, 75, 100 on the four-section levels.
+  C1's rule as arithmetic. The reading is `(index + within) / count`, so a level of four
+  steps by one quarter and a level of two steps by one half. jsdom gives every box no
+  scroll range, which counts as fully read (C3), so the reading here is the END of each
+  section's share: 25, 50, 75, 100 on the four-section levels.
 
-  The case reads the level's own count from the pager rather than writing four down, so
-  a level whose count changed would move the expected step with it instead of quietly
-  passing.
+  The case reads the level's own count from the pager rather than writing four down, so a
+  level whose count changed would move the expected step with it instead of quietly passing.
 */
 async function stepsOneShareForEachSection() {
   for (const level of PAGED) await expectLevelStepsByShare(level);
 
-  /* A level of four pages one quarter a section, and a level of two pages one half. */
   expect(PAGED.map((level) => Math.round(100 / level.count))).toEqual([25, 25, 25, 50]);
 }
 
@@ -155,17 +145,17 @@ async function readLastSection(boxes: HTMLElement[]) {
 }
 
 /*
-  C1's four readings, with a scroll range this case declares. This is the one case in
-  the file that stages the rubric's own sequence:
+  C1's four readings, with a scroll range this case declares. It is the one case in the
+  file that stages the rubric's own sequence:
 
     section 1 at its top      0
     section 1 at its bottom   25
     section 2 at its bottom   50
     section 4 at its bottom   100
 
-  A reading of 0 is unreachable without a range, which is why the range is declared
-  here rather than measured. Break the `within` term and this case reports 25 for the
-  first line; break the `index` term and it reports 0 for the last two.
+  A reading of 0 is unreachable without a range, so the range is declared here rather than
+  measured. Break the `within` term and this case reports 25 for the first line. Break the
+  `index` term and it reports 0 for the last two.
 */
 async function readsZeroAtTopAndShareAtBottom() {
   await openPaged(PAGED[0].hash);
@@ -174,7 +164,6 @@ async function readsZeroAtTopAndShareAtBottom() {
   await readSecondSection(boxes);
   await readLastSection(boxes);
 
-  /* The pager's own count is the denominator the four readings stepped by. */
   expect(endOfShare(3, 4)).toBe(100);
 }
 

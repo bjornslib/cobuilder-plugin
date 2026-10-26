@@ -1,9 +1,7 @@
 /**
- * The change's account: each row is a paged level, and each section is one panel.
- *
  * A row's sections are what its section strip names, so the titles below are the strip's
- * own words. The rail already names the four rows, and a strip that repeated them told
- * the reader nothing.
+ * own words. The rail already names the four rows, and a strip that repeated them told the
+ * reader nothing.
  */
 
 import { cleanup, screen } from "@testing-library/react";

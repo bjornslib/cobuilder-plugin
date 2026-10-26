@@ -17,8 +17,8 @@ beforeEach(() => {
 afterEach(cleanup);
 
 /*
-  Intent is the first entry now, so this walks from the second to the last. The
-  engineer's own case sits in here: from Architecture, the next press reaches Epics.
+  Intent is the first entry, so the walk starts at the second.
+  It covers the engineer's case: from Architecture, the next press reaches Epics.
 */
 async function movesDownEveryEntry() {
   renderAt("#/cobuilder-viewer/intent");
@@ -29,10 +29,7 @@ async function movesDownEveryEntry() {
   }
 }
 
-/*
-  The walk steps one flat list: Levels, Also, then the pull request's rows. This
-  fixture has no plan directory, so the Plan row is disabled and the walk skips it.
-*/
+/* This fixture has no plan directory, so the Plan row is disabled and the walk skips it. */
 const UPWARD_WALK = [
   "#/cobuilder-viewer/pull-requests/11/architecture",
   "#/cobuilder-viewer/pull-requests/11/problem-and-solution",
@@ -54,9 +51,8 @@ async function movesUpEveryRow() {
 }
 
 /*
-  The board is not a rail entry since ADR-0034, so the program's Intent
-  row is the first one. A walk that reaches it has nowhere above: the
-  press clamps, and the address does not move.
+  ADR-0034 made the board no rail entry, so the Intent row is first.
+  The press clamps there and the address does not move.
 */
 async function staysOnFirstRow() {
   renderAt("#/cobuilder-viewer/intent");
@@ -66,9 +62,8 @@ async function staysOnFirstRow() {
 }
 
 /*
-  The bare route's rail holds the Work entry alone — no work item means no
-  groups — so an arrow press there can only name the entry it is already
-  on, and the deck stays in front.
+  The bare route's rail holds only the Work entry (no work item, so no groups).
+  An arrow press can only name that entry, so the deck stays in front.
 */
 async function staysAtTheBoard() {
   renderAt("#/");
@@ -102,7 +97,6 @@ function pressInsideEachField() {
 async function leavesFieldPressAlone() {
   renderAt("#/cobuilder-viewer/intent");
   await waitFor(() => expect(levelHeading()).toBe("Intent"));
-  /* A field owns its own caret keys, so a press inside one is the field's. */
   pressInsideEachField();
   await waitFor(() => expect(levelHeading()).toBe("Intent"));
   expect(window.location.hash).toBe("#/cobuilder-viewer/intent");
@@ -118,7 +112,7 @@ const MODIFIED_PRESSES: Array<Record<string, boolean>> = [
 async function leavesModifiedPressAlone() {
   renderAt("#/cobuilder-viewer/intent");
   await waitFor(() => expect(levelHeading()).toBe("Intent"));
-  /* A modified press names a command, which is the pager's guard and now this one's. */
+  /* A modified press is a command, so the rail leaves it to the pager's guard. */
   for (const init of MODIFIED_PRESSES) press("ArrowDown", init);
   await waitFor(() => expect(levelHeading()).toBe("Intent"));
   expect(window.location.hash).toBe("#/cobuilder-viewer/intent");
@@ -141,7 +135,6 @@ async function stepsPagerAfterRailMove() {
   await waitFor(() => expect(levelHeading()).toBe("Intent"));
   press("ArrowDown");
   await waitFor(() => expect(levelHeading()).toBe("Problem and solution"));
-  /* The two key sets share the window, and neither one takes the other's keys. */
   press("ArrowRight");
   await waitFor(() => expect(screen.getByText(/Section 2 of \d+/)).toBeTruthy());
 }

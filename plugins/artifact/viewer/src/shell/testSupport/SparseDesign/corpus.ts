@@ -11,12 +11,8 @@ function noRootError(): Error {
 }
 
 /**
- * This repository's root: the nearest directory above the runner that carries the
- * authored designs.
- *
- * `import.meta.url` is not a file URL under this package's jsdom runner, so the path is
- * walked rather than computed. The walk also holds when the runner starts from the
- * repository root instead of from this package.
+ * `import.meta.url` is not a file URL under this package's jsdom runner, so the code walks
+ * up the path. The walk also holds when the runner starts from the repository root.
  */
 function repoRoot(): string {
   let dir = process.cwd();
@@ -28,16 +24,13 @@ function repoRoot(): string {
   }
 }
 
-/** This repository's authored designs. */
 const DESIGNS_DIR = join(repoRoot(), "docs", "architecture", "designs");
 
-/** One sparse design: the id its index entity carries, and its authored goal record. */
 export interface SparseDesign {
   id: string;
   goal: DesignGoal;
 }
 
-/** The file names one design's own authored directory holds, sorted. */
 export function authoredFiles(id: string): string[] {
   return readdirSync(join(DESIGNS_DIR, id))
     .filter((name) => statSync(join(DESIGNS_DIR, id, name)).isFile())
@@ -45,10 +38,8 @@ export function authoredFiles(id: string): string[] {
 }
 
 /**
- * Every design in this repository whose authored directory holds `goal.json` alone.
- *
- * This is the slice's own subject, read from disk rather than named here. The directory
- * name is the design id, which is the key the index's design entity and the route both use.
+ * The directory name is the design id, the key that the index entity and the route both
+ * use. The list comes from disk, not from names in this file.
  */
 export const SPARSE: SparseDesign[] = readdirSync(DESIGNS_DIR)
   .filter((name) => statSync(join(DESIGNS_DIR, name)).isDirectory())

@@ -1,48 +1,36 @@
 /**
- * Slice 8 — the section model, stated as cases.
+ * Slice 8: the section model, stated as cases. The slice's end, from the ladder in
+ * `docs/plans/cobuilder-viewer/04-slices.md`: "One box is on screen, the strip, the pager
+ * bar, and the two arrow keys move one index, and the pane reports no scroll at all." The
+ * rubric `.cobuilder/rubrics/cobuilder-viewer/slice-8.md` has six criteria, and they are
+ * the six groups of cases.
  *
- * The slice's end, from the ladder in `docs/plans/cobuilder-viewer/04-slices.md`: "One box
- * is on screen, the strip, the pager bar, and the two arrow keys move one index, and the
- * pane reports no scroll at all." The rubric that scores it is
- * `.cobuilder/rubrics/cobuilder-viewer/slice-8.md`, and its six criteria are the six
- * groups below.
+ * The subject is `Pager.tsx`, and the cases render the shell. `PagedLevel` in `App.tsx` is
+ * the one caller that mounts the pager parts, and a section model with no level around it
+ * is not a state a reader can meet. Only the last arrow-key case calls the guard directly.
  *
- * THE SUBJECT IS `Pager.tsx`, AND THE CASES RENDER THE SHELL. `useSectionPaging`,
- * `SectionStrip`, `SectionStage`, `SectionPager`, and `keyPressIsTaken` are that file's,
- * and `PagedLevel` in `App.tsx` is the one caller that mounts them. A section model with
- * no level around it is not a state a reader can meet, so every case below renders
- * `Shell` at a real address. The one exception is the last case in the arrow-key group,
- * which calls the guard directly.
+ * Geometry is browser-only. jsdom has no layout engine: it reports zero for `scrollHeight`,
+ * `clientHeight`, and every bounding rect, so a case that compared them would pass whatever
+ * the tree did. The rubric reaches those claims through the ChromeDevTools MCP tools on a
+ * served bundle. This file reads the tree, the roles, the attributes, and the class
+ * contract the layout rests on. Three claims stay with the browser: the pane's scroll
+ * range, the box's rect inside the pane's, and the track's transform offset.
  *
- * GEOMETRY IS BROWSER-ONLY, AND THIS FILE DOES NOT PRETEND OTHERWISE. jsdom has no layout
- * engine: it reports zero for `scrollHeight`, for `clientHeight`, and for every bounding
- * rect, so a case that compared the pane's scroll height against its client height would
- * pass here whatever the tree did. The rubric reaches those claims through the
- * ChromeDevTools MCP tools on a served bundle, and no runner in this package holds a
- * browser. What this file carries instead is the tree, the roles, the attributes, and the
- * class contract the layout rests on — each case below says which of those it reads, and
- * the ones that stand in for a geometry claim name the claim they stand in for. The three
- * claims left to the browser are stated in the report: the pane's own scroll range, the
- * box's rect inside the pane's, and the track's transform offset.
+ * The track's transform was measured before these cases were written. Motion writes no
+ * inline transform under jsdom, so `track.style.transform` reads `none` at every index. The
+ * step is therefore read from the index and from the class contract that makes `-100%` one
+ * box.
  *
- * THE TRACK'S TRANSFORM IS ONE OF THOSE THREE, and it was measured before these cases were
- * written: motion writes no inline transform under jsdom, so `track.style.transform` reads
- * `none` at every index. The step is therefore read from what the transform is derived from
- * — the index — and from the class contract that makes `-100%` one box.
+ * The fixture holds seven epics. Six fill one section of the paged Build level
+ * (`EPICS_PER_SECTION`), so seven give two sections, and the case is not a one-box special
+ * case. The other three paged levels are fixed lists of four.
  *
- * THE FIXTURE HOLDS SEVEN EPICS. Six fill one section of the paged Build level
- * (`EPICS_PER_SECTION` in `model.ts`), so seven give that level two sections and the case
- * for it is not a one-box special case. The other three paged levels are fixed lists of
- * four, and each is opened in its own right.
+ * The `App` tests cover the arrow keys that never move the rail, and the board that draws
+ * none of the three controls. This file does not restate them.
  *
- * `App.test.tsx` already carries two cases that touch this model — the arrow keys step the
- * pager and never move the rail, and the board draws none of the three controls. They are
- * its cases and this file does not restate them. What is here is the slice's own end: the
- * box, the index, the three controls, and the shape each level keeps.
- *
- * jsdom implements neither `matchMedia` nor `ResizeObserver`, and the shell asks both
- * questions on its first render. The stubs answer the query false and observe nothing,
- * which is the desktop rail and a diagram tile whose box is never measured.
+ * jsdom implements neither `matchMedia` nor `ResizeObserver`, and the shell asks both on its
+ * first render. The stubs answer the query false and observe nothing, which gives the desktop
+ * rail and a diagram tile whose box is never measured.
  */
 
 import { cleanup, waitFor } from "@testing-library/react";
@@ -88,11 +76,10 @@ async function checkLevel(level: PagedLevel) {
 }
 
 /*
-  C1's first evidence, at the level of the tree. The rubric counts boxes inside the
-  pane's rect with a browser; this counts the boxes on the track and reads which one the
-  stage left reachable. Both halves can fail: a track that rendered no box fails the
-  count, and a stage that stopped marking the others `inert` reports four boxes on
-  screen instead of one.
+  C1, at the level of the tree. The rubric counts boxes inside the pane's rect with a
+  browser. This counts the boxes on the track and reads which one the stage left reachable.
+  A track with no box fails the count, and a stage that stopped marking the others `inert`
+  reports four boxes on screen instead of one.
 */
 async function putsOneBoxOnScreen() {
   for (const level of PAGED) {
@@ -123,12 +110,10 @@ function expectBoxesScrollThemselves() {
 }
 
 /*
-  C1's second and third evidence, as the class contract the layout rests on. jsdom
-  measures nothing, so the pane's scroll height against its client height cannot be
-  compared here. What can be read is the contract that makes those two equal: the
-  level's column takes the pane's height and no more, the stage is the one clip box,
-  and every box is its own scroll container. Break any one of the three and this case
-  fails.
+  The class contract the layout rests on. jsdom measures nothing, so the pane's scroll
+  height cannot be compared with its client height. This case reads the contract that
+  makes them equal: the level's column takes the pane's height and no more, the stage is
+  the one clip box, and every box is its own scroll container. Break one and it fails.
 */
 async function boundsLevelByPane() {
   await open(PAGED[3].hash);
@@ -140,10 +125,9 @@ async function boundsLevelByPane() {
 }
 
 /*
-  C1's third evidence rests on the document owning no scroll. `useDocumentNoScroll` is
-  the mechanism, and it is readable: the root and the body both carry `overflow: hidden`
-  while the shell is mounted, and both are handed back on unmount. Remove the hook and
-  the document scrolls behind a pane that cannot, which this case fails on.
+  The document must own no scroll. `useDocumentNoScroll` sets `overflow: hidden` on the root
+  and the body while the shell is mounted, and hands both back on unmount. Without the hook
+  the document scrolls behind a pane that cannot, and this case fails.
 */
 async function takesDocumentScroll() {
   const before = document.documentElement.style.overflow;

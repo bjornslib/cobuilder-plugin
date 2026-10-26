@@ -16,7 +16,6 @@ export const RUBRIC_BODIES = [
   "The rubric body of slice one.",
   "The rubric body of slice two.",
 ];
-/** A rubric that belongs to another plan, which this page must not show. */
 export const OTHER_RUBRIC_BODY = "The rubric body of another plan.";
 
 function slice(n: number) {

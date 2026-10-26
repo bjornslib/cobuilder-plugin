@@ -6,7 +6,7 @@ slice adds one key to each table.
 """
 from __future__ import annotations
 
-from _viewer_kept_comments import source_files_with_comments
+from _viewer_kept_comments import commented_test_side_files, source_files_with_comments
 
 VIEWER = "plugins/artifact/viewer"
 SRC = f"{VIEWER}/src"
@@ -85,7 +85,14 @@ SLICES: dict[int, list[str]] = {
         f"{SRC}/shell/workDeck.test.ts",
     ],
     6: source_files_with_comments(),
+    7: commented_test_side_files(),
 }
+TEST_SIDE_GLOBS: list[str] = [
+    f"{SRC}/**/*.test.ts",
+    f"{SRC}/**/*.test.tsx",
+    f"{SRC}/**/testSupport/**/*.ts",
+    f"{SRC}/**/testSupport/**/*.tsx",
+]
 SLICE_GLOBS: dict[int, list[str]] = {
     1: _globs(f"{VIEWER}/src/data", f"{SHELL}/model"),
     2: _globs(f"{SHELL}/atoms", f"{SHELL}/sections", f"{SHELL}/panels"),
@@ -95,11 +102,7 @@ SLICE_GLOBS: dict[int, list[str]] = {
         f"{VIEWER}/src/*.tsx",
         f"{VIEWER}/vite.config.ts",
     ],
-    5: [
-        f"{SRC}/**/*.test.ts",
-        f"{SRC}/**/*.test.tsx",
-        f"{SRC}/**/testSupport/**/*.ts",
-        f"{SRC}/**/testSupport/**/*.tsx",
-    ],
+    5: TEST_SIDE_GLOBS,
     6: [*_globs(SRC), f"{VIEWER}/vite*.ts"],
+    7: TEST_SIDE_GLOBS,
 }

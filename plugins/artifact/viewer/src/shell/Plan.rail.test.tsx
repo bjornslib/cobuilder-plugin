@@ -29,9 +29,9 @@ async function givesPlanRowMinHeight() {
  * The Plan rail row, per ui-spec.jsonc `planRow`: a 44 px minimum height, and a work with
  * no plan documents shows the row disabled with the reason "no plan", not hidden.
  *
- * THE 44 PX FLOOR. The rail's shared row frame sets `min-h-9` (36 px) for an expanded row
- * and reaches 44 px only in icon mode. No class sets 44 px for an expanded row today, so
- * this case asserts Tailwind's `min-h-11` (44 px) on the Plan row itself.
+ * The rail's shared row frame sets `min-h-9` (36 px) for an expanded row and reaches 44 px
+ * only in icon mode. No class sets 44 px for an expanded row today, so this case asserts
+ * Tailwind's `min-h-11` (44 px) on the Plan row itself.
  */
 describe("the plan rail row", () => {
   it("shows a disabled Plan row with the reason 'no plan' for a work with no plan", disablesPlanRowWithoutPlan);

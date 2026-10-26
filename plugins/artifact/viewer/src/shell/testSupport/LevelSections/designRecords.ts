@@ -23,13 +23,12 @@ import {
 import { EPIC_ROWS } from "./recordIndex";
 
 /**
- * The rich work item: every level fills, and every section has its own record.
+ * The rich work item: every level fills.
  *
- * Two linked decisions, at the index's own ids, so the Architecture level's list can be
- * compared against `data/index.json`'s `adr` entities and `goal.adrs[]` between them.
- * `goals.epics[]` holds one row per epic, because the row's outcome comes from the plan
- * record and the panel's only fallback is a sentence about a missing one. The stage reads
- * implemented so the Shipped level fills and its own section renders.
+ * Two linked decisions carry the index's own ids, so the Architecture list can be compared
+ * with the index's `adr` entities and `goal.adrs[]`. `goal.epics[]` holds one row per epic,
+ * because a row's outcome comes from the plan record, and the panel's only fallback is a
+ * sentence about a missing one. The stage is implemented, so the Shipped level fills.
  */
 export const RICH: DesignRecord = {
   goal: {
@@ -79,12 +78,10 @@ export const RICH: DesignRecord = {
 };
 
 /**
- * The other work item: the same shape with four records missing.
- *
- * No assessment, no risk, no unknown, and no drafted pull request. Its own epic carries a
- * real merged pull request, so the Pull requests level fills without a draft and the case
- * for the draft's absence has a level to read. Its one linked decision is a decision the
- * rich work does not name, which is what makes the "no other design's records" case bite.
+ * The other work item: the same shape with four records missing (no assessment, risk,
+ * unknown, or drafted pull request). Its epic carries a real merged pull request, so the
+ * Pull requests level fills without a draft. Its one linked decision is one the rich work
+ * does not name, which makes the "no other design's records" case bite.
  */
 export const SPARSE: DesignRecord = {
   goal: {

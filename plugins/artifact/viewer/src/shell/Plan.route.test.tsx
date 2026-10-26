@@ -49,7 +49,6 @@ async function scrollsNamedBlock() {
     await openPlan(`#/${ALPHA}/build/plan/architecture`);
     const target = blockOf("architecture");
     await waitFor(() => expectScrolled(spy, target));
-    /* The spec scrolls with no animation. */
     expectNotSmooth(spy, target);
   } finally {
     spy.mockRestore();

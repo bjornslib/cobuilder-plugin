@@ -36,15 +36,14 @@ async function climbWithBox(box: HTMLElement) {
 }
 
 /*
-  C4's evidence, and the part of it a DOM can carry. The reading climbs while the box
-  scrolls, and the three things the rubric compares — the pane's `scrollTop`, the
-  window's `scrollY`, and the track's transform — are read before and after.
+  C4's evidence, the part a DOM can carry. The reading climbs while the box scrolls. The
+  pane's `scrollTop`, the window's `scrollY`, and the track's transform are read before and
+  after.
 
-  THE THREE COMPARISONS ARE jsdom's CONSTANTS HERE, and the report says so. jsdom
-  measures no geometry and motion writes no inline transform under it, so all three read
-  the same value whatever the box did. What this case does carry is that a box scroll
-  reaches the reading, which is the half a wrong listener would break. The browser owns
-  the other half.
+  Those three comparisons are jsdom's constants here, and the report says so. jsdom
+  measures no geometry and motion writes no inline transform under it, so all three read the
+  same whatever the box did. The case carries that a box scroll reaches the reading, the
+  half a wrong listener would break. The browser owns the other half.
 */
 async function climbsWhenActiveBoxScrolls() {
   await openPaged(PAGED[2].hash);
@@ -53,20 +52,17 @@ async function climbsWhenActiveBoxScrolls() {
   await climbWithBox(box);
   expectUnmoved(before);
 
-  /* Back to the top, and the reading returns to where it was. */
   scrollBox(box, 900, 0);
   await waitFor(() => expect(reading(), "the reading falls back with the box").toBe(0));
 }
 
 async function expectOffScreenBoxMovesNothing(boxes: HTMLElement[]) {
-  /* 1. A box that is not on screen moves nothing. */
   scrollBox(boxes[2], 900, 900);
   await waitFor(() => expect(reading()).toBe(endOfShare(0, boxes.length)));
   expect(reading(), "a box off screen cannot move the strip").toBe(25);
 }
 
 async function expectArrivingBoxMovesReading(boxes: HTMLElement[]) {
-  /* 2. The arriving box moves the reading. */
   await next();
   expect(onScreenIndex()).toBe(1);
   scrollBox(boxes[1], 900, 0);
@@ -74,19 +70,17 @@ async function expectArrivingBoxMovesReading(boxes: HTMLElement[]) {
 }
 
 async function expectLeftBoxMovesNothing(boxes: HTMLElement[]) {
-  /* 3. The box the reader left no longer moves it. */
   scrollBox(boxes[0], 900, 900);
   await waitFor(() => expect(reading()).toBe(25));
   expect(reading(), "the box the reader left is no longer measured").toBe(25);
 
-  /* And the arriving box still does. */
   scrollBox(boxes[1], 900, 900);
   await waitFor(() => expect(reading(), "the box on screen still is").toBe(50));
 }
 
 /*
-  The other half of C4's rule, and the one that catches the frozen container the source
-  comment describes: the strip reads the box the reader is ON. Three readings prove it:
+  The other half of C4's rule. It catches the frozen container the source comment
+  describes: the strip reads the box the reader is ON. Three readings prove it:
 
     1. scrolling a box that is not on screen moves nothing;
     2. after a step, the arriving box moves the reading;
@@ -128,11 +122,10 @@ async function expectContractOf(level: PagedLevel) {
 }
 
 /*
-  C5's three pieces of evidence, read as attributes. The role and the name are what a
-  reader hears, and the range is what makes a reading of 25 mean a quarter. The case
-  also reads the count of bars on the level, because a paged level draws exactly one:
-  the pane's own reading strip belongs to a stacked level, and a second bar here would
-  leave a reader unable to say which number is the level's.
+  C5's evidence, read as attributes: the role, the name and the range. The case also counts
+  the bars on the level, because a paged level draws exactly one. The pane's own reading
+  strip belongs to a stacked level, and a second bar here would leave a reader unable to say
+  which number is the level's.
 */
 async function statesItsContract() {
   for (const level of PAGED) await expectContractOf(level);
