@@ -1,13 +1,13 @@
 {
   "schema_version": "1.5",
   "sources": {
-    "git_head": "008d77a76f1da36250b0da75d9409582db0be0b9",
+    "git_head": "be7905c5cd4e6b094fa01c1356130ff676f9d395",
     "trees": {
       "docs/architecture/adr": "sha256:4c229d7b738685fdf5a81e25174d080cab0865a36e65ef9e62ec5ccfc662c3e6",
       "docs/architecture/designs": "sha256:e3a9af555125f543d0256de7d30211e426b85674077777533be097258dbc9428",
       "docs/architecture/contexts": "sha256:6663ee456e31bfbe31401908ae494017ed864dbb9c72211b6cbdccc44d078482",
-      "docs/plans": "sha256:18bb040ad42f89a28ea6bd0ba7ca6ce90ee5ceb5838b5dccc4f4ba2c7332c424",
-      ".cobuilder/rubrics": "sha256:83bbd35e0a3806802ecea195ca1f32a6740c7628670ee2eda50f4dea8f699126"
+      "docs/plans": "sha256:149a7ca495f959085665261cd12d6d8d64e496c74c36521b5ef8f3d68ab4c2d3",
+      ".cobuilder/rubrics": "sha256:8cff90c4bfa78414047c8769bf22308ecb07da2afda4c81f28e4ce3e9fd4f45c"
     }
   },
   "entities": {
@@ -485,7 +485,7 @@
         "epic_id": "E8",
         "branch": "feature/work-board-alignment",
         "pr": null,
-        "state": "in_progress",
+        "state": "closed",
         "note": null,
         "design_doc": "beads-storage/E8"
       },
@@ -4271,9 +4271,9 @@
         "n": 6,
         "title": "**Digest a run**",
         "ends_with": "`uv run priority digest` calls Inkling and prints a RunDigest that validates. The next stop brief of the same session carries it as `previous`",
-        "score": "—",
-        "attempts": 0,
-        "state": "in_progress"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "priority-dev-spike/7",
@@ -4283,7 +4283,7 @@
         "ends_with": "`uv run priority replay fixtures/` writes `report.md` with the valid-output rate, the quote-found rate, the abstain reasons, the kinds picked, and the characters, seconds, and cost for each stage. A replay at the event rate of 5 sessions counts the free-tier limit errors. An injected 429, malformed JSON, empty quote, and timeout each end as an Abstain with a logged reason",
         "score": "—",
         "attempts": 0,
-        "state": "planned"
+        "state": "in_progress"
       },
       {
         "id": "priority-dev-spike/8",
@@ -6873,6 +6873,7 @@
       "beads-storage/E4": 43,
       "beads-storage/E5": 50,
       "beads-storage/E7": 51,
+      "beads-storage/E8": 52,
       "book-index-tiering/E1": 16,
       "cobuilder-implement/E1": 11,
       "cobuilder-implement/E2": 12,
@@ -6922,7 +6923,7 @@
       "beads-storage/E5": "completed",
       "beads-storage/E6": "unstarted",
       "beads-storage/E7": "completed",
-      "beads-storage/E8": "in_progress",
+      "beads-storage/E8": "completed",
       "book-index-tiering/E1": "open",
       "build-workflow-polish/E1": "completed",
       "build-workflow-polish/E2": "completed",
@@ -7628,14 +7629,14 @@
         {
           "n": "1",
           "name": "Product",
-          "state": "APPROVED 2026-10-25",
+          "state": "in progress",
           "doc": "mechanical-smells",
           "doc_kind": "product"
         },
         {
           "n": "2",
           "name": "Architecture",
-          "state": "APPROVED 2026-10-25",
+          "state": "in progress",
           "doc": "mechanical-smells",
           "doc_kind": "architecture"
         },
@@ -7647,7 +7648,7 @@
         {
           "n": "3",
           "name": "Program Design",
-          "state": "APPROVED 2026-10-25",
+          "state": "in progress",
           "doc": "mechanical-smells",
           "doc_kind": "program"
         },
@@ -7887,6 +7888,14 @@
             "state": "merged",
             "epics": [
               "beads-storage/E7"
+            ]
+          },
+          {
+            "ref": "pr-52",
+            "number": 52,
+            "state": "merged",
+            "epics": [
+              "beads-storage/E8"
             ]
           }
         ]
