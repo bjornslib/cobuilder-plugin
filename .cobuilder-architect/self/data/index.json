@@ -1,13 +1,13 @@
 {
   "schema_version": "1.5",
   "sources": {
-    "git_head": "be7905c5cd4e6b094fa01c1356130ff676f9d395",
+    "git_head": "82e2ed6a0f34d4e687579e17bfefbe38b582f7cc",
     "trees": {
       "docs/architecture/adr": "sha256:4c229d7b738685fdf5a81e25174d080cab0865a36e65ef9e62ec5ccfc662c3e6",
       "docs/architecture/designs": "sha256:e3a9af555125f543d0256de7d30211e426b85674077777533be097258dbc9428",
       "docs/architecture/contexts": "sha256:6663ee456e31bfbe31401908ae494017ed864dbb9c72211b6cbdccc44d078482",
-      "docs/plans": "sha256:149a7ca495f959085665261cd12d6d8d64e496c74c36521b5ef8f3d68ab4c2d3",
-      ".cobuilder/rubrics": "sha256:8cff90c4bfa78414047c8769bf22308ecb07da2afda4c81f28e4ce3e9fd4f45c"
+      "docs/plans": "sha256:526c5c2717a446b898e2ab775cba30ff40324b05b091270bde21afd56c728e0b",
+      ".cobuilder/rubrics": "sha256:83bbd35e0a3806802ecea195ca1f32a6740c7628670ee2eda50f4dea8f699126"
     }
   },
   "entities": {
@@ -415,7 +415,7 @@
         "epic_id": "E1",
         "branch": "design/beads-storage/tracker-port",
         "pr": null,
-        "state": "in_progress",
+        "state": "closed",
         "note": null,
         "design_doc": "beads-storage/E1"
       },
@@ -425,7 +425,7 @@
         "epic_id": "E2",
         "branch": "design/beads-storage/tracker-port",
         "pr": null,
-        "state": "in_progress",
+        "state": "closed",
         "note": null,
         "design_doc": "beads-storage/E2"
       },
@@ -435,7 +435,7 @@
         "epic_id": "E3",
         "branch": "design/beads-storage/tracker-port",
         "pr": null,
-        "state": "in_progress",
+        "state": "closed",
         "note": null,
         "design_doc": "beads-storage/E3"
       },
@@ -445,7 +445,7 @@
         "epic_id": "E4",
         "branch": "design/beads-storage/tracker-port",
         "pr": null,
-        "state": "in_progress",
+        "state": "closed",
         "note": null,
         "design_doc": "beads-storage/E4"
       },
@@ -4281,9 +4281,9 @@
         "n": 7,
         "title": "**Replay report with failure drills**",
         "ends_with": "`uv run priority replay fixtures/` writes `report.md` with the valid-output rate, the quote-found rate, the abstain reasons, the kinds picked, and the characters, seconds, and cost for each stage. A replay at the event rate of 5 sessions counts the free-tier limit errors. An injected 429, malformed JSON, empty quote, and timeout each end as an Abstain with a logged reason",
-        "score": "—",
-        "attempts": 0,
-        "state": "in_progress"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "priority-dev-spike/8",
@@ -6916,10 +6916,10 @@
       "work-drawer/E2": 25
     },
     "epic_status": {
-      "beads-storage/E1": "in_progress",
-      "beads-storage/E2": "in_progress",
-      "beads-storage/E3": "in_progress",
-      "beads-storage/E4": "in_progress",
+      "beads-storage/E1": "completed",
+      "beads-storage/E2": "completed",
+      "beads-storage/E3": "completed",
+      "beads-storage/E4": "completed",
       "beads-storage/E5": "completed",
       "beads-storage/E6": "unstarted",
       "beads-storage/E7": "completed",
@@ -7866,7 +7866,7 @@
           {
             "ref": "pr-43",
             "number": 43,
-            "state": "open",
+            "state": "merged",
             "epics": [
               "beads-storage/E3",
               "beads-storage/E2",

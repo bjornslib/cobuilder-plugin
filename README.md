@@ -27,21 +27,20 @@ Everything runs in your own Claude Code session, against your own checkout. Your
    /plugin marketplace add bjornslib/cobuilder-plugin
    ```
 
-2. Install every plugin at once.
+2. Install every plugin at once. Then restart the session, or enable the plugins from `/plugin`.
 
    ```
    /plugin install cobuilder-full-lifecycle@cobuilder-plugin
    ```
 
-3. Restart the session, or enable the plugins from `/plugin`.
-4. Open the repo you want to work on, and run the setup once.
+3. Open the repo you want to work on, and run the setup once.
 
    ```
    /cobuilder-full-lifecycle:install
    ```
 
-   It installs habit-hooks and its detectors, and proves the coach. It checks for `DDD-VOCABULARY.md`. It adds the Hindsight allow rules to your user settings. It also sets up the tracker. It creates `.cobuilder/tracker.yaml`, runs `prepare`, and shows a backfill dry run before it writes. For an existing tracker with an old mapping, run `migrate-mapping` after a snapshot and a dry run. For the `beads` adapter, install `bd` first (see Prerequisites). It asks before each change.
-5. Run a command from the table above.
+   It installs habit-hooks and its detectors, and proves the coach. It checks for `DDD-VOCABULARY.md`. It adds the Hindsight allow rules to your user settings. It also sets up the tracker. It asks for `beads` or `files`, creates `.cobuilder/tracker.yaml`, runs `prepare`, and shows a backfill dry run before it writes. For an existing beads tracker, it takes a snapshot and shows a dry run before each of these steps: `migrate-mapping` for an old mapping, `repair-status` for stale epics and slices, and `strip_goal_stage.py` for the old `stage` in `goal.json`. For the `beads` adapter, install `bd` first (see Prerequisites). It asks before each change.
+4. Run a command from the table above.
 
 To start with one job, install one plugin. For example, `/plugin install architect@cobuilder-plugin` gives you the design and review modes.
 
@@ -88,6 +87,8 @@ Workflow state lives in a tracker, not in plan files or `goal.json`. State means
 
 `shared/tracker.py` is the one command for all of it. `.cobuilder/tracker.yaml` picks the adapter. Without that file, every state write exits with code 2. The `implement` plugin also ships a `SessionStart` hook that reminds the agent to use the tracker. State syncs between machines through the git remote, under `refs/dolt/data`. It adds no branch.
 In beads, a program is a native `feature`. A pull request record is a `milestone` that `tracks` its epics. Slices are ordered, and native ready (`claim-next`) picks the next slice. Records carry label `cb`, and `external_ref` finds each record. Run `migrate-mapping` for an old tracker.
+
+The tracker also holds the stage of each design. `/architect:design` creates the program record at stage `backlog`, and the stage moves through `set-program-stage`. The index reads the stage from the tracker, and it uses `goal.json` only for an old design. The viewer Work board shows each design with its epics, its slices, the next ready slice, and its pull request records. `/architect:design` and `/implement:start` run `tracker.py doctor` first, and they stop on a legacy mapping or an unreadable tracker. Run `repair-status` to close the stale epics and slices of finished designs. Run `shared/strip_goal_stage.py` to remove the old `stage` from `goal.json` after the tracker holds it.
 
 For the details, read `shared/tracker-usage.md`, ADR-0031, ADR-0040, and ADR-0041.
 
