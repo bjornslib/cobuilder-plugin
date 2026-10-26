@@ -69,3 +69,5 @@ plugins/cobuilder-memory/.claude-plugin/types/
 priority-dev/fixtures/real/
 priority-dev/reports/logs/
 .lavish/priority-dev-interpret-digest.html
+priority-dev/probes/logs/calls.jsonl
+priority-dev/probes/logs/slice-1-attempt-5-20261024/
