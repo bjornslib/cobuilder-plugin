@@ -1,13 +1,13 @@
 {
   "schema_version": "1.5",
   "sources": {
-    "git_head": "008d77a76f1da36250b0da75d9409582db0be0b9",
+    "git_head": "dcadbdb3d13b10ab68ecc1cfebdf8d224f48cc8f",
     "trees": {
-      "docs/architecture/adr": "sha256:4c229d7b738685fdf5a81e25174d080cab0865a36e65ef9e62ec5ccfc662c3e6",
-      "docs/architecture/designs": "sha256:e3a9af555125f543d0256de7d30211e426b85674077777533be097258dbc9428",
+      "docs/architecture/adr": "sha256:a305fe9bf8e85df82ab7a47275ca93bdb79a5221b085cb30a73f987e251453d1",
+      "docs/architecture/designs": "sha256:fee8bc53409ae5411772dd8f9127864053ea181a84a8ab7cd03e3312b02ccc9d",
       "docs/architecture/contexts": "sha256:6663ee456e31bfbe31401908ae494017ed864dbb9c72211b6cbdccc44d078482",
-      "docs/plans": "sha256:18bb040ad42f89a28ea6bd0ba7ca6ce90ee5ceb5838b5dccc4f4ba2c7332c424",
-      ".cobuilder/rubrics": "sha256:83bbd35e0a3806802ecea195ca1f32a6740c7628670ee2eda50f4dea8f699126"
+      "docs/plans": "sha256:86337ebcb13d7c9230ae3b5a7140a3214541299c2993e276cac7b5a5633a6806",
+      ".cobuilder/rubrics": "sha256:8cff90c4bfa78414047c8769bf22308ecb07da2afda4c81f28e4ce3e9fd4f45c"
     }
   },
   "entities": {
@@ -233,6 +233,11 @@
         "state": "decided"
       },
       {
+        "id": "ADR-0046",
+        "title": "the habit-hooks findings become a catalog and two epics",
+        "state": "decided"
+      },
+      {
         "id": "ADR-0047",
         "title": "the tracker is the source of program stage and of epic and slice status",
         "state": "decided"
@@ -342,6 +347,13 @@
         "name": "maintainable-viewer",
         "outcome": "An engineer changes one view mode of the bundle viewer by opening one file of a few hundred lines, and the file that ships is still one self-contained HTML page that publishes as an Artifact unchanged.",
         "stage": "superseded",
+        "stage_source": "tracker"
+      },
+      {
+        "id": "mechanical-smells",
+        "name": "mechanical-smells",
+        "outcome": "The viewer reports no habit-hooks finding apart from recorded residuals, and the findings outside the viewer sit in one named epic that a later pass cuts into slices.",
+        "stage": "decided",
         "stage_source": "tracker"
       },
       {
@@ -485,7 +497,7 @@
         "epic_id": "E8",
         "branch": "feature/work-board-alignment",
         "pr": null,
-        "state": "in_progress",
+        "state": "closed",
         "note": null,
         "design_doc": "beads-storage/E8"
       },
@@ -985,6 +997,25 @@
         "pr": null,
         "state": "closed",
         "note": "Each mode owns its own part. The five view modes stop interleaving: the 50 scattered mode-predicate calls collapse into one registry, and renderContextsMainContent, renderBuildsMainContent, and renderMainContent stop being three functions of over 200 lines that live beside each other. Adding a sixth mode becomes one new part plus one registry entry."
+      },
+      {
+        "id": "mechanical-smells/E1",
+        "design": "mechanical-smells",
+        "epic_id": "E1",
+        "branch": null,
+        "pr": null,
+        "state": "open",
+        "note": null,
+        "design_doc": "mechanical-smells/E1"
+      },
+      {
+        "id": "mechanical-smells/E2",
+        "design": "mechanical-smells",
+        "epic_id": "E2",
+        "branch": null,
+        "pr": null,
+        "state": "open",
+        "note": null
       },
       {
         "id": "nexus-borrowings/E1",
@@ -4271,9 +4302,9 @@
         "n": 6,
         "title": "**Digest a run**",
         "ends_with": "`uv run priority digest` calls Inkling and prints a RunDigest that validates. The next stop brief of the same session carries it as `previous`",
-        "score": "—",
-        "attempts": 0,
-        "state": "in_progress"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "priority-dev-spike/7",
@@ -4281,9 +4312,9 @@
         "n": 7,
         "title": "**Replay report with failure drills**",
         "ends_with": "`uv run priority replay fixtures/` writes `report.md` with the valid-output rate, the quote-found rate, the abstain reasons, the kinds picked, and the characters, seconds, and cost for each stage. A replay at the event rate of 5 sessions counts the free-tier limit errors. An injected 429, malformed JSON, empty quote, and timeout each end as an Abstain with a logged reason",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "priority-dev-spike/8",
@@ -5165,6 +5196,15 @@
         "body_md": "# Epic Technical Solution Design: E1 — Level chrome\n\nFeature: level-page-restructure\nEpic ID: level-page-restructure/E1\n\n## Scope and Intent\n\nE1 changes what surrounds a level's content. The branch and the supersedes mark\nmove into the top bar. The top line panel and the account rule leave. The\naccount link joins the section heading and carries the section name across. The\nrail lists each level once. E1 does not touch the In Short strip (E2) or the\nrecord-gap lines (E3).\n\n## Files Touched\n\n- `shell/TopBar.tsx`, `shell/App.tsx`, `shell/AccountMark.tsx`, `shell/atoms.tsx`\n- `shell/model.ts`, `shell/Rail.tsx`\n- Existing tests that pin the removed UI: `App.test.tsx`, `SparseDesign.test.tsx`, and any that name the top line, the account rule, or the Review group.\n\n## Types & Signatures\n\n```ts\n// model.ts\nexport function carriedSectionIndex(names: string[], carried: string | null): number;\nexport function readInLabel(from: AccountId, pr: number | null): string | null;\nexport interface RailSource { /* existing */ account: AccountId }\nexport function railGroups(source: RailSource): RailGroup[];   // \"levels\", \"also\"\n// atoms.tsx\nexport const PanelActionContext: React.Context<React.ReactNode>;\n// TopBar props gain\nbranch: string | null; branches: string[]; supersedes: string[];\n```\n\n## Slice Decomposition\n\n1. Slice 1 — top bar branch and supersedes, `TopLinePanel` removed. No dependency.\n2. Slice 2 — account link in the heading, carry, `AccountRule` removed. Needs slice 1 only for a clean `App.tsx`.\n3. Slice 3 — single rail. Needs slice 2, because the link replaces the jump that the rail's `shared` field fed.\n\nEach slice ends in a state a reader can see on the real bundle.\n\n## Test Plan\n\n- Slice 1: GREEN updates the tests that asserted the top line. No RED agent: the end is a layout fact.\n- Slice 2: RED writes `carryAndLabel.test.ts` for `carriedSectionIndex` and `readInLabel`.\n- Slice 3: RED writes `rail.test.ts` for the new `railGroups` shape, the account of the levels group, and the walk order.\n- All slices: typecheck, the full Vitest suite, and the build reproduce.\n\n## Risks & Open Questions\n\n- `railGroups` feeds the arrow-key walk and the `aria-label` strings that `App.test.tsx` pins. Slice 3 changes both.\n- A section name must exist on both accounts for a match. Names differ for Intent (Done when, Abort if exist only on the work item) and that is the specified fallback to the first section.\n- The carry is view state. A hash-only navigation that the reader types has no carry.\n",
         "approved_date": null,
         "source_path": "docs/plans/level-page-restructure/epic-E1-design.md"
+      },
+      {
+        "id": "mechanical-smells/E1",
+        "epic_id": "E1",
+        "feature_slug": "mechanical-smells",
+        "title": "Epic Technical Solution Design: E1 — viewer-findings",
+        "body_md": "# Epic Technical Solution Design: E1 — viewer-findings\n\nFeature: mechanical-smells\nEpic ID: E1\n\n## Scope and Intent\n\nThis epic clears every habit-hooks finding in the viewer, `plugins/artifact/viewer/`.\nThe viewer holds 1,637 findings in 70 files. The seven slices cut them by area, logic\nfirst, and the two comment slices come last. The generated folders `components/ui` and\n`components/smoothui` are out of scope, because the sensor config excludes them.\n\nThe epic ends when `habit-sensors` reports no finding for the viewer, apart from a\nrecorded oversized-function residual. The vitest suite and the build pass, and the\ncommitted `index.html` rebuilds byte-identically after slice 1.\n\nThe epic does not change behavior. No page, route, or rendered output changes. The\nepic does not touch the 703 findings outside the viewer, which epic E2 holds.\n\n## Files Touched\n\nAll paths sit under `plugins/artifact/viewer/src/`, except the two test files.\n\n| Slice | Files |\n|---|---|\n| 1 | `data/bundle.ts`, `data/joins.ts`, `data/types.ts`, `data/works.ts`, `shell/model.ts`, and new files next to each |\n| 2 | `shell/atoms.tsx`, `shell/sections.tsx`, `shell/panels/Architecture.tsx`, `shell/panels/Intent.tsx`, `shell/panels/ProblemSolution.tsx`, and new files |\n| 3 | `shell/change/Diff.tsx`, `Frame.tsx`, `Sheets.tsx`, `levels.ts`, `sections.tsx`, `shell/DiagramTiles.tsx`, `shell/Pager.tsx`, and new files |\n| 4 | `App.tsx`, `shell/App.tsx`, `Sheet.tsx`, `WorkDrawer.tsx`, `Rail.tsx`, `TopBar.tsx`, `hooks.ts`, `InShort.tsx`, `jump.tsx`, `markdown.tsx`, `readiness.ts`, `workDeck.ts`, `components/work/DesignCard.tsx`, `StageBadge.tsx`, `WorkBoard.tsx`, `hooks/use-mobile.ts`, `vite.config.ts` (under `viewer/`), and new files |\n| 5 | The 20 viewer `*.test.*` files, and new test files that split them |\n| 6 | The 42 viewer source files with comment findings |\n| 7 | The 20 viewer test files with comment findings |\n\nNew files outside the viewer:\n\n- `tests/test_viewer_habit_clean.py`: the sensor check. It holds one entry per slice.\n- `plugins/artifact/viewer/src/shell/exports.test.ts`: the export pin, written in slice 1.\n\n## Types & Signatures\n\nThe contract is the export surface. A split follows one rule: a moved unit keeps its\nname, and the original file re-exports it. The surfaces below must not change. A count\nis the number of `export` statements at the start of the epic.\n\n| File | Exports | Examples |\n|---|---|---|\n| `shell/model.ts` | 44 | `SECTION_KEYS`, `LEVEL_KEYS`, `Route`, `readRoute`, `routeHref`, `boardHref`, `levelsOf`, `railGroups` |\n| `shell/atoms.tsx` | 38 | `Chip`, `Panel`, `Box`, `Tile`, `SectionHeading`, `toneFor*` |\n| `shell/sections.tsx` | 7 | `EpicGroupSection`, `UnresolvedSlicesSection`, `RubricsSection`, `PlanSection`, `PullRequestsSection`, `FlightDeckPanel`, `ShippedSection` |\n| `shell/App.tsx` | 2 | default `ShellApp`, type `Theme` |\n| `data/bundle.ts` | 45 | the bundle loaders and the entity readers |\n| `data/types.ts` | 22 | the entity types |\n| `data/works.ts` | 5 | `buildWorkItems`, `WorkItem` |\n| `data/joins.ts` | 2 | the join helpers |\n\n```ts\n// shell/model.ts after slice 1: the shape, not the final file names\nexport { readRoute, routeHref, boardHref } from \"./model/routes\";\nexport { SECTION_KEYS, LEVEL_KEYS } from \"./model/keys\";\n```\n\n```python\n# tests/test_viewer_habit_clean.py\ndef slice_findings(files: list[str]) -> list[dict]:\n    \"\"\"Run habit-sensors --file for each file. Keep the issues whose details.file is that file.\"\"\"\n```\n\n```ts\n// shell/exports.test.ts: one expectation per surface\nexpect(Object.keys(await import(\"./model\")).sort()).toEqual(MODEL_EXPORTS);\n```\n\nThe export lists in `exports.test.ts` come from the code at the start of slice 1. They\nare a snapshot of names, not of behavior.\n\n## Slice Decomposition\n\n| Slice | Ends with | Depends on |\n|---|---|---|\n| 1 | The five logic files report no finding. The export pin exists and passes. The rebuild is byte-identical. | none |\n| 2 | The five atom and section files report no finding. The section tests pass. | 1 |\n| 3 | The seven change-surface files report no finding. The hooks finding is gone. | 2 |\n| 4 | The 17 shell and chrome files report no finding. `ShellApp` and `Theme` still export. | 3 |\n| 5 | The 20 test files report no finding, apart from recorded callbacks. Every assertion stays. | 4 |\n| 6 | The 42 source files report no comment finding. The sample review passes. | 5 |\n| 7 | The 20 test files report no comment finding. The sample review passes. | 6 |\n\nThe order is a chain, because each slice leaves stable exports for the next. Slice 1 is\nthe tracer bullet. It proves the split pattern, the export pin, the sensor check, and the\nbyte-identical rebuild on pure logic, where the unit tests alone prove behavior.\n\n## Test Plan\n\n- **Sensor check, RED for every slice.** `tests/test_viewer_habit_clean.py` runs\n  `habit-sensors --file <path>` for each file of a slice. It keeps the issues whose\n  `details.file` is that file, because jscpd reports repo-wide clusters in `--file`\n  mode. It fails while any finding remains. It skips when `habit-sensors` or\n  `node_modules` is absent. RED adds the entry for its slice, so the check fails before\n  GREEN starts.\n- **Export pin, a guard, not a RED test.** `shell/exports.test.ts` passes before GREEN,\n  by design. It fails when a split drops a name.\n- **Behavior.** The existing vitest suite stays green after each slice. Slice 5 splits the\n  tests, and it keeps the test count and every assertion.\n- **Build.** `tests/test_viewer_build.py` rebuilds `index.html` and compares bytes. It\n  stays green. After slice 1 the rebuild is byte-identical.\n- **Comment sample.** After slice 6 and slice 7, a reviewer takes at least 20 deleted\n  comments, chosen by a fixed seed. The reviewer counts those that explained why. More\n  than one in twenty fires the abort condition. The sample list goes into the slice\n  evidence.\n- **Residuals.** A 13-to-30-line unit that stays is listed in the catalog with its file\n  and line. The sensor check allows only the listed units.\n\n## Risks & Open Questions\n\n- **Another session edits the same files.** The branch `feature/work-board-alignment`\n  changes `data/bundle.ts`, `data/joins.ts`, `data/types.ts`, `shell/WorkDrawer.tsx`,\n  `shell/workDeck.ts`, and `components/work/*` right now. Those files sit in slices 1 and\n  4. A split that lands on a different base conflicts with that work. The engineer must\n  choose the merge order before slice 1 starts, or accept the conflicts.\n- **Export lists drift.** The counts above come from this commit. The other session may\n  add exports. Slice 1 takes the lists again at its start.\n- **The 12-line function limit.** A React component or a test callback of 13 lines is\n  often one unit. The catalog records each residual. If the sensor card must change, the\n  abort condition fires.\n- **Slice 4 is large.** It holds 141 findings in 17 files. The engineer chose to keep it\n  whole. If RED finds two end states, the slice splits at gate 4b of a later pass.\n- **Byte-identical rebuild.** It depends on a pinned toolchain. A version drift fails it\n  for the wrong reason. The test reports the Node version in its warning, so a drift is\n  visible.\n- **Sensor check on CI.** `node_modules` may be absent there. The skip covers it, and the\n  local run is the proof.\n- **Comment review is a judgment.** The reviewer sample is the only check on it. The\n  seed and the list make the sample repeatable.\n",
+        "approved_date": null,
+        "source_path": "docs/plans/mechanical-smells/epic-E1-design.md"
       },
       {
         "id": "nexus-borrowings/E1",
@@ -6576,6 +6616,8 @@
           "cobuilder-viewer/E17",
           "cobuilder-viewer/E18",
           "cobuilder-viewer/E19",
+          "mechanical-smells/E1",
+          "mechanical-smells/E2",
           "react-viewer/E1",
           "react-viewer/E2",
           "react-viewer/E3",
@@ -6791,7 +6833,9 @@
         "path": [
           "habit-smells/E1",
           "habit-smells/E2",
-          "habit-smells/E3"
+          "habit-smells/E3",
+          "mechanical-smells/E1",
+          "mechanical-smells/E2"
         ]
       },
       "ADR-0039": {
@@ -6851,6 +6895,14 @@
           "beads-storage/E8"
         ]
       },
+      "ADR-0046": {
+        "pr": null,
+        "via": "epic",
+        "path": [
+          "mechanical-smells/E1",
+          "mechanical-smells/E2"
+        ]
+      },
       "ADR-0047": {
         "pr": 43,
         "via": "epic",
@@ -6873,6 +6925,7 @@
       "beads-storage/E4": 43,
       "beads-storage/E5": 50,
       "beads-storage/E7": 51,
+      "beads-storage/E8": 52,
       "book-index-tiering/E1": 16,
       "cobuilder-implement/E1": 11,
       "cobuilder-implement/E2": 12,
@@ -6922,7 +6975,7 @@
       "beads-storage/E5": "completed",
       "beads-storage/E6": "unstarted",
       "beads-storage/E7": "completed",
-      "beads-storage/E8": "in_progress",
+      "beads-storage/E8": "completed",
       "book-index-tiering/E1": "open",
       "build-workflow-polish/E1": "completed",
       "build-workflow-polish/E2": "completed",
@@ -6977,6 +7030,8 @@
       "maintainable-viewer/E2": "completed",
       "maintainable-viewer/E3": "completed",
       "maintainable-viewer/E4": "completed",
+      "mechanical-smells/E1": "unstarted",
+      "mechanical-smells/E2": "unstarted",
       "nexus-borrowings/E1": "completed",
       "nexus-borrowings/E2": "completed",
       "nexus-borrowings/E3": "completed",
@@ -7118,6 +7173,13 @@
       "interaction-design-gate/5": "interaction-design-gate/E3",
       "interaction-design-gate/6": "interaction-design-gate/E3",
       "interaction-design-gate/7": "interaction-design-gate/E3",
+      "mechanical-smells/1": "mechanical-smells/E1",
+      "mechanical-smells/2": "mechanical-smells/E1",
+      "mechanical-smells/3": "mechanical-smells/E1",
+      "mechanical-smells/4": "mechanical-smells/E1",
+      "mechanical-smells/5": "mechanical-smells/E1",
+      "mechanical-smells/6": "mechanical-smells/E1",
+      "mechanical-smells/7": "mechanical-smells/E1",
       "nexus-borrowings/1": "nexus-borrowings/E1",
       "nexus-borrowings/2": "nexus-borrowings/E1",
       "nexus-borrowings/3": "nexus-borrowings/E1",
@@ -7155,14 +7217,7 @@
       "level-page-restructure/2": "epic header names 'level-page-restructure/E1', which no design declares.",
       "level-page-restructure/3": "epic header names 'level-page-restructure/E1', which no design declares.",
       "level-page-restructure/4": "epic header names 'level-page-restructure/E2', which no design declares.",
-      "level-page-restructure/5": "epic header names 'level-page-restructure/E3', which no design declares.",
-      "mechanical-smells/1": "epic header names 'mechanical-smells/E1', which no design declares.",
-      "mechanical-smells/2": "epic header names 'mechanical-smells/E1', which no design declares.",
-      "mechanical-smells/3": "epic header names 'mechanical-smells/E1', which no design declares.",
-      "mechanical-smells/4": "epic header names 'mechanical-smells/E1', which no design declares.",
-      "mechanical-smells/5": "epic header names 'mechanical-smells/E1', which no design declares.",
-      "mechanical-smells/6": "epic header names 'mechanical-smells/E1', which no design declares.",
-      "mechanical-smells/7": "epic header names 'mechanical-smells/E1', which no design declares."
+      "level-page-restructure/5": "epic header names 'level-page-restructure/E3', which no design declares."
     },
     "context_verifies_district": {
       "architect": [
@@ -7224,6 +7279,7 @@
       "ADR-0042": "cobuilder-packaging",
       "ADR-0043": "tracker-port",
       "ADR-0044": "tracker-port",
+      "ADR-0046": "artifact",
       "ADR-0047": "tracker-port"
     },
     "adr_to_district": {
@@ -7888,6 +7944,14 @@
             "epics": [
               "beads-storage/E7"
             ]
+          },
+          {
+            "ref": "pr-52",
+            "number": 52,
+            "state": "merged",
+            "epics": [
+              "beads-storage/E8"
+            ]
           }
         ]
       },
@@ -7959,6 +8023,11 @@
       "maintainable-viewer": {
         "stage_source": "tracker",
         "next_ready": null,
+        "pull_requests": []
+      },
+      "mechanical-smells": {
+        "stage_source": "tracker",
+        "next_ready": "mechanical-smells/1",
         "pull_requests": []
       },
       "nexus-borrowings": {
