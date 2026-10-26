@@ -1,13 +1,13 @@
 {
   "schema_version": "1.5",
   "sources": {
-    "git_head": "6834bf493c7027eaff7be6194f544fd662e0a663",
+    "git_head": "c592e7c3e4f86f78f2392f9639174f42e8a1a1f4",
     "trees": {
       "docs/architecture/adr": "sha256:a305fe9bf8e85df82ab7a47275ca93bdb79a5221b085cb30a73f987e251453d1",
-      "docs/architecture/designs": "sha256:fee8bc53409ae5411772dd8f9127864053ea181a84a8ab7cd03e3312b02ccc9d",
+      "docs/architecture/designs": "sha256:fa3dc035e9423597e024ab84cad39c48a4f81172f114c7dc99f0678eae621820",
       "docs/architecture/contexts": "sha256:6663ee456e31bfbe31401908ae494017ed864dbb9c72211b6cbdccc44d078482",
-      "docs/plans": "sha256:0f4c4be0d4b70a4129b3048cedb10c7e549138293c73b7d41e4223a42f1fae9e",
-      ".cobuilder/rubrics": "sha256:72200a95d0484e859523242d0bfe18a8fb2fa343c79af33dd4876d00f421cec2"
+      "docs/plans": "sha256:2f2598dc3924a34a2b41c5b56d4fb0d952d0c2bdc0a79184a0e669ac3f919d0d",
+      ".cobuilder/rubrics": "sha256:681519041b23a22221720c6776fb1c8a931212fc44955286842a83d00c2db4be"
     }
   },
   "entities": {
@@ -427,7 +427,7 @@
         "epic_id": "E1",
         "branch": "design/beads-storage/tracker-port",
         "pr": null,
-        "state": "in_progress",
+        "state": "closed",
         "note": null,
         "design_doc": "beads-storage/E1"
       },
@@ -437,7 +437,7 @@
         "epic_id": "E2",
         "branch": "design/beads-storage/tracker-port",
         "pr": null,
-        "state": "in_progress",
+        "state": "closed",
         "note": null,
         "design_doc": "beads-storage/E2"
       },
@@ -447,7 +447,7 @@
         "epic_id": "E3",
         "branch": "design/beads-storage/tracker-port",
         "pr": null,
-        "state": "in_progress",
+        "state": "closed",
         "note": null,
         "design_doc": "beads-storage/E3"
       },
@@ -457,7 +457,7 @@
         "epic_id": "E4",
         "branch": "design/beads-storage/tracker-port",
         "pr": null,
-        "state": "in_progress",
+        "state": "closed",
         "note": null,
         "design_doc": "beads-storage/E4"
       },
@@ -4062,9 +4062,9 @@
         "n": 1,
         "title": "Tracer bullet: the logic layer",
         "ends_with": "`habit-sensors` reports no finding for those five files. The viewer tests pass, the exported names of `model.ts` and the data layer match the list taken before the slice, and the committed `index.html` rebuilds byte-identically.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "mechanical-smells/2",
@@ -4375,6 +4375,56 @@
         "score": "—",
         "attempts": 0,
         "state": "planned"
+      },
+      {
+        "id": "priority-dev-spike/14",
+        "feature": "priority-dev-spike",
+        "n": 14,
+        "title": "**Notify for a done stop**",
+        "ends_with": "`notify` is an action kind. For a stop that Triage calls done, `priority interpret` prints an Interpretation with one `notify` step. Code builds the step from the final reply, with no Pick or Fill call, and the excerpt is an exact part of the final reply",
+        "score": "0.90",
+        "attempts": 1,
+        "state": "completed"
+      },
+      {
+        "id": "priority-dev-spike/15",
+        "feature": "priority-dev-spike",
+        "n": 15,
+        "title": "**Labelled fixture set**",
+        "ends_with": "`uv run priority fixtures check` passes on 10 real sessions and about 50 stops. Every stop has a label that the engineer confirmed. The split lists the train sessions and the held-out sessions, and no session is in both. Git ignores the real files",
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
+      },
+      {
+        "id": "priority-dev-spike/16",
+        "feature": "priority-dev-spike",
+        "n": 16,
+        "title": "**Metric and baseline**",
+        "ends_with": "`uv run priority eval --split train` and `--split holdout` print a score for each fact, the step kinds, and the grounding, and an overall score. `probes/eval-baseline.md` states both scores, the spread over three repeats, and the cost",
+        "score": "1.00",
+        "attempts": 3,
+        "state": "completed"
+      },
+      {
+        "id": "priority-dev-spike/17",
+        "feature": "priority-dev-spike",
+        "n": 17,
+        "title": "**One-call variant**",
+        "ends_with": "`uv run priority eval --variant combined` runs Triage and one call that writes the steps, the payloads, and the card. `probes/eval-variant.md` compares it with the split chain on the same stops: score, calls, characters, seconds, and cost. It states which one the next slice uses",
+        "score": "0.90",
+        "attempts": 2,
+        "state": "completed"
+      },
+      {
+        "id": "priority-dev-spike/18",
+        "feature": "priority-dev-spike",
+        "n": 18,
+        "title": "**Optimiser comparison**",
+        "ends_with": "`uv run priority optimise --optimiser gepa` and `--optimiser miprov2` compile the chosen interpreter on the train sessions only. `probes/optimiser-report.md` gives the held-out score before and after for each, with BootstrapFewShot as the cheap baseline, the cost of each run, and the saved programs",
+        "score": "0.70",
+        "attempts": 2,
+        "state": "in_progress"
       },
       {
         "id": "review-link/1",
@@ -7024,10 +7074,10 @@
       "work-drawer/E2": 25
     },
     "epic_status": {
-      "beads-storage/E1": "in_progress",
-      "beads-storage/E2": "in_progress",
-      "beads-storage/E3": "in_progress",
-      "beads-storage/E4": "in_progress",
+      "beads-storage/E1": "completed",
+      "beads-storage/E2": "completed",
+      "beads-storage/E3": "completed",
+      "beads-storage/E4": "completed",
       "beads-storage/E5": "completed",
       "beads-storage/E6": "unstarted",
       "beads-storage/E7": "completed",
@@ -7981,7 +8031,7 @@
           {
             "ref": "pr-43",
             "number": 43,
-            "state": "open",
+            "state": "merged",
             "epics": [
               "beads-storage/E3",
               "beads-storage/E2",
@@ -8087,7 +8137,7 @@
       },
       "mechanical-smells": {
         "stage_source": "tracker",
-        "next_ready": "mechanical-smells/1",
+        "next_ready": "mechanical-smells/2",
         "pull_requests": []
       },
       "nexus-borrowings": {

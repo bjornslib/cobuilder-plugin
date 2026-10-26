@@ -22,6 +22,7 @@
 
 import type { AdrToPullRequest, DesignTracker, EpicEntity, GateStep, RecordIndex } from "./types";
 import { joinsOf } from "./bundle";
+import { adrAnswers, epicAnswers, gateAnswers, sliceAnswers, trackerAnswers } from "./joins/answers";
 
 /**
  * One index's joins, resolved once, as answers.
@@ -93,54 +94,11 @@ export interface ResolvedJoins {
 /** Resolve one index's joins. See the interface above for what each answer means. */
 export function resolvedJoinsOf(index: RecordIndex): ResolvedJoins {
   const joins = joinsOf(index);
-
-  const sliceToEpic = new Map(Object.entries(joins.slice_to_epic));
-  const unresolved = new Map(Object.entries(joins.slice_to_epic_unresolved));
-  const epicStatus = new Map(Object.entries(joins.epic_status));
-  const epicToPullRequest = new Map(
-    Object.entries(joins.epic_to_pull_request).filter(
-      (entry): entry is [string, number] => typeof entry[1] === "number",
-    ),
-  );
-  const adrToPullRequest = new Map(Object.entries(joins.adr_to_pull_request));
-  const designTracker = joins.design_tracker ?? {};
-  const featureGates = new Map(Object.entries(joins.feature_gates));
-
   return {
-    epicOfSlice: (sliceId) => sliceToEpic.get(sliceId),
-    resolvedSliceIds: () => new Set(sliceToEpic.keys()),
-    sliceToEpicCount: () => sliceToEpic.size,
-    unresolvedSlices: () => unresolved,
-
-    epicState: (epic) => {
-      const refined = epicStatus.get(epic.id);
-      return refined === undefined
-        ? { state: epic.state, refined: false }
-        : { state: refined, refined: true };
-    },
-
-    epicPullRequest: (epic) => {
-      const resolved = epicToPullRequest.get(epic.id);
-      if (resolved !== undefined) return resolved;
-      return typeof epic.pr === "number" ? epic.pr : null;
-    },
-
-    epicToPullRequestCount: () => epicToPullRequest.size,
-
-    adrPullRequest: (adrId) => adrToPullRequest.get(adrId) ?? null,
-    adrPullRequests: () => adrToPullRequest,
-
-    adrIdsForPullRequest: (pr) =>
-      [...adrToPullRequest.entries()]
-        .filter(([, entry]) => entry.pr === pr)
-        .map(([id]) => id)
-        .sort(),
-
-    featureGates: (slug) => featureGates.get(slug) ?? null,
-    featureGateSlugs: () => [...featureGates.keys()],
-
-    designTracker: (designId) => designTracker[designId] ?? null,
-    trackerRead: () => joins.tracker?.read ?? false,
-    trackerAdapter: () => joins.tracker?.adapter ?? null,
+    ...sliceAnswers(joins),
+    ...epicAnswers(joins),
+    ...adrAnswers(joins),
+    ...gateAnswers(joins),
+    ...trackerAnswers(joins),
   };
 }

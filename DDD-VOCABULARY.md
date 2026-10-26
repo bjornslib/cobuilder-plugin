@@ -159,6 +159,11 @@ _Avoid_: finding (an `assessment.json` entry with a different provenance)
 The JSON file `habit_smells.py` writes beside the review reports. `verify_bundle.py` reads it as the optional `habit.smells` key.
 _Avoid_: habit-sensors (the external tool the script calls, not the file)
 
+<a id="recorded-residual"></a>
+**Recorded residual** (`architect`):
+One `oversized-function` sensor finding of 13 to 30 lines that is one render unit, or one test case or setup unit. A row in section 7 of the findings catalog lets it stay, and a test matches the row to the finding.
+_Avoid_: exemption, waiver
+
 ## pr
 
 <a id="district"></a>

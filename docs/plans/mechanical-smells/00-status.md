@@ -18,7 +18,7 @@ Memory (Gate 1): absent
 Memory (before Gate 3, or Gate 2): absent
 
 ## Slices
-- [ ] Slice 1 — tracer bullet: the logic layer: `data/*` and `shell/model.ts`   score: —   note: —
+- [x] Slice 1 — tracer bullet: the logic layer: `data/*` and `shell/model.ts`   score: 1 on attempt 1   note: —
 - [ ] Slice 2 — the atoms and sections   score: —   note: —
 - [ ] Slice 3 — the change surface   score: —   note: —
 - [ ] Slice 4 — the shell and chrome   score: —   note: —
@@ -34,6 +34,6 @@ none
 - `.habit-hooks/config.toml` excludes `components/ui` and `components/smoothui`.
 - The engineer chose per-comment review for slices 6 and 7.
 - The engineer allows async pushes of the Beads database (2026-10-26). Do not set `sync: off` in `.cobuilder/tracker.yaml`.
-- The engineer approved all gates by 2026-10-26. No slice has started. Slice 1 is ready and unclaimed.
-- The Gate 4b and Gate 4c wording needs one fix before slice 1: slices 1 to 5 ignore the `non-essential-comment` smell, and slices 6 and 7 own it. The engineer has not answered yet.
+- The engineer approved all gates by 2026-10-26. The build runs on branch `design/mechanical-smells` in a worktree, and slice 1 passed at 1.00 on attempt 1.
+- The comment wording fix is in place: slices 1 to 5 ignore the `non-essential-comment` smell and must not raise its count, and slices 6 and 7 own it.
 - Do not read anything under `.cobuilder/`.

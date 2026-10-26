@@ -192,3 +192,15 @@ later pass cuts them.
 | C Comment habit | 1,226 | 1,080 | 146 | E1 slices 6 and 7, and E2 |
 | R React lint | 2 | 2 | 0 | E1 slices 3 and 4 |
 | **Total** | **2,340** | **1,637** | **703** | |
+
+## 7. Recorded residuals
+
+Epic E1 allows one kind of residual finding: an `oversized-function` unit of 13 to 30
+lines that is one render unit, or one test case or setup unit. A test reads this table.
+It matches a row to a sensor finding by file and unit. The unit is the function name that
+the sensor prints, or `@<line>` for an anonymous function. The test also checks that the
+sensor reports at most 30 lines for the unit. A slice adds its rows in the same commit as
+its code.
+
+| File | Unit | Lines | Why it stays |
+|---|---|---|---|
