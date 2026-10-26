@@ -21,7 +21,6 @@ E5 builds no policy and no actuator. It changes the interpreter only through the
 - `priority-dev/docs/design/schemas.md` (the `notify` kind)
 - `priority-dev/probes/eval-baseline.md`, `eval-variant.md`, `optimiser-report.md`
 
-## Types & Signatures
 
 - Label of one stop: `status` (one value or a list of accepted values), `needs_human`, `answer_class`, `risk`, `priority_hint`, `steps` (an ordered list of 0 to 3 kinds, where a list at one position means any one of those kinds), `ambiguous`, `why`, `confirmed_by`, `confirmed_on`. An unconfirmed draft never counts.
 - `Notify(ActionBase)`: `kind="notify"`, `excerpt: str`. Code sets `excerpt` from the final reply. The model writes nothing.
@@ -31,8 +30,7 @@ E5 builds no policy and no actuator. It changes the interpreter only through the
 - `optimise(program, trainset, optimiser) -> compiled program`, saved as a file.
 
 ## Slice Decomposition
-
-1. Slice 14: `notify`. A done stop gives one `notify` step built by code. Slice 15 labels need this kind, so it comes first.
+1. Slice 14: `notify`. A done stop gives one `notify` step built by code. The excerpt must state what the human has to do (for example, merge the PR), because no separate external action kind exists. A label may pair `notify` with `ask_human` when the work is done and a decision is still open. The interpreter chain stays Pick, Fill, and Card, and Fill runs once for each picked step. Slice 15 labels need this kind, so it comes first.
 2. Slice 15: the fixture set. Ten sessions across projects, about 50 stops, with labels that a blind reader drafts and the engineer corrects and confirms. The split is by session.
 3. Slice 16: the metric, the evaluation command, and the baseline report. The baseline records the spread over three repeats, so a later gain is read against the noise.
 4. Slice 17: the combined variant against the chain, with the slice 16 metric on the same stops.
