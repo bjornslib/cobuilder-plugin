@@ -32,15 +32,4 @@ compiled programs, so a small gain is weak evidence.
 The held-out part is 15 stops. The train part is 33. A gain on 15 stops is suggestive, not solid. The bootstrap gain rests on one scoring run with no spread of its own.
 
 This report informs the first condition in `goal.json`: "the interpreter model returns valid, grounded output on too few real stops to build on, and the digest model cannot digest either". This report speaks only to the interpreter clause. Result: **not measured**. No threshold defines too few. The bootstrap program scores 0.665 including and 0.661 excluding on the held-out stops, against a baseline mean of 0.609 and 0.603. Whether that is enough to build on is a judgement call for the engineer.
-The chain stays, compiled with BootstrapFewShot demos, until GEPA is scored. If the GEPA holdout score beats 0.661 excluding ambiguous by more than the spread, GEPA replaces the baseline. If not, the bootstrap program is the first compiled interpreter, pending repeats.
-
-## gepa (budget 5, seed 7)
-
-- settings: candidates: 5 (max_full_evals); reflection model: nvidia_nim/minimaxai/minimax-m3.1-flash (same as the interpreter); seed 7
-- train sessions (7): 1b3b2a95-562c-43cd-af92-b711a4c45f38, 36752881-735f-42c3-9c8b-50aa4ea3d829, 438c1bee-bcc0-4c64-a53f-a5aa6323514f, 44a2c88e-baaf-4dac-85d2-1512f19a862d, 46ffdc01-3599-48af-99d5-56994fe1d1b6, 5d2114e3-e7c4-41bd-8ed3-46446c37711a, da522ac2-ef34-4915-be26-50aa7ecc3892
-- held-out sessions (3): 173ae36f-0371-42ea-8519-ed26b52a5389, 7ba9f3e6-f833-4232-b414-400803a73115, e924e1e7-394f-4599-9a47-9360cc6b1f19
-- held-out score before: n/a in this run (no holdout scoring without model calls)
-- held-out score after: n/a in this run (score the saved program with `priority eval --split holdout --program probes/programs/gepa-budget5-seed7.json`)
-- spread over repeats: read each gain against the slice 16 baseline spread (probes/eval-baseline.md); a gain smaller than that spread is not a result
-- cost: optimiser budget 5; model-call count is not metered by this command
-- program: probes/programs/gepa-budget5-seed7.json (load it with `priority eval --program`)
+The chain stays, compiled with BootstrapFewShot demos. GEPA proposed no change on NVIDIA, and MIPROv2 did not run. The bootstrap program is the first compiled interpreter, pending repeats of its holdout score.
