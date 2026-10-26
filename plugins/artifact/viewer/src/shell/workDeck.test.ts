@@ -16,10 +16,10 @@
 
 import { describe, expect, it } from "vitest";
 
-import type { DesignRow } from "@/data/types";
-
+import { DECK, idsOf, laneNamed } from "./testSupport/workDeck/fixtures";
 import {
   FILTER_ALL,
+  LANES,
   chipStepped,
   filterChipsOf,
   filterForTyping,
@@ -29,30 +29,37 @@ import {
   soleOf,
   walkedRows,
 } from "./workDeck";
-import { LANES } from "./workDeck";
 
-const row = (id: string, stage: string, outcome = "", pullRequests: number[] = []): DesignRow => ({
-  design: { id, name: id, outcome, stage },
-  epics: [],
-  slices: [],
-  done: 0,
-    slicesDone: 0,
-  slicesTotal: 0,
-  nextReady: null,
-  trackerPullRequests: [],
-  stageSource: "goal",
-  trackerRead: false,
-  pullRequests,
-});
+const needle = (s: string) => DECK.filter((r) => matches(r, s));
+const CHIPS = filterChipsOf(LANES);
+const LAST_CHIP = CHIPS[CHIPS.length - 1];
 
-const DECK: DesignRow[] = [
-  row("gate-doc-surfacing", "decided", "Gate documents are readable from the viewer's Builds view."),
-  row("interaction-design-gate", "decided", "A session writes an interaction design before implementation starts."),
-  row("gate-state-resolution", "approved", "A gate line reads as approved, as not applicable, or as open."),
-  row("cobuilder-viewer", "review", "A reader opens the bundle on three goal-shaped surfaces."),
-  row("book-index-tiering", "review", "book-index.md offers nano, mini, and full tiers, judgment-gated."),
-  row("plugin-split", "implemented", "A user installs one stage without the other three.", [11]),
-];
+function refinesByPullRequestNumber() {
+  expect(needle("11")).toEqual([DECK[5]]);
+  expect(needle("#11")).toEqual([DECK[5]]);
+  expect(needle("PR 11")).toEqual([DECK[5]]);
+}
+
+function keepsOneLanesRows() {
+  expect(idsOf(laneRows(laneNamed("review"), DECK, "gate"))).toEqual(["book-index-tiering"]);
+  expect(idsOf(laneRows(laneNamed("decision"), DECK, "gate"))).toEqual([
+    "gate-doc-surfacing",
+    "interaction-design-gate",
+  ]);
+}
+
+function walksVisibleLanes() {
+  const lanes = LANES.filter((lane) => lane.key === "build" || lane.key === "shipped");
+  expect(idsOf(walkedRows(lanes, DECK, ""))).toEqual(["gate-state-resolution", "plugin-split"]);
+}
+
+function marksTheHit() {
+  expect(highlight("plugin-split", "split")).toEqual({
+    before: "plugin-",
+    hit: "split",
+    after: "",
+  });
+}
 
 describe("filterForTyping", () => {
   it("resets any filter choice to All the moment the search has a needle", () => {
@@ -61,33 +68,15 @@ describe("filterForTyping", () => {
 });
 
 describe("matches", () => {
-  const needle = (s: string) => DECK.filter((r) => matches(r, s));
-
-  it("refines by name and id", () => {
-    expect(needle("plugin-split").map((r) => r.design.id)).toEqual(["plugin-split"]);
-  });
-
-  it("refines by a word of the outcome", () => {
-    expect(needle("goal-shaped")).toEqual([DECK[3]]);
-  });
-
-  it("refines by stage", () => {
-    expect(needle("implemented").map((r) => r.design.id)).toEqual(["plugin-split"]);
-  });
-
-  it("refines by a pull request number the row carries, in the three shapes a reader types", () => {
-    expect(needle("11")).toEqual([DECK[5]]);
-    expect(needle("#11")).toEqual([DECK[5]]);
-    expect(needle("PR 11")).toEqual([DECK[5]]);
-  });
-
-  it("keeps everything under an empty needle", () => {
-    expect(needle("")).toEqual(DECK);
-  });
-
-  it("resolves a needle no row carries to nothing", () => {
-    expect(needle("xyzzy")).toEqual([]);
-  });
+  it("refines by name and id", () => expect(idsOf(needle("plugin-split"))).toEqual(["plugin-split"]));
+  it("refines by a word of the outcome", () => expect(needle("goal-shaped")).toEqual([DECK[3]]));
+  it("refines by stage", () => expect(idsOf(needle("implemented"))).toEqual(["plugin-split"]));
+  it(
+    "refines by a pull request number the row carries, in the three shapes a reader types",
+    refinesByPullRequestNumber,
+  );
+  it("keeps everything under an empty needle", () => expect(needle("")).toEqual(DECK));
+  it("resolves a needle no row carries to nothing", () => expect(needle("xyzzy")).toEqual([]));
 });
 
 describe("soleOf", () => {
@@ -102,16 +91,16 @@ describe("soleOf", () => {
 });
 
 describe("chipStepped", () => {
-  const CHIPS = filterChipsOf(LANES);
-
   it("steps forward through the full vocabulary, All through the lanes", () => {
     expect(CHIPS[0]).toBe(FILTER_ALL);
     expect(chipStepped(FILTER_ALL, 1, CHIPS)).toBe(CHIPS[1]);
   });
+});
 
+describe("chipStepped", () => {
   it("steps backward, and stops at both ends", () => {
     expect(chipStepped(FILTER_ALL, -1, CHIPS)).toBe(FILTER_ALL);
-    expect(chipStepped(CHIPS[CHIPS.length - 1], 1, CHIPS)).toBe(CHIPS[CHIPS.length - 1]);
+    expect(chipStepped(LAST_CHIP, 1, CHIPS)).toBe(LAST_CHIP);
   });
 
   it("resolves a stale choice instead of dead-ending", () => {
@@ -120,35 +109,12 @@ describe("chipStepped", () => {
 });
 
 describe("laneRows and walkedRows", () => {
-  it("keeps one lane's rows under the search, in lane order", () => {
-    const review = LANES.find((lane) => lane.key === "review")!;
-    expect(laneRows(review, DECK, "gate").map((r) => r.design.id)).toEqual([
-      "book-index-tiering",
-    ]);
-    const decision = LANES.find((lane) => lane.key === "decision")!;
-    expect(laneRows(decision, DECK, "gate").map((r) => r.design.id)).toEqual([
-      "gate-doc-surfacing",
-      "interaction-design-gate",
-    ]);
-  });
-
-  it("walks the visible lanes once, then the search, in lane order", () => {
-    const lanes = LANES.filter((lane) => lane.key === "build" || lane.key === "shipped");
-    expect(walkedRows(lanes, DECK, "").map((r) => r.design.id)).toEqual([
-      "gate-state-resolution",
-      "plugin-split",
-    ]);
-  });
+  it("keeps one lane's rows under the search, in lane order", keepsOneLanesRows);
+  it("walks the visible lanes once, then the search, in lane order", walksVisibleLanes);
 });
 
 describe("highlight", () => {
-  it("marks the hit, the only way the search is visible", () => {
-    expect(highlight("plugin-split", "split")).toEqual({
-      before: "plugin-",
-      hit: "split",
-      after: "",
-    });
-  });
+  it("marks the hit, the only way the search is visible", marksTheHit);
 
   it("carries no mark for an empty needle or a miss", () => {
     expect(highlight("plugin-split", "")).toBeNull();

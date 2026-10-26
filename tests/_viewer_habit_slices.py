@@ -7,7 +7,8 @@ slice adds one key to each table.
 from __future__ import annotations
 
 VIEWER = "plugins/artifact/viewer"
-SHELL = f"{VIEWER}/src/shell"
+SRC = f"{VIEWER}/src"
+SHELL = f"{SRC}/shell"
 
 
 def _globs(*folders: str) -> list[str]:
@@ -57,6 +58,30 @@ SLICES: dict[int, list[str]] = {
         f"{SHELL}/workDeck.ts",
         f"{VIEWER}/vite.config.ts",
     ],
+    5: [
+        f"{SRC}/components/work/DesignCard.test.tsx",
+        f"{SRC}/data/bundle.test.tsx",
+        f"{SRC}/data/designRows.test.ts",
+        f"{SRC}/shell/App.test.tsx",
+        f"{SRC}/shell/DiagramTiles.test.ts",
+        f"{SRC}/shell/InShort.test.tsx",
+        f"{SRC}/shell/IntentDrawing.test.tsx",
+        f"{SRC}/shell/LevelProgress.test.tsx",
+        f"{SRC}/shell/LevelSections.test.tsx",
+        f"{SRC}/shell/Pager.test.tsx",
+        f"{SRC}/shell/Plan.test.tsx",
+        f"{SRC}/shell/Rubrics.test.tsx",
+        f"{SRC}/shell/Sheet.test.tsx",
+        f"{SRC}/shell/SparseDesign.test.tsx",
+        f"{SRC}/shell/TopBar.test.tsx",
+        f"{SRC}/shell/carryAndLabel.test.ts",
+        f"{SRC}/shell/change/sections.test.tsx",
+        f"{SRC}/shell/gateState.test.ts",
+        f"{SRC}/shell/rail.test.ts",
+        f"{SRC}/shell/readiness.test.ts",
+        f"{SRC}/shell/runtimeTile.test.ts",
+        f"{SRC}/shell/workDeck.test.ts",
+    ],
 }
 SLICE_GLOBS: dict[int, list[str]] = {
     1: _globs(f"{VIEWER}/src/data", f"{SHELL}/model"),
@@ -66,5 +91,11 @@ SLICE_GLOBS: dict[int, list[str]] = {
         *_globs(SHELL, f"{VIEWER}/src/components/work", f"{VIEWER}/src/hooks"),
         f"{VIEWER}/src/*.tsx",
         f"{VIEWER}/vite.config.ts",
+    ],
+    5: [
+        f"{SRC}/**/*.test.ts",
+        f"{SRC}/**/*.test.tsx",
+        f"{SRC}/**/testSupport/**/*.ts",
+        f"{SRC}/**/testSupport/**/*.tsx",
     ],
 }

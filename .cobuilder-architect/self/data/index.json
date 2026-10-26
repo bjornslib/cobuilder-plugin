@@ -1,13 +1,13 @@
 {
   "schema_version": "1.5",
   "sources": {
-    "git_head": "0e4774ddbabf8d4e850457acb63f7acd60bace19",
+    "git_head": "40da3a754cef1f70eb2615c2522b0fb5f78a5937",
     "trees": {
       "docs/architecture/adr": "sha256:a305fe9bf8e85df82ab7a47275ca93bdb79a5221b085cb30a73f987e251453d1",
       "docs/architecture/designs": "sha256:fa3dc035e9423597e024ab84cad39c48a4f81172f114c7dc99f0678eae621820",
       "docs/architecture/contexts": "sha256:6663ee456e31bfbe31401908ae494017ed864dbb9c72211b6cbdccc44d078482",
-      "docs/plans": "sha256:f39164f2d5098eeed9b935c47fb02d2d6ef01c4ff39d08e7c1a573a4d28a1284",
-      ".cobuilder/rubrics": "sha256:8d7ef192168e5b59aff7cb49a3e55fb21158d983ff0fc1054bde3e86e2df110e"
+      "docs/plans": "sha256:cac77a0dbcf147004cbd38f03e76ed6d787c64a749094fc6ba8f3082b0e94a69",
+      ".cobuilder/rubrics": "sha256:99e2769020c1f43652a7b98cbb34af46649a437e45d430496f36221a03ee7239"
     }
   },
   "entities": {
@@ -4102,9 +4102,9 @@
         "n": 5,
         "title": "The viewer test files: split large `describe` blocks by concern in the 20 `*.test.*` files. Remove the 2 `any`, the 10 non-null assertions, and the 8 duplicate imports",
         "ends_with": "`habit-sensors` reports no finding for the 20 test files, apart from each recorded 13-to-30-line callback. The test count and every assertion stay the same, and the suite passes.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "mechanical-smells/6",
@@ -8137,7 +8137,7 @@
       },
       "mechanical-smells": {
         "stage_source": "tracker",
-        "next_ready": "mechanical-smells/5",
+        "next_ready": "mechanical-smells/6",
         "pull_requests": []
       },
       "nexus-borrowings": {

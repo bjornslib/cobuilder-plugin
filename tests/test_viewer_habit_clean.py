@@ -9,8 +9,9 @@ Slice scope. A slice has two parts, both in repo-relative paths:
 - SLICES lists the files that the slice names.
 - SLICE_GLOBS lists globs for files that the slice may add next to them.
 
-The scope is the union of both parts, minus every `*.test.*` file, because
-slice 5 owns the test files. A later slice adds one key to each table.
+The scope is the union of both parts. Slices 1 to 4 drop every `*.test.*`
+file, because slice 5 owns the test files. A later slice adds one key to each
+table.
 
 A file passes when it has no finding except `non-essential-comment`, which
 slices 6 and 7 own. One more exception exists: a recorded residual. It is an
@@ -36,8 +37,9 @@ ROOT = Path(__file__).resolve().parent.parent
 CATALOG = ROOT / "docs/architecture/designs/mechanical-smells/findings-catalog.md"
 RESIDUAL_HEADING = "## 7. Recorded residuals"
 COMMENT_SMELL = "non-essential-comment"
-COMMENT_BASELINE = 1074
+COMMENT_BASELINE = 1059
 RESIDUAL_MAX_LINES = 30
+TEST_FILE_SLICE = 5
 
 
 def _sensor_binary() -> str | None:
@@ -63,6 +65,8 @@ def scope_of(slice_no: int) -> list[str]:
     found = set(SLICES[slice_no])
     for pattern in SLICE_GLOBS[slice_no]:
         found.update(p.relative_to(ROOT).as_posix() for p in ROOT.glob(pattern))
+    if slice_no >= TEST_FILE_SLICE:
+        return sorted(found)
     return sorted(f for f in found if ".test." not in Path(f).name)
 
 
