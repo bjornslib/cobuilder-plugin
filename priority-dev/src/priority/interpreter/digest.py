@@ -11,7 +11,7 @@ from priority.interpreter.calls import CallRecorder, guarded
 from priority.interpreter.models import Abstain, Strict
 from priority.interpreter.module import MAX_TOKENS
 
-DIGEST_MODEL = "nvidia_nim/minimaxai/minimax-m3.1-flash"
+DIGEST_MODEL = config.model()
 
 
 def digest_lm() -> dspy.LM:
@@ -19,8 +19,8 @@ def digest_lm() -> dspy.LM:
 
     Only the command line calls this, because it reads the key.
     """
-    return dspy.LM(DIGEST_MODEL, api_key=config.load_nvidia_key(), temperature=0, max_tokens=MAX_TOKENS,
-                   timeout=120, num_retries=0, cache=False)
+    return dspy.LM(DIGEST_MODEL, api_key=config.load_key(), api_base=config.base_url(),
+                   temperature=config.temperature(), max_tokens=MAX_TOKENS, timeout=120, num_retries=0, cache=False)
 
 
 class RunDigest(Strict):

@@ -6,8 +6,8 @@ Status: design, round 10. The sketch is `schemas/dspy_modules.py`. It runs with 
 
 | Job | Model | Why | Adapter |
 |---|---|---|---|
-| Triage, Pick, Fill, Card | `nvidia_nim/minimaxai/minimax-m3.1-flash` | The engineer switched to it on 26 October 2026, after the OpenRouter account ran out of credits. The endpoint is `https://integrate.api.nvidia.com/v1`. JSON `response_format` verified working on that date. The list price is unknown | `JSONAdapter` is the first try. `ChatAdapter` is the fallback |
-| Digest, Shrink | `nvidia_nim/minimaxai/minimax-m3.1-flash` | Same switch. The digest keeps the text adapter | `ChatAdapter`, which parses text fields |
+| Triage, Pick, Fill, Card | `openai/mercury-3` on `https://api.inceptionlabs.ai/v1` | The engineer switched to it on 27 October 2026, after NVIDIA rate limits blocked the GEPA run. The provider, endpoint, model, and key move out of code into `.env` (`LLM_PROVIDER`, `LLM_BASE_URL`, `LLM_MODEL`, `LLM_API_KEY`), with an `.env.example` template. JSON `response_format` verified working on that date. The list price is unknown. Mercury needs temperature 0.5 or higher, so the code floors it there | `JSONAdapter` is the first try. `ChatAdapter` is the fallback |
+| Digest, Shrink | Same model and endpoint | Same switch. The digest keeps the text adapter | `ChatAdapter`, which parses text fields |
 
 I do not know the size of the interpreter model. A short schema suits any small or fast model. This drives the design in section 3.
 

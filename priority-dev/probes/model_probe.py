@@ -30,12 +30,12 @@ if __name__ == "__main__":  # the root env has no priority or dspy, so re-run un
         os.execvp("uv", ["uv", "run", "--project", str(here.parents[1]), "python", str(here), *sys.argv[1:]])
 
 from priority.brief import Abstain, build_brief
-from priority.config import load_nvidia_key
+from priority import config
 
-INTERPRETER_MODEL = "nvidia_nim/minimaxai/minimax-m3.1-flash"
-DIGEST_MODEL = "nvidia_nim/minimaxai/minimax-m3.1-flash"
+INTERPRETER_MODEL = config.model()
+DIGEST_MODEL = config.model()
 MODELS = {"interpreter": INTERPRETER_MODEL, "digest": DIGEST_MODEL}
-JSON_MODE = {INTERPRETER_MODEL}  # verified against the NVIDIA endpoint on 2026-10-26
+JSON_MODE = {INTERPRETER_MODEL}  # verified against NVIDIA and Inception on 26 October 2026
 MAX_TOKENS = 3000  # a reasoning model spends tokens on its reasoning first, so a low cap cuts the reply text
 PROBES = Path(__file__).resolve().parent
 LOG_DIR = PROBES / "logs"
@@ -103,8 +103,9 @@ def call_model(prompt: str, model: str = INTERPRETER_MODEL) -> dict:
     import dspy
 
     options = {"response_format": {"type": "json_object"}} if model in JSON_MODE else {}
-    lm = dspy.LM(model, api_key=load_nvidia_key(), temperature=0, max_tokens=MAX_TOKENS, timeout=120,
-                 num_retries=0, cache=False, **options)
+    lm = dspy.LM(model, api_key=config.load_key(), api_base=config.base_url(),
+                 temperature=config.temperature(), max_tokens=MAX_TOKENS, timeout=120, num_retries=0,
+                 cache=False, **options)
     out = lm(prompt)[0]
     if isinstance(out, dict) and "text" in out:
         text, reasoning = out["text"], out.get("reasoning_content")

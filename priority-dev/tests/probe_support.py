@@ -33,8 +33,8 @@ PRIORITY_DEV = Path(__file__).resolve().parents[1]
 PROBE_PATH = PRIORITY_DEV / "probes" / "model_probe.py"
 FIXTURES = PRIORITY_DEV / "fixtures" / "made-up"
 
-INTERPRETER_MODEL = "nvidia_nim/minimaxai/minimax-m3.1-flash"
-DIGEST_MODEL = "nvidia_nim/minimaxai/minimax-m3.1-flash"
+INTERPRETER_MODEL = "openai/mercury-3"
+DIGEST_MODEL = "openai/mercury-3"
 
 # Made-up secrets. They match the planted values in fixtures/made-up/with-secret.jsonl.
 OPENROUTER_KEY = "sk-or-v1-" + "ab12" * 6

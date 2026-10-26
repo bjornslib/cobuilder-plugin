@@ -46,8 +46,8 @@ def test_probe_exposes_run_and_result_fields():
 
 def test_probe_names_the_interpreter_and_the_digest_model():
     probe = load_probe()
-    assert probe.INTERPRETER_MODEL == INTERPRETER_MODEL == "nvidia_nim/minimaxai/minimax-m3.1-flash"
-    assert probe.DIGEST_MODEL == DIGEST_MODEL == "nvidia_nim/minimaxai/minimax-m3.1-flash"
+    assert probe.INTERPRETER_MODEL == INTERPRETER_MODEL == "openai/mercury-3"
+    assert probe.DIGEST_MODEL == DIGEST_MODEL == "openai/mercury-3"
     assert not hasattr(probe, "MODEL_ID")
 
 
@@ -269,7 +269,7 @@ def test_call_model_normalizes_structured_and_text_replies(monkeypatch, tmp_path
             return [output]
 
     monkeypatch.setitem(sys.modules, "dspy", SimpleNamespace(LM=StubLM))
-    monkeypatch.setattr(probe, "load_nvidia_key", lambda: "test-key")
+    monkeypatch.setattr(probe.config, "load_key", lambda: "test-key")
     result = probe.run(QUESTION_TRANSCRIPT, log_dir=tmp_path)
 
     assert result.status == "waiting_answer"
@@ -297,7 +297,7 @@ def test_call_model_keeps_empty_text_envelope_metadata(monkeypatch):
             return [{"text": None, "reasoning_content": reasoning}]
 
     monkeypatch.setitem(sys.modules, "dspy", SimpleNamespace(LM=StubLM))
-    monkeypatch.setattr(probe, "load_nvidia_key", lambda: "test-key")
+    monkeypatch.setattr(probe.config, "load_key", lambda: "test-key")
 
     assert probe.call_model("prompt") == {
         "text": None,

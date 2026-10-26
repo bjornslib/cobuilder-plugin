@@ -22,7 +22,7 @@ from priority.interpreter.models import (ACTION_CLASS, ACTION_KINDS, Abstain, Ad
 from priority.interpreter.signatures import (ANSWER_DUE, FACT_FIELDS, FILL, HINT, RISK, PickStep, TriageLM,
                                              WriteCard, WriteCombined, payload_model)
 
-INTERPRETER_MODEL = "nvidia_nim/minimaxai/minimax-m3.1-flash"
+INTERPRETER_MODEL = config.model()
 MAX_TOKENS = 3000  # a reasoning model spends tokens on its reasoning first, so a low cap cuts the reply
 log = logging.getLogger("priority.interpreter")
 # The fallback of ChatAdapter would make a second model call after a parse fault. A run makes one.
@@ -41,8 +41,8 @@ def notify_excerpt(final: str, limit: int = NOTIFY_LIMIT) -> str:
 
 def interpreter_lm() -> dspy.LM:
     """The real interpreter model. Only the command line calls this, because it reads the key."""
-    return dspy.LM(INTERPRETER_MODEL, api_key=config.load_nvidia_key(), temperature=0, max_tokens=MAX_TOKENS,
-                   timeout=120, num_retries=0, cache=False)
+    return dspy.LM(INTERPRETER_MODEL, api_key=config.load_key(), api_base=config.base_url(),
+                   temperature=config.temperature(), max_tokens=MAX_TOKENS, timeout=120, num_retries=0, cache=False)
 
 
 class _Fault(Exception):

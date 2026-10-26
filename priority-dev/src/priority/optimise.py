@@ -130,10 +130,77 @@ def _reflection_lm() -> object | None:
         return None
 
 
-def _build_optimiser(optimiser: str, cls: object, budget: int, seed: int) -> object:
+def busy_fill_kinds(labels_path: Path, train_ids: list[str]) -> list[str]:
+    """The sorted Fill kinds that appear in the train labels. Never hardcoded."""
+    from priority.evaluation.labels import load_labels, match_session_key
+
+    labels_by_session = load_labels(labels_path)
+    kinds: set[str] = set()
+    for session_id in train_ids:
+        key = match_session_key(labels_by_session, session_id)
+        if key is None:
+            continue
+        for label in labels_by_session[key].values():
+            steps = label.get("steps", []) if isinstance(label, dict) else []
+            for entry in steps or []:
+                if isinstance(entry, list):
+                    for kind in entry:
+                        if isinstance(kind, str):
+                            kinds.add(kind)
+                elif isinstance(entry, str):
+                    kinds.add(entry)
+    return sorted(kinds)
+
+
+def busy_predictor_names(labels_path: Path, train_ids: list[str]) -> list[str]:
+    """Triage, Pick, Card, plus one Fill predictor for each train label kind."""
+    kinds = busy_fill_kinds(labels_path, train_ids)
+    return ["triage", "pick"] + [f"fill['{kind}']" for kind in kinds] + ["card"]
+
+
+class BusyComponentSelector:
+    """A GEPA selector that reflects only on busy predictors, round robin."""
+
+    def __init__(self, busy_names: list[str] | tuple[str, ...]) -> None:
+        self.busy = tuple(busy_names)
+
+    def __call__(self, state: object, trajectories: list, subsample_scores: list,
+                 candidate_idx: int, candidate: dict) -> list[str]:
+        """The next busy predictor for one candidate, cycling in program order."""
+        busy_set = set(self.busy)
+        ordered = [name for name in getattr(state, "list_of_named_predictors", []) if name in busy_set]
+        if not ordered:
+            ordered = [name for name in candidate.keys() if name in busy_set] or list(candidate.keys())
+        if not ordered:
+            return []
+        ids = getattr(state, "named_predictor_id_to_update_next_for_program_candidate", [])
+        pid = ids[candidate_idx] if 0 <= candidate_idx < len(ids) else 0
+        name = ordered[pid % len(ordered)]
+        if 0 <= candidate_idx < len(ids):
+            ids[candidate_idx] = (pid + 1) % len(ordered)
+        return [name]
+
+
+def split_gepa_valset(examples: list, train_ids: list[str], seed: int) -> tuple[list, list, str | None]:
+    """One train session, picked by seed, as the GEPA valset. Holdout is untouched."""
+    ordered = sorted(train_ids)
+    if len(ordered) <= 1:
+        return examples, [], None
+    val_session = ordered[seed % len(ordered)]
+    train = [example for example in examples if _session_id_of(example) != val_session]
+    val = [example for example in examples if _session_id_of(example) == val_session]
+    if not train or not val:
+        return examples, [], None
+    return train, val, val_session
+
+
+def _build_optimiser(optimiser: str, cls: object, budget: int, seed: int,
+                     busy_names: list[str] | tuple[str, ...] | None = None) -> object:
     """One optimiser with the run budget and seed recorded in its settings."""
     if optimiser == "gepa":
         settings: dict = {"metric": gepa_feedback, "max_full_evals": budget, "seed": seed}
+        if busy_names is not None:
+            settings["component_selector"] = BusyComponentSelector(list(busy_names))
         reflection = _reflection_lm()
         if reflection is not None:
             settings["reflection_lm"] = reflection
@@ -209,7 +276,16 @@ def run(manifest: Path, labels: Path, real_dir: Path,
         student_lm = None
     student = interpreter_mod.Interpreter(lm=student_lm, variant="chain")
     try:
-        compiled = _build_optimiser(optimiser, cls, budget, seed).compile(student, trainset=examples)
+        if optimiser == "gepa":
+            busy_names = busy_predictor_names(labels, parts["train"])
+            train_examples, val_examples, _val_session = split_gepa_valset(examples, parts["train"], seed)
+            optimiser_obj = _build_optimiser(optimiser, cls, budget, seed, busy_names)
+            if val_examples:
+                compiled = optimiser_obj.compile(student, trainset=train_examples, valset=val_examples)
+            else:
+                compiled = optimiser_obj.compile(student, trainset=train_examples)
+        else:
+            compiled = _build_optimiser(optimiser, cls, budget, seed).compile(student, trainset=examples)
     except Exception as exc:
         print(f"optimise failed: {optimiser} compile failed: {exc}")
         return 1
