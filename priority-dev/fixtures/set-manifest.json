@@ -1,0 +1,120 @@
+[
+  {
+    "session": "e924e1e7-394f-4599-9a47-9360cc6b1f19",
+    "stops_in_session": 144,
+    "stops": [
+      1,
+      37,
+      72,
+      108,
+      144
+    ],
+    "skipped": []
+  },
+  {
+    "session": "46ffdc01-3599-48af-99d5-56994fe1d1b6",
+    "stops_in_session": 32,
+    "stops": [
+      1,
+      9,
+      16,
+      24,
+      32
+    ],
+    "skipped": []
+  },
+  {
+    "session": "438c1bee-bcc0-4c64-a53f-a5aa6323514f",
+    "stops_in_session": 11,
+    "stops": [
+      1,
+      4,
+      6,
+      8,
+      11
+    ],
+    "skipped": []
+  },
+  {
+    "session": "da522ac2-ef34-4915-be26-50aa7ecc3892",
+    "stops_in_session": 23,
+    "stops": [
+      1,
+      6,
+      12,
+      18,
+      23
+    ],
+    "skipped": []
+  },
+  {
+    "session": "44a2c88e-baaf-4dac-85d2-1512f19a862d",
+    "stops_in_session": 11,
+    "stops": [
+      1,
+      4,
+      6,
+      8,
+      11
+    ],
+    "skipped": []
+  },
+  {
+    "session": "7ba9f3e6-f833-4232-b414-400803a73115",
+    "stops_in_session": 14,
+    "stops": [
+      1,
+      4,
+      8,
+      11,
+      14
+    ],
+    "skipped": []
+  },
+  {
+    "session": "1b3b2a95-562c-43cd-af92-b711a4c45f38",
+    "stops_in_session": 7,
+    "stops": [
+      1,
+      2,
+      4,
+      6,
+      7
+    ],
+    "skipped": []
+  },
+  {
+    "session": "173ae36f-0371-42ea-8519-ed26b52a5389",
+    "stops_in_session": 16,
+    "stops": [
+      1,
+      5,
+      8,
+      12,
+      16
+    ],
+    "skipped": []
+  },
+  {
+    "session": "5d2114e3-e7c4-41bd-8ed3-46446c37711a",
+    "stops_in_session": 3,
+    "stops": [
+      1,
+      2,
+      3
+    ],
+    "skipped": []
+  },
+  {
+    "session": "36752881-735f-42c3-9c8b-50aa4ea3d829",
+    "stops_in_session": 53,
+    "stops": [
+      1,
+      14,
+      27,
+      40,
+      53
+    ],
+    "skipped": []
+  }
+]

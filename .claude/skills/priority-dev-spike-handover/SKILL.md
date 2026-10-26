@@ -61,7 +61,7 @@ Work in the worktree `/Users/theb/Documents/Windsurf/cobuilder-plugin/.claude/wo
 - Push `design/priority-dev` without asking. Do not open a pull request unless the engineer asks. Ask before any other push or merge.
 - Use Sonnet subagents for work that weighs options. Use Haiku for fetch and summarise.
 - Do not edit `CLAUDE.md` yet.
-- Do not discuss lab labelling. Metrics that need labels wait.
+- Labelling is in scope since 26 October 2026. The engineer asked for a labelled fixture set of about 10 sessions, a held-out part, and a DSPy optimiser comparison. The engineer confirms every label. Keep real transcripts and their labels out of Git.
 - A probe may refute its claim. State the result plainly. A refuted claim is a valid result.
 - Never trust a self-report. A slice is done when an independent validator scores it 0.90 or higher against its blind rubric.
 
