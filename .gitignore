@@ -71,3 +71,4 @@ priority-dev/reports/logs/
 .lavish/priority-dev-interpret-digest.html
 priority-dev/probes/logs/calls.jsonl
 priority-dev/probes/logs/slice-1-attempt-5-20261024/
+priority-dev/probes/programs/
