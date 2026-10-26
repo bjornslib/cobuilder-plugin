@@ -2,11 +2,13 @@
 from __future__ import annotations
 
 import argparse
+import logging
 import sys
 from pathlib import Path
 
 from priority.brief import StopBrief, build_brief
 from priority.digest_store import load_digest, save_digest
+from priority.replay import options
 
 
 def interpret(transcript: Path, stop: int | None, log_dir: Path | None) -> int:
@@ -40,6 +42,14 @@ def digest(transcript: Path, stop: int | None, log_dir: Path | None) -> int:
     return 0
 
 
+def replay(args: argparse.Namespace) -> int:
+    """Replay each transcript of a folder, and write the report. Each model error ends as an Abstain."""
+    from priority.replay import runner  # a lazy import: only this command needs dspy and the key
+
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
+    return runner.run(args.fixtures, args.out, args.log_dir or args.out, args.adapters, args.concurrency, args.goal)
+
+
 def main(argv: list[str] | None = None) -> int:
     """Run the priority CLI."""
     if argv is None:
@@ -58,6 +68,16 @@ def main(argv: list[str] | None = None) -> int:
         model_parser.add_argument("--stop", type=int, default=None, help="1-based stop number")
         model_parser.add_argument("--log-dir", type=Path, default=None, help="Folder for calls.jsonl and digests")
 
+    replay_parser = subparsers.add_parser("replay", help="Replay the last stop of each transcript of a folder")
+    replay_parser.add_argument("fixtures", type=Path, help="Folder with the transcripts (*.jsonl, at any depth)")
+    replay_parser.add_argument("--out", type=Path, default=options.DEFAULT_OUT, help="Folder for report.md and results.jsonl")
+    replay_parser.add_argument("--log-dir", type=Path, default=None, help="Folder for the call rows (default: --out)")
+    replay_parser.add_argument("--adapters", type=options.parse_adapters, default=options.ADAPTERS,
+                               help="Adapters in report order (default: json,chat)")
+    replay_parser.add_argument("--concurrency", type=options.positive_int, default=options.DEFAULT_CONCURRENCY,
+                               help="Stops in flight at once on the interpreter model (default: 5)")
+    replay_parser.add_argument("--goal", type=Path, default=options.DEFAULT_GOAL, help="goal.json with the abort_if list")
+
     args = parser.parse_args(argv)
     if args.command == "brief":
         res = build_brief(args.transcript, stop=args.stop)
@@ -70,6 +90,9 @@ def main(argv: list[str] | None = None) -> int:
         return interpret(args.transcript, args.stop, args.log_dir)
     if args.command == "digest":
         return digest(args.transcript, args.stop, args.log_dir)
+
+    if args.command == "replay":
+        return replay(args)
 
     parser.print_help()
     return 0

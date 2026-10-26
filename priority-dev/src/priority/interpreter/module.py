@@ -24,6 +24,8 @@ from priority.interpreter.signatures import (ANSWER_DUE, FACT_FIELDS, FILL, HINT
 INTERPRETER_MODEL = "openrouter/deepseek/deepseek-v4.1-flash-1017"
 MAX_TOKENS = 3000  # a reasoning model spends tokens on its reasoning first, so a low cap cuts the reply
 log = logging.getLogger("priority.interpreter")
+# The fallback of ChatAdapter would make a second model call after a parse fault. A run makes one.
+ADAPTERS = {"chat": lambda: dspy.ChatAdapter(use_json_adapter_fallback=False), "json": dspy.JSONAdapter}
 
 
 def interpreter_lm() -> dspy.LM:
@@ -42,9 +44,12 @@ class _Fault(Exception):
 
 class Interpreter(dspy.Module):
     def __init__(self, lm: dspy.LM | None = None, *, allowed_kinds: tuple[str, ...] = ACTION_KINDS,
-                 log_dir: Path | str | None = None, session_id: str = ""):
+                 log_dir: Path | str | None = None, session_id: str = "", adapter: str = "chat"):
         super().__init__()
+        if adapter not in ADAPTERS:
+            raise ValueError(f"unknown adapter {adapter!r}: use one of {', '.join(map(repr, ADAPTERS))}")
         self.lm, self.allowed_kinds, self.log_dir, self.session_id = lm, tuple(allowed_kinds), log_dir, session_id
+        self.adapter_name = adapter
         self.triage = dspy.Predict(TriageLM)
         self.pick = dspy.Predict(PickStep)
         self.fill = {kind: dspy.Predict(signature) for kind, signature in FILL.items()}
@@ -52,10 +57,9 @@ class Interpreter(dspy.Module):
 
     def forward(self, brief) -> Interpretation:
         text = brief.for_model()
-        recorder = CallRecorder(self.log_dir)
+        recorder = CallRecorder(self.log_dir, self.adapter_name)
         run = _Run(self, text, recorder, digest(text))
-        # The fallback of ChatAdapter would make a second model call after a parse fault. A run makes one.
-        adapter = dspy.ChatAdapter(use_json_adapter_fallback=False)
+        adapter = ADAPTERS[self.adapter_name]()
         try:
             with dspy.context(lm=self.lm or dspy.settings.lm, adapter=adapter, callbacks=[recorder]):
                 return run.interpret()
@@ -74,12 +78,17 @@ class _Run:
     def call(self, stage: str, predictor: dspy.Predict, **inputs: Any):
         """One model call. A parse fault gives invalid_output, and any other error gives model_error."""
         self.recorder.stage = stage
+        valid = False
         try:
-            return predictor(brief_text=self.text, **inputs)
+            reply = predictor(brief_text=self.text, **inputs)
+            valid = True
+            return reply
         except (AdapterParseError, ValidationError) as error:
             abstain = Abstain(reason="invalid_output", detail=f"{stage}: {type(error).__name__}: {error}")
         except Exception as error:  # noqa: BLE001  (a model call may raise anything, and none may escape)
             abstain = Abstain(reason="model_error", detail=f"{stage}: {type(error).__name__}: {error}")
+        finally:
+            self.recorder.commit(valid)
         raise _Fault(abstain)
 
     def interpret(self) -> Interpretation:

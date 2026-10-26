@@ -67,3 +67,4 @@ plugins/cobuilder-memory/.claude-plugin/types/
 .beads/proxieddb/
 *.gate.lock*
 priority-dev/fixtures/real/
+priority-dev/reports/logs/

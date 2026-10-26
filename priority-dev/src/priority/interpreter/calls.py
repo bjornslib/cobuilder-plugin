@@ -4,6 +4,8 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+import threading
+import time
 from pathlib import Path
 from typing import Any
 
@@ -14,6 +16,7 @@ from pydantic import ValidationError
 from priority.interpreter.models import Abstain
 
 log = logging.getLogger("priority.interpreter")
+_WRITE = threading.Lock()  # sessions of a replay write to one call store from many threads
 
 
 def render(inputs: dict[str, Any]) -> str:
@@ -35,27 +38,42 @@ def raw_reply(outputs: Any) -> str:
 
 
 class CallRecorder(BaseCallback):
-    """A DSPy callback. It writes each LM call, also a failed one, when `log_dir` is set."""
+    """A DSPy callback. It writes each LM call, also a failed one, when `log_dir` is set.
 
-    def __init__(self, log_dir: Path | str | None):
+    A row waits until `commit(valid)`, because the caller knows only after the call whether the reply parsed.
+    """
+
+    def __init__(self, log_dir: Path | str | None, adapter: str = "chat"):
         self.path = Path(log_dir) / "calls.jsonl" if log_dir is not None else None
+        self.adapter = adapter
         self.stage = ""
-        self._open: dict[str, tuple[str, str, str]] = {}
+        self._open: dict[str, tuple[str, str, str, float]] = {}
+        self._pending: list[dict[str, Any]] = []
 
     def on_lm_start(self, call_id, instance, inputs):
-        self._open[call_id] = (self.stage, str(getattr(instance, "model", "")), render(inputs))
+        self._open[call_id] = (self.stage, str(getattr(instance, "model", "")), render(inputs), time.perf_counter())
 
     def on_lm_end(self, call_id, outputs, exception=None):
-        stage, model, rendered = self._open.pop(call_id)
-        if self.path is None:
-            return
+        stage, model, rendered, started = self._open.pop(call_id)
         record = {"stage": stage, "model_id": model, "prompt_hash": hashlib.sha256(rendered.encode()).hexdigest(),
-                  "rendered_input": rendered, "raw_reply": raw_reply(outputs)}
+                  "rendered_input": rendered, "raw_reply": raw_reply(outputs), "adapter": self.adapter,
+                  "seconds": time.perf_counter() - started}
         if exception is not None:
             record["error"] = f"{type(exception).__name__}: {exception}"
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        with self.path.open("a") as handle:
-            handle.write(json.dumps(record) + "\n")
+        self._pending.append(record)
+
+    def commit(self, valid: bool) -> None:
+        """Write the rows of the call. A row that holds an error is never valid."""
+        pending, self._pending = self._pending, []
+        if self.path is None:
+            return
+        text = "".join(json.dumps({**row, "valid": valid and "error" not in row}) + "\n" for row in pending)
+        if not text:
+            return
+        with _WRITE:
+            self.path.parent.mkdir(parents=True, exist_ok=True)
+            with self.path.open("a") as handle:
+                handle.write(text)
 
 
 def guarded(recorder: CallRecorder, stage: str, predictor: Any, **inputs: Any) -> Any:
@@ -64,11 +82,16 @@ def guarded(recorder: CallRecorder, stage: str, predictor: Any, **inputs: Any) -
     A reply that does not parse or validate gives invalid_output, and any other error gives model_error.
     """
     recorder.stage = stage
+    valid = False
     try:
-        return predictor(**inputs)
+        reply = predictor(**inputs)
+        valid = True
+        return reply
     except (AdapterParseError, ValidationError) as error:
         abstain = Abstain(reason="invalid_output", detail=f"{stage}: {type(error).__name__}: {error}")
     except Exception as error:  # noqa: BLE001  (a model call may raise anything, and none may escape)
         abstain = Abstain(reason="model_error", detail=f"{stage}: {type(error).__name__}: {error}")
+    finally:
+        recorder.commit(valid)
     log.warning("abstain %s: %s", abstain.reason, abstain.detail)
     return abstain

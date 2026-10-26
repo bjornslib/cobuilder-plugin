@@ -4,6 +4,8 @@ name = "priority-dev"
 version = "0"
 requires-python = ">=3.11"
 dependencies = ["dspy==3.4.1"]
+[project.scripts]
+priority = "priority.cli:main"
 
 [build-system]
 requires = ["uv_build>=0.8,<0.13"]

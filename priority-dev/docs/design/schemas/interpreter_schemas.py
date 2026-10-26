@@ -351,7 +351,7 @@ class Abstain(Strict):
     """The interpreter proposes nothing. The inbox gets an ask_human item instead."""
     brief_id: str
     reason: Literal["quote_not_in_brief", "invalid_output", "model_timeout",
-                    "model_error", "brief_empty", "kind_not_allowed"]
+                    "model_error", "brief_empty", "brief_too_large", "kind_not_allowed"]
     detail: str = ""
 
 
