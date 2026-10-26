@@ -1,6 +1,6 @@
 # Slices: priority-dev-spike
 
-Gate 4a for the whole program. The slices cover four epics, E1 to E4. Slice numbers run 1 to 13 across the program. The first batch to build is slices 1 to 5. Gate 4b and 4c stay pending until the engineer approves this plan.
+Gate 4a for the whole program. The slices cover five epics, E1 to E5. E5 was added on 26 October 2026 and its gates wait for the engineer's approval. Slice numbers run 1 to 18 across the program. The first batch to build is slices 1 to 5. Gate 4b and 4c stay pending until the engineer approves this plan.
 
 Test command for each slice: `uv run pytest priority-dev/tests -q`. The command runs inside `priority-dev/`, which has its own `pyproject.toml`. The plugin tests never collect it.
 
@@ -31,6 +31,12 @@ Each slice ends in one thing that a command prints or a file shows. A probe slic
 | 11 | `priority-dev-spike/E4` | **Hooks and tail to the log** | A Stop hook in the scratch session leads to a `run.stopped` event in the log with `last_assistant_message` and the pane id. The tailer posts transcript records with `file:offset` keys, and a host restart adds no duplicate | — | pending |
 | 12 | `priority-dev-spike/E4` | **Send a signed command** | A signed command pastes text into the scratch pane at an empty prompt, and `command.confirmed` follows. An unsigned command is refused, and a command for a changed prompt gives `command.unknown` | — | pending |
 | 13 | `priority-dev-spike/E4` | **Answer from a held hook** | A PermissionRequest hook waits, a stub command returns allow, and the scratch session runs the tool with no dialog | — | pending |
+| | **`priority-dev-spike/E5` — Labelled prompts.** A labelled fixture set with a held-out part, a metric, a baseline, and a DSPy optimiser comparison. Added 26 October 2026 at the engineer's request. | | | | |
+| 14 | `priority-dev-spike/E5` | **Notify for a done stop** | `notify` is an action kind. For a stop that Triage calls done, `priority interpret` prints an Interpretation with one `notify` step. Code builds the step from the final reply, with no Pick or Fill call, and the excerpt is an exact part of the final reply | — | pending |
+| 15 | `priority-dev-spike/E5` | **Labelled fixture set** | `uv run priority fixtures check` passes on 10 real sessions and about 50 stops. Every stop has a label that the engineer confirmed. The split lists the train sessions and the held-out sessions, and no session is in both. Git ignores the real files | — | pending |
+| 16 | `priority-dev-spike/E5` | **Metric and baseline** | `uv run priority eval --split train` and `--split holdout` print a score for each fact, the step kinds, and the grounding, and an overall score. `probes/eval-baseline.md` states both scores, the spread over three repeats, and the cost | — | pending |
+| 17 | `priority-dev-spike/E5` | **One-call variant** | `uv run priority eval --variant combined` runs Triage and one call that writes the steps, the payloads, and the card. `probes/eval-variant.md` compares it with the split chain on the same stops: score, calls, characters, seconds, and cost. It states which one the next slice uses | — | pending |
+| 18 | `priority-dev-spike/E5` | **Optimiser comparison** | `uv run priority optimise --optimiser gepa` and `--optimiser miprov2` compile the chosen interpreter on the train sessions only. `probes/optimiser-report.md` gives the held-out score before and after for each, with BootstrapFewShot as the cheap baseline, the cost of each run, and the saved programs | — | pending |
 
 ## Notes for the gates
 
@@ -39,3 +45,4 @@ Each slice ends in one thing that a command prints or a file shows. A probe slic
 3. Gate 4c: each unknown in `adapter-host.md` section 7 and `schemas.md` section 2.1 becomes a rubric criterion with an observable answer.
 4. Go or no-go: after slice 7, the engineer reads the replay report and decides against the `abort_if` conditions of `goal.json`. Slices 8 to 13 start only on a go. Every rubric of slices 1 to 7 carries one criterion that the report states the abort condition it informs.
 5. Fixtures: real transcripts, redacted, kept local and ignored by Git, plus small made-up ones in the repository.
+6. E5 (slices 14 to 18) runs after E2 and before the go or no-go decision, because the go or no-go needs a labelled score. Slices run in order. The engineer may move E5 after the decision.

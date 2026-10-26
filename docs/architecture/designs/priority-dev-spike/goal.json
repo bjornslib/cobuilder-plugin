@@ -67,6 +67,15 @@
       "branch": "design/priority-dev-spike",
       "pr": null,
       "state": "planned"
+    },
+    {
+      "id": "E5",
+      "slug": "labelled-prompts",
+      "title": "Labelled prompts: a labelled fixture set, a metric, a baseline, a one-call variant, and a DSPy optimiser comparison.",
+      "outcome": "A held-out score shows whether an optimiser improves the interpreter over its baseline.",
+      "branch": "design/priority-dev-spike",
+      "pr": null,
+      "state": "planned"
     }
   ],
   "later_programs": [

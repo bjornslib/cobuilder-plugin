@@ -23,3 +23,8 @@ slices:
   - {id: 11, name: "E4 hooks and tail to the log", weight: 0.07}
   - {id: 12, name: "E4 send a signed command", weight: 0.07}
   - {id: 13, name: "E4 answer from a held hook", weight: 0.07}
+  - {id: 14, name: "E5 notify for a done stop", weight: 0.05}
+  - {id: 15, name: "E5 labelled fixture set", weight: 0.08}
+  - {id: 16, name: "E5 metric and baseline", weight: 0.08}
+  - {id: 17, name: "E5 one-call variant", weight: 0.06}
+  - {id: 18, name: "E5 optimiser comparison", weight: 0.08}
