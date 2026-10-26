@@ -33,6 +33,8 @@ itself, and it never interviews the engineer about terms mid-feature.
 
 ## Tracker state
 
+Before the first gate, run `tracker.py doctor`. Read the adapter and the `mapping` line. Stop when doctor exits with an error, or when it shows `mapping: legacy`. Tell the engineer to run `/cobuilder-full-lifecycle:install`, which asks for approval before it migrates the tracker. Do not migrate from start. When the adapter is `files`, go on.
+
 Start reads and writes workflow state through `shared/tracker.py`, as `shared/tracker-usage.md` directs. When the tracker holds no records for the program, follow `shared/tracker-backfill.md` first.
 
 ## What this writes

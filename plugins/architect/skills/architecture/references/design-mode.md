@@ -53,6 +53,13 @@ tree. That old path is a historical mistake.
 
 ## 3. Stage 0 — Name and outcome
 
+Before the first question, run `tracker.py doctor`. Read the adapter and the
+`mapping` line. Stop when doctor exits with an error, or when it shows
+`mapping: legacy`. Tell the engineer to run
+`/cobuilder-full-lifecycle:install`, which asks for approval before it
+migrates the tracker. Do not migrate from this mode. When the adapter is
+`files`, go on.
+
 The engineer states the outcome and names the design **before** the agent
 reads a file. The outcome names a state, not an activity. Write it into
 `goal.outcome` and `goal.done_when`.
