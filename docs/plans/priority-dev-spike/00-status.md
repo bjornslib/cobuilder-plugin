@@ -13,6 +13,8 @@
     view: http://localhost:62583/active/viewer/#/priority-dev-spike/build/epics
   - 4b Epic technical solution designs: APPROVED 2026-10-24
   - 4c Blind rubrics: APPROVED 2026-10-24
+  - 4d E5 addendum (epic E5, slices 14 to 18, epic design, rubrics 14 to 18): APPROVED 2026-10-26
+    view: http://localhost:62583/active/viewer/#/priority-dev-spike/build/epics
 
 Design mode: priority-dev-spike
 Memory (Gate 1): consulted 2026-10-24
