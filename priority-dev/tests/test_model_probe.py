@@ -46,8 +46,8 @@ def test_probe_exposes_run_and_result_fields():
 
 def test_probe_names_the_interpreter_and_the_digest_model():
     probe = load_probe()
-    assert probe.INTERPRETER_MODEL == INTERPRETER_MODEL == "openrouter/deepseek/deepseek-v4.1-flash-1017"
-    assert probe.DIGEST_MODEL == "openrouter/thinkingmachines/inkling-small"
+    assert probe.INTERPRETER_MODEL == INTERPRETER_MODEL == "nvidia_nim/minimaxai/minimax-m3.1-flash"
+    assert probe.DIGEST_MODEL == DIGEST_MODEL == "nvidia_nim/minimaxai/minimax-m3.1-flash"
     assert not hasattr(probe, "MODEL_ID")
 
 
