@@ -36,7 +36,7 @@ ROOT = Path(__file__).resolve().parent.parent
 CATALOG = ROOT / "docs/architecture/designs/mechanical-smells/findings-catalog.md"
 RESIDUAL_HEADING = "## 7. Recorded residuals"
 COMMENT_SMELL = "non-essential-comment"
-COMMENT_BASELINE = 1082
+COMMENT_BASELINE = 1081
 RESIDUAL_MAX_LINES = 30
 
 

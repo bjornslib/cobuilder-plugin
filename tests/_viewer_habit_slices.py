@@ -29,8 +29,18 @@ SLICES: dict[int, list[str]] = {
         f"{SHELL}/panels/Intent.tsx",
         f"{SHELL}/panels/ProblemSolution.tsx",
     ],
+    3: [
+        f"{SHELL}/change/Diff.tsx",
+        f"{SHELL}/change/Frame.tsx",
+        f"{SHELL}/change/Sheets.tsx",
+        f"{SHELL}/change/levels.ts",
+        f"{SHELL}/change/sections.tsx",
+        f"{SHELL}/DiagramTiles.tsx",
+        f"{SHELL}/Pager.tsx",
+    ],
 }
 SLICE_GLOBS: dict[int, list[str]] = {
     1: _globs(f"{VIEWER}/src/data", f"{SHELL}/model"),
     2: _globs(f"{SHELL}/atoms", f"{SHELL}/sections", f"{SHELL}/panels"),
+    3: _globs(f"{SHELL}/change", f"{SHELL}/diagramTiles", f"{SHELL}/pager"),
 }

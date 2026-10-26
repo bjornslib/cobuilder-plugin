@@ -1,13 +1,13 @@
 {
   "schema_version": "1.5",
   "sources": {
-    "git_head": "acb25adb4540f4575e5a809133771102a98a7b76",
+    "git_head": "3b8b657cb8ecb9d31e0b7ef64e0a581bb81ee8a9",
     "trees": {
       "docs/architecture/adr": "sha256:a305fe9bf8e85df82ab7a47275ca93bdb79a5221b085cb30a73f987e251453d1",
       "docs/architecture/designs": "sha256:fa3dc035e9423597e024ab84cad39c48a4f81172f114c7dc99f0678eae621820",
       "docs/architecture/contexts": "sha256:6663ee456e31bfbe31401908ae494017ed864dbb9c72211b6cbdccc44d078482",
-      "docs/plans": "sha256:c917d39d6e90a4d67e93b2725a4dd37b3e2bed1410cdad58d0c83181f10df7e8",
-      ".cobuilder/rubrics": "sha256:3d001a9b0019ba40ace4618a54b19073f12ec3faebc188dff1e418c55622fc52"
+      "docs/plans": "sha256:d3e5af43ce9004d80c13f373090d3b8cf6c3b7c536e4a26e859e122ee3b8618e",
+      ".cobuilder/rubrics": "sha256:9bc7c19be8bca0dd25d40fe43334dca63718a7b2d3f436a0ec726758f565aa56"
     }
   },
   "entities": {
@@ -4082,9 +4082,9 @@
         "n": 3,
         "title": "The change surface: split the five `shell/change/*` files, `shell/DiagramTiles.tsx`, and `shell/Pager.tsx`, and fix the `react-hooks/exhaustive-deps` finding",
         "ends_with": "`habit-sensors` reports no finding for those seven files, the change-view tests pass, and the diagram tiles still render.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "mechanical-smells/4",
@@ -8137,7 +8137,7 @@
       },
       "mechanical-smells": {
         "stage_source": "tracker",
-        "next_ready": "mechanical-smells/3",
+        "next_ready": "mechanical-smells/4",
         "pull_requests": []
       },
       "nexus-borrowings": {

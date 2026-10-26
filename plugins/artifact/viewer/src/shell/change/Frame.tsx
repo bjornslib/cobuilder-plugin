@@ -22,15 +22,12 @@
  * cannot disagree.
  */
 
-import { cn } from "@/lib/utils";
-import { Missing, NotPresentPill } from "@/shell/atoms";
-import { DiagramTiles } from "@/shell/DiagramTiles";
 import type { Theme } from "@/shell/DiagramTiles";
 
+import { FrameBody, FrameToggle, type ArtMode } from "./FrameParts";
 import type { ChangeLevel } from "./levels";
 
-/** Which of the frame's two parts the reader is looking at. */
-export type ArtMode = "image" | "diagram";
+export type { ArtMode } from "./FrameParts";
 
 export interface ChangeFrameProps {
   level: ChangeLevel;
@@ -42,75 +39,24 @@ export interface ChangeFrameProps {
   onArtFailed: (url: string) => void;
 }
 
-export function ChangeFrame({
-  level,
-  theme,
-  artMode,
-  onArtMode,
-  failedArt,
-  onArtFailed,
-}: ChangeFrameProps) {
+/*
+ * ONE PART DRAWS ITSELF, WHATEVER THE READER CHOSE ON ANOTHER LEVEL. The toggle only
+ * exists where both parts do, and the choice is the reader's for the whole change, so a
+ * level holding one part resolves to that part rather than to a choice it never offered.
+ */
+function resolveMode(hasImage: boolean, hasDiagram: boolean, artMode: ArtMode): ArtMode {
+  return hasImage && hasDiagram ? artMode : hasImage ? "image" : "diagram";
+}
+
+export function ChangeFrame(props: ChangeFrameProps) {
+  const { level, theme, artMode, onArtMode, failedArt, onArtFailed } = props;
   const hasImage = level.art !== null && failedArt !== level.art;
   const hasDiagram = level.diagram !== null;
-  const parts = Number(hasImage) + Number(hasDiagram);
-  /*
-   * ONE PART DRAWS ITSELF, WHATEVER THE READER CHOSE ON ANOTHER LEVEL. The toggle only
-   * exists where both parts do, and the choice is the reader's for the whole change, so a
-   * level holding one part resolves to that part rather than to a choice it never offered.
-   */
-  const mode: ArtMode = hasImage && hasDiagram ? artMode : hasImage ? "image" : "diagram";
-
+  const mode = resolveMode(hasImage, hasDiagram, artMode);
   return (
     <div className="mb-4 flex min-w-0 flex-col gap-3">
-      {hasImage && hasDiagram ? (
-        <span className="flex items-center gap-1" role="group" aria-label="Frame mode">
-          {(["image", "diagram"] as const).map((value) => (
-            <button
-              key={value}
-              type="button"
-              aria-current={mode === value ? "true" : undefined}
-              onClick={() => onArtMode(value)}
-              className={cn(
-                "cursor-pointer rounded-full border px-2.5 py-1 font-mono text-[11.5px] font-bold tracking-[0.04em] uppercase transition-colors",
-                mode === value
-                  ? "border-primary bg-accent-wash text-accent-deep"
-                  : "border-line text-ink-dim hover:border-primary/40 hover:text-ink",
-              )}
-            >
-              {value}
-            </button>
-          ))}
-        </span>
-      ) : null}
-
-      {parts === 0 ? (
-        <div className="flex min-w-0 flex-col gap-2">
-          <NotPresentPill className="self-start" />
-          <Missing>
-            This level carries no scene art and no diagram. The fourth level is the diff
-            itself, and it has never carried either.
-          </Missing>
-        </div>
-      ) : mode === "image" && level.art ? (
-        <figure className="m-0 flex min-w-0 flex-col gap-2">
-          <img
-            src={level.art}
-            alt={`Scene art for level ${level.number}`}
-            loading="lazy"
-            onError={() => onArtFailed(level.art ?? "")}
-            className="block h-auto w-full rounded-lg border border-line"
-          />
-          <figcaption className="font-mono text-[12px] text-ink-faint">{level.art}</figcaption>
-        </figure>
-      ) : (
-        <div className="min-w-0">
-          <DiagramTiles
-            levels={level.number <= 3 ? [String(level.number)] : []}
-            sources={level.number <= 3 ? { [String(level.number)]: level.diagram ?? "" } : {}}
-            theme={theme}
-          />
-        </div>
-      )}
+      {hasImage && hasDiagram ? <FrameToggle mode={mode} onArtMode={onArtMode} /> : null}
+      <FrameBody level={level} theme={theme} mode={mode} empty={!hasImage && !hasDiagram} onArtFailed={onArtFailed} />
     </div>
   );
 }
