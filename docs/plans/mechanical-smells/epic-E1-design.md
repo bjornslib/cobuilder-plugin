@@ -77,13 +77,17 @@ are a snapshot of names, not of behavior.
 
 | Slice | Ends with | Depends on |
 |---|---|---|
-| 1 | The five logic files report no finding. The export pin exists and passes. The rebuild is byte-identical. | none |
-| 2 | The five atom and section files report no finding. The section tests pass. | 1 |
-| 3 | The seven change-surface files report no finding. The hooks finding is gone. | 2 |
-| 4 | The 17 shell and chrome files report no finding. `ShellApp` and `Theme` still export. | 3 |
-| 5 | The 20 test files report no finding, apart from recorded callbacks. Every assertion stays. | 4 |
+| 1 | The five logic files report no finding, other than `non-essential-comment`. The export pin exists and passes. The rebuild is byte-identical. | none |
+| 2 | The five atom and section files report no finding, other than `non-essential-comment`. The section tests pass. | 1 |
+| 3 | The seven change-surface files report no finding, other than `non-essential-comment`. The hooks finding is gone. | 2 |
+| 4 | The 17 shell and chrome files report no finding, other than `non-essential-comment`. `ShellApp` and `Theme` still export. | 3 |
+| 5 | The 20 test files report no finding, other than `non-essential-comment`, apart from recorded callbacks. Every assertion stays. | 4 |
 | 6 | The 42 source files report no comment finding. The sample review passes. | 5 |
 | 7 | The 20 test files report no comment finding. The sample review passes. | 6 |
+
+Comment findings follow one rule. Slices 1 to 5 ignore the `non-essential-comment` smell,
+and they must not raise its count in their files. Slices 6 and 7 own that smell. A moved
+unit keeps its comments, so a split does not turn a comment finding into a new one.
 
 The order is a chain, because each slice leaves stable exports for the next. Slice 1 is
 the tracer bullet. It proves the split pattern, the export pin, the sensor check, and the
@@ -94,7 +98,10 @@ byte-identical rebuild on pure logic, where the unit tests alone prove behavior.
 - **Sensor check, RED for every slice.** `tests/test_viewer_habit_clean.py` runs
   `habit-sensors --file <path>` for each file of a slice. It keeps the issues whose
   `details.file` is that file, because jscpd reports repo-wide clusters in `--file`
-  mode. It fails while any finding remains. It skips when `habit-sensors` or
+  mode. For slices 1 to 5 it fails while any finding other than `non-essential-comment`
+  remains, and it also fails when the comment count of a slice file rises above its
+  count at the start of the slice. For slices 6 and 7 it fails while any
+  `non-essential-comment` finding remains. It skips when `habit-sensors` or
   `node_modules` is absent. RED adds the entry for its slice, so the check fails before
   GREEN starts.
 - **Export pin, a guard, not a RED test.** `shell/exports.test.ts` passes before GREEN,

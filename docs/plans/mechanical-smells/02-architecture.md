@@ -28,7 +28,8 @@ config is a TOML file.
 
 1. The engineer picks the next ready slice from the tracker.
 2. RED writes a check that runs `habit-sensors --file <path>` for each file of
-   the slice. The check fails while any finding remains.
+   the slice. The check fails while any finding remains, other than
+   `non-essential-comment` in slices 1 to 5. Slices 6 and 7 check that smell.
 3. GREEN splits the files by concern. Each moved unit is re-exported from the
    old file under its old name.
 4. The vitest suite, the build, and the byte-identical rebuild test run. The
