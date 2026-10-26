@@ -164,6 +164,14 @@ of this epic. `model.ts` exports more than 40 names (the `SECTION_KEYS`,
 section renderers. `App.tsx` exports `ShellApp` and the `Theme` type. Each
 split keeps these names and re-exports the moved units.
 
+Outcome (2026-10-27, all seven slices closed at score 1.00): the viewer reports 650
+findings, and all 650 are `non-essential-comment` findings that the kept-comments tables
+record. Slices 1 to 5 cleared every structural, type, hygiene, duplicate, and React lint
+finding in the viewer, and no recorded residual was needed. Slices 6 and 7 reviewed the
+986 comment findings that were left after slice 5 (637 in source files, 349 in test-side
+files). They kept 458 and 192, and deleted 179 and 157. Slice 5 removed 73 more with
+the test code it split.
+
 ## 5. The second epic, E2
 
 Epic E2 holds 703 findings in 129 files, in named groups. It has no slices. A
