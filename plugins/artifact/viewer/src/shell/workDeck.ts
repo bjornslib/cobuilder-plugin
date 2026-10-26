@@ -88,23 +88,32 @@ function matchKey(raw: string): string {
     .replace(/^#/, "");
 }
 
+type Design = DesignRow["design"];
+type Epic = DesignRow["epics"][number];
+
+function has(text: string | null | undefined, query: string): boolean {
+  return (text ?? "").toLowerCase().includes(query);
+}
+
+function designHits(design: Design, query: string): boolean {
+  return [design.name, design.id, design.stage, design.outcome].some((text) => has(text, query));
+}
+
+function epicHits(epic: Epic, query: string): boolean {
+  const texts = [epic.id, epic.epic_id, epic.branch];
+  return (
+    texts.some((text) => has(text, query)) ||
+    (epic.pr !== null && String(epic.pr).includes(query))
+  );
+}
+
 /** True when one design's words carry the needle. Empty needle keeps everything. */
 export function matches(row: DesignRow, needle: string): boolean {
   const query = matchKey(needle).toLowerCase();
   if (query.length === 0) return true;
-  const { design, epics } = row;
   return (
-    design.name.toLowerCase().includes(query) ||
-    design.id.toLowerCase().includes(query) ||
-    design.stage.toLowerCase().includes(query) ||
-    (design.outcome ?? "").toLowerCase().includes(query) ||
-    epics.some(
-      (epic) =>
-        epic.id.toLowerCase().includes(query) ||
-        epic.epic_id.toLowerCase().includes(query) ||
-        (epic.branch ?? "").toLowerCase().includes(query) ||
-        (epic.pr !== null && String(epic.pr).includes(query)),
-    ) ||
+    designHits(row.design, query) ||
+    row.epics.some((epic) => epicHits(epic, query)) ||
     row.pullRequests.some((id) => String(id).includes(query))
   );
 }
@@ -121,12 +130,14 @@ export function walkedRows(lanes: Lane[], rows: DesignRow[], needle: string): De
   return lanes.flatMap((lane) => laneRows(lane, rows, needle));
 }
 
-/** The first match of a text as three spans around the hit, or null. */
-export function highlight(text: string, needle: string): {
+interface Highlight {
   before: string;
   hit: string;
   after: string;
-} | null {
+}
+
+/** The first match of a text as three spans around the hit, or null. */
+export function highlight(text: string, needle: string): Highlight | null {
   const query = needle.trim();
   if (query.length === 0) return null;
   const at = text.toLowerCase().indexOf(query.toLowerCase());

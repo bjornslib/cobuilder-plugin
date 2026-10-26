@@ -38,9 +38,33 @@ SLICES: dict[int, list[str]] = {
         f"{SHELL}/DiagramTiles.tsx",
         f"{SHELL}/Pager.tsx",
     ],
+    4: [
+        f"{VIEWER}/src/App.tsx",
+        f"{VIEWER}/src/components/work/DesignCard.tsx",
+        f"{VIEWER}/src/components/work/StageBadge.tsx",
+        f"{VIEWER}/src/components/work/WorkBoard.tsx",
+        f"{VIEWER}/src/hooks/use-mobile.ts",
+        f"{SHELL}/App.tsx",
+        f"{SHELL}/InShort.tsx",
+        f"{SHELL}/Rail.tsx",
+        f"{SHELL}/Sheet.tsx",
+        f"{SHELL}/TopBar.tsx",
+        f"{SHELL}/WorkDrawer.tsx",
+        f"{SHELL}/jump.tsx",
+        f"{SHELL}/markdown.tsx",
+        f"{SHELL}/hooks.ts",
+        f"{SHELL}/readiness.ts",
+        f"{SHELL}/workDeck.ts",
+        f"{VIEWER}/vite.config.ts",
+    ],
 }
 SLICE_GLOBS: dict[int, list[str]] = {
     1: _globs(f"{VIEWER}/src/data", f"{SHELL}/model"),
     2: _globs(f"{SHELL}/atoms", f"{SHELL}/sections", f"{SHELL}/panels"),
     3: _globs(f"{SHELL}/change", f"{SHELL}/diagramTiles", f"{SHELL}/pager"),
+    4: [
+        *_globs(SHELL, f"{VIEWER}/src/components/work", f"{VIEWER}/src/hooks"),
+        f"{VIEWER}/src/*.tsx",
+        f"{VIEWER}/vite.config.ts",
+    ],
 }

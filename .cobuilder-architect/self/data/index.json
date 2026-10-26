@@ -1,13 +1,13 @@
 {
   "schema_version": "1.5",
   "sources": {
-    "git_head": "3b8b657cb8ecb9d31e0b7ef64e0a581bb81ee8a9",
+    "git_head": "0e4774ddbabf8d4e850457acb63f7acd60bace19",
     "trees": {
       "docs/architecture/adr": "sha256:a305fe9bf8e85df82ab7a47275ca93bdb79a5221b085cb30a73f987e251453d1",
       "docs/architecture/designs": "sha256:fa3dc035e9423597e024ab84cad39c48a4f81172f114c7dc99f0678eae621820",
       "docs/architecture/contexts": "sha256:6663ee456e31bfbe31401908ae494017ed864dbb9c72211b6cbdccc44d078482",
-      "docs/plans": "sha256:d3e5af43ce9004d80c13f373090d3b8cf6c3b7c536e4a26e859e122ee3b8618e",
-      ".cobuilder/rubrics": "sha256:9bc7c19be8bca0dd25d40fe43334dca63718a7b2d3f436a0ec726758f565aa56"
+      "docs/plans": "sha256:f39164f2d5098eeed9b935c47fb02d2d6ef01c4ff39d08e7c1a573a4d28a1284",
+      ".cobuilder/rubrics": "sha256:8d7ef192168e5b59aff7cb49a3e55fb21158d983ff0fc1054bde3e86e2df110e"
     }
   },
   "entities": {
@@ -4092,9 +4092,9 @@
         "n": 4,
         "title": "The shell and chrome: split `ShellApp`, the sheet, the drawer, the rail, the top bar, the hooks, the work board, and the long tail of 17 files. Fix the `jsx-a11y/media-has-caption` finding and the 2 non-null assertions in `shell/App.tsx`",
         "ends_with": "`habit-sensors` reports no finding for those 17 files, `ShellApp` and `Theme` still export from `shell/App.tsx`, and the full viewer suite and the build pass.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 2,
+        "state": "completed"
       },
       {
         "id": "mechanical-smells/5",
@@ -8137,7 +8137,7 @@
       },
       "mechanical-smells": {
         "stage_source": "tracker",
-        "next_ready": "mechanical-smells/4",
+        "next_ready": "mechanical-smells/5",
         "pull_requests": []
       },
       "nexus-borrowings": {
