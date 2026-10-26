@@ -53,7 +53,16 @@ def eval_split(args: argparse.Namespace) -> int:
     """Score one split of the labelled set against the interpreter."""
     from priority.evaluation import runner  # a lazy import: only this command needs dspy and the key
 
-    return runner.run(args.manifest, args.labels, args.real_dir, args.split, args.log_dir, args.variant)
+    return runner.run(args.manifest, args.labels, args.real_dir, args.split, args.log_dir, args.variant,
+                      program=args.program)
+
+
+def optimise_run(args: argparse.Namespace) -> int:
+    """Compile the chain interpreter with one optimiser, on train sessions only."""
+    from priority import optimise  # a lazy import: only this command needs dspy
+
+    return optimise.run(args.manifest, args.labels, args.real_dir,
+                        args.optimiser, args.budget, args.seed)
 
 
 def replay(args: argparse.Namespace) -> int:
@@ -114,6 +123,21 @@ def main(argv: list[str] | None = None) -> int:
                              help="Folder with the real sessions, must be Git-ignored")
     eval_parser.add_argument("--log-dir", type=Path, default=Path("reports/logs"),
                              help="Folder for the stored call rows (default: reports/logs)")
+    eval_parser.add_argument("--program", type=Path, default=None,
+                             help="A saved compiled program to load before scoring")
+    optimise_parser = subparsers.add_parser("optimise", help="Compile the chain interpreter on the train sessions")
+    optimise_parser.add_argument("--optimiser", default="gepa", choices=("gepa", "miprov2", "bootstrap"),
+                                 help="The optimiser to compile with (default: gepa)")
+    optimise_parser.add_argument("--budget", type=int, default=5,
+                                 help="The optimiser candidate budget (default: 5)")
+    optimise_parser.add_argument("--seed", type=int, default=7,
+                                 help="The optimiser seed (default: 7)")
+    optimise_parser.add_argument("--manifest", type=Path, default=Path("fixtures/set-manifest.json"),
+                                 help="Manifest with session ids and stop numbers")
+    optimise_parser.add_argument("--labels", type=Path, default=Path("fixtures/real/labels-confirmed.json"),
+                                 help="Confirmed labels file")
+    optimise_parser.add_argument("--real-dir", type=Path, default=Path("fixtures/real"),
+                                 help="Folder with the real sessions, must be Git-ignored")
 
     args = parser.parse_args(argv)
     if args.command == "brief":
@@ -132,6 +156,8 @@ def main(argv: list[str] | None = None) -> int:
         return replay(args)
     if args.command == "eval":
         return eval_split(args)
+    if args.command == "optimise":
+        return optimise_run(args)
 
     if args.command == "fixtures" and args.fixtures_command == "check":
         return fixtures_check(args)

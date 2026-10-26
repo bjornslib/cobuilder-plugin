@@ -74,3 +74,24 @@ def load_labels(path: str | Path) -> dict[str, dict[str, dict]]:
             for key, label in stops.items()
         }
     return out
+
+
+def match_session_key(labels_by_session: dict, session_id: str) -> str | None:
+    """Match one manifest session to its labels key, by full id or short prefix.
+
+    The manifest keys sessions by full id while the confirmed labels may
+    key them by short prefix, or the reverse. An exact key wins; else the
+    one labels key sharing a prefix with the session wins. Several sharing
+    keys raise naming the session, so each caller reports it the same way.
+    Return None when no key matches, so the caller reports missing labels.
+    """
+    if session_id in labels_by_session:
+        return session_id
+    matches = [key for key in labels_by_session
+               if key.startswith(session_id) or session_id.startswith(key)]
+    if len(matches) == 1:
+        return matches[0]
+    if len(matches) > 1:
+        raise ValueError(f"session {session_id} matches several "
+                         f"labels keys: {', '.join(sorted(matches))}")
+    return None

@@ -14,7 +14,7 @@ from pathlib import Path
 
 from priority.brief import StopBrief, build_brief
 from priority.evaluation.check import stop_key
-from priority.evaluation.labels import load_labels
+from priority.evaluation.labels import load_labels, match_session_key
 from priority.evaluation.metric import FACT_FIELDS, components, score
 from priority.evaluation.split import split
 
@@ -88,25 +88,6 @@ def _make_interpreter(log_dir: Path | str | None = None, variant: str = "chain")
     return interpreter.Interpreter(lm, log_dir=log_dir, variant=variant)
 
 
-def _match_labels(labels_by_session: dict, session_id: str):
-    """Find the labels entry for one manifest session by prefix match.
-
-    The manifest keys sessions by full id while the confirmed labels may
-    key them by short prefix, or the reverse. An exact key wins; else the
-    one labels key sharing a prefix with the session wins. Several sharing
-    keys is an error, so the caller fails naming the session.
-    """
-    if session_id in labels_by_session:
-        return labels_by_session[session_id], None
-    matches = [key for key in labels_by_session
-               if key.startswith(session_id) or session_id.startswith(key)]
-    if len(matches) == 1:
-        return labels_by_session[matches[0]], None
-    if len(matches) > 1:
-        return None, (f"eval failed: session {session_id} matches several "
-                      f"labels keys: {', '.join(sorted(matches))}")
-    return None, None
-
 
 def _mean(rows: list, key: str) -> float:
     """The mean of one component over the scored stops."""
@@ -136,8 +117,16 @@ def _stored_rows(path: Path | None, start: int) -> list[dict]:
 
 
 def run(manifest: Path, labels: Path, real_dir: Path, split_name: str,
-        log_dir: Path | str | None = None, variant: str = "chain") -> int:
+        log_dir: Path | str | None = None, variant: str = "chain",
+        program: Path | str | None = None) -> int:
     """Score one split of the fixture set and print the report. Return exit code."""
+    if program is not None:
+        try:
+            json.loads(Path(program).read_text())
+        except (OSError, ValueError) as exc:
+            print(f"eval failed: cannot load program {program}: {exc}")
+            return 1
+        print(f"program: {program}")
     try:
         entries = json.loads(Path(manifest).read_text())
     except (OSError, ValueError) as exc:
@@ -161,13 +150,15 @@ def run(manifest: Path, labels: Path, real_dir: Path, split_name: str,
         session_id = entry["session"]
         if session_id not in wanted:
             continue
-        session_labels, error = _match_labels(labels_by_session, session_id)
-        if error is not None:
-            print(error)
+        try:
+            matched_key = match_session_key(labels_by_session, session_id)
+        except ValueError as exc:
+            print(f"eval failed: {exc}")
             return 1
-        if session_labels is None:
+        if matched_key is None:
             print(f"eval failed: session {session_id} has no labels")
             return 1
+        session_labels = labels_by_session[matched_key]
         transcript = Path(real_dir) / f"{session_id}.jsonl"
         for number in entry["stops"]:
             key = stop_key(number)

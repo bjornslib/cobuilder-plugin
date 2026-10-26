@@ -70,10 +70,18 @@ class Interpreter(dspy.Module):
         self.card = dspy.Predict(WriteCard)
         self.combined = dspy.Predict(WriteCombined)
 
-    def forward(self, brief) -> Interpretation:
-        text = brief.for_model()
+    def forward(self, brief=None, brief_text=None) -> Interpretation:
+        """Run the chain on one brief. The optimiser passes the brief text as `brief_text`."""
+        if brief is None:
+            brief = brief_text
+        if brief is None:
+            raise ValueError("Interpreter needs a brief or brief_text")
+        if isinstance(brief, str):
+            text, final = brief, ""
+        else:
+            text, final = brief.for_model(), brief.final
         recorder = CallRecorder(self.log_dir, self.adapter_name)
-        run = _Run(self, text, recorder, digest(text), brief.final)
+        run = _Run(self, text, recorder, digest(text), final)
         adapter = ADAPTERS[self.adapter_name]()
         try:
             with dspy.context(lm=self.lm or dspy.settings.lm, adapter=adapter, callbacks=[recorder]):
