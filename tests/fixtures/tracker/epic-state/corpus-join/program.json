@@ -1,0 +1,12 @@
+{
+  "id": "estate",
+  "kind": "program",
+  "parent": null,
+  "blocked_by": [],
+  "lifecycle": "open",
+  "assignee": null,
+  "envelope": {
+    "stage": "decided"
+  },
+  "external_ref": null
+}

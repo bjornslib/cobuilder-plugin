@@ -1,0 +1,50 @@
+feature: beads-storage
+test_command: "uv run pytest tests -q"
+baseline: "794 passed, 1 skipped, measured 2026-10-17 on branch design/beads-storage/tracker-port"
+thresholds:
+  accept: 0.90
+  investigate: 0.70
+max_attempts: 3
+models:
+  red: haiku
+  green: haiku
+  validate: sonnet
+slices:
+  - {id: 1, name: "E1 tracer bullet: fake adapter and golden index", weight: 0.0466}
+  - {id: 2, name: "E1 full contract suite on the fake adapter", weight: 0.0366}
+  - {id: 3, name: "E1 files adapter reads the plans tree and backfill dry run", weight: 0.0229}
+  - {id: 4, name: "E1 command prints JSON and exit codes", weight: 0.0229}
+  - {id: 5, name: "E1 usage reference matches the command", weight: 0.0184}
+  - {id: 6, name: "E2 beads reads match the fake adapter", weight: 0.0274}
+  - {id: 7, name: "E2 beads writes on recorded transcripts", weight: 0.0366}
+  - {id: 8, name: "E2 beads dry run matches the backfill file", weight: 0.0229}
+  - {id: 9, name: "E2 fresh clone initializes, syncs, and seeds", weight: 0.032}
+  - {id: 10, name: "E3 bundle index unchanged after the port", weight: 0.0274}
+  - {id: 11, name: "E3 gate check and builds view read the port", weight: 0.0274}
+  - {id: 12, name: "E3 status files regenerate from records", weight: 0.0229}
+  - {id: 13, name: "E4 implement writes slice state", weight: 0.0274}
+  - {id: 14, name: "E4 architect writes gate values", weight: 0.0229}
+  - {id: 15, name: "E4 pull request blocks two epics", weight: 0.0184}
+  - {id: 16, name: "E4 goal file drops epic state fields", weight: 0.0229}
+  - {id: 17, name: "E4 docs test guards the port and install asks first", weight: 0.0229}
+  - {id: 18, name: "E5 spike: claim flags, exit codes, lease expiry", weight: 0.0091}
+  - {id: 19, name: "E5 atomic claim on beads", weight: 0.0091}
+  - {id: 20, name: "E5 native ready on beads", weight: 0.0091}
+  - {id: 21, name: "E5 pull request gate on beads", weight: 0.0091}
+  - {id: 22, name: "E5 slice-loop formula on beads", weight: 0.0091}
+  - {id: 23, name: "E7 spike notes into the adapter notes", weight: 0.0144}
+  - {id: 24, name: "E7 type, title, label, and text mapping", weight: 0.0288}
+  - {id: 25, name: "E7 hierarchy and ordering edges", weight: 0.0288}
+  - {id: 26, name: "E7 pull request as a milestone with tracks", weight: 0.0288}
+  - {id: 27, name: "E7 native ready for slices, with parity", weight: 0.036}
+  - {id: 28, name: "E7 claim-next on beads", weight: 0.036}
+  - {id: 29, name: "E7 migrate-mapping with dry run", weight: 0.0288}
+  - {id: 30, name: "E7 docs, install, usage", weight: 0.0144}
+  - {id: 31, name: "E8 spike notes", weight: 0.02}
+  - {id: 32, name: "E8 tracker creates the program record", weight: 0.04}
+  - {id: 33, name: "E8 index reads the stage from the tracker", weight: 0.05}
+  - {id: 34, name: "E8 strip step and schema change", weight: 0.02}
+  - {id: 35, name: "E8 epic and slice status on the board", weight: 0.04}
+  - {id: 36, name: "E8 next ready and pull request state on the board", weight: 0.04}
+  - {id: 37, name: "E8 repair-status with dry run", weight: 0.05}
+  - {id: 38, name: "E8 live repair, docs, install", weight: 0.02}

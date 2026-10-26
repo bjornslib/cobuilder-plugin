@@ -353,7 +353,6 @@ return {
   notRun: notRun.map(s => s.id),
   // Deliberately not written to 00-status.md here — the orchestrating session
   // records scores and takes escalations to the user at a slice boundary.
-  // The goal.json sync and the slice note (see references/goal-sync.md and
-  // references/slice-loop.md) also run in the orchestrating session, not in
+  // The tracker calls and the slice note (see references/slice-loop.md) also run in the orchestrating session, not in
   // this script.
 }

@@ -60,6 +60,10 @@ Resulting layout:
 {doc_root}/options/<name>/      # options report, one HTML file
 ```
 
+## Workflow state
+
+Design mode writes gate values, the program stage, and the epic branch only through the tracker script. [shared/tracker-usage.md](../../../../shared/tracker-usage.md) lists every operation and its arguments. Design mode names the calls in `references/design-mode.md`.
+
 ## Mode Workflows
 
 ### Design Mode
@@ -101,10 +105,12 @@ that join here.
    problem. **Report what you searched and how many designs exist.**
    Never give a bare "none found". If the tree is empty, say so, and say
    this is the first design. If you searched N designs and none match,
-   say so. On a hit, show the match and its `goal.stage`. Let the
-   engineer choose with `AskUserQuestion`: resume it, supersede it, or
-   proceed because it is genuinely different. A superseded design gets
-   `stage: "superseded"`, and a pointer to the new name.
+   say so. On a hit, show the match and its stage, read with
+   `tracker.py list-programs`. Let the engineer choose with
+   `AskUserQuestion`: resume it, supersede it, or proceed because it is
+   genuinely different. For a superseded design, run
+   `tracker.py set-program-stage <old name> superseded`, and add a pointer
+   to the new name.
 
 4. **Stage 1 — Ground.** **Auto-baseline check.** If
    `<bundle-dir>/data/story.json` or `<bundle-dir>/inventory.yaml` is
@@ -198,138 +204,30 @@ that join here.
 
 8. **Stage 5 — Draft.** Write the assessment first (`stage: "design"`,
    every finding `kind: "prediction"`). Follow
-   `references/design-mode.md` §8. Show `intent` and `assessment` to the
-   engineer before you write them to disk.
+   `references/design-mode.md` §8 and §9. Show `intent` and `assessment` to the
+   engineer before you write them to disk. Every prose field obeys
+   `${CLAUDE_PLUGIN_ROOT}/shared/prose-budget.md`. Run `prose_budget.py check` on each JSON file.
 
-   Every prose field obeys `${CLAUDE_PLUGIN_ROOT}/shared/prose-budget.md`. You may
-   draft the thirty-second voice script first. Then write each field by the writing rules there. Run
-   `prose_budget.py check` on `goal.json`, `intent.json`, and `assessment.json`, and fix every
-   ceiling line. A cap is soft, so keep a point rather than cut it.
+   Write the five artifacts as `references/design-mode.md` §9 says. Then:
 
-   Then write five artifacts. Run each prose pass through
-   `Skill("architect:ste-writing")` in flavored mode. If that
-   call gives `Unknown skill`, read
-   `${CLAUDE_PLUGIN_ROOT}/shared/skills/ste-writing/SKILL.md` directly and obey
-   that file instead. Use strict mode for ADR procedural text: the
-   constraint introduced, and the boundary rules. The plugin ships no
-   hooks, so "automatic" means this section instructs the step.
-
-   1. **ADR.** Write `docs/architecture/adr/ADR-NNNN-<slug>.md` from
-      `references/templates/adr-template.md`. Set `state: decided` and
-      `source_pr: null`. Copy `alternatives` from `intent`. Then run:
-      ```bash
-      uv run "${CLAUDE_PLUGIN_ROOT}/shared/build_index.py"
-      ```
-      Never write `data/adrs.json` by hand.
-
-   2. **Diagrams.** The orchestrating Claude does **not** write the
-      `.mmd` files itself. Spawn one subagent. Its prompt must:
-      - tell it to invoke `Skill("architect:mermaid")` first.
-        If that call gives `Unknown skill`, tell it to read
-        `${CLAUDE_PLUGIN_ROOT}/shared/skills/mermaid/SKILL.md` directly, and
-        obey that file instead. The skill resolves by name only in a
-        session that has an installed plugin version containing it. A
-        session that runs from a development checkout, or from an
-        installed version older than the skill, does not find it. The
-        path always resolves, because `mermaid` is a shared skill, and
-        the `shared` symlink is dereferenced into the plugin's own cache
-        at install time. Outside Claude Code (an OMP or pi session), the
-        skill lives at the repo's `.agents/skills/mermaid/` instead, and
-        the consumer session reads it from there.
-
-      - then tell it to read
-        `${CLAUDE_PLUGIN_ROOT}/shared/skills/mermaid/references/diagram-mode.md`
-        (`.agents/skills/mermaid/references/diagram-mode.md` in a repo
-        that carries the copied skill).
-        This file lives in the mermaid skill because both this pillar and
-        odyssey need it, and mermaid is already vendored into every
-        plugin per ADR-0017.
-
-      - hand it the grounding inputs: this design's `intent`, the ADR
-        draft, and `<bundle-dir>/inventory.yaml`. Ground each diagram in
-        the proposal, not a diff, because there is no PR number yet.
-
-      - state the three output paths and the diagram type each one
-        needs: `docs/architecture/designs/<name>/diagrams/level-1.mmd`
-        (`C4Container`),
-        `docs/architecture/designs/<name>/diagrams/level-2.mmd`
-        (`sequenceDiagram`), and
-        `docs/architecture/designs/<name>/diagrams/level-3.mmd`
-        (`classDiagram`). Level 4 has no diagram.
-
-      - require the subagent to return only the paths it wrote.
-
-      Do not write `data/diagrams/pr{N}-*.mmd`. Do not run
-      `build_diagrams.py`, because that script keys on a PR number. If
-      validation of a source file fails, send the failure back to the
-      **same** subagent to fix it. Do not hand-patch the `.mmd` files
-      yourself.
-
-   3. **Envisioned pull request.** Write
-      `docs/architecture/designs/<name>/pr-draft.md` from
-      the odyssey skill's `references/pr-description-template.md`.
-
-   4. **Narrative.** Write `docs/architecture/designs/<name>/narrative.json`.
-      The viewer renders it as the design's three levels: `intent`
-      (`tagline`, `narration`), `problem_solution` (`problem`, `solution`,
-      `narration`, `beats[]`, `alternatives[]`), and `architecture`
-      (`narration`, `beats[]`). Each `beats[]` entry carries a `kind` and
-      a `text`. Ground every field in `intent` and the ADR draft. Do not
-      invent content the interview and challenge stages did not produce.
-      A design carries no `file_changes` level. That level exists only on
-      a pull request, which has a real diff to summarize. A design has no
-      diff yet, so the viewer's `DESIGN_N_LEVELS` caps a design at three
-      levels and never renders a fourth.
-
-   5. **Intent, assessment, and goal.** Write `intent.json`,
-      `assessment.json` (`stage: "design"`), and `goal.json` under
-      `docs/architecture/designs/<name>/`. Then run:
-      ```bash
-      uv run "${CLAUDE_PLUGIN_ROOT}/shared/build_index.py"
-      ```
-
-   6. **Start the viewer.** The design just changed what the bundle shows.
-      Invoke `Skill("cobuilder-artifacts", args="view")` so the engineer
-      can see the draft rendered before stage 6's review round, rather than
-      starting the server only when asked. If a server is already running
-      for this hub, view mode reuses it (see its Step 8) — this never
-      starts a second one.
-
-      Then follow Present for review in
+   6. **Start the viewer.** Run `uv run "${CLAUDE_PLUGIN_ROOT}/shared/build_index.py"`,
+      then invoke `Skill("cobuilder-artifacts", args="view")`. View mode
+      reuses a running server. Follow Present for review in
       `Skill("cobuilder-artifacts")` with the route `#/<work>/intent`, and
       give the engineer the link.
 
 9. **Stage 6 — Review routing.** Follow `references/design-mode.md` §10.
-   The engineer reads the draft and answers in the session. Material
-   feedback returns to stage 3. Cosmetic feedback returns to stage 5.
-   Wording, diagram layout, and ADR order are cosmetic. **State the
-   classification. Let the engineer overrule it.**
-
+   Material feedback returns to stage 3. Cosmetic feedback returns to stage 5.
    Each round, follow Present for review in `Skill("cobuilder-artifacts")`
-   with the route `#/<work>/intent` before you ask about the draft. Give the
-   engineer the link.
+   with the route `#/<work>/intent` before you ask about the draft. Detect
+   churn: two rounds with no material change mean the loop circles, so name
+   the disagreement and ask the engineer to decide.
+   **State the classification. Let the engineer overrule it.**
 
-   Detect churn. Each round, hash the ADR draft plus the option set. Two
-   consecutive rounds with no material change mean the loop circles. Say
-   so, name the unresolved disagreement, and ask the engineer to decide.
-   Do not run a third unchanged round. Re-read `goal.json` at the top of
-   every round, and restate the outcome. `goal.limits` defaults to warn
-   after three rounds, and it cuts off at six. Do not ask for a budget.
-
-10. **Stage 7 — Branch.** Unreachable under `--non-interactive`, because
-    nobody is there to confirm. Ask **one question only**, with
-    `AskUserQuestion`: is this one pull request or several? If several,
-    capture the epic slugs the engineer names. **Do not decompose the
-    work.** Decomposition is implement G1 work.
-
-    Then confirm the first branch name with `AskUserQuestion`. Create the
-    **first local branch only**:
-    - One epic: `design/<name>`
-
-    - Several epics: `design/<name>/<first-epic-slug>`
-
-    Record it in `goal.json.epics[].branch`. No push. No `gh pr create`.
-    No other remote action.
+10. **Stage 7 — Branch.** Follow `references/design-mode.md` §11. It is
+    unreachable under `--non-interactive`, because nobody is there to
+    confirm. Create the **first local branch only**, with no push and no
+    `gh pr create`.
 
 **Output:** A named directory,
 `docs/architecture/designs/<name>/`, holding `goal.json`, `intent.json`,
@@ -508,17 +406,7 @@ state the absence in the run's output. This mode writes no glossary.
 
 4. Record any boundary violation found during verification, such as inverted imports, schema leakage, or term overloading. Add it to the canvas as a `forbidden_dependencies` entry with a `why`, and flag it as an ADR candidate. Surfacing smells is a primary output, not a side effect.
 5. Update `{doc_root}/INVENTORY.md` (doc status, findings).
-6. Rebuild the self-bundle projection and start the viewer, so the new
-   context shows up:
-   ```bash
-   uv run "${CLAUDE_PLUGIN_ROOT}/shared/build_index.py"
-   ```
-   Then `Skill("cobuilder-artifacts", args="view")`. Reuses an
-   already-running server for this hub; never starts a second one.
-
-   Before you ask the engineer about the record, follow Present for review
-   in `Skill("cobuilder-artifacts")`. Use the page of the record, or
-   `#/<work>/intent`. Give the engineer the link.
+6. Rebuild the bundle and start the viewer, so the new context shows up. Follow step 8 of decisions mode, including Present for review.
 
 **Vocabulary check:** When `DDD-VOCABULARY.md` exists at the repo root,
 load it where the mode names districts or terms. For a foreign target
@@ -542,9 +430,7 @@ glossary.
 4. Run that test, inside the repo.
 5. Converge on a root cause, or re-diverge on the surviving hypotheses if the test does not resolve it.
 
-**Vocabulary check:** When `DDD-VOCABULARY.md` exists at the repo root,
-load it where the mode names districts or terms. When it is absent,
-state the absence in the run's output. This mode writes no glossary.
+**Vocabulary check:** Same as decisions mode. This mode writes no glossary.
 
 **Output:** A root-cause statement, the evidence, the specific discriminating observation that confirmed it, a recommended fix, and a regression test that would have caught it. This mode delivers diagnosis and a recommended fix, not the fix itself. It writes no report directory.
 

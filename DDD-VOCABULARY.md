@@ -44,6 +44,46 @@ _Avoid_: docs/ (authored source, never derived), story.json (one file inside the
 **Vendoring** (`cobuilder-packaging`):
 The mechanism, decided in ADR-0017, that shares code between the six plugins: a `shared/` directory at the marketplace root, symlinked into each plugin's own root and dereferenced into that plugin's install cache.
 
+<a id="envelope"></a>
+**Envelope** (`cobuilder-packaging`):
+The `envelope` map of a tracker record, versioned by `v` and sorted by `kind`: `program`, `epic`, `slice`, or `pr`. It holds scalars, paths, and lists of paths only, and the beads adapter stores it as `metadata.cb` on an issue (ADR-0031).
+_Avoid_: metadata blob (the envelope is one named, versioned key, and it holds no prose)
+
+<a id="pull-request-issue"></a>
+**Pull request issue** (`cobuilder-packaging`):
+In the beads adapter, an issue (type `task`, `cb.kind` = `pr`, `external_ref` `gh-<n>`) that blocks each epic it holds. It closes on merge, and GitHub stays the source of every other pull request fact (ADR-0029).
+_Avoid_: merge gate (the pull request issue replaces it), gate issue (no `gate` type exists), slice (a slice is also a `task` issue, and `cb.kind` tells them apart)
+
+<a id="gate-field"></a>
+**Gate field** (`cobuilder-packaging`):
+A flat scalar in the envelope of a program record: `gate1`, `gate2`, `gate2b`, `gate3`, `gate4`, `gate4a`, `gate4b`, or `gate4c`. It holds an approval date or `n/a`, and a `gate<n>_view` field holds the view route.
+_Avoid_: gate issue (the approval is a field on the program issue, and no gate issue exists)
+
+<a id="tracker-port"></a>
+**Tracker port** (`cobuilder-packaging`):
+The interface in `shared/tracker_port/` through which every reader and writer of workflow state talks to the task system (ADR-0040). It reports `capabilities()`, and no caller names a tracker.
+_Avoid_: storage layer (ADR-0031 used it for beads, and beads is now one adapter behind the port), bridge (a `bd jira sync` command does not push the envelope)
+
+<a id="tracker-record"></a>
+**Tracker record** (`cobuilder-packaging`):
+The neutral record of the port: `id`, `kind`, `parent`, `blocked_by`, `lifecycle`, `assignee` (a GitHub login), `envelope`, and `external_ref`. An adapter maps it to a tracker's own record.
+_Avoid_: issue (an issue is a beads, Linear, or Jira record, and the tracker record is not tied to one tracker)
+
+<a id="tracker-adapter"></a>
+**Tracker adapter** (`cobuilder-packaging`):
+One implementation of the tracker port for one tracker: `beads` comes first, `files` reads today's files, and `fake` keeps records in memory. The `linear` and `jira` adapters are later programs.
+_Avoid_: connector (a loose word for any tool that moves data, and an adapter must pass the contract test)
+
+<a id="projector"></a>
+**Projector** (`cobuilder-packaging`):
+The one shared function that turns a list of tracker records into the entities, the joins, and `data/index.json`. It replaces the state parsing spread over the readers.
+_Avoid_: reader (a reader gets records from the port and feeds the projector, and the projector holds the projection only)
+
+<a id="tracker-cli"></a>
+**Tracker CLI** (`cobuilder-packaging`):
+The one command, `shared/tracker.py`, that an agent calls to read or write workflow state (ADR-0040). It has one subcommand for each port operation, prints JSON on stdout, and exits 2 when no adapter is configured.
+_Avoid_: bd, gh (the own CLI of a tracker, which only an adapter calls), the `bd` bridges (a different tool with its own sync)
+
 ## architect
 
 <a id="design"></a>
@@ -148,7 +188,7 @@ _Avoid_: bug
 
 <a id="epic"></a>
 **Epic** (`implement`):
-One unit inside a design's `goal.json.epics[]`, owned and decomposed by `implement`, mapped to zero or one pull request through `epics[].branch`. It is the join key between a design and a PR, not an ADR, a design, or a PR itself.
+One unit inside a design's `goal.json.epics[]`, owned and decomposed by `implement`. It is the join key between a design and a PR, and a pull request issue blocks each epic it holds until a human closes that issue.
 
 <a id="slice"></a>
 **Slice** (`implement`):

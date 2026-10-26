@@ -15,45 +15,32 @@
     "challenge_stage_run": false,
     "note": "Stages 2 through 7 are deliberately deferred. This design is a backlog entry, not an approved design. It carries no intent.json, narrative.json, assessment.json, or diagrams, and it must not be implemented until design mode runs to completion."
   },
-  "limits": { "warn_after_rounds": 3, "cutoff_rounds": 6 },
+  "limits": {
+    "warn_after_rounds": 3,
+    "cutoff_rounds": 6
+  },
   "epics": [
     {
       "id": "E1",
-      "branch": null,
-      "pr": null,
-      "state": "planned",
       "note": "One language record, and it is the tracer bullet. docs/architecture/language.md becomes the single source of truth for a term, its owning context, its meaning, and what it must not be confused with. It is seeded from CLAUDE.md's existing Vocabulary table and from cobuilder-packaging's canvas section 3. shared/build_index.py projects it into the record index, so the viewer can render it. This epic is independently shippable and does not depend on E2 through E5."
     },
     {
       "id": "E2",
-      "branch": null,
-      "pr": null,
-      "state": "planned",
       "note": "Design mode gains a language stage. A design that introduces a new term must declare it or reuse an existing entry from the language record. A collision with an existing term becomes a challenge-stage finding. This fits design mode's existing no-citation-no-challenge rule, because the language record gives the challenge stage something concrete to cite."
     },
     {
       "id": "E3",
-      "branch": null,
-      "pr": null,
-      "state": "planned",
       "note": "The mechanical consumer, in cobuilder-implement. A Gate 4b technical solution design that names a concept absent from the language record fails the gate. This epic is what stops the whole program from rotting the way canvas section 3 did. E1 and E2 without E3 are documentation waiting to go stale."
     },
     {
       "id": "E4",
-      "branch": null,
-      "pr": null,
-      "state": "planned",
       "note": "A verifier that exits non-zero. A script finds a term used in a design or an ADR and absent from the language record, and fails the check. It is modeled on plugins/cobuilder-implement/scripts/verify_gate.py, which exits non-zero on any failed Gate 4 sub-step. The honest open question is that deciding what counts as a term mechanically, rather than by judgement, is the hard part of this epic and may need its own exploration."
     },
     {
       "id": "E5",
-      "branch": null,
-      "pr": null,
-      "state": "planned",
       "note": "Repair the existing drift. Refresh cobuilder-packaging's canvas section 3 and its boundary.yaml public_interface against the shipped five-plugin tree, delete the now-false homonym comment, and reconcile the two glossaries into E1's record."
     }
   ],
-  "stage": "backlog",
   "supersedes": null,
   "rounds": []
 }

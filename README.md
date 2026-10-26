@@ -27,21 +27,20 @@ Everything runs in your own Claude Code session, against your own checkout. Your
    /plugin marketplace add bjornslib/cobuilder-plugin
    ```
 
-2. Install every plugin at once.
+2. Install every plugin at once. Then restart the session, or enable the plugins from `/plugin`.
 
    ```
    /plugin install cobuilder-full-lifecycle@cobuilder-plugin
    ```
 
-3. Restart the session, or enable the plugins from `/plugin`.
-4. Open the repo you want to work on, and run the setup once.
+3. Open the repo you want to work on, and run the setup once.
 
    ```
    /cobuilder-full-lifecycle:install
    ```
 
-   It installs habit-hooks and its detectors, and proves the coach. It checks for `DDD-VOCABULARY.md`. It adds the Hindsight allow rules to your user settings. It asks before each change.
-5. Run a command from the table above.
+   It installs habit-hooks and its detectors, and proves the coach. It checks for `DDD-VOCABULARY.md`. It adds the Hindsight allow rules to your user settings. It also sets up the tracker. It asks for `beads` or `files`, creates `.cobuilder/tracker.yaml`, runs `prepare`, and shows a backfill dry run before it writes. For an existing beads tracker, it takes a snapshot and shows a dry run before each of these steps: `migrate-mapping` for an old mapping, `repair-status` for stale epics and slices, and `strip_goal_stage.py` for the old `stage` in `goal.json`. For the `beads` adapter, install `bd` first (see Prerequisites). It asks before each change.
+4. Run a command from the table above.
 
 To start with one job, install one plugin. For example, `/plugin install architect@cobuilder-plugin` gives you the design and review modes.
 
@@ -69,8 +68,29 @@ To start with one job, install one plugin. For example, `/plugin install archite
 | Hindsight allow rules | The build loop's slice note, and the opt-in `cobuilder-memory` consult tool | A plugin cannot ship allow rules. `/cobuilder-full-lifecycle:install` finds the missing ones, asks once, and adds them to `~/.claude/settings.json` |
 | The `Artifact` tool | `/artifact:publish` | Needs a `/login` session on a paid plan |
 | The `tldraw-offline` skill and the tldraw Desktop app | `/artifact:canvas` | Install the skill yourself. The command stops with a message if either is missing. The diagram images also need `npx` and Google Chrome |
+| `bd` CLI (Beads), version 1.3.0 or later | Every state write, with the `beads` adapter | Install it system wide, not into the project. Check it with `bd --version`. See the install commands below the table |
+
+Install `bd` with one of these commands:
+
+- macOS and Linux, with Homebrew: `brew install beads`
+- Any OS, with npm: `npm install -g @beads/bd`
+- macOS, Linux, and FreeBSD, with a script: `curl -fsSL https://raw.githubusercontent.com/gastownhall/beads/main/scripts/install.sh | bash`
+- Windows, in PowerShell: `irm https://raw.githubusercontent.com/gastownhall/beads/main/install.ps1 | iex`
+
+Do not use `go install` without CGO. That build supports only server mode.
 
 The `architect`, `implement`, and `artifact view` commands need no API key. The prerequisite check runs first on every `pr` command, so a missing key stops the run before it spends anything.
+
+### Workflow state and the tracker
+
+Workflow state lives in a tracker, not in plan files or `goal.json`. State means the program stage and gates, the epic state and branch, the slice claim, the attempts, the score, and the pull request records. The `00-status.md` and `04-slices.md` state lines are generated. Do not edit them by hand. `goal.json` epics no longer hold `branch`, `pr`, or `state`.
+
+`shared/tracker.py` is the one command for all of it. `.cobuilder/tracker.yaml` picks the adapter. Without that file, every state write exits with code 2. The `implement` plugin also ships a `SessionStart` hook that reminds the agent to use the tracker. State syncs between machines through the git remote, under `refs/dolt/data`. It adds no branch.
+In beads, a program is a native `feature`. A pull request record is a `milestone` that `tracks` its epics. Slices are ordered, and native ready (`claim-next`) picks the next slice. Records carry label `cb`, and `external_ref` finds each record. Run `migrate-mapping` for an old tracker.
+
+The tracker also holds the stage of each design. `/architect:design` creates the program record at stage `backlog`, and the stage moves through `set-program-stage`. The index reads the stage from the tracker, and it uses `goal.json` only for an old design. The viewer Work board shows each design with its epics, its slices, the next ready slice, and its pull request records. `/architect:design` and `/implement:start` run `tracker.py doctor` first, and they stop on a legacy mapping or an unreadable tracker. Run `repair-status` to close the stale epics and slices of finished designs. Run `shared/strip_goal_stage.py` to remove the old `stage` from `goal.json` after the tracker holds it.
+
+For the details, read `shared/tracker-usage.md`, ADR-0031, ADR-0040, and ADR-0041.
 
 ---
 
@@ -114,6 +134,12 @@ Check a plan at any time:
 ```
 uv run plugins/implement/scripts/verify_gate.py --plan docs/plans/<slug>
 ```
+
+#### Sync modes, skipping slices, and program state
+
+Workflow state moves through `shared/tracker.py`, never by hand. The file `.cobuilder/tracker.yaml` names the adapter and has a `sync` key: `async` (the default for beads), `write`, or `off`. The install command writes `sync: async` for beads, and it writes no `sync` key for files. In `async` mode, a write sets a dirty flag and starts a short-lived background worker, `tracker.py sync-worker`. The flag, lock, status, and log files sit in `.cobuilder/` as `sync-dirty`, `sync-lock`, `sync-status.json`, and `sync-worker.log`. The line `sync-*` in `.cobuilder/.gitignore` keeps them out of git. `tracker.py sync` always runs in the foreground. `tracker.py doctor` shows `sync`, `sync_pending`, and `last_sync`.
+
+When an engineer decides to move on from a stuck slice, the build loop runs `tracker.py skip-slice <id> --reason <text> [--outcome skipped|escalated]`. The command closes the slice with that outcome, so later slices unblock. A program closes in beads when its stage is `implemented` or `superseded`, and it is in progress while any of its epics is. Two epic headers with the same id make a plan a conflict.
 
 
 ### Review: `/pr:generate`, `/pr:review`, and the viewer
@@ -208,7 +234,7 @@ Run it when a test, a build, or a feature fails and the cause is unclear. It rep
 | Location | Holds | Written by |
 |---|---|---|
 | `docs/architecture/{adr,designs,contexts,review,options}/` | Authored records | Architect modes |
-| `docs/plans/<slug>/` | Gates, slice plan, status, rubrics | `implement` |
+| `docs/plans/<slug>/` | Gates, slice plan, rubrics, and generated status lines. State itself lives in the tracker | `implement` |
 | `docs/pull-requests/` | PR descriptions and assessments | `pr:generate` |
 | `.cobuilder-architect/self/` | The bundle: derived data, art, audio, viewer copy | `pr` and `artifact` |
 | `DDD-VOCABULARY.md` | The one glossary | Design mode |
@@ -260,20 +286,22 @@ The viewer source lives in `plugins/artifact/viewer/src/`. It uses React, TypeSc
 ```
 .claude-plugin/marketplace.json    the one marketplace manifest
 shared/                            code shared by every plugin, vendored as plugins/<name>/shared
+  tracker.py                       the one command for workflow state
+  tracker_port/                    the tracker port and its adapters: beads, files, fake
 plugins/
   architect/                       design, review, maintenance, options, debug, and the corpus
   pr/                              generate, review, baseline, and the story scripts
   artifact/                        view, publish, and the viewer
-  implement/                       start, debug, the coach check, the install hand-over, and the slice agents and hook
+  implement/                       start, debug, the coach check, the install hand-over, and the slice agents and hooks
   cobuilder-full-lifecycle/        the umbrella plugin and the install command
   cobuilder-memory/                the opt-in memory mod: a TypeScript hooks module and its tests
 ```
 
-Only `implement` ships agents. Only `implement` and the `cobuilder-memory` mod ship hooks (ADR-0025, ADR-0039). No plugin ships an MCP server. The commands in each plugin are thin. The skills hold the procedures.
+Only `implement` ships agents. Only `implement` and the `cobuilder-memory` mod ship hooks (ADR-0025, ADR-0039). The `implement` plugin ships four hook scripts: the `PostToolUse` habit coach, the `SessionStart` tracker reminder (ADR-0041), the `Stop` sync check, and the `SessionEnd` sync flush (ADR-0042). No plugin ships an MCP server. The commands in each plugin are thin. The skills hold the procedures.
 
 ### Use the skills in another harness
 
-`scripts/export-agent-skills.sh` copies the plugins' skills into another tool's skill folder. It stamps each copy with its source version and commit, so you can see a stale copy. It refuses to overwrite a file that lacks the stamp.
+`scripts/export-agent-skills.sh` copies the plugins' skills into another tool's skill folder. It stamps each copy with its source version and commit, so you can see a stale copy. It refuses to overwrite a file that lacks the stamp. It also copies `shared/` to a `shared/` folder beside the skills. It rewrites each `${CLAUDE_PLUGIN_ROOT}/shared/` path in the copies to a relative path, so the paths resolve outside Claude Code. Put the `shared/` folder and the skills in the same target folder.
 
 ```
 scripts/export-agent-skills.sh --target /path/to/other-repo/.agents/skills --plugin architect

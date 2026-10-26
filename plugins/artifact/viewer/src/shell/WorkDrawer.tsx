@@ -46,13 +46,14 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown, GitMerge, X } from "lucide-react";
+import { ChevronDown, X } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import { Drawer } from "vaul";
 
 import { StageBadge } from "@/components/work/StageBadge";
 import { entitiesOf } from "@/data/bundle";
 import type { DesignRecord, DesignRecords } from "@/data/bundle";
+import { PrChip, nextReadyText } from "@/components/work/PrChip";
 import { resolvedJoinsOf } from "@/data/joins";
 import type { DesignRow, EpicEntity, RecordIndex } from "@/data/types";
 import { cn } from "@/lib/utils";
@@ -155,7 +156,7 @@ function DetailPane({
   onLeave: () => void;
   onClose: () => void;
 }) {
-  const { design, epics, done, pullRequests } = row;
+  const { design, epics, done, trackerPullRequests } = row;
   const record = records?.[design.id];
 
   return (
@@ -179,7 +180,7 @@ function DetailPane({
 
       <div className="flex min-w-0 flex-col gap-2">
         <p className="m-0 font-mono text-[12px] tracking-[0.08em] text-ink-faint uppercase">
-          Epics · {done} of {epics.length} done
+          Epics · {done} of {epics.length} closed
         </p>
         {epics.length === 0 ? (
           <p className="m-0 font-serif text-[14.5px] text-ink-dim italic">
@@ -196,8 +197,7 @@ function DetailPane({
                   {epic.epic_id}
                 </span>
                 {epic.pr !== null ? (
-                  <span className="inline-flex shrink-0 items-center gap-1 font-mono text-[12px] text-ink-faint">
-                    <GitMerge className="size-3" aria-hidden="true" />
+                  <span className="shrink-0 font-mono text-[12px] text-ink-faint">
                     #{epic.pr}
                   </span>
                 ) : null}
@@ -210,14 +210,16 @@ function DetailPane({
         )}
       </div>
 
-      {pullRequests.length > 0 ? (
+      {row.trackerRead && trackerPullRequests.length > 0 ? (
         <div className="flex min-w-0 flex-col gap-2">
           <p className="m-0 font-mono text-[12px] tracking-[0.08em] text-ink-faint uppercase">
             Pull requests
           </p>
-          <p className="m-0 font-mono text-[13.5px] text-ink-dim">
-            {pullRequests.map((id) => `#${id}`).join(", ")} merged
-          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {trackerPullRequests.map((pr) => (
+              <PrChip key={pr.ref} pr={pr} />
+            ))}
+          </div>
         </div>
       ) : null}
 
@@ -247,7 +249,7 @@ function DetailPane({
 
 /**
  * One deck row: the design's name with its search hit marked, the epic meter,
- * and the merged pull requests it carries. One line, because the deck reads
+ * the slice count, and the pull request records that the tracker holds. One line, because the deck reads
  * deep.
  */
 function DeckRow({
@@ -265,7 +267,8 @@ function DeckRow({
 }) {
   const reduce = useReducedMotion();
   const rowRef = useRef<HTMLButtonElement>(null);
-  const { design, epics, done, pullRequests } = row;
+  const { design, epics, done, slicesDone, slicesTotal, trackerPullRequests } = row;
+  const next = nextReadyText(row);
   const parts = highlight(design.name, needle);
   const pct = epics.length === 0 ? null : Math.round((done / epics.length) * 100);
 
@@ -329,17 +332,27 @@ function DeckRow({
       {pct !== null ? (
         <span
           className="ml-auto shrink-0 pl-2.5 font-mono text-[11.5px] text-ink-faint tabular-nums"
-          title={`${done} of ${epics.length} epics done`}
+          title={`${done} of ${epics.length} epics closed`}
         >
           {done}/{epics.length}
         </span>
       ) : null}
-      {pullRequests.length > 0 ? (
-        <span className="inline-flex shrink-0 items-center gap-1 font-mono text-[11.5px] text-good">
-          <GitMerge className="size-3.5" aria-hidden="true" />
-          {pullRequests.map((id) => `#${id}`).join(" ")}
+      {slicesTotal > 0 ? (
+        <span
+          className="shrink-0 font-mono text-[11.5px] text-ink-faint tabular-nums"
+          title={`${slicesDone} of ${slicesTotal} slices closed`}
+        >
+          {slicesDone}/{slicesTotal} slices
         </span>
       ) : null}
+      {next !== null ? (
+        <span className="min-w-0 max-w-[28ch] shrink truncate text-[11.5px] text-ink-dim" title={next}>
+          {next}
+        </span>
+      ) : null}
+      {row.trackerRead
+        ? trackerPullRequests.map((pr) => <PrChip key={pr.ref} pr={pr} />)
+        : null}
     </motion.button>
   );
 }
@@ -408,6 +421,11 @@ function DrawerBody({
      sanction: the join is the data layer's answer, and the drawer never
      resolves one of its own. */
   const resolvedJoins = useMemo(() => resolvedJoinsOf(index), [index]);
+  const trackerNote = !resolvedJoins.trackerRead()
+    ? resolvedJoins.trackerAdapter() === "files"
+      ? "Next ready needs a tracker."
+      : "The tracker was not read."
+    : null;
 
   const needleText = needle.trim().toLowerCase();
 
@@ -814,9 +832,12 @@ function DrawerBody({
           <b className="text-foreground tabular-nums">{heldOut.decisions}</b> decision
           records (ADR) and{" "}
           <b className="text-foreground tabular-nums">{heldOut.openPulls}</b> unfinished
-          pull requests. A merged pull request reads inside its design, and the pane
+          pull requests. A card shows the pull requests that the tracker holds. The pane
           follows the walk: a row's second press drops the deck back.
         </p>
+        {trackerNote !== null ? (
+          <p className="m-0 font-mono text-[12px] leading-[1.5] text-ink-faint">{trackerNote}</p>
+        ) : null}
       </footer>
 
       <Drawer.Description className="sr-only">

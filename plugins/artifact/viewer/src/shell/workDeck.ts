@@ -57,7 +57,7 @@ export const LANES: Lane[] = [
     key: "shipped",
     label: "Shipped",
     stages: ["implemented"],
-    blurb: "Design mode recorded the design as implemented.",
+    blurb: "The tracker holds the stage implemented.",
     empty: "Nothing has shipped.",
   },
   {

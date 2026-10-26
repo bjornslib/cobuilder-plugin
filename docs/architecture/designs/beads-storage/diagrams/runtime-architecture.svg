@@ -1,0 +1,317 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1850 800" font-family="ui-monospace, Menlo, Monaco, monospace" font-size="12" aria-labelledby="doc-title">
+  <title id="doc-title">Runtime architecture of the beads-storage design: sessions, plugin scripts, the tracker CLI, the tracker port and projector in shared, the beads, files, fake, and later adapters, the bd CLI, the Dolt-in-git central store, file sources, the static index, and GitHub</title>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#3D3D3A"/></marker>
+  </defs>
+
+  <g id="bound-client">
+    <title>client boundary: human roles, sessions, and the viewer</title>
+    <rect x="20" y="130" width="190" height="640" fill="none" stroke="#3D3D3A" stroke-width="1.5" rx="8"/>
+    <text x="32" y="150" fill="#87867F">client</text>
+
+    <g id="n-engineer">
+      <title>Engineer: approves gates and merges the pull request</title>
+      <rect x="35" y="170" width="160" height="50" rx="10" fill="#F0EEE6" stroke="#3D3D3A" stroke-width="1.5"/>
+      <text x="47" y="190" fill="#141413">Engineer</text>
+      <text x="47" y="204" fill="#87867F" font-size="10">approves, merges</text>
+    </g>
+
+    <g id="n-sessa">
+      <title>CoBuilder session on clone A: architect and implement plugins</title>
+      <rect x="35" y="260" width="160" height="64" rx="10" fill="#F0EEE6" stroke="#3D3D3A" stroke-width="1.5"/>
+      <text x="47" y="280" fill="#141413">CoBuilder session</text>
+      <text x="47" y="294" fill="#87867F" font-size="10">clone A</text>
+    </g>
+
+    <g id="n-sessb">
+      <title>Second clone: a cloud or team session that runs bd sync</title>
+      <rect x="35" y="370" width="160" height="64" rx="10" fill="#F0EEE6" stroke="#3D3D3A" stroke-width="1.5"/>
+      <text x="47" y="390" fill="#141413">Second clone</text>
+      <text x="47" y="404" fill="#87867F" font-size="10">cloud or team</text>
+    </g>
+
+    <g id="n-viewer">
+      <title>Viewer: static single-file HTML, unchanged</title>
+      <rect x="35" y="690" width="160" height="56" rx="10" fill="#F0EEE6" stroke="#3D3D3A" stroke-width="1.5"/>
+      <text x="47" y="710" fill="#141413">Viewer</text>
+      <text x="47" y="724" fill="#87867F" font-size="10">unchanged</text>
+    </g>
+
+  </g>
+
+  <g id="bound-api">
+    <title>api boundary: plugin scripts of implement, architect, and artifact</title>
+    <rect x="270" y="130" width="210" height="640" fill="none" stroke="#3D3D3A" stroke-width="1.5" rx="8"/>
+    <text x="282" y="150" fill="#87867F">api: plugin scripts</text>
+
+    <g id="n-writers">
+      <title>State writers: implement and architect steps that call tracker.py to write state</title>
+      <rect x="285" y="170" width="180" height="70" rx="10" fill="#E3DACC" stroke="#3D3D3A" stroke-width="1.5"/>
+      <text x="297" y="190" fill="#141413">State writers</text>
+      <text x="297" y="204" fill="#87867F" font-size="10">call tracker.py</text>
+      <rect x="413" y="222" width="46" height="14" fill="none" stroke="#B04A3F" stroke-width="1" rx="4"/>
+      <text x="418" y="232" fill="#B04A3F" font-size="9">pending</text>
+    </g>
+
+    <g id="n-install">
+      <title>implement:start and install: ask consent, then init the tracker</title>
+      <rect x="285" y="270" width="180" height="70" rx="10" fill="#E3DACC" stroke="#3D3D3A" stroke-width="1.5"/>
+      <text x="297" y="290" fill="#141413">start + install</text>
+      <text x="297" y="304" fill="#87867F" font-size="10">init the tracker</text>
+      <rect x="413" y="322" width="46" height="14" fill="none" stroke="#B04A3F" stroke-width="1" rx="4"/>
+      <text x="418" y="332" fill="#B04A3F" font-size="9">pending</text>
+    </g>
+
+    <g id="n-readers">
+      <title>build_builds_view.py and verify_gate.py: read through the port</title>
+      <rect x="285" y="370" width="180" height="70" rx="10" fill="#E3DACC" stroke="#3D3D3A" stroke-width="1.5"/>
+      <text x="297" y="390" fill="#141413">builds view + verify</text>
+      <text x="297" y="404" fill="#87867F" font-size="10">read via the port</text>
+      <rect x="413" y="422" width="46" height="14" fill="none" stroke="#B04A3F" stroke-width="1" rx="4"/>
+      <text x="418" y="432" fill="#B04A3F" font-size="9">pending</text>
+    </g>
+
+  </g>
+
+  <g id="bound-shared">
+    <title>shared boundary: shared/tracker.py, shared/tracker_port/, and the shared scripts</title>
+    <rect x="540" y="130" width="230" height="640" fill="none" stroke="#3D3D3A" stroke-width="1.5" rx="8"/>
+    <text x="552" y="150" fill="#87867F">shared</text>
+
+    <g id="n-cli">
+      <title>tracker.py CLI: the one command agents call, taught by shared/tracker-usage.md. JSON out, exit 2 with no adapter</title>
+      <rect x="555" y="170" width="200" height="64" rx="10" fill="#E3DACC" stroke="#3D3D3A" stroke-width="1.5"/>
+      <text x="567" y="190" fill="#141413">tracker.py CLI</text>
+      <text x="567" y="204" fill="#87867F" font-size="10">+ tracker-usage.md</text>
+      <rect x="703" y="216" width="46" height="14" fill="none" stroke="#B04A3F" stroke-width="1" rx="4"/>
+      <text x="708" y="226" fill="#B04A3F" font-size="9">pending</text>
+    </g>
+
+    <g id="n-port">
+      <title>TrackerPort and TrackerRecord in shared/tracker: sync, claim_slice, pull request operations, and capabilities()</title>
+      <rect x="555" y="264" width="200" height="80" rx="10" fill="#E3DACC" stroke="#3D3D3A" stroke-width="1.5"/>
+      <text x="567" y="284" fill="#141413">TrackerPort</text>
+      <text x="567" y="298" fill="#87867F" font-size="10">neutral record + operations</text>
+      <rect x="703" y="326" width="46" height="14" fill="none" stroke="#B04A3F" stroke-width="1" rx="4"/>
+      <text x="708" y="336" fill="#B04A3F" font-size="9">pending</text>
+    </g>
+
+    <g id="n-projector">
+      <title>Projector: turns records into entities, joins, and the index</title>
+      <rect x="555" y="374" width="200" height="64" rx="10" fill="#E3DACC" stroke="#3D3D3A" stroke-width="1.5"/>
+      <text x="567" y="394" fill="#141413">Projector</text>
+      <text x="567" y="408" fill="#87867F" font-size="10">records to index</text>
+      <rect x="703" y="420" width="46" height="14" fill="none" stroke="#B04A3F" stroke-width="1" rx="4"/>
+      <text x="708" y="430" fill="#B04A3F" font-size="9">pending</text>
+    </g>
+
+    <g id="n-buildindex">
+      <title>shared/build_index.py: reads through the port, writes the index</title>
+      <rect x="555" y="468" width="200" height="64" rx="10" fill="#E3DACC" stroke="#3D3D3A" stroke-width="1.5"/>
+      <text x="567" y="488" fill="#141413">build_index.py</text>
+      <text x="567" y="502" fill="#87867F" font-size="10">via port + projector</text>
+      <rect x="703" y="514" width="46" height="14" fill="none" stroke="#B04A3F" stroke-width="1" rx="4"/>
+      <text x="708" y="524" fill="#B04A3F" font-size="9">pending</text>
+    </g>
+
+    <g id="n-seed">
+      <title>seed-from-files: port operation that creates missing records by external_ref, create-only, after consent</title>
+      <rect x="555" y="562" width="200" height="64" rx="10" fill="#E3DACC" stroke="#3D3D3A" stroke-width="1.5"/>
+      <text x="567" y="582" fill="#141413">seed-from-files</text>
+      <text x="567" y="596" fill="#87867F" font-size="10">create-only, after consent</text>
+      <rect x="703" y="608" width="46" height="14" fill="none" stroke="#B04A3F" stroke-width="1" rx="4"/>
+      <text x="708" y="618" fill="#B04A3F" font-size="9">pending</text>
+    </g>
+
+    <g id="n-contract">
+      <title>Contract test: one suite that every adapter must pass</title>
+      <rect x="555" y="656" width="200" height="64" rx="3" fill="#E3DACC" stroke="#3D3D3A" stroke-width="1.2"/>
+      <text x="567" y="676" fill="#141413">Contract test</text>
+      <text x="567" y="690" fill="#87867F" font-size="10">one suite, all adapters</text>
+      <rect x="703" y="702" width="46" height="14" fill="none" stroke="#B04A3F" stroke-width="1" rx="4"/>
+      <text x="708" y="712" fill="#B04A3F" font-size="9">pending</text>
+    </g>
+
+  </g>
+
+  <g id="bound-adapters">
+    <title>adapters boundary: one adapter for each tracker</title>
+    <rect x="840" y="130" width="220" height="640" fill="none" stroke="#3D3D3A" stroke-width="1.5" rx="8"/>
+    <text x="852" y="150" fill="#87867F">adapters</text>
+
+    <g id="n-beads">
+      <title>beads adapter: maps records to issues and the metadata.cb envelope</title>
+      <rect x="855" y="170" width="190" height="70" rx="10" fill="#E3DACC" stroke="#3D3D3A" stroke-width="1.5"/>
+      <text x="867" y="190" fill="#141413">beads adapter</text>
+      <text x="867" y="204" fill="#87867F" font-size="10">first adapter</text>
+      <rect x="993" y="222" width="46" height="14" fill="none" stroke="#B04A3F" stroke-width="1" rx="4"/>
+      <text x="998" y="232" fill="#B04A3F" font-size="9">pending</text>
+    </g>
+
+    <g id="n-filesad">
+      <title>files adapter: reads today's files and refuses writes</title>
+      <rect x="855" y="280" width="190" height="64" rx="10" fill="#E3DACC" stroke="#3D3D3A" stroke-width="1.5"/>
+      <text x="867" y="300" fill="#141413">files adapter</text>
+      <text x="867" y="314" fill="#87867F" font-size="10">read only</text>
+      <rect x="993" y="326" width="46" height="14" fill="none" stroke="#B04A3F" stroke-width="1" rx="4"/>
+      <text x="998" y="336" fill="#B04A3F" font-size="9">pending</text>
+    </g>
+
+    <g id="n-fake">
+      <title>fake adapter: in memory, proves the seam</title>
+      <rect x="855" y="380" width="190" height="64" rx="10" fill="#E3DACC" stroke="#3D3D3A" stroke-width="1.5"/>
+      <text x="867" y="400" fill="#141413">fake adapter</text>
+      <text x="867" y="414" fill="#87867F" font-size="10">in memory</text>
+      <rect x="993" y="426" width="46" height="14" fill="none" stroke="#B04A3F" stroke-width="1" rx="4"/>
+      <text x="998" y="436" fill="#B04A3F" font-size="9">pending</text>
+    </g>
+
+    <g id="n-later">
+      <title>linear and jira adapters: later programs, not built here</title>
+      <rect x="855" y="560" width="190" height="70" rx="10" fill="#E3DACC" stroke="#3D3D3A" stroke-width="1.5"/>
+      <text x="867" y="580" fill="#141413">linear + jira adapters</text>
+      <text x="867" y="594" fill="#87867F" font-size="10">later programs</text>
+      <rect x="993" y="612" width="46" height="14" fill="none" stroke="#B04A3F" stroke-width="1" rx="4"/>
+      <text x="998" y="622" fill="#B04A3F" font-size="9">pending</text>
+    </g>
+
+  </g>
+
+  <g id="bound-infra">
+    <title>infra boundary: the bd binary</title>
+    <rect x="1140" y="130" width="190" height="640" fill="none" stroke="#3D3D3A" stroke-width="1.5" rx="8"/>
+    <text x="1152" y="150" fill="#87867F">infra: bd</text>
+
+    <g id="n-bd">
+      <title>bd 1.3.0 CLI: master of programs, epics, slices, and pull request issues</title>
+      <rect x="1155" y="170" width="160" height="70" rx="10" fill="#E3DACC" stroke="#3D3D3A" stroke-width="1.5"/>
+      <text x="1167" y="190" fill="#141413">bd 1.3.0 CLI</text>
+      <text x="1167" y="204" fill="#87867F" font-size="10">bd for beads writes</text>
+    </g>
+
+  </g>
+
+  <g id="bound-data">
+    <title>data boundary: tracker stores, file sources, and the static index</title>
+    <rect x="1410" y="130" width="200" height="640" fill="none" stroke="#3D3D3A" stroke-width="1.5" rx="8"/>
+    <text x="1422" y="150" fill="#87867F">data</text>
+
+    <g id="n-central">
+      <title>Central store: proposed Dolt-in-git, hidden ref refs/dolt/data, not verified</title>
+      <path d="M1425,178 a85.0,8 0 0 1 170,0 v44 a85.0,8 0 0 1 -170,0 z" fill="#E3DACC" stroke="#3D3D3A" stroke-width="1.5"/>
+      <path d="M1425,178 a85.0,8 0 0 0 170,0" fill="none" stroke="#3D3D3A" stroke-width="1"/>
+      <text x="1437" y="200" fill="#141413">Central store</text>
+      <text x="1437" y="214" fill="#87867F" font-size="10">proposed</text>
+      <rect x="1543" y="210" width="46" height="14" fill="none" stroke="#B04A3F" stroke-width="1" rx="4"/>
+      <text x="1548" y="220" fill="#B04A3F" font-size="9">pending</text>
+    </g>
+
+    <g id="n-local">
+      <title>Local .beads tracker: embedded Dolt, one per clone</title>
+      <path d="M1425,268 a85.0,8 0 0 1 170,0 v44 a85.0,8 0 0 1 -170,0 z" fill="#E3DACC" stroke="#3D3D3A" stroke-width="1.5"/>
+      <path d="M1425,268 a85.0,8 0 0 0 170,0" fill="none" stroke="#3D3D3A" stroke-width="1"/>
+      <text x="1437" y="290" fill="#141413">Local tracker</text>
+      <text x="1437" y="304" fill="#87867F" font-size="10">embedded Dolt</text>
+      <rect x="1543" y="300" width="46" height="14" fill="none" stroke="#B04A3F" stroke-width="1" rx="4"/>
+      <text x="1548" y="310" fill="#B04A3F" font-size="9">pending</text>
+    </g>
+
+    <g id="n-files">
+      <title>docs/, .cobuilder/, and tracker.yaml: prose, plans, status, evidence, config</title>
+      <path d="M1425,398 a85.0,8 0 0 1 170,0 v54 a85.0,8 0 0 1 -170,0 z" fill="#E3DACC" stroke="#3D3D3A" stroke-width="1.5"/>
+      <path d="M1425,398 a85.0,8 0 0 0 170,0" fill="none" stroke="#3D3D3A" stroke-width="1"/>
+      <text x="1437" y="420" fill="#141413">docs/ + .cobuilder/</text>
+      <text x="1437" y="434" fill="#87867F" font-size="10">files + tracker.yaml</text>
+    </g>
+
+    <g id="n-index">
+      <title>data/index.json: static read model</title>
+      <path d="M1425,698 a85.0,8 0 0 1 170,0 v40 a85.0,8 0 0 1 -170,0 z" fill="#E3DACC" stroke="#3D3D3A" stroke-width="1.5"/>
+      <path d="M1425,698 a85.0,8 0 0 0 170,0" fill="none" stroke="#3D3D3A" stroke-width="1"/>
+      <text x="1437" y="720" fill="#141413">data/index.json</text>
+      <text x="1437" y="734" fill="#87867F" font-size="10">static read model</text>
+    </g>
+
+  </g>
+
+  <g id="bound-external">
+    <title>external boundary: GitHub and the later tracker APIs</title>
+    <rect x="1680" y="130" width="150" height="640" fill="none" stroke="#3D3D3A" stroke-width="1.5" rx="8"/>
+    <text x="1692" y="150" fill="#87867F">external</text>
+
+    <g id="n-github">
+      <title>GitHub: git remote that hosts refs/dolt/data, and the pull requests</title>
+      <rect x="1692" y="170" width="126" height="80" rx="10" fill="#FAF9F5" stroke="#3D3D3A" stroke-width="1.2" stroke-dasharray="5 4"/>
+      <text x="1704" y="190" fill="#141413">GitHub</text>
+      <text x="1704" y="204" fill="#87867F" font-size="10">remote + PRs</text>
+    </g>
+
+    <g id="n-trackers">
+      <title>Linear and Jira APIs: external trackers for later programs</title>
+      <rect x="1692" y="490" width="126" height="80" rx="10" fill="#FAF9F5" stroke="#3D3D3A" stroke-width="1.2" stroke-dasharray="5 4"/>
+      <text x="1704" y="510" fill="#141413">Linear + Jira</text>
+      <text x="1704" y="524" fill="#87867F" font-size="10">APIs, later</text>
+    </g>
+
+  </g>
+
+  <g id="edges">
+    <title>Edges: every edge across a boundary carries its protocol</title>
+    <path d="M115.0,220 L115.0,260" fill="none" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+    <text x="123" y="235" text-anchor="start" fill="#141413" font-size="10" stroke="#FAF9F5" stroke-width="3" paint-order="stroke">approves</text>
+    <path d="M195,292.0 L285,205.0" fill="none" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+    <text x="249" y="234" text-anchor="middle" fill="#141413" font-size="10" stroke="#FAF9F5" stroke-width="3" paint-order="stroke">Skill call</text>
+    <path d="M195,292.0 L285,305.0" fill="none" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+    <text x="249" y="312" text-anchor="middle" fill="#141413" font-size="10" stroke="#FAF9F5" stroke-width="3" paint-order="stroke">uv run</text>
+    <path d="M195,402.0 L285,405.0" fill="none" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+    <text x="240" y="398" text-anchor="middle" fill="#141413" font-size="10" stroke="#FAF9F5" stroke-width="3" paint-order="stroke">uv run</text>
+    <path d="M465,205.0 L555,202.0" fill="none" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+    <text x="514" y="197" text-anchor="middle" fill="#141413" font-size="10" stroke="#FAF9F5" stroke-width="3" paint-order="stroke">uv run tracker.py</text>
+    <path d="M465,305.0 L555,202.0" fill="none" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+    <text x="510" y="264" text-anchor="middle" fill="#141413" font-size="10" stroke="#FAF9F5" stroke-width="3" paint-order="stroke">uv run tracker.py</text>
+    <path d="M655.0,234 L655.0,264" fill="none" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+    <text x="663" y="244" text-anchor="start" fill="#141413" font-size="10" stroke="#FAF9F5" stroke-width="3" paint-order="stroke">Python call</text>
+    <path d="M465,405.0 L555,304.0" fill="none" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+    <text x="510" y="350" text-anchor="middle" fill="#141413" font-size="10" stroke="#FAF9F5" stroke-width="3" paint-order="stroke">Python call</text>
+    <path d="M755,304.0 L855,205.0" fill="none" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+    <text x="800" y="237" text-anchor="middle" fill="#141413" font-size="10" stroke="#FAF9F5" stroke-width="3" paint-order="stroke">tracker.yaml</text>
+    <text x="800" y="248" text-anchor="middle" fill="#141413" font-size="10" stroke="#FAF9F5" stroke-width="3" paint-order="stroke">selects</text>
+    <path d="M755,304.0 L855,312.0" fill="none" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+    <text x="810" y="304" text-anchor="middle" fill="#141413" font-size="10" stroke="#FAF9F5" stroke-width="3" paint-order="stroke">Python call</text>
+    <path d="M755,304.0 L855,412.0" fill="none" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+    <text x="817" y="385" text-anchor="middle" fill="#141413" font-size="10" stroke="#FAF9F5" stroke-width="3" paint-order="stroke">Python call</text>
+    <path d="M655.0,468 L655.0,438" fill="none" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+    <text x="663" y="448" text-anchor="start" fill="#141413" font-size="10" stroke="#FAF9F5" stroke-width="3" paint-order="stroke">projects records</text>
+    <path d="M555,500 L533,500 L533,304 L555,304" fill="none" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+    <text x="528" y="540" text-anchor="end" fill="#141413" font-size="10" stroke="#FAF9F5" stroke-width="3" paint-order="stroke">list records</text>
+    <path d="M755,594.0 L855,205.0" fill="none" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+    <text x="785" y="471" text-anchor="start" fill="#141413" font-size="10" stroke="#FAF9F5" stroke-width="3" paint-order="stroke">Python call: create</text>
+    <path d="M755,688.0 L855,412.0" fill="none" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+    <text x="790" y="600" text-anchor="start" fill="#141413" font-size="10" stroke="#FAF9F5" stroke-width="3" paint-order="stroke">pytest</text>
+    <text x="790" y="611" text-anchor="start" fill="#141413" font-size="10" stroke="#FAF9F5" stroke-width="3" paint-order="stroke">every adapter</text>
+    <path d="M1045,205.0 L1155,205.0" fill="none" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+    <text x="1100" y="199" text-anchor="middle" fill="#141413" font-size="10" stroke="#FAF9F5" stroke-width="3" paint-order="stroke">bd CLI</text>
+    <path d="M1315,205.0 L1425,200.0" fill="none" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+    <text x="1370" y="182" text-anchor="middle" fill="#141413" font-size="10" stroke="#FAF9F5" stroke-width="3" paint-order="stroke">bd sync</text>
+    <text x="1370" y="194" text-anchor="middle" fill="#141413" font-size="10" stroke="#FAF9F5" stroke-width="3" paint-order="stroke">refs/dolt/data</text>
+    <path d="M1315,205.0 L1425,290.0" fill="none" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+    <text x="1370" y="256" text-anchor="middle" fill="#141413" font-size="10" stroke="#FAF9F5" stroke-width="3" paint-order="stroke">Dolt, fs r/w</text>
+    <path d="M1595,200.0 L1692,210.0" fill="none" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+    <text x="1644" y="185" text-anchor="middle" fill="#141413" font-size="10" stroke="#FAF9F5" stroke-width="3" paint-order="stroke">git push/pull</text>
+    <text x="1644" y="196" text-anchor="middle" fill="#141413" font-size="10" stroke="#FAF9F5" stroke-width="3" paint-order="stroke">refs/dolt/data</text>
+    <path d="M1045,312.0 L1425,425.0" fill="none" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+    <text x="1254" y="368" text-anchor="middle" fill="#141413" font-size="10" stroke="#FAF9F5" stroke-width="3" paint-order="stroke">fs read</text>
+    <path d="M1045,595.0 L1692,530.0" fill="none" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+    <text x="1271" y="564" text-anchor="middle" fill="#141413" font-size="10" stroke="#FAF9F5" stroke-width="3" paint-order="stroke">HTTPS API</text>
+    <path d="M755,594.0 L1425,425.0" fill="none" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+    <text x="1157" y="487" text-anchor="middle" fill="#141413" font-size="10" stroke="#FAF9F5" stroke-width="3" paint-order="stroke">fs read plans</text>
+    <path d="M195,718.0 L1425,718.0" fill="none" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+    <text x="810" y="732" text-anchor="middle" fill="#141413" font-size="10" stroke="#FAF9F5" stroke-width="3" paint-order="stroke">static file load</text>
+    <path d="M755,500 L800,500 L800,702 L1425,702" fill="none" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+    <text x="1100" y="696" text-anchor="start" fill="#141413" font-size="10" stroke="#FAF9F5" stroke-width="3" paint-order="stroke">fs write</text>
+    <path d="M195,292 L240,292 L240,110 L1755,110 L1755,170" fill="none" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+    <text x="250" y="104" text-anchor="start" fill="#141413" font-size="10" stroke="#FAF9F5" stroke-width="3" paint-order="stroke">gh CLI: open PR, read merged state</text>
+    <path d="M35,402 L8,402 L8,80 L1790,80 L1790,170" fill="none" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+    <text x="30" y="74" text-anchor="start" fill="#141413" font-size="10" stroke="#FAF9F5" stroke-width="3" paint-order="stroke">sync on clone B: tracker.py sync, bd sync, git refs/dolt/data</text>
+  </g>
+</svg>

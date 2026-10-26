@@ -137,6 +137,25 @@ export function uncap(svg: string): string {
 }
 
 /**
+ * Give an authored SVG a pixel size when it has none.
+ *
+ * The contract for the runtime slot asks for a `viewBox` and no fixed pixel width. The
+ * tile and the dialog lay a drawing out at its real size inside a `w-max` box, then scale
+ * it. An SVG with a `viewBox` and no `width` has no real size, so that box measures 0 and
+ * the drawing is blank. The root tag therefore takes `width` and `height` from the
+ * `viewBox`. An SVG that already carries a width or a height stays as it is.
+ */
+export function sizeFromViewBox(svg: string): string {
+  const root = svg.match(/<svg\b[^>]*>/i);
+  if (!root || /\s(?:width|height)\s*=/i.test(root[0])) return svg;
+  const box = root[0].match(
+    /\sviewBox\s*=\s*"\s*-?[\d.]+[\s,]+-?[\d.]+[\s,]+([\d.]+)[\s,]+([\d.]+)\s*"/i,
+  );
+  if (!box) return svg;
+  return svg.replace(root[0], root[0].replace(/<svg\b/i, `<svg width="${box[1]}" height="${box[2]}"`));
+}
+
+/**
  * One word for the grammar a source opens with.
  *
  * The word comes from the source's own first line, which is the only place the kind is
@@ -201,7 +220,7 @@ export function DiagramTiles({
         "runtime",
         /<script/i.test(runtimeSource)
           ? { state: "failed", message: "authored SVG carries a <script> element" }
-          : { state: "ready", svg: runtimeSource },
+          : { state: "ready", svg: sizeFromViewBox(runtimeSource) },
       );
     }
 

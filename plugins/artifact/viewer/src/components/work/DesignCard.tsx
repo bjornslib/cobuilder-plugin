@@ -11,6 +11,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import type { DesignRow } from "@/data/types";
 
+import { nextReadyText, PrChip } from "./PrChip";
 import { StageBadge } from "./StageBadge";
 
 function Chip({ children, muted }: { children: React.ReactNode; muted?: boolean }) {
@@ -35,7 +36,8 @@ function Chip({ children, muted }: { children: React.ReactNode; muted?: boolean 
  * the refined value.
  */
 export function DesignCard({ row }: { row: DesignRow }) {
-  const { design, epics, slices, done, pullRequests } = row;
+  const { design, epics, done, slicesDone, slicesTotal, trackerPullRequests } = row;
+  const next = nextReadyText(row);
   const total = epics.length;
   const percent = total === 0 ? 0 : Math.round((done / total) * 100);
   const branch = epics.find((epic) => epic.branch)?.branch ?? null;
@@ -58,15 +60,22 @@ export function DesignCard({ row }: { row: DesignRow }) {
         <div className="flex items-baseline justify-between font-mono text-[10px] text-ink-dim">
           <span>
             <span className="font-bold text-foreground tabular-nums">{done}</span>
-            <span className="text-ink-faint"> / {total} epics</span>
+            <span className="text-ink-faint"> of {total} epics closed</span>
           </span>
-          <span className="text-ink-faint tabular-nums">{percent}%</span>
+          <span className="text-ink-faint tabular-nums">
+            {slicesDone}/{slicesTotal} slices · {percent}%
+          </span>
         </div>
         <AnimatedProgressBar
           className="[&>div]:h-1.5"
           color="var(--good)"
           value={percent}
         />
+        {next !== null ? (
+          <p className="m-0 truncate font-mono text-[10px] text-ink-dim" title={next}>
+            {next}
+          </p>
+        ) : null}
       </CardContent>
 
       <Separator className="bg-line-soft" />
@@ -75,20 +84,9 @@ export function DesignCard({ row }: { row: DesignRow }) {
         <Chip>
           {epics.length} {epics.length === 1 ? "epic" : "epics"}
         </Chip>
-        {slices.length > 0 ? (
-          <Chip>
-            {slices.length} {slices.length === 1 ? "slice" : "slices"}
-          </Chip>
-        ) : null}
-        {pullRequests.length > 0 ? (
-          <Chip>
-            {pullRequests.length === 1
-              ? `PR ${pullRequests[0]}`
-              : `${pullRequests.length} PRs`}
-          </Chip>
-        ) : (
-          <Chip muted>no PR</Chip>
-        )}
+        {row.trackerRead
+          ? trackerPullRequests.map((pr) => <PrChip key={pr.ref} pr={pr} />)
+          : null}
         {branch ? (
           <span
             className="ml-auto max-w-[16ch] truncate font-mono text-[10px] text-ink-faint"

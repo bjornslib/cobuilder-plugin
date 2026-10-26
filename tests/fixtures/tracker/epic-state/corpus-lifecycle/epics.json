@@ -1,0 +1,30 @@
+[
+  {
+    "id": "estate/E1",
+    "kind": "epic",
+    "parent": "estate",
+    "blocked_by": [],
+    "lifecycle": "in_progress",
+    "assignee": null,
+    "envelope": {
+      "epic_id": "E1",
+      "branch": "tracker/first",
+      "pr": 9,
+      "state": "merged"
+    },
+    "external_ref": null
+  },
+  {
+    "id": "estate/E2",
+    "kind": "epic",
+    "parent": "estate",
+    "blocked_by": [],
+    "lifecycle": "closed",
+    "assignee": null,
+    "envelope": {
+      "epic_id": "E2",
+      "branch": "tracker/second"
+    },
+    "external_ref": null
+  }
+]

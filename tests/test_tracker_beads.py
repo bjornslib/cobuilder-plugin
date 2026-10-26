@@ -1,0 +1,121 @@
+"""Slice 6 of E2: beads reads map to the fake corpus records.
+
+Replays the recorded bd 1.3.0 output in tests/fixtures/tracker/beads through a stub
+runner. Other topics sit in test_tracker_beads_sync.py, _create.py, and _closed_seed.py.
+
+Run with: uv run pytest tests/test_tracker_beads.py -q
+"""
+from __future__ import annotations
+
+import json
+from typing import Any
+
+import _beads_support as support
+from _beads_support import BEADS_DIR, FIXTURE_DIR
+
+CORPUS_DIR = FIXTURE_DIR / "corpus"
+LIST_ARGS = ["list", "--json", "--all"]
+
+
+class ReplayRunner:
+    """Stands in for BdRunner. It answers only the recorded argument list."""
+
+    def __init__(self, args: list[str], stdout: str) -> None:
+        self.expected_args = args
+        self.stdout = stdout
+        self.calls: list[list[str]] = []
+
+    def run(self, args: list[str]) -> str:
+        self.calls.append(list(args))
+        assert list(args) == self.expected_args, f"unexpected bd call: {args}"
+        return self.stdout
+
+
+def _transcript() -> dict[str, Any]:
+    return json.loads((BEADS_DIR / "transcripts" / "list.json").read_text(encoding="utf-8"))
+
+
+def _list_rows() -> list[dict[str, Any]]:
+    # The transcript holds the native mapping of E7-4. beads/list.json stays as the old recording for the legacy tests.
+    return json.loads(_transcript()["stdout"])
+
+
+def _beads_adapter(stdout: str | None = None) -> Any:
+    from tracker_port.beads import BeadsAdapter
+
+    transcript = _transcript()
+    runner = ReplayRunner(LIST_ARGS, transcript["stdout"] if stdout is None else stdout)
+    return BeadsAdapter(runner)
+
+
+def _fake_records() -> list[Any]:
+    from tracker_port.fake import FakeAdapter
+
+    fake = FakeAdapter(CORPUS_DIR)
+    records = fake.list_programs() + fake.list_epics() + fake.list_slices()
+    return sorted(records + fake.list_pull_requests(), key=lambda record: record.id)
+
+
+def test_transcript_rows_hold_the_pull_request_as_a_milestone_that_tracks_both_epics() -> None:
+    rows = _list_rows()
+    pr = next(row for row in rows if row["issue_type"] == "milestone")
+
+    assert _transcript()["args"] == LIST_ARGS and pr["external_ref"] == "gh-101"
+    assert {d["depends_on_id"] for d in pr["dependencies"] if d["type"] == "tracks"} == {"t-anc.1", "t-anc.2"}
+    assert not any(d["depends_on_id"] == pr["id"] for row in rows for d in row.get("dependencies") or [])
+
+
+def test_list_json_maps_to_fake_records() -> None:
+    beads = support.all_records(_beads_adapter())
+    fake = _fake_records()
+
+    assert len(beads) == 8
+    assert [record.id for record in beads] == [record.id for record in fake]
+    assert beads == fake
+
+
+def test_hooked_status_maps_to_in_progress() -> None:
+    rows = _list_rows()
+    for row in rows:
+        if row["id"] == "t-anc.1.2":
+            row["status"] = "hooked"
+
+    adapter = _beads_adapter(json.dumps(rows))
+    record = next(item for item in adapter.list_slices() if item.id == "demo-E1-s2")
+
+    assert record.lifecycle == "in_progress"
+
+
+def test_unknown_metadata_version_raises() -> None:
+    from tracker_port.port import AdapterError
+
+    rows = _list_rows()
+    rows[0]["metadata"]["cb"]["v"] = 2
+    adapter = _beads_adapter(json.dumps(rows))
+
+    try:
+        support.all_records(adapter)
+    except AdapterError as error:
+        assert "2" in str(error)
+    else:
+        raise AssertionError("metadata.cb.v = 2 must raise AdapterError")
+
+
+def test_capabilities_flags() -> None:
+    adapter = _beads_adapter()
+    caps = adapter.capabilities
+    caps = caps() if callable(caps) else caps
+
+    assert caps.atomic_claim is True
+    assert caps.rich_envelope is True
+
+
+def test_claim_slice_sends_one_claim_update_and_no_read_back() -> None:
+    from tracker_port.beads import BeadsAdapter
+
+    recorded = support.load_transcript("claim_actor_steps")
+    runner = support.SequenceRunner([recorded["list_before"], recorded["claim_ok"], support.load_transcript("sync_ok")])
+    record = BeadsAdapter(runner).claim_slice("demo-E1-s3", "agent-x")
+
+    assert [call[0] for call in runner.calls] == ["list", "update", "sync"]
+    assert record.assignee == "agent-x"

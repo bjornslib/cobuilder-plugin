@@ -1,0 +1,95 @@
+{
+  "bd": "bd version 1.3.0 (Homebrew)",
+  "steps": [
+    {
+      "args": [
+        "update",
+        "scr-5na",
+        "--claim"
+      ],
+      "stdout": "",
+      "stderr": "Error updating scr-5na: issue already claimed by w6\nError: 1 of 1 issues failed to update\n  scr-5na: updating issue: issue already claimed by w6\n",
+      "exit": 1
+    },
+    {
+      "args": [
+        "update",
+        "scr-5na",
+        "--claim"
+      ],
+      "stdout": "",
+      "stderr": "Error updating scr-5na: issue already claimed by w6\nError: 1 of 1 issues failed to update\n  scr-5na: updating issue: issue already claimed by w6\n",
+      "exit": 1
+    },
+    {
+      "args": [
+        "update",
+        "scr-5na",
+        "--claim"
+      ],
+      "stdout": "",
+      "stderr": "Error updating scr-5na: issue already claimed by w6\nError: 1 of 1 issues failed to update\n  scr-5na: updating issue: issue already claimed by w6\n",
+      "exit": 1
+    },
+    {
+      "args": [
+        "update",
+        "scr-5na",
+        "--claim"
+      ],
+      "stdout": "",
+      "stderr": "Error updating scr-5na: issue already claimed by w6\nError: 1 of 1 issues failed to update\n  scr-5na: updating issue: issue already claimed by w6\n",
+      "exit": 1
+    },
+    {
+      "args": [
+        "update",
+        "scr-5na",
+        "--claim"
+      ],
+      "stdout": "",
+      "stderr": "Error updating scr-5na: issue already claimed by w6\nError: 1 of 1 issues failed to update\n  scr-5na: updating issue: issue already claimed by w6\n",
+      "exit": 1
+    },
+    {
+      "args": [
+        "update",
+        "scr-5na",
+        "--claim"
+      ],
+      "stdout": "",
+      "stderr": "Error updating scr-5na: issue already claimed by w6\nError: 1 of 1 issues failed to update\n  scr-5na: updating issue: issue already claimed by w6\n",
+      "exit": 1
+    },
+    {
+      "args": [
+        "update",
+        "scr-5na",
+        "--claim"
+      ],
+      "stdout": "\u2713 Updated issue: scr-5na \u2014 x\n",
+      "stderr": "",
+      "exit": 0
+    },
+    {
+      "args": [
+        "update",
+        "scr-5na",
+        "--claim"
+      ],
+      "stdout": "",
+      "stderr": "Error updating scr-5na: issue already claimed by w6\nError: 1 of 1 issues failed to update\n  scr-5na: updating issue: issue already claimed by w6\n",
+      "exit": 1
+    },
+    {
+      "args": [
+        "show",
+        "scr-5na",
+        "--json"
+      ],
+      "stdout": "[\n  {\n    \"id\": \"scr-5na\",\n    \"title\": \"x\",\n    \"status\": \"in_progress\",\n    \"priority\": 2,\n    \"issue_type\": \"task\",\n    \"assignee\": \"w6\",\n    \"owner\": \"131568482+bjornslib@users.noreply.github.com\",\n    \"created_at\": \"2026-10-22T10:15:23Z\",\n    \"created_by\": \"Bjorn Schliebitz\",\n    \"updated_at\": \"2026-10-22T10:15:24Z\",\n    \"started_at\": \"2026-10-22T10:15:24Z\",\n    \"lease_expires_at\": \"2026-10-22T10:20:24Z\",\n    \"heartbeat_at\": \"2026-10-22T10:15:24Z\",\n    \"dependent_count\": 0,\n    \"dependency_count\": 0,\n    \"comment_count\": 0,\n    \"revision\": \"-8148507753525530726\"\n  }\n]\n",
+      "stderr": "",
+      "exit": 0
+    }
+  ]
+}

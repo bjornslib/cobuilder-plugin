@@ -1,0 +1,63 @@
+{
+  "bd": "bd version 1.3.0 (Homebrew)",
+  "note": "open_pull_request with two epics: one milestone create, then one tracks edge from the PR to each epic. No blocks edge, no gate, no metadata update.",
+  "steps": [
+    {
+      "args": [
+        "list",
+        "--json",
+        "--all"
+      ],
+      "stdout": "[\n  {\n    \"id\": \"t-ktb\",\n    \"title\": \"demo-E2\",\n    \"status\": \"open\",\n    \"priority\": 2,\n    \"issue_type\": \"epic\",\n    \"owner\": \"131568482+bjornslib@users.noreply.github.com\",\n    \"created_at\": \"2026-10-24T03:28:05Z\",\n    \"created_by\": \"Bjorn Schliebitz\",\n    \"updated_at\": \"2026-10-24T03:28:05Z\",\n    \"external_ref\": \"demo-E2\",\n    \"metadata\": {\n      \"cb\": {\n        \"v\": 1,\n        \"id\": \"demo-E2\",\n        \"kind\": \"epic\",\n        \"envelope\": {}\n      }\n    },\n    \"labels\": [\n      \"cb\"\n    ],\n    \"dependency_count\": 0,\n    \"dependent_count\": 0,\n    \"comment_count\": 0\n  },\n  {\n    \"id\": \"t-ao5\",\n    \"title\": \"demo-E1\",\n    \"status\": \"open\",\n    \"priority\": 2,\n    \"issue_type\": \"epic\",\n    \"owner\": \"131568482+bjornslib@users.noreply.github.com\",\n    \"created_at\": \"2026-10-24T03:28:04Z\",\n    \"created_by\": \"Bjorn Schliebitz\",\n    \"updated_at\": \"2026-10-24T03:28:04Z\",\n    \"external_ref\": \"demo-E1\",\n    \"metadata\": {\n      \"cb\": {\n        \"v\": 1,\n        \"id\": \"demo-E1\",\n        \"kind\": \"epic\",\n        \"envelope\": {}\n      }\n    },\n    \"labels\": [\n      \"cb\"\n    ],\n    \"dependency_count\": 0,\n    \"dependent_count\": 0,\n    \"comment_count\": 0\n  }\n]\n",
+      "stderr": "",
+      "exit": 0
+    },
+    {
+      "args": [
+        "create",
+        "--silent",
+        "--type",
+        "milestone",
+        "--title",
+        "pr-101",
+        "--priority",
+        "2",
+        "--labels",
+        "cb",
+        "--external-ref",
+        "gh-101",
+        "--metadata",
+        "{\"cb\":{\"v\":1,\"id\":\"pr-101\",\"kind\":\"pr\",\"envelope\":{}}}"
+      ],
+      "stdout": "t-ikw\n",
+      "stderr": "",
+      "exit": 0
+    },
+    {
+      "args": [
+        "dep",
+        "add",
+        "t-ikw",
+        "t-ao5",
+        "--type",
+        "tracks"
+      ],
+      "stdout": "\u2713 Added dependency: t-ikw (pr-101) tracks t-ao5 (demo-E1) (tracks)\n",
+      "stderr": "",
+      "exit": 0
+    },
+    {
+      "args": [
+        "dep",
+        "add",
+        "t-ikw",
+        "t-ktb",
+        "--type",
+        "tracks"
+      ],
+      "stdout": "\u2713 Added dependency: t-ikw (pr-101) tracks t-ktb (demo-E2) (tracks)\n",
+      "stderr": "",
+      "exit": 0
+    }
+  ]
+}

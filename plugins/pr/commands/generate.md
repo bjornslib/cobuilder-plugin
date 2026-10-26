@@ -35,6 +35,8 @@ branch with no pull request, it pushes the branch and runs `gh pr create` —
 after showing you the description, the base branch, and the verdict, and asking
 first. Nothing is pushed or opened without that confirmation.
 
+After `gh pr create`, it records the PR in the tracker with `tracker.py open-pull-request <ref> <epic-id>...`. The skill's Workflow state section holds the call form.
+
 It does nothing else on GitHub. No comments, no edits to an existing PR body, no
 labels, no reviewers, no merges. `--no-create` stops before the push and leaves
 the description and the assessment in `docs/pull-requests/branch-<slug>/`.

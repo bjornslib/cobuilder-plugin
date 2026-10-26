@@ -1,0 +1,15 @@
+[
+  {
+    "id": "wm-demo",
+    "kind": "program",
+    "parent": null,
+    "blocked_by": [],
+    "lifecycle": "open",
+    "assignee": null,
+    "envelope": {
+      "gate1": "passed",
+      "gate2": "APPROVED 2026-10-14"
+    },
+    "external_ref": null
+  }
+]

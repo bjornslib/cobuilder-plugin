@@ -1,0 +1,217 @@
+"""Contract cases for the tracker port. Slice 1 runs one case on the fake adapter.
+
+Slice 2 runs cases 1 to 6 on every adapter in ADAPTER_BUILDERS. E2 adds the beads
+builder there, so the same cases run on beads. The write effects and case 7
+(projector parity, E2 slice 6) sit in test_tracker_contract_writes.py.
+
+Run with: uv run pytest tests/test_tracker_contract.py -q
+"""
+from __future__ import annotations
+
+import dataclasses
+import json
+from pathlib import Path
+from typing import Any, Callable
+
+import pytest
+
+from _beads_mapping_support import need_record_fields, text_of
+from _tracker_contract_support import CORPUS_DIR, READ_ADAPTER_BUILDERS, assert_same_value, ids
+from _tracker_contract_support import blocked_by_a_pr, ready_sets, tracked
+
+# The module holds the corpus, build, and adapter fixtures.
+pytest_plugins = ["_tracker_contract_support"]
+
+
+READY_KINDS = ("program", "epic", "slice")
+
+
+def test_next_ready_slice_under_epic() -> None:
+    # Imports stay inside the test so a missing package fails this test only.
+    from tracker_port.fake import FakeAdapter
+
+    ready = FakeAdapter(CORPUS_DIR).next_ready("slice", under="demo-E1")
+
+    assert [record.id for record in ready] == ["demo-E1-s3"]
+
+
+# Case 1: next_ready never returns a pull request, and never returns a deferred epic.
+def test_next_ready_excludes_pr_and_deferred(adapter: Any) -> None:
+    for kind in READY_KINDS:
+        for record in adapter.next_ready(kind):
+            assert record.kind == kind, record.id
+    assert "demo-E3" not in ids(adapter.next_ready("epic"))
+    assert "pr-101" not in ids(adapter.next_ready("slice"))
+
+
+# Case 2 (E7-5): next_ready returns the right records for each kind, with and without under (an epic or a program).
+def test_next_ready_kinds(adapter: Any) -> None:
+    assert ids(adapter.next_ready("program")) == ["demo"]
+    assert ids(adapter.next_ready("slice")) == ["demo-E1-s3"]
+    assert ids(adapter.next_ready("slice", under="demo-E1")) == ["demo-E1-s3"]
+    assert ids(adapter.next_ready("slice", under="demo")) == ["demo-E1-s3"], "under may be the program"
+    assert ids(adapter.next_ready("slice", under="demo-E2")) == []
+    assert ids(adapter.next_ready("slice", under="demo-E3")) == [], "a deferred epic holds no ready slice"
+    assert ids(adapter.next_ready("epic")) == ["demo-E1"], "E2 waits for E1, and the open pull request holds neither"
+
+
+# Case 3: claim_slice leaves the claimant in assignee. Read-back covers atomic_claim false.
+def test_claim_leaves_assignee(adapter: Any) -> None:
+    adapter.claim_slice("demo-E1-s3", "agent-x")
+
+    assert adapter.get_slice("demo-E1-s3").assignee == "agent-x"
+
+
+# Case 4a: a typed envelope survives the read path, with list items kept item by item.
+# The seed goes into the corpus copy as JSON, so the write path is the file, not the port.
+ENVELOPE_VALUES: dict[str, Any] = {
+    "rt_str": "design",
+    "rt_int": 3,
+    "rt_float": 0.5,
+    "rt_bool": False,
+    "rt_none": None,
+    "rt_list": ["docs/a.md", 2, 1.25, True, None],
+}
+
+
+def test_envelope_round_trip(build: Callable[[Path], Any], corpus: Path) -> None:
+    program_file = corpus / "program.json"
+    program = json.loads(program_file.read_text(encoding="utf-8"))
+    program["envelope"].update(ENVELOPE_VALUES)
+    program_file.write_text(json.dumps(program), encoding="utf-8")
+
+    envelope = build(corpus).list_programs()[0].envelope
+
+    for key, value in ENVELOPE_VALUES.items():
+        assert key in envelope, key
+        # The adapter returns lists as tuples, so the expected list is a tuple.
+        expected = tuple(value) if isinstance(value, list) else value
+        assert_same_value(envelope[key], expected, key)
+
+
+# Case 4b: a string written through the port reads back as the same string.
+def test_gate_value_round_trip(adapter: Any) -> None:
+    adapter.set_gate_value("demo", "gate4", "done")
+
+    assert_same_value(adapter.list_programs()[0].envelope["gate4"], "done", "gate4")
+
+
+# Case 5 (E7-4): a pull request tracks its epics and blocks none. A merge only closes it, so no ready set changes.
+@pytest.mark.parametrize("adapter_id", list(READ_ADAPTER_BUILDERS))
+def test_pr_tracks_two_epics_on_every_read_adapter(adapter_id: str) -> None:
+    adapter = READ_ADAPTER_BUILDERS[adapter_id](CORPUS_DIR)
+
+    assert tracked(adapter, "pr-101") == ["demo-E1", "demo-E2"]
+    assert blocked_by_a_pr(adapter) == [], "no epic is blocked_by a pull request"
+    assert ids(adapter.next_ready("epic")) == ["demo-E1"]
+
+
+def test_a_merge_only_closes_the_pull_request_and_changes_no_ready_set(adapter: Any) -> None:
+    before = ready_sets(adapter)
+
+    adapter.set_pull_request_state("pr-101", merged=True)
+
+    assert next(r for r in adapter.list_pull_requests() if r.id == "pr-101").lifecycle == "closed"
+    assert ready_sets(adapter) == before
+    assert tracked(adapter, "pr-101") == ["demo-E1", "demo-E2"], "the closed pull request keeps its epics"
+
+
+def test_open_pull_request_tracks_two_epics_blocks_none_and_changes_no_ready_set(adapter: Any) -> None:
+    before = ready_sets(adapter)
+
+    opened = adapter.open_pull_request("pr-102", ["demo-E1", "demo-E2"])
+
+    assert (opened.kind, opened.blocked_by, opened.lifecycle) == ("pr", (), "open")
+    assert sorted(opened.tracks) == ["demo-E1", "demo-E2"] and tracked(adapter, "pr-102") == ["demo-E1", "demo-E2"]
+    assert blocked_by_a_pr(adapter) == [] and ready_sets(adapter) == before
+    adapter.set_pull_request_state("pr-102", merged=True)
+    assert ready_sets(adapter) == before
+
+
+# Case 5b (E7-2): every record carries the four text fields, and they stay out of equality.
+# The corpus holds no text. The beads scratch tracker holds the cb id as the title.
+def test_records_carry_the_text_fields_outside_equality(adapter: Any) -> None:
+    records = [*adapter.list_programs(), *adapter.list_epics(), *adapter.list_slices(), *adapter.list_pull_requests()]
+
+    need_record_fields()
+    assert records
+    for record in records:
+        title, description, acceptance, design = text_of(record)
+        assert (description, acceptance, design) == (None, None, None), record.id
+        assert title in (None, record.id), record.id
+        assert dataclasses.replace(record, title="Name", description="d", acceptance_criteria="a", design="g") == record
+
+
+# Case 5c (E8-3): all_records returns every kind from one read, on every adapter.
+@pytest.mark.parametrize("adapter_id", list(READ_ADAPTER_BUILDERS))
+def test_all_records_holds_every_kind(adapter_id: str) -> None:
+    adapter = READ_ADAPTER_BUILDERS[adapter_id](CORPUS_DIR)
+
+    kinds = {record.kind for record in adapter.all_records()}
+    assert kinds == {"program", "epic", "slice", "pr"}
+
+
+def test_all_records_matches_the_kind_lists(adapter: Any) -> None:
+    expected = {
+        record.id
+        for record in [
+            *adapter.list_programs(),
+            *adapter.list_epics(),
+            *adapter.list_slices(),
+            *adapter.list_pull_requests(),
+        ]
+    }
+    assert {record.id for record in adapter.all_records()} == expected
+
+
+# Case 6: no adapter. load_adapter returns None for a missing config.
+def test_load_adapter_without_config_returns_none(tmp_path: Path) -> None:
+    from tracker_port.config import load_adapter
+
+    assert load_adapter(tmp_path / ".cobuilder" / "tracker.yaml", tmp_path) is None
+
+
+class NoAdapter:
+    """Stub for a repo with no configured adapter. Every write raises NoAdapterError."""
+
+    def _refuse(self, *args: Any, **kwargs: Any) -> None:
+        from tracker_port.port import NoAdapterError
+
+        raise NoAdapterError("no tracker adapter configured")
+
+    claim_slice = _refuse
+    set_slice_state = _refuse
+    record_attempt = _refuse
+    escalate = _refuse
+    set_gate_value = _refuse
+    set_epic_state = _refuse
+    set_program_stage = _refuse
+    open_pull_request = _refuse
+    set_pull_request_state = _refuse
+    add_note = _refuse
+    sync = _refuse
+    seed_from_files = _refuse
+
+
+NO_ADAPTER_WRITES: list[tuple[str, tuple[Any, ...]]] = [
+    ("claim_slice", ("demo-E1-s3", "agent-x")),
+    ("set_slice_state", ("demo-E1-s3", "closed")),
+    ("record_attempt", ("demo-E1-s3", 0.5)),
+    ("escalate", ("demo-E1-s3", 0.5, "attempt limit reached")),
+    ("set_gate_value", ("demo", "gate4", "done")),
+    ("set_epic_state", ("demo-E1", "closed")),
+    ("set_program_stage", ("demo", "build")),
+    ("open_pull_request", ("pr-102", ["demo-E1"])),
+    ("set_pull_request_state", ("pr-101", True)),
+    ("add_note", ("demo-E1-s3", "a note")),
+    ("sync", ()),
+    ("seed_from_files", (Path("plans"),)),
+]
+
+
+@pytest.mark.parametrize("method,args", NO_ADAPTER_WRITES, ids=[m for m, _ in NO_ADAPTER_WRITES])
+def test_write_without_adapter_raises(method: str, args: tuple[Any, ...]) -> None:
+    from tracker_port.port import NoAdapterError
+
+    with pytest.raises(NoAdapterError):
+        getattr(NoAdapter(), method)(*args)

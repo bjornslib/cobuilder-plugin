@@ -1,0 +1,32 @@
+[
+  {
+    "id": "demo-E1",
+    "kind": "epic",
+    "parent": "demo",
+    "blocked_by": [],
+    "lifecycle": "open",
+    "assignee": null,
+    "envelope": {},
+    "external_ref": null
+  },
+  {
+    "id": "demo-E2",
+    "kind": "epic",
+    "parent": "demo",
+    "blocked_by": ["demo-E1"],
+    "lifecycle": "open",
+    "assignee": null,
+    "envelope": {},
+    "external_ref": null
+  },
+  {
+    "id": "demo-E3",
+    "kind": "epic",
+    "parent": "demo",
+    "blocked_by": ["demo-E2"],
+    "lifecycle": "open",
+    "assignee": null,
+    "envelope": {"deferred": "2099-12-31"},
+    "external_ref": null
+  }
+]

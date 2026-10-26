@@ -1,0 +1,478 @@
+{
+  "plans-index/checkbox-vs-table": {
+    "read_epics": [
+      {
+        "adrs": [
+          "ADR-0001"
+        ],
+        "branch": "e1",
+        "design": "checkbox-vs-table",
+        "id": "E1",
+        "key": "checkbox-vs-table/E1",
+        "note": "first",
+        "pr": null,
+        "slices": [
+          {
+            "n": 1,
+            "name": "Score note wins over table",
+            "score": "\u2014",
+            "state": "pending"
+          },
+          {
+            "n": 2,
+            "name": "Attempt note wins over table",
+            "score": "\u2014",
+            "state": "pending"
+          },
+          {
+            "n": 3,
+            "name": "Unchecked row stays planned",
+            "score": "0.800",
+            "state": "done"
+          },
+          {
+            "n": 4,
+            "name": "Paren attempt note",
+            "score": "\u2014",
+            "state": "pending"
+          }
+        ],
+        "state": "in-progress"
+      }
+    ],
+    "read_plan": {
+      "docs": {
+        "00-status.md": "# Status\n\n- Gate 1 \u2014 Intent: passed\n- Gate 2 \u2014 Design: passed\n\n## Slices\n\n- [x] Slice 1 \u2014 Score note wins over table   score: 0.950   note: \u2014\n- [x] Slice 2 \u2014 Attempt note wins over table   score: 0.917 on attempt 2\n- [ ] Slice 3 \u2014 Unchecked row stays planned   score: \u2014   note: \u2014\n- [x] Slice 4 \u2014 Paren attempt note   score: 0.917 (attempt 1)   note: \u2014\n",
+        "04-slices.md": "# Slices\n\n| # | Epic | Slice | Ends with | Score | State |\n|---|---|---|---|---|---|\n| | **`checkbox-vs-table/E1` \u2014 Checkbox vs table epic** | | | | |\n| 1 | `checkbox-vs-table/E1` | Score note wins over table | Score note wins | \u2014 | pending |\n| 2 | `checkbox-vs-table/E1` | Attempt note wins over table | Attempt note wins | \u2014 | pending |\n| 3 | `checkbox-vs-table/E1` | Unchecked row stays planned | Unchecked row stays planned | 0.800 | done |\n| 4 | `checkbox-vs-table/E1` | Paren attempt note | Paren attempt note | \u2014 | pending |\n"
+      },
+      "epics": [
+        {
+          "adrs": [
+            "ADR-0001"
+          ],
+          "branch": "e1",
+          "design": "checkbox-vs-table",
+          "id": "E1",
+          "key": "checkbox-vs-table/E1",
+          "note": "first",
+          "pr": null,
+          "slices": [
+            {
+              "n": 1,
+              "name": "Score note wins over table",
+              "score": "\u2014",
+              "state": "pending"
+            },
+            {
+              "n": 2,
+              "name": "Attempt note wins over table",
+              "score": "\u2014",
+              "state": "pending"
+            },
+            {
+              "n": 3,
+              "name": "Unchecked row stays planned",
+              "score": "0.800",
+              "state": "done"
+            },
+            {
+              "n": 4,
+              "name": "Paren attempt note",
+              "score": "\u2014",
+              "state": "pending"
+            }
+          ],
+          "state": "in-progress"
+        }
+      ],
+      "gates": [
+        {
+          "n": "1",
+          "name": "Intent",
+          "state": "passed"
+        },
+        {
+          "n": "2",
+          "name": "Design",
+          "state": "passed"
+        }
+      ],
+      "paths": {
+        "00-status.md": "00-status.md",
+        "04-slices.md": "04-slices.md"
+      }
+    }
+  },
+  "plans-real/blocked-close": {
+    "read_epics": [
+      {
+        "adrs": [
+          "ADR-0001"
+        ],
+        "branch": "e1",
+        "design": "blocked-close",
+        "id": "E1",
+        "key": "blocked-close/E1",
+        "note": "first",
+        "pr": null,
+        "slices": [
+          {
+            "n": 1,
+            "name": "Lists programs from the tree",
+            "score": "0.917 (attempt 1)",
+            "state": "done"
+          },
+          {
+            "n": 2,
+            "name": "Contract cases pass",
+            "score": "0.940 (attempt 1)",
+            "state": "done"
+          }
+        ],
+        "state": "in-progress"
+      }
+    ],
+    "read_plan": {
+      "docs": {
+        "00-status.md": "# Status\n\n- Gate 1 \u2014 Intent: passed\n- Gate 2 \u2014 Design: passed\n\n## Slices\n\n- [x] Slice 1 \u2014 Lists programs from the tree   score: 0.917 (attempt 1)   note: \u2014\n- [x] Slice 2 \u2014 Contract cases pass   score: 0.940 (attempt 1)   note: \u2014\n",
+        "04-slices.md": "# Slices\n\n| # | Epic | Slice | Ends with | Score | State |\n|---|---|---|---|---|---|\n| | **`blocked-close/E1` \u2014 Blocked close epic** | | | | |\n| 1 | `blocked-close/E1` | Lists programs from the tree | Programs list from the tree | 0.917 (attempt 1) | done |\n| 2 | `blocked-close/E1` | Contract cases pass | Contract cases pass | 0.940 (attempt 1) | done |\n"
+      },
+      "epics": [
+        {
+          "adrs": [
+            "ADR-0001"
+          ],
+          "branch": "e1",
+          "design": "blocked-close",
+          "id": "E1",
+          "key": "blocked-close/E1",
+          "note": "first",
+          "pr": null,
+          "slices": [
+            {
+              "n": 1,
+              "name": "Lists programs from the tree",
+              "score": "0.917 (attempt 1)",
+              "state": "done"
+            },
+            {
+              "n": 2,
+              "name": "Contract cases pass",
+              "score": "0.940 (attempt 1)",
+              "state": "done"
+            }
+          ],
+          "state": "in-progress"
+        }
+      ],
+      "gates": [
+        {
+          "n": "1",
+          "name": "Intent",
+          "state": "passed"
+        },
+        {
+          "n": "2",
+          "name": "Design",
+          "state": "passed"
+        }
+      ],
+      "paths": {
+        "00-status.md": "00-status.md",
+        "04-slices.md": "04-slices.md"
+      }
+    }
+  },
+  "plans-real/score-attempt": {
+    "read_epics": [
+      {
+        "adrs": [
+          "ADR-0001"
+        ],
+        "branch": "e1",
+        "design": "score-attempt",
+        "id": "E1",
+        "key": "score-attempt/E1",
+        "note": "first",
+        "pr": null,
+        "slices": [
+          {
+            "n": 1,
+            "name": "Lists programs from the tree",
+            "score": "0.917 (attempt 2)",
+            "state": "done"
+          },
+          {
+            "n": 2,
+            "name": "Contract cases pass",
+            "score": "\u2014",
+            "state": "pending"
+          }
+        ],
+        "state": "in-progress"
+      }
+    ],
+    "read_plan": {
+      "docs": {
+        "00-status.md": "# Status\n\n- Gate 1 \u2014 Intent: passed\n- Gate 2 \u2014 Design: passed\n\n## Slices\n\n- [x] Slice 1 \u2014 Lists programs from the tree   score: 0.917 (attempt 2)   note: \u2014\n- [ ] Slice 2 \u2014 Contract cases pass   score: \u2014   note: \u2014\n",
+        "04-slices.md": "# Slices\n\n| # | Epic | Slice | Ends with | Score | State |\n|---|---|---|---|---|---|\n| | **`score-attempt/E1` \u2014 Score attempt epic** | | | | |\n| 1 | `score-attempt/E1` | Lists programs from the tree | Programs list from the tree | 0.917 (attempt 2) | done |\n| 2 | `score-attempt/E1` | Contract cases pass | Contract cases pass | \u2014 | pending |\n"
+      },
+      "epics": [
+        {
+          "adrs": [
+            "ADR-0001"
+          ],
+          "branch": "e1",
+          "design": "score-attempt",
+          "id": "E1",
+          "key": "score-attempt/E1",
+          "note": "first",
+          "pr": null,
+          "slices": [
+            {
+              "n": 1,
+              "name": "Lists programs from the tree",
+              "score": "0.917 (attempt 2)",
+              "state": "done"
+            },
+            {
+              "n": 2,
+              "name": "Contract cases pass",
+              "score": "\u2014",
+              "state": "pending"
+            }
+          ],
+          "state": "in-progress"
+        }
+      ],
+      "gates": [
+        {
+          "n": "1",
+          "name": "Intent",
+          "state": "passed"
+        },
+        {
+          "n": "2",
+          "name": "Design",
+          "state": "passed"
+        }
+      ],
+      "paths": {
+        "00-status.md": "00-status.md",
+        "04-slices.md": "04-slices.md"
+      }
+    }
+  },
+  "plans-real/status-only": {
+    "read_epics": [
+      {
+        "adrs": [
+          "ADR-0001"
+        ],
+        "branch": "e1",
+        "design": "status-only",
+        "id": "E1",
+        "key": "status-only/E1",
+        "note": "first",
+        "pr": null,
+        "slices": [],
+        "state": "in-progress"
+      }
+    ],
+    "read_plan": {
+      "docs": {
+        "00-status.md": "# Status\n\n- Gate 1 \u2014 Intent: passed\n- Gate 2 \u2014 Design: passed\n"
+      },
+      "epics": [
+        {
+          "adrs": [
+            "ADR-0001"
+          ],
+          "branch": "e1",
+          "design": "status-only",
+          "id": "E1",
+          "key": "status-only/E1",
+          "note": "first",
+          "pr": null,
+          "slices": [],
+          "state": "in-progress"
+        }
+      ],
+      "gates": [
+        {
+          "n": "1",
+          "name": "Intent",
+          "state": "passed"
+        },
+        {
+          "n": "2",
+          "name": "Design",
+          "state": "passed"
+        }
+      ],
+      "paths": {
+        "00-status.md": "00-status.md"
+      }
+    }
+  },
+  "plans-real/unparsed-row": {
+    "read_epics": [
+      {
+        "adrs": [
+          "ADR-0001"
+        ],
+        "branch": "e1",
+        "design": "unparsed-row",
+        "id": "E1",
+        "key": "unparsed-row/E1",
+        "note": "first",
+        "pr": null,
+        "slices": [
+          {
+            "n": 1,
+            "name": "Lists programs from the tree",
+            "score": "\u2014",
+            "state": "pending"
+          }
+        ],
+        "state": "in-progress"
+      }
+    ],
+    "read_plan": {
+      "docs": {
+        "00-status.md": "# Status\n\n- Gate 1 \u2014 Intent: passed\n- Gate 2 \u2014 Design: passed\n",
+        "04-slices.md": "# Slices\n\n| # | Epic | Slice | Ends with | Score | State |\n|---|---|---|---|---|---|\n| | **`unparsed-row/E1` \u2014 Unparsed row epic** | | | | |\n| 1 | `unparsed-row/E1` | Lists programs from the tree | Programs list from the tree | \u2014 | pending |\n| 2 | `unparsed-row/E1` | Broken slice |\n"
+      },
+      "epics": [
+        {
+          "adrs": [
+            "ADR-0001"
+          ],
+          "branch": "e1",
+          "design": "unparsed-row",
+          "id": "E1",
+          "key": "unparsed-row/E1",
+          "note": "first",
+          "pr": null,
+          "slices": [
+            {
+              "n": 1,
+              "name": "Lists programs from the tree",
+              "score": "\u2014",
+              "state": "pending"
+            }
+          ],
+          "state": "in-progress"
+        }
+      ],
+      "gates": [
+        {
+          "n": "1",
+          "name": "Intent",
+          "state": "passed"
+        },
+        {
+          "n": "2",
+          "name": "Design",
+          "state": "passed"
+        }
+      ],
+      "paths": {
+        "00-status.md": "00-status.md",
+        "04-slices.md": "04-slices.md"
+      }
+    }
+  },
+  "plans/beads-storage-mini": {
+    "read_epics": [
+      {
+        "adrs": [
+          "ADR-0001"
+        ],
+        "branch": "e1",
+        "design": "beads-storage-mini",
+        "id": "E1",
+        "key": "beads-storage-mini/E1",
+        "note": "first",
+        "pr": null,
+        "slices": [
+          {
+            "n": 1,
+            "name": "Lists programs from the tree",
+            "score": "\u2014",
+            "state": "pending"
+          },
+          {
+            "n": 2,
+            "name": "Contract cases pass",
+            "score": "\u2014",
+            "state": "pending"
+          },
+          {
+            "n": 3,
+            "name": "Dry run matches the fixture",
+            "score": "\u2014",
+            "state": "pending"
+          }
+        ],
+        "state": "in-progress"
+      }
+    ],
+    "read_plan": {
+      "docs": {
+        "00-status.md": "# Status\n\n- Gate 1 \u2014 Intent: passed\n- Gate 2 \u2014 Design: passed\n\n## Slices\n\n- [ ] Slice 1 \u2014 Lists programs from the tree   score: \u2014   note: \u2014\n- [ ] Slice 2 \u2014 Contract cases pass   score: \u2014   note: \u2014\n- [ ] Slice 3 \u2014 Dry run matches the fixture   score: \u2014   note: \u2014\n",
+        "04-slices.md": "# Slices\n\n| # | Epic | Slice | Ends with | Score | State |\n|---|---|---|---|---|---|\n| | **`beads-storage-mini/E1` \u2014 Mini epic** | | | | |\n| 1 | `beads-storage-mini/E1` | Lists programs from the tree | Programs list from the tree | \u2014 | pending |\n| 2 | `beads-storage-mini/E1` | Contract cases pass | Contract cases pass | \u2014 | pending |\n| 3 | `beads-storage-mini/E1` | Dry run matches the fixture | Dry run matches the fixture | \u2014 | pending |\n"
+      },
+      "epics": [
+        {
+          "adrs": [
+            "ADR-0001"
+          ],
+          "branch": "e1",
+          "design": "beads-storage-mini",
+          "id": "E1",
+          "key": "beads-storage-mini/E1",
+          "note": "first",
+          "pr": null,
+          "slices": [
+            {
+              "n": 1,
+              "name": "Lists programs from the tree",
+              "score": "\u2014",
+              "state": "pending"
+            },
+            {
+              "n": 2,
+              "name": "Contract cases pass",
+              "score": "\u2014",
+              "state": "pending"
+            },
+            {
+              "n": 3,
+              "name": "Dry run matches the fixture",
+              "score": "\u2014",
+              "state": "pending"
+            }
+          ],
+          "state": "in-progress"
+        }
+      ],
+      "gates": [
+        {
+          "n": "1",
+          "name": "Intent",
+          "state": "passed"
+        },
+        {
+          "n": "2",
+          "name": "Design",
+          "state": "passed"
+        }
+      ],
+      "paths": {
+        "00-status.md": "00-status.md",
+        "04-slices.md": "04-slices.md"
+      }
+    }
+  }
+}

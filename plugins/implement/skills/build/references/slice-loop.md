@@ -25,6 +25,8 @@ score <  0.90, attempt >= 3  → escalate: accept with reservations, record
 
 The loop passes its accept threshold and attempt limit to VALIDATE, and the values above are the defaults.
 
+The beads adapter can model the three steps as a formula, in `shared/tracker_port/formulas/slice-loop.toml`. Each failed attempt is a child of the slice.
+
 The escalation branch keeps the loop finite. Without this rule, a stuck slice
 blocks all following work.
 
@@ -123,13 +125,31 @@ in the same retry as everything else.
 
 ---
 
+## Workflow state calls
+
+Every call has the form `uv run "${CLAUDE_PLUGIN_ROOT}/shared/tracker.py" <operation> args`. Below, `tracker.py` stands for that full call. Before RED starts, claim the next slice. To work a named slice, use `claim-slice <id> <claimant>` instead.
+
+```
+tracker.py claim-next <claimant> [--under <epic or program>]
+tracker.py record-attempt <id> <score> --note <text>
+tracker.py set-slice-state <id> closed --score <score> --attempts <n>
+tracker.py escalate <id> <score> <reason>
+tracker.py regenerate-status-files <program> --plans-dir <dir>
+```
+
+Run `record-attempt` after each failed attempt. Run `set-slice-state` and then `regenerate-status-files` after a pass. Run `escalate` after an escalation.
+
+After every call that changes a slice, an epic, or a program, rebuild the index with `uv run "${CLAUDE_PLUGIN_ROOT}/shared/build_index.py"`. The viewer reads the committed `data/index.json`, so it shows the old state until you rebuild. The rebuild takes about 30 seconds. Run it once at the end of a pass, an escalation, or a skip, and commit the new index with the slice.
+
+Branch on the exit code only, and never parse the message. [shared/tracker-usage.md](../../../../../shared/tracker-usage.md) lists every operation, and its Failure and refusal section lists the exit codes.
+
 ## Handling the verdict
 
 | Verdict | Action |
 |---|---|
-| **PASS** | Delete `slice-<N>-feedback.md`. Record the score in `00-status.md`, check the slice off. **Sync epic status to goal.json** (see `goal-sync.md`). **Store the slice note** (see "Slice note to project memory" below). Prove the slice works to the user with a test or demo. Ask whether to continue or adjust direction. |
-| **FAIL** | Re-run GREEN with the feedback file. Do not re-run RED because the contract did not change. |
-| **ESCALATION** | Do not loop again. Record the slice under `## Escalated` in `00-status.md` with the score and reason. Discuss with the user. See the gap decision tree in `validation-scoring.md`. |
+| **PASS** | Delete `slice-<N>-feedback.md`. Run `set-slice-state <id> closed --score <score> --attempts <n>`, then `regenerate-status-files <program> --plans-dir <dir>`, then rebuild the index. These calls record the score and the epic status. **Store the slice note** (see "Slice note to project memory" below). Prove the slice works to the user with a test or demo. Ask whether to continue or adjust direction. |
+| **FAIL** | Run `record-attempt <id> <score> --note <text>`. Re-run GREEN with the feedback file. Do not re-run RED because the contract did not change. |
+| **ESCALATION** | Do not loop again. Run `escalate <id> <score> <reason>`. Then run `regenerate-status-files <program> --plans-dir <dir>` and rebuild the index. Discuss with the user. See the gap decision tree in `validation-scoring.md`. When the engineer decides to move on, run `tracker.py skip-slice <id> --reason <text> --outcome escalated`, then rebuild the index again. For a delayed slice, use `--outcome skipped`. Closing the slice unblocks the later slices. |
 
 ## Slice note to project memory
 
@@ -155,8 +175,8 @@ Retry cause: <cause, or 'none, passed on attempt 1'>.
 Constraint the code does not show: <constraint, or 'none'>.
 ```
 
-Then add `note: retained` to the slice row in `00-status.md`. If the session
-does not list the tool, or the call fails, add `note: absent` and continue.
+Then run `add-note <id> retained`. If the session does not list the tool, or the
+call fails, run `add-note <id> absent` and continue.
 A failed note never stops the loop.
 
 **Do not lower the threshold to force a pass.** If 0.90 is unreachable, the

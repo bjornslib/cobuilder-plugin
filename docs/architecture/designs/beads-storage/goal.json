@@ -1,41 +1,121 @@
 {
   "name": "beads-storage",
-  "title": "Beads is the storage layer for CoBuilder programs, epics, and slices",
+  "title": "Beads is the first storage adapter for CoBuilder programs, epics, and slices",
   "adr": "ADR-0031",
-  "adrs": ["ADR-0031", "ADR-0018", "ADR-0016", "ADR-0029", "ADR-0001", "ADR-0020"],
+  "adrs": [
+    "ADR-0031",
+    "ADR-0040",
+    "ADR-0018",
+    "ADR-0016",
+    "ADR-0029",
+    "ADR-0001",
+    "ADR-0043",
+    "ADR-0044",
+    "ADR-0047",
+    "ADR-0020"
+  ],
   "created": "2026-09-26",
-  "outcome": "CoBuilder workflow state for programs, epics, and slices is stored in beads, read back through the same data/index.json, and answered by bd ready instead of by a human rereading a markdown table.",
+  "outcome": "A tracker port sits between CoBuilder and the task system, and beads is its first adapter. Programs, epics, slices, and pull requests live in one proposed central store, which no test verifies yet. The same data/index.json serves the viewer, and one next-ready call answers what is next.",
   "done_when": [
-    "a seeded tracker holds every program, epic, slice, and decision of this repository with its metadata envelope, and the counts match the current index: 16 designs, 77 epics, 47 slices, 30 ADRs",
-    "shared/build_index.py produces a byte-comparable data/index.json from the beads read plus the unchanged file sources, and the viewer needs no change",
-    "the slice ladder answers what is next with bd ready, closing slice n-1 makes slice n appear, and a gate blocks its epic until resolve",
-    "every script that writes state calls bd and degrades to the file flow when bd is absent"
+    "with formulas true, start-slice-loop pours one molecule per slice and a second call finds it",
+    "with formulas false, start-slice-loop exits 4, names the key formulas, and runs no bd call",
+    "a squash keeps the attempt history in a synced digest, and a second clone reads it",
+    "a seeded tracker holds every program, epic, slice, and pull request with its envelope, and run-time counts match the current index",
+    "shared/build_index.py gives a byte-comparable data/index.json through the projector, and a byte compare of the viewer index.html shows no viewer change",
+    "the files adapter alone projects to the current data/index.json offline, with no bd installed",
+    "next_ready(kind, under) returns the ready records of one kind, and on beads, closing slice n-1 makes slice n appear in bd ready",
+    "a pull request milestone tracks each epic it holds and blocks none. Gates 1 to 4, 2b, and 4a to 4c are scalar fields on the program issue",
+    "tracker.py exits 2 on a write with no configured adapter, and a grep check finds no call to bd outside shared/tracker_port/",
+    "a second clone runs bd sync and sees the same programs, epics, and slices",
+    "a test removes the file sources. Then one list-programs call names a program and its stage, and one next-ready call names the next slice, with zero file reads",
+    "an envelope round trip compares every value and every list item, and not only the keys",
+    "goal.json epics[] carries no branch, pr, or state in any design, and a test checks it",
+    "the fake adapter passes the same contract test as the beads adapter",
+    "a record list from the fake adapter projects to the same index as the beads one",
+    "the contract test and the projector tests read only checked-in fixtures in tests/fixtures/tracker/, and no test reads the live plans",
+    "tracker.py has one subcommand for each port operation plus doctor. Over the fake adapter it prints JSON and exits 4 on bad arguments",
+    "the reference shared/tracker-usage.md exists, and the main SKILL.md of architect, implement, pr, and artifact link it",
+    "every tracker.py operation that a skill, command, or reference names is a subcommand that tracker.py --help lists",
+    "no skill, command, or reference outside the beads adapter notes names a bd command, and the reference is in AUTHORING_REFERENCES",
+    "a program is a feature, an epic is an epic, a slice is a task, and a pull request is a milestone that tracks its epics with no blocking edge",
+    "prepare sets no custom bd type, and a consecutive pair of slices and a consecutive pair of epics each have a blocks edge",
+    "each issue title holds the record name, and external_ref and metadata.cb.id hold the cb id, unless the engineer picks the id-and-name form at review",
+    "next_ready for slices runs bd ready -t task, native_ready is true on beads, and a parity test holds on the corpus",
+    "claim-next claims one ready slice in one bd call. Nothing ready gives an empty result and exit 0, and a foreign task is never claimed",
+    "migrate-mapping converts a legacy tracker in one sync, a dry run writes nothing, and a second run changes nothing",
+    "design mode creates the program record at stage 0 with set-program-stage, and then writes each stage only through the tracker",
+    "build_index.py takes design.stage from the tracker program record, and from goal.json only when the tracker holds no record or no stage",
+    "goal.json written by design mode holds no stage when a tracker exists, and a one-time strip step removes the field from the existing files",
+    "an epic that the tracker closed reads completed on the board, and the epics of a design at implemented read completed",
+    "each Work board card shows the lane, closed slices over total slices, closed epics over total epics, the next ready slice, and the state of each pull request record",
+    "repair-status closes the epics and slices of a finished design, lists the rule for each record, closes nothing of a live design, and a second run changes nothing",
+    "the index build reads the tracker with one record read and one ready call, and an unreadable tracker gives the legacy stage with a warning, or a named failure"
   ],
   "abort_if": [
     "the metadata envelope cannot round-trip through bd create, bd update, bd export, and bd list --json without loss",
-    "the index rebuild depends on network state or on GitHub credentials, because beads is the only new source and it is local",
-    "the mapping needs a second custom type beyond program, which would mean the built-in vocabulary was misread"
+    "the index rebuild reads anything but a local database, a file, or an adapter cache, or it needs GitHub credentials. A later Linear or Jira adapter may use the network",
+    "the mapping needs a custom bd type, which would mean the built-in vocabulary was misread",
+    "the port needs a method that only one tracker can implement, and no capability flag can cover it"
   ],
   "min_work": {
     "challenge_stage_run": true,
-    "note": "The mapping was smoke-tested against bd 1.3.0 in a scratch tracker before drafting: parent-child creation, blocked-by ladder chaining, the readiness flip after close, gate creation with --blocks, and envelope round-trip through export and list --json all passed. Divergent exploration compared four storage options and kept beads with one custom type. Two risks surfaced and were accepted: the bd binary dependency with a file-flow fallback, and the missing metadata query language with the index staying the query surface."
+    "draft_review_run": true,
+    "note": "The mapping passed a smoke test against bd 1.3.0 in a scratch tracker. A second test on 2026-10-17 also passed: one pull request issue blocked two epics until bd close, and flat gate fields survived bd show. The engineer chose the tracker port that day. Not verified, and required before E2 closes: a clone-only cloud session that runs bd init and bd sync against refs/dolt/data. The Linear and Jira rows and bd claim are also not verified. Draft review rounds 1 and 2 returned rework and concerns, and the engineer ruled the second set cosmetic."
   },
-  "limits": {"warn_after_rounds": 3, "cutoff_rounds": 6},
+  "limits": {
+    "warn_after_rounds": 3,
+    "cutoff_rounds": 6
+  },
   "epics": [
     {
-      "id": "beads-storage/E1",
-      "title": "Seed the tracker: shared/beads_seed.py seeds programs, epics, slices, and decisions idempotently by external_ref"
+      "id": "E1",
+      "title": "The port: shared/tracker_port/ holds the neutral TrackerRecord and the TrackerPort with its capabilities. It also holds the one projector, the fake adapter, a read-only files adapter, and one contract test. Checked-in fixtures in tests/fixtures/tracker/ feed the fake adapter and the tests. It also holds the tracker CLI shared/tracker.py over the fake and files adapters, and the shared reference shared/tracker-usage.md. E1 ships alone, and its projector matches data/index.json offline.",
+      "outcome": "A caller reads and writes workflow state through one port, and the fake and files adapters pass the contract test.",
+      "slug": "tracker-port"
     },
     {
-      "id": "beads-storage/E2",
-      "title": "Read model: build_index.py projects entities and joins from bd list --json beside the file sources"
+      "id": "E2",
+      "title": "The beads adapter and seed-from-files. The beads adapter implements the port operation seed-from-files, which creates programs, epics, slices, and pull request issues by external_ref. It only creates, and it covers every plan with a 04-slices.md and the status-only plan skill-collision-fix. It runs bd init with --skip-agents --skip-hooks, writes the gate scalars, and derives its counts at run time. It writes the beads adapter notes. They hold the bd init consent question and its two flags, bd sync, and the claim read-back. The Dolt-in-git clone smoke check gates E2.",
+      "outcome": "Beads holds the state of programs, epics, slices, and pull requests, and a second clone sees the same state.",
+      "slug": "beads-adapter"
     },
     {
-      "id": "beads-storage/E3",
-      "title": "Write model: implement and architect scripts flip slice and epic state through bd, with evidence files and gates"
+      "id": "E3",
+      "title": "Read model: build_index.py, build_builds_view.py, and verify_gate.py read through the port and the projector. The stateful file sections generate from the tracker. The index keeps its shape, and a test checks that every join scalar comes from the envelope. The readers import the port, and they do not read 04-slices.md for state.",
+      "outcome": "The index, the gate check, and the builds view read state through the port, and the viewer needs no change.",
+      "slug": "read-model"
+    },
+    {
+      "id": "E4",
+      "title": "Write model: the implement and architect procedures and scripts write state only through the port, and every state write needs a configured adapter. Gate approvals become program scalars. A pull request issue opens at the pull request and a human closes it at the merge. The goal.json epics[] shape drops branch, pr, and state. The skill text lands here: a Workflow state section in the SKILL.md of architect, implement, pr, and artifact. The step procedures name the command.",
+      "outcome": "Every state write goes through the port, and the four main skills teach the one command.",
+      "slug": "write-model"
+    },
+    {
+      "id": "E5",
+      "title": "Beads-native features: the beads adapter uses atomic claim (update --claim --if-assignee), native ready with a parity check, a pull request gate, and a slice-loop formula whose failed attempts are wisps squashed to a digest. E5 starts after E4 and needs the engineer's approval of its design.",
+      "outcome": "The beads adapter claims atomically, answers ready natively, mirrors the pull request block as a gate, and runs the slice loop as a formula.",
+      "slug": "beads-native"
+    },
+    {
+      "id": "E6",
+      "title": "Formula-driven slice loop on beads: the config key formulas turns the slice-loop formula on or off. With formulas true, start-slice-loop pours one molecule for a slice, record-attempt adds a wisp to it, and closing the slice squashes the molecule to a digest that holds the attempt history. E6 starts after E5 and needs the engineer's approval of its design.",
+      "outcome": "On beads, each slice runs as one molecule, and a squash keeps the attempt history in a synced digest. With formulas false, the formula operation refuses and the other operations behave as before.",
+      "slug": "formula-slice-loop"
+    },
+    {
+      "id": "E7",
+      "title": "Native beads mapping and bd ready: a program is a feature, an epic is an epic, a slice is a task, and a pull request is a milestone that tracks its epics and blocks none. Blocks edges order the slices and the epics. The title holds the human name, and the seed fills the text fields. Slice readiness comes from bd ready, and the new operation claim-next claims through it. The operation migrate-mapping converts existing trackers. E7 starts after E5 and needs the engineer's approval of its design. E6 stays unbuilt, and E7 does not wait for it.",
+      "outcome": "The beads adapter uses native types, hierarchy, edges, and the ready queue, and it hides no structure in metadata.cb. One call claims the next slice. A migration converts the live trackers.",
+      "slug": "native-mapping"
+    },
+    {
+      "id": "E8",
+      "title": "The tracker is the source of stage and status, and the Work board shows it: design mode creates the program record at stage 0 and writes the stage only through the tracker. goal.json loses the stage field, and the files adapter keeps a legacy read. The index reads the stage, the epic status, the slice status, the next ready slice, and the pull request records from the tracker with one record read. Each Work board card shows them. The new operation repair-status closes the stale epics and slices once. E8 starts after E7 and needs the engineer's approval of its design. E6 stays unbuilt, and E8 does not wait for it.",
+      "outcome": "A person reads the stage and the status of every program, epic, slice, and pull request from the tracker, and the Work board shows each. A one-time repair closes the records of finished designs.",
+      "slug": "tracker-stage"
     }
   ],
-  "stage": "decided",
   "supersedes": null,
-  "rounds": 0
+  "rounds": 2
 }

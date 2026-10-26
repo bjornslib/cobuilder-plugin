@@ -29,13 +29,9 @@
   "epics": [
     {
       "id": "E1",
-      "branch": "design/options-mode",
-      "pr": null,
-      "state": "implemented",
       "note": "One epic. Four slices: the mode and its command, the report template and validator, the manifests and glossary and counts, and one real run of the mode."
     }
   ],
-  "stage": "implemented",
   "supersedes": null,
   "rounds": []
 }

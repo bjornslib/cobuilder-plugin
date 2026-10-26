@@ -1,0 +1,76 @@
+{
+  "list_before": {
+    "args": [
+      "list",
+      "--json",
+      "--all"
+    ],
+    "stdout": "[\n  {\n    \"id\": \"t-dpk\",\n    \"title\": \"demo-E1-s1\",\n    \"status\": \"closed\",\n    \"priority\": 2,\n    \"issue_type\": \"task\",\n    \"owner\": \"131568482+bjornslib@users.noreply.github.com\",\n    \"created_at\": \"2026-10-22T10:23:09Z\",\n    \"created_by\": \"Bjorn Schliebitz\",\n    \"updated_at\": \"2026-10-22T10:23:10Z\",\n    \"closed_at\": \"2026-10-22T10:23:10Z\",\n    \"close_reason\": \"Closed\",\n    \"metadata\": {\n      \"cb\": {\n        \"v\": 1,\n        \"id\": \"demo-E1-s1\",\n        \"kind\": \"slice\",\n        \"envelope\": {}\n      }\n    },\n    \"dependency_count\": 0,\n    \"dependent_count\": 0,\n    \"comment_count\": 0\n  },\n  {\n    \"id\": \"t-26o\",\n    \"title\": \"demo-E1-s2\",\n    \"status\": \"in_progress\",\n    \"priority\": 2,\n    \"issue_type\": \"task\",\n    \"assignee\": \"agent-1\",\n    \"owner\": \"131568482+bjornslib@users.noreply.github.com\",\n    \"created_at\": \"2026-10-22T10:23:08Z\",\n    \"created_by\": \"Bjorn Schliebitz\",\n    \"updated_at\": \"2026-10-22T10:23:09Z\",\n    \"started_at\": \"2026-10-22T10:23:09Z\",\n    \"lease_expires_at\": \"2026-10-22T10:28:09Z\",\n    \"heartbeat_at\": \"2026-10-22T10:23:09Z\",\n    \"metadata\": {\n      \"cb\": {\n        \"v\": 1,\n        \"id\": \"demo-E1-s2\",\n        \"kind\": \"slice\",\n        \"envelope\": {}\n      }\n    },\n    \"dependency_count\": 0,\n    \"dependent_count\": 0,\n    \"comment_count\": 0\n  },\n  {\n    \"id\": \"t-3gx\",\n    \"title\": \"demo-E1-s3\",\n    \"status\": \"open\",\n    \"priority\": 2,\n    \"issue_type\": \"task\",\n    \"owner\": \"131568482+bjornslib@users.noreply.github.com\",\n    \"created_at\": \"2026-10-22T10:23:08Z\",\n    \"created_by\": \"Bjorn Schliebitz\",\n    \"updated_at\": \"2026-10-22T10:23:08Z\",\n    \"metadata\": {\n      \"cb\": {\n        \"v\": 1,\n        \"id\": \"demo-E1-s3\",\n        \"kind\": \"slice\",\n        \"envelope\": {}\n      }\n    },\n    \"dependency_count\": 0,\n    \"dependent_count\": 0,\n    \"comment_count\": 0\n  }\n]\n",
+    "stderr": "",
+    "exit": 0
+  },
+  "claim_ok": {
+    "args": [
+      "update",
+      "t-3gx",
+      "--claim",
+      "--actor",
+      "agent-x"
+    ],
+    "stdout": "\u2713 Updated issue: t-3gx \u2014 demo-E1-s3\n",
+    "stderr": "",
+    "exit": 0
+  },
+  "list_after": {
+    "args": [
+      "list",
+      "--json",
+      "--all"
+    ],
+    "stdout": "[\n  {\n    \"id\": \"t-dpk\",\n    \"title\": \"demo-E1-s1\",\n    \"status\": \"closed\",\n    \"priority\": 2,\n    \"issue_type\": \"task\",\n    \"owner\": \"131568482+bjornslib@users.noreply.github.com\",\n    \"created_at\": \"2026-10-22T10:23:09Z\",\n    \"created_by\": \"Bjorn Schliebitz\",\n    \"updated_at\": \"2026-10-22T10:23:10Z\",\n    \"closed_at\": \"2026-10-22T10:23:10Z\",\n    \"close_reason\": \"Closed\",\n    \"metadata\": {\n      \"cb\": {\n        \"v\": 1,\n        \"id\": \"demo-E1-s1\",\n        \"kind\": \"slice\",\n        \"envelope\": {}\n      }\n    },\n    \"dependency_count\": 0,\n    \"dependent_count\": 0,\n    \"comment_count\": 0\n  },\n  {\n    \"id\": \"t-26o\",\n    \"title\": \"demo-E1-s2\",\n    \"status\": \"in_progress\",\n    \"priority\": 2,\n    \"issue_type\": \"task\",\n    \"assignee\": \"agent-1\",\n    \"owner\": \"131568482+bjornslib@users.noreply.github.com\",\n    \"created_at\": \"2026-10-22T10:23:08Z\",\n    \"created_by\": \"Bjorn Schliebitz\",\n    \"updated_at\": \"2026-10-22T10:23:09Z\",\n    \"started_at\": \"2026-10-22T10:23:09Z\",\n    \"lease_expires_at\": \"2026-10-22T10:28:09Z\",\n    \"heartbeat_at\": \"2026-10-22T10:23:09Z\",\n    \"metadata\": {\n      \"cb\": {\n        \"v\": 1,\n        \"id\": \"demo-E1-s2\",\n        \"kind\": \"slice\",\n        \"envelope\": {}\n      }\n    },\n    \"dependency_count\": 0,\n    \"dependent_count\": 0,\n    \"comment_count\": 0\n  },\n  {\n    \"id\": \"t-3gx\",\n    \"title\": \"demo-E1-s3\",\n    \"status\": \"in_progress\",\n    \"priority\": 2,\n    \"issue_type\": \"task\",\n    \"assignee\": \"agent-x\",\n    \"owner\": \"131568482+bjornslib@users.noreply.github.com\",\n    \"created_at\": \"2026-10-22T10:23:08Z\",\n    \"created_by\": \"Bjorn Schliebitz\",\n    \"updated_at\": \"2026-10-22T10:23:11Z\",\n    \"started_at\": \"2026-10-22T10:23:11Z\",\n    \"lease_expires_at\": \"2026-10-22T10:28:11Z\",\n    \"heartbeat_at\": \"2026-10-22T10:23:11Z\",\n    \"metadata\": {\n      \"cb\": {\n        \"v\": 1,\n        \"id\": \"demo-E1-s3\",\n        \"kind\": \"slice\",\n        \"envelope\": {}\n      }\n    },\n    \"dependency_count\": 0,\n    \"dependent_count\": 0,\n    \"comment_count\": 0\n  }\n]\n",
+    "stderr": "",
+    "exit": 0
+  },
+  "claim_again": {
+    "args": [
+      "update",
+      "t-3gx",
+      "--claim",
+      "--actor",
+      "agent-x"
+    ],
+    "stdout": "\u2713 Updated issue: t-3gx \u2014 demo-E1-s3\n",
+    "stderr": "",
+    "exit": 0
+  },
+  "claim_held": {
+    "args": [
+      "update",
+      "t-26o",
+      "--claim",
+      "--actor",
+      "agent-y"
+    ],
+    "stdout": "",
+    "stderr": "Error updating t-26o: issue already claimed by agent-1\nError: 1 of 1 issues failed to update\n  t-26o: updating issue: issue already claimed by agent-1\n",
+    "exit": 1
+  },
+  "claim_closed": {
+    "args": [
+      "update",
+      "t-dpk",
+      "--claim",
+      "--actor",
+      "agent-x"
+    ],
+    "stdout": "",
+    "stderr": "Error updating t-dpk: issue not claimable: status closed\nError: 1 of 1 issues failed to update\n  t-dpk: updating issue: issue not claimable: status closed\n",
+    "exit": 1
+  },
+  "ids": {
+    "demo-E1-s3": "t-3gx",
+    "demo-E1-s2": "t-26o",
+    "demo-E1-s1": "t-dpk"
+  },
+  "bd": "bd version 1.3.0 (Homebrew)"
+}
