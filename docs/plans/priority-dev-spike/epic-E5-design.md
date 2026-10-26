@@ -31,7 +31,7 @@ E5 builds no policy and no actuator. It changes the interpreter only through the
 
 ## Slice Decomposition
 1. Slice 14: `notify`. A done stop gives one `notify` step built by code. The excerpt must state what the human has to do (for example, merge the PR), because no separate external action kind exists. A label may pair `notify` with `ask_human` when the work is done and a decision is still open. The interpreter chain stays Pick, Fill, and Card, and Fill runs once for each picked step. Slice 15 labels need this kind, so it comes first.
-2. Slice 15: the fixture set. Ten sessions across projects, about 50 stops, with labels that a blind reader drafts and the engineer corrects and confirms. The split is by session.
+2. Slice 15: the fixture set. Ten sessions across projects, about 50 stops, with labels that a blind reader drafts and the engineer corrects and confirms. The split is by session. The engineer then adds more sessions so the held-out part is big enough to trust, and approves the final set. The current 10 sessions are too small for a held-out verdict on their own.
 3. Slice 16: the metric, the evaluation command, and the baseline report. The baseline records the spread over three repeats, so a later gain is read against the noise.
 4. Slice 17: the combined variant against the chain, with the slice 16 metric on the same stops.
 5. Slice 18: BootstrapFewShot, GEPA, and MIPROv2 on the train sessions only, scored on the held-out sessions.
