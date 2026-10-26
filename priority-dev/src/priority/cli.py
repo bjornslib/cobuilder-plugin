@@ -49,6 +49,13 @@ def fixtures_check(args: argparse.Namespace) -> int:
     return check.run(args.manifest, args.labels, args.real_dir)
 
 
+def eval_split(args: argparse.Namespace) -> int:
+    """Score one split of the labelled set against the interpreter."""
+    from priority.evaluation import runner  # a lazy import: only this command needs dspy and the key
+
+    return runner.run(args.manifest, args.labels, args.real_dir, args.split, args.log_dir)
+
+
 def replay(args: argparse.Namespace) -> int:
     """Replay each transcript of a folder, and write the report. Each model error ends as an Abstain."""
     from priority.replay import runner  # a lazy import: only this command needs dspy and the key
@@ -94,6 +101,17 @@ def main(argv: list[str] | None = None) -> int:
                               help="Confirmed labels file")
     check_parser.add_argument("--real-dir", type=Path, default=Path("fixtures/real"),
                               help="Folder with the real sessions, must be Git-ignored")
+    eval_parser = subparsers.add_parser("eval", help="Score one split of the labelled set")
+    eval_parser.add_argument("--split", default="train", choices=("train", "holdout"),
+                             help="The split to score (default: train)")
+    eval_parser.add_argument("--manifest", type=Path, default=Path("fixtures/set-manifest.json"),
+                             help="Manifest with session ids and stop numbers")
+    eval_parser.add_argument("--labels", type=Path, default=Path("fixtures/real/labels-confirmed.json"),
+                             help="Confirmed labels file")
+    eval_parser.add_argument("--real-dir", type=Path, default=Path("fixtures/real"),
+                             help="Folder with the real sessions, must be Git-ignored")
+    eval_parser.add_argument("--log-dir", type=Path, default=Path("reports/logs"),
+                             help="Folder for the stored call rows (default: reports/logs)")
 
     args = parser.parse_args(argv)
     if args.command == "brief":
@@ -110,9 +128,12 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "replay":
         return replay(args)
+    if args.command == "eval":
+        return eval_split(args)
 
     if args.command == "fixtures" and args.fixtures_command == "check":
         return fixtures_check(args)
+
 
     parser.print_help()
     return 0
