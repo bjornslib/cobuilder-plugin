@@ -1,10 +1,14 @@
 # Status: Clear the viewer's habit-hooks findings (mechanical-smells)
 
 - Gate 1 — Product: APPROVED 2026-10-25
+  view: http://127.0.0.1:62583/active/viewer/index.html#/mechanical-smells/build/plan/product
 - Gate 2 — Architecture: APPROVED 2026-10-25
+  view: http://127.0.0.1:62583/active/viewer/index.html#/mechanical-smells/build/plan/architecture
 - Gate 2b — Interaction design: n/a (no UI) — Screens: "no UI change: the viewer renders the same pages"
 - Gate 3 — Program Design: APPROVED 2026-10-25
+  view: http://127.0.0.1:62583/active/viewer/index.html#/mechanical-smells/build/plan/program
 - Gate 4 — Slice plan, epic designs, and rubrics: APPROVED 2026-10-26
+  view: http://127.0.0.1:62583/active/viewer/index.html#/mechanical-smells/build/epics
   - 4a Slice plan: APPROVED 2026-10-25
   - 4b Epic technical solution designs: APPROVED 2026-10-26
   - 4c Blind rubrics: APPROVED 2026-10-26
