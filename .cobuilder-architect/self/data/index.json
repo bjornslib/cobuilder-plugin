@@ -1,13 +1,13 @@
 {
   "schema_version": "1.5",
   "sources": {
-    "git_head": "c592e7c3e4f86f78f2392f9639174f42e8a1a1f4",
+    "git_head": "acb25adb4540f4575e5a809133771102a98a7b76",
     "trees": {
       "docs/architecture/adr": "sha256:a305fe9bf8e85df82ab7a47275ca93bdb79a5221b085cb30a73f987e251453d1",
       "docs/architecture/designs": "sha256:fa3dc035e9423597e024ab84cad39c48a4f81172f114c7dc99f0678eae621820",
       "docs/architecture/contexts": "sha256:6663ee456e31bfbe31401908ae494017ed864dbb9c72211b6cbdccc44d078482",
-      "docs/plans": "sha256:2f2598dc3924a34a2b41c5b56d4fb0d952d0c2bdc0a79184a0e669ac3f919d0d",
-      ".cobuilder/rubrics": "sha256:681519041b23a22221720c6776fb1c8a931212fc44955286842a83d00c2db4be"
+      "docs/plans": "sha256:c917d39d6e90a4d67e93b2725a4dd37b3e2bed1410cdad58d0c83181f10df7e8",
+      ".cobuilder/rubrics": "sha256:3d001a9b0019ba40ace4618a54b19073f12ec3faebc188dff1e418c55622fc52"
     }
   },
   "entities": {
@@ -4072,9 +4072,9 @@
         "n": 2,
         "title": "The atoms and sections: split `shell/atoms.tsx`, `shell/sections.tsx`, and the three `shell/panels/*` files",
         "ends_with": "`habit-sensors` reports no finding for those five files. The seven section renderers and the atom vocabulary import from their old files, and the section tests pass.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "mechanical-smells/3",
@@ -8137,7 +8137,7 @@
       },
       "mechanical-smells": {
         "stage_source": "tracker",
-        "next_ready": "mechanical-smells/2",
+        "next_ready": "mechanical-smells/3",
         "pull_requests": []
       },
       "nexus-borrowings": {

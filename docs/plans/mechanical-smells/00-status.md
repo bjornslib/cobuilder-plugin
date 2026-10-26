@@ -19,7 +19,7 @@ Memory (before Gate 3, or Gate 2): absent
 
 ## Slices
 - [x] Slice 1 — tracer bullet: the logic layer: `data/*` and `shell/model.ts`   score: 1 on attempt 1   note: —
-- [ ] Slice 2 — the atoms and sections   score: —   note: —
+- [x] Slice 2 — the atoms and sections   score: 1 on attempt 1   note: —
 - [ ] Slice 3 — the change surface   score: —   note: —
 - [ ] Slice 4 — the shell and chrome   score: —   note: —
 - [ ] Slice 5 — the viewer test files   score: —   note: —

@@ -30,32 +30,14 @@ from collections import defaultdict
 from pathlib import Path
 
 import pytest
+from _viewer_habit_slices import SLICE_GLOBS, SLICES, VIEWER
 
 ROOT = Path(__file__).resolve().parent.parent
-VIEWER = "plugins/artifact/viewer"
 CATALOG = ROOT / "docs/architecture/designs/mechanical-smells/findings-catalog.md"
 RESIDUAL_HEADING = "## 7. Recorded residuals"
 COMMENT_SMELL = "non-essential-comment"
-COMMENT_BASELINE = 1092
+COMMENT_BASELINE = 1082
 RESIDUAL_MAX_LINES = 30
-
-SLICES: dict[int, list[str]] = {
-    1: [
-        f"{VIEWER}/src/data/bundle.ts",
-        f"{VIEWER}/src/data/joins.ts",
-        f"{VIEWER}/src/data/types.ts",
-        f"{VIEWER}/src/data/works.ts",
-        f"{VIEWER}/src/shell/model.ts",
-    ],
-}
-SLICE_GLOBS: dict[int, list[str]] = {
-    1: [
-        f"{VIEWER}/src/data/**/*.ts",
-        f"{VIEWER}/src/data/**/*.tsx",
-        f"{VIEWER}/src/shell/model/**/*.ts",
-        f"{VIEWER}/src/shell/model/**/*.tsx",
-    ],
-}
 
 
 def _sensor_binary() -> str | None:
