@@ -77,7 +77,7 @@ function TileButton({ level, label, onOpen, children }: Omit<TileProps, "drawn">
 /**
  * One tile: a word, then the drawing scaled to fit.
  *
- * THE DRAWING IS LAID OUT AT ITS REAL SIZE AND THEN SCALED. Mermaid is asked for an
+ * The drawing is laid out at its real size and then scaled. Mermaid is asked for an
  * uncapped SVG (`useMaxWidth: false` in `loadMermaid`), so the element carries the
  * drawing's own pixel width. The miniature is that drawing under `transform: scale(k)`,
  * with `k` the tile's width over the drawing's width, measured after the SVG lands and

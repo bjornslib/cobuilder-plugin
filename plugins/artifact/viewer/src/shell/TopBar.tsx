@@ -1,17 +1,13 @@
 /**
- * The top bar. It never scrolls and it never moves.
+ * The bar never scrolls and never moves. Its three controls and one status stay on
+ * one line at every width (interaction-design section 2.1). It renders from the
+ * route before the index resolves, so the work item's name is present at first
+ * paint and the switcher's list fills in behind it: the loading state of section
+ * 3.2, a skeleton the width of a design name.
  *
- * Three controls and one status, held on one line at every width, per
- * interaction-design section 2.1. The work-item switcher rewrites the route and
- * keeps the section where the new work item can fill it.
- *
- * The bar renders from the route before the index resolves, so the work item's name
- * is present at first paint and the switcher's list fills in behind it. That is the
- * loading state of section 3.2: a skeleton the width of a design name.
- *
- * THIS FILE IS THE PORTED PROTOTYPE at `src/variations/sections-e/TopBar.tsx`, with one
- * import changed: `Theme` now comes from `./DiagramTiles`, because the port folds the
- * prototype's `Diagram.tsx` into that file.
+ * This file is the ported prototype at `src/variations/sections-e/TopBar.tsx`, with
+ * one import changed: `Theme` now comes from `./DiagramTiles`, because the port
+ * folds the prototype's `Diagram.tsx` into that file.
  */
 
 import { MobileTrigger, SkipLink, ThemeToggle, WorkBoardButton } from "./topBar/buttons";

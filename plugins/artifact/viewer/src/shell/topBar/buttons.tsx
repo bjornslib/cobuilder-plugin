@@ -42,29 +42,23 @@ export function SkipLink({ paneId }: { paneId: string }) {
 }
 
 /*
- * The mobile drawer's trigger. Below 768 px the rail is a drawer, so this is the
- * one control that reaches it, per section 9.3. At 768 px and above the rail is
- * already on screen, and the sidebar's own edge handle and `Cmd` or `Ctrl` plus
- * `B` collapse it from there.
- */
-/*
- * `variant="ghost"` is not decoration. Without it the trigger takes the
- * Button default, whose hover is `hover:bg-primary/80` — a deep teal. That
- * breaks the rule that no hover may fill with the heading colour, and this
- * trigger is reachable below 768 px. Ghost hovers to `--muted`, a light
- * tint. It is also the right M3 variant: an icon button is standard, not
- * filled.
+ * Below 768 px the rail is a drawer and this is the one control that reaches it,
+ * per section 9.3. From 768 px up the rail is on screen, and the sidebar's own
+ * edge handle and `Cmd` or `Ctrl` plus `B` collapse it.
+ *
+ * `variant="ghost"` is not decoration. The Button default hovers to
+ * `hover:bg-primary/80`, a deep teal, which breaks the rule that no hover may fill
+ * with the heading colour. Ghost hovers to `--muted`, a light tint, and an icon
+ * button is standard, not filled, in M3.
  */
 export function MobileTrigger() {
   return <SidebarTrigger variant="ghost" className="size-11 shrink-0 cursor-pointer md:hidden" />;
 }
 
 /*
- * THE WORK BOARD'S OWN ICON, per ADR-0034. The board is a drawer over
- * whatever surface the reader is on, and this is the one control that
- * opens it from any level. `aria-haspopup="dialog"` is what the drawer
- * is; the pressed state carries the open state, so a screen reader reads
- * the drawer's state on the icon itself.
+ * The Work board's own icon, per ADR-0034: the one control that opens the drawer
+ * from any level. `aria-haspopup="dialog"` is what the drawer is, and the pressed
+ * state carries the open state, so a screen reader reads it on the icon itself.
  */
 export function WorkBoardButton({ onOpenWork }: { onOpenWork: () => void }) {
   return (

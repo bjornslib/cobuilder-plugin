@@ -20,11 +20,7 @@ const LEAD_CLASS = "mt-1.5 mb-0 max-w-[92ch] font-serif text-[16px] leading-[1.5
 /**
  * The heading of a scroll-pane section. Focus moves here when the section changes.
  *
- * This is the top of the three levels. It is a full-width banner above the panels,
- * with the concept's own generous padding, so the page announces itself before any
- * panel does.
- *
- * `headingRef` is the shell's own handle on the `h1`. The move belongs to the level's
+ * `headingRef` is the shell's handle on the `h1`. The move belongs to the level's
  * mount, and the level holds the ref (`LevelHeading` in `./App.tsx`), so the ref has to
  * reach the one focusable element here rather than stop at the banner.
  */

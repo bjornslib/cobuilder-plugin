@@ -33,7 +33,6 @@ function findingItem(finding: AssessmentFinding, index: number): AccordionItem {
   };
 }
 
-/** Findings repeat, so they are an accordion. The detail opens on the reader's press. */
 function FindingList({ findings }: { findings: AssessmentFinding[] }) {
   return <BasicAccordion allowMultiple idPrefix="finding" items={findings.map(findingItem)} />;
 }
@@ -62,10 +61,8 @@ function AssessmentBody({ assessment }: { assessment: DesignAssessment }) {
 }
 
 /*
- * A record may carry an assessment and no verdict in it. The badge then
- * carries no word, exactly as it did before the shipped type declared the
- * field possibly absent, and the gloss states what an unrecorded verdict
- * means: it is not a pass.
+ * A record may carry an assessment and no verdict in it. The badge then carries no
+ * word, and the gloss says what an unrecorded verdict means: it is not a pass.
  */
 function VerdictBadge({ verdict }: { verdict: string | undefined }) {
   const word = verdict ?? "";

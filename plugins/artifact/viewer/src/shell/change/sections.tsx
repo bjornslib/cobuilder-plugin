@@ -1,35 +1,33 @@
 /**
  * The change's account: the four rows of one work item's pull request.
  *
- * A WORK ITEM AND THE PULL REQUEST ITS OWN EPICS CARRY ARE TWO ACCOUNTS OF ONE SURFACE.
+ * A work item and the pull request its own epics carry are two accounts of one surface.
  * The work's own records are the program's account, and `src/shell/sections.tsx` renders
- * them. This module renders the change's account: four rows, each read from that pull
+ * them. This module renders the change's account, with each row read from that pull
  * request's own records.
  *
- * THE FOUR ROWS ARE INTENT, PROBLEM & SOLUTION, ARCHITECTURE, AND FILE DIFFS. The fourth
+ * The four rows are Intent, Problem & Solution, Architecture, and File Diffs. The fourth
  * name stands in this account alone, and the first three repeat in the program's own
- * levels. That repetition is what makes a same-named jump across the two accounts
- * possible, so the names are fixed once in `CHANGE_LABEL` and read from there.
+ * levels. That repetition makes a same-named jump across the two accounts possible, so
+ * the names are fixed once in `CHANGE_LABEL`.
  *
- * ONE ROW IS ONE PAGED LEVEL, AND ONE SECTION IS ONE PANEL. The shell's paged level reads
+ * One row is one paged level, and one section is one panel. The shell's paged level reads
  * its section strip from the panel headings on the page and its box count from the list
- * this module returns. So `changeSections` returns the sections of one row, each a `Panel`,
- * and every part inside a section is a heading, a box, or a statement rather than a second
- * panel. This is the program account's own structure, so a level reads the same way in
- * both accounts. The sections of each row are named where `changeSections` builds them.
+ * this module returns. So `changeSections` returns the sections of one row, each a
+ * `Panel`, and every part inside a section is a heading, a box, or a statement rather
+ * than a second panel. A level reads the same way in both accounts.
  *
- * EVERY PART A ROW CANNOT REACH IS STATED IN PLACE. An open pull request carries fewer
- * records than a merged one, a level the bundle never voiced carries no audio, and a
- * picture the browser failed on is not there. Absence is a state, so a reader meets a
- * sentence where the record would be, and never a blank frame.
+ * Every part a row cannot reach is stated in place. An open pull request carries fewer
+ * records than a merged one, a level never voiced carries no audio, and a picture the
+ * browser failed on is not there. A reader meets a sentence where the record would be,
+ * and never a blank frame.
  *
- * THE LEVEL KEY BEHIND EACH ROW IS `CHANGE_LEVEL_KEY`, AND NOTHING DERIVES IT. ADR-0029
- * renamed the bundle's first level, so the row named Intent and the key beneath it read the
- * same word, and the two rows whose words differ have one table that holds the difference.
+ * `CHANGE_LEVEL_KEY` holds the level key behind each row, and nothing derives it. The
+ * two rows whose words differ from their keys have one table that holds the difference.
  *
- * THE DECISIONS THIS CHANGE LANDED COME FROM THE INDEX'S JOIN. `entry.adrs` is a second
- * list of the same fact, and this module does not read it. The shell resolves the index's
- * `adr_to_pull_request` once and hands it in, so this row and the index cannot disagree.
+ * The decisions this change landed come from the index's join. `entry.adrs` is a second
+ * list of the same fact, and this module does not read it. The shell resolves the
+ * index's `adr_to_pull_request` once and hands it in, so this row and the index agree.
  */
 
 import type { ReactNode } from "react";
@@ -51,7 +49,7 @@ export type { ChangeBodyProps, ChangeKey } from "./sectionModel";
 const NO_ENTRY =
   "The bundle holds no story entry for this pull request, so this row has no record to read.";
 
-/** One icon per row, so a row's heading and its rail entry can name it the same way. */
+/** One icon per row, so a row's heading and its rail entry name it the same way. */
 const ROW_ICON: Record<ChangeKey, LucideIcon> = {
   intent: Target,
   "problem-and-solution": GitPullRequest,
@@ -77,15 +75,14 @@ function absentSections(row: ChangeKey): ReactNode[] {
 /**
  * One row's sections, one element per panel, in the order the reader walks them.
  *
- * EACH ROW IS A PAGED LEVEL OF ITS OWN, AS IN THE PROGRAM'S ACCOUNT. The rail's four rows
- * open four levels, and the section strip of a level names that level's own sections. A
- * row used to be one long panel and the strip repeated the rail's four names, so the
- * strip told the reader nothing the rail had not told them.
+ * Each row is a paged level of its own, as in the program's account. The section strip
+ * of a level names that level's own sections. When a row was one long panel, the strip
+ * repeated the rail's four names and told the reader nothing new.
  *
- * THE ENTRY'S ABSENCE IS ONE STATED SECTION, AND NOT AN EMPTY LIST. A route can name a
- * change the bundle holds no story entry for, and the reader who asked for that row wants
- * the row they asked for, saying what it could not read. An empty list would leave the
- * pane with no strip, no boxes, and no statement at all.
+ * The entry's absence is one stated section, and not an empty list. A route can name a
+ * change the bundle holds no story entry for, and the reader who asked for that row
+ * wants to see what it could not read. An empty list would leave the pane with no strip,
+ * no boxes, and no statement at all.
  */
 export function changeSections(props: ChangeBodyProps, row: ChangeKey): ReactNode[] {
   const { entry, levels } = props;

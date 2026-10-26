@@ -54,23 +54,20 @@ function Track(props: StageProps) {
  *
  * `overflow-hidden` on the outer element clips the track. The track is one row of
  * full-width boxes and it moves by `transform`, so both directions come from the one
- * value: a step forward moves the track left and the next section enters from the
- * right, and a step back moves it right and the previous section enters from the left.
- * No second animation is written for the other direction.
+ * value: a step forward moves the track left, and a step back moves it right. No second
+ * animation is written for the other direction.
  *
- * A PERCENTAGE OFFSET IS EXACT HERE. The boxes are `w-full shrink-0`, so the track's
- * own width is exactly one box, and `-100%` of the track is exactly one step. Nothing
+ * A percentage offset is exact here. The boxes are `w-full shrink-0`, so the track's own
+ * width is exactly one box, and `-100%` of the track is exactly one step. Nothing
  * measures the stage, so nothing has to re-measure it on a resize.
  *
- * EACH BOX SCROLLS ITSELF. A box is `overflow-y-auto`, so panel content taller than
- * the stage scrolls inside the box while the track stays put. The box carries
- * `@container` for the same reason `Tile` does: the panel's inner grids measure their
- * own box and not the viewport.
+ * Each box scrolls itself. A box is `overflow-y-auto`, so panel content taller than the
+ * stage scrolls inside the box while the track stays put. The box carries `@container`
+ * for the same reason `Tile` does: the panel's inner grids measure their own box and not
+ * the viewport.
  *
- * `activeBoxRef` is the box on screen. The reading-progress strip measures it, so a
- * reader sees how far through this one section they are rather than a position in a
- * page that no longer exists. Only the active box is ref'd, so the strip can never
- * measure a box the reader cannot see.
+ * `activeBoxRef` is the box on screen. The reading-progress strip measures it, so only
+ * the active box is ref'd, and the strip can never measure a box the reader cannot see.
  *
  * The boxes off screen are `inert`. A reader cannot tab into a section they are not
  * looking at, and a screen reader does not read out three panels nobody asked for.

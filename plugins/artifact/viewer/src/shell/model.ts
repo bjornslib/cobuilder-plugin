@@ -19,16 +19,11 @@
  * The one value that does not come from `index.json` is the linked-decision list. It
  * comes from `goal.adrs[]` in `designs.js`, and `WorkItem.adrSource` says so.
  *
- * THE JOINS RESOLVE IN THE DATA MODULE, NOT HERE. `buildWorkItems`, `WorkItem`, and the
+ * The joins resolve in the data module, not here. `buildWorkItems`, `WorkItem`, and the
  * record shape a work item carries live at `@/data/works`, because building one reads
  * the joins `data/index.json` carries. This file re-exports them so the shell keeps one
- * import path, and it names no join key of its own. Slice 4 of cobuilder-viewer fixed
- * that boundary: a join resolved outside `src/data/` is a second source for one fact.
- *
- * THIS FILE IS THE PORTED PROTOTYPE at `src/variations/sections-e/model.ts`, with two
- * changes. The record types come from `@/data/bundle` rather than from the variation's
- * own copy, and the route prefix is the bare `#/` rather than `#/sections-e`, because
- * the shell is now the shipped surface rather than one variation among several.
+ * import path, and it names no join key of its own: a join resolved outside `src/data/`
+ * is a second source for one fact.
  */
 
 export { buildWorkItems } from "@/data/works";
@@ -59,6 +54,6 @@ export { carriedSectionIndex, changeRowIndex, readInLabel } from "./model/carry"
 export { railGroups, rowsOf } from "./model/railGroups";
 export type { RailGroup, RailRow, RailSource } from "./model/railTypes";
 
-/** The lead line for the stage, the publications, and the deploy status. Shared by the work-item Shipped section and the pull-request level line. */
+/** The lead of the Shipped section and of the pull-request level line. */
 export const STAGE_PUBLICATIONS_DEPLOY_LEAD =
   "The stage, the publications, and the deploy status.";

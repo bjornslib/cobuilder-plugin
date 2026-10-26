@@ -1,10 +1,8 @@
 import { useEffect, useState, type CSSProperties } from "react";
 
-/**
- * The document never scrolls, so `html` and `body` carry no overflow.
- *
- * This is applied from the shell and removed on unmount, so a host that renders this
- * shell keeps the page scroll it gave the document.
+/*
+ * The document never scrolls, so `html` and `body` carry no overflow. The lock is
+ * removed on unmount, so a host keeps the page scroll it gave the document.
  */
 function lockScroll(): () => void {
   const html = document.documentElement;
@@ -26,21 +24,17 @@ export function useDocumentNoScroll(): void {
 /**
  * Cap the shell to the visible screen, never to the window.
  *
- * The shell's rule is that the document never scrolls and only the pane does.
- * That rule has a consequence worth guarding. When the browser window is wider
- * than the screen, the surplus of the window sits outside the display. A normal
- * page lets a reader scroll sideways to reach it. This shell cannot, on purpose,
- * so everything drawn in that surplus is unreachable and no scrollbar can
- * appear to say so.
+ * The document never scrolls and only the pane does. When the window is wider
+ * than the screen, the surplus sits outside the display and a normal page lets a
+ * reader scroll sideways to reach it. This shell cannot, on purpose, so what is
+ * drawn there is unreachable and no scrollbar says so. Measured on a 1512 px
+ * screen in a 1600 px window: 88 px of the shell was off-screen, and it looked
+ * like a layout that clipped its content.
  *
- * Measured on a 1512 px screen inside a 1600 px window: 88 px of the shell was
- * off-screen and unreachable, and it looked exactly like a layout that clipped
- * its content.
- *
- * A multi-monitor setup can report the primary screen rather than the one in
- * use, so the cap can fire when it need not. The cost is then a shell that is
- * narrower than the window, which a reader can see and work around. The cost of
- * the opposite mistake is content nobody can reach.
+ * A multi-monitor setup can report the primary screen rather than the one in use,
+ * so the cap can fire when it need not. That costs a shell narrower than the
+ * window, which a reader can see. The opposite mistake costs content nobody can
+ * reach.
  */
 function measureWidthCap(): number | null {
   if (typeof window === "undefined") return null;
@@ -70,11 +64,9 @@ function watchQuery(query: string, setMatches: (matches: boolean) => void): () =
 }
 
 /**
- * True while the query matches. One listener, one boolean.
- *
- * The first read is synchronous, so the first paint already carries the right answer.
- * A `false` start would paint the rail expanded on a tablet and collapse it one frame
- * later, which is a visible jump in the layout.
+ * The first read is synchronous, so the first paint already carries the right
+ * answer. A `false` start would paint the rail expanded on a tablet and collapse
+ * it one frame later, a visible jump.
  */
 export function useMediaQuery(query: string): boolean {
   const [matches, setMatches] = useState(() => window.matchMedia(query).matches);

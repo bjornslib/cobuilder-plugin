@@ -41,9 +41,9 @@ function rowMotion(reduce: boolean | null, index: number) {
   };
 }
 
-/* The keyboard walk must never lose its place: a row the walk lands on
-   scrolls itself into view, minimally. jsdom carries no scroll target and
-   the guard is for it, not for any browser. */
+/* A row the keyboard walk lands on scrolls itself into view, minimally, so the
+   walk never loses its place. jsdom has no scroll target and the guard is for
+   it, not for any browser. */
 function useScrollIntoView(selected: boolean): RefObject<HTMLButtonElement | null> {
   const rowRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
@@ -126,11 +126,7 @@ interface DeckRowProps {
   index: number;
 }
 
-/**
- * One deck row: the design's name with its search hit marked, the epic meter,
- * the slice count, and the pull request records that the tracker holds. One line, because the deck reads
- * deep.
- */
+/** One line per row, because the deck reads deep. */
 export function DeckRow({ row, needle, selected, onSelect, index }: DeckRowProps) {
   const reduce = useReducedMotion();
   const rowRef = useScrollIntoView(selected);

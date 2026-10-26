@@ -28,10 +28,7 @@ function PaneInset({ v }: { v: ShellView }) {
   );
 }
 
-/*
- * The body row. It is the sidebar's positioned ancestor, so the rail starts
- * under the top bar and the pane sits beside it.
- */
+/* The body row is the sidebar's positioned ancestor, so the rail starts under the top bar. */
 function ShellBody({ v }: { v: ShellView }) {
   return (
     <div className="relative flex min-h-0 min-w-0 flex-1 overflow-hidden">
@@ -41,11 +38,6 @@ function ShellBody({ v }: { v: ShellView }) {
   );
 }
 
-/*
- * THE WORK BOARD'S DRAWER, mounted once. The rows, the index, and the
- * records are the shell's own answers, and the drawer holds none of
- * them when it is closed.
- */
 function ShellDrawer({ v }: { v: ShellView }) {
   const { load } = v;
   const index = load.state === "ready" ? load.index : null;

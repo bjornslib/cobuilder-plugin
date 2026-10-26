@@ -15,15 +15,14 @@ export interface GateStep {
   doc_kind?: string;
   /**
    * The portable route of the gate's authored view link, such as
-   * `#/review-link/build/plan/product`. The link lives on its own `view:`
-   * line under the gate line in 00-status.md, and the index projects its
-   * route fragment here, so the machine-specific absolute URL never travels.
-   * No surface renders it yet: the plan row already opens the same page.
+   * `#/review-link/build/plan/product`. The link lives on its own `view:` line under the
+   * gate line in 00-status.md, and the index projects its route fragment here, so the
+   * machine-specific absolute URL never travels. No surface renders it yet: the plan row
+   * already opens the same page.
    */
   view?: string;
 }
 
-/** One pull request record that the tracker holds. */
 export interface TrackerPullRequest {
   ref: string;
   number: number | null;
@@ -31,7 +30,6 @@ export interface TrackerPullRequest {
   epics: string[];
 }
 
-/** What the tracker holds for one design. */
 export interface DesignTracker {
   stage_source: "tracker" | "goal";
   next_ready: string | null;
@@ -63,7 +61,6 @@ export interface RecordIndex {
   joins: Joins;
 }
 
-/** One design with its joined epics and slices, resolved once. */
 export interface DesignRow {
   design: DesignEntity;
   epics: EpicEntity[];
@@ -75,7 +72,6 @@ export interface DesignRow {
   slicesTotal: number;
   /** The first ready slice that the tracker names, or null. */
   nextReady: SliceEntity | null;
-  /** The pull request records that the tracker holds for this design. */
   trackerPullRequests: TrackerPullRequest[];
   stageSource: "tracker" | "goal";
   /** True when the index build read the tracker. */

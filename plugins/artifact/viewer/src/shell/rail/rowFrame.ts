@@ -3,11 +3,10 @@ import { ClipboardCheck, FileText, ListTree, Network, ScrollText, Target, Triang
 import { cn } from "@/lib/utils";
 
 /*
- * One icon per row key.
- *
- * The icon is decoration, so it lives here rather than in `model.ts`: that file is the
- * data layer and it imports no React. The map is keyed on the row key, so it carries no
- * order of its own, and the two accounts share the three shapes their shared sections use.
+ * The icon is decoration, so it lives here rather than in `model.ts`: that file is
+ * the data layer and it imports no React. The map is keyed on the row key, so it
+ * carries no order of its own, and the two accounts share the three shapes their
+ * shared sections use.
  */
 export const ICONS: Record<string, LucideIcon> = {
   "program-intent": Target,
@@ -22,23 +21,23 @@ export const ICONS: Record<string, LucideIcon> = {
   "change-file-diffs": FileText,
 };
 
-/** What a row says when its record is absent, in one short line. */
 export function absentLine(missing: string[]): string {
   if (missing.length === 0) return "no record";
   return missing.join(", ");
 }
 
 /**
- * The frame every rail row shares. An available row adds the sidebar's menu treatment
- * on top of it, and a row whose record is absent keeps this frame alone.
+ * An available row adds the sidebar's menu treatment on top of this frame, and a
+ * row whose record is absent keeps the frame alone.
  *
- * `min-h-9` is section 11.2's 36 px floor for an expanded item. `group-data-[collapsible=icon]:size-11!`
- * is the same table's 44 px floor for a collapsed one, and it has to carry `!` because
- * the sidebar ships its own collapsed size as important.
+ * `min-h-9` is section 11.2's 36 px floor for an expanded item.
+ * `group-data-[collapsible=icon]:size-11!` is the same table's 44 px floor for a
+ * collapsed one, and it has to carry `!` because the sidebar ships its own
+ * collapsed size as important.
  *
  * `outline-solid` is not decoration. The sidebar's own rows carry `outline-hidden`,
- * which sets `--tw-outline-style: none`, and `outline-2` reads that variable for its
- * style. Without this line the focus ring would be two pixels of no outline at all.
+ * which sets `--tw-outline-style: none`, and `outline-2` reads that variable for
+ * its style. Without this line the focus ring would be two pixels of no outline.
  */
 export const ROW_FRAME = cn(
   "min-h-9 min-w-0 gap-2.5 rounded-md px-2.5 py-1.5",

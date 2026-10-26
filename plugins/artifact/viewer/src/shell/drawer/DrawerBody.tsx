@@ -23,7 +23,6 @@ function EmptyBoard({ deck }: { deck: Deck }) {
   );
 }
 
-/* The board: one vertical read of five lane sections. */
 function DeckBoard({ deck }: { deck: Deck }) {
   return (
     <div className="min-h-0 min-w-0 flex-1 overflow-y-auto px-3 py-2">
@@ -108,12 +107,9 @@ function DeckHandle() {
 }
 
 /**
- * The day deck, dressed in the shell's own data.
- *
- * EVERY INPUT IS THE SHELL'S OWN ANSWER. The rows are `designRowsOf`'s, the
- * records are the bundle's loaded design bodies, and the held-out counts read
- * the index's own entity list. The drawer resolves the index's joins once,
- * beside the shell's other readers, and derives nothing of its own.
+ * Every input is the shell's own answer: rows from `designRowsOf`, records from
+ * the loaded design bodies, held-out counts from the index's entity list. The
+ * drawer resolves the index joins once and derives nothing of its own.
  */
 export function DrawerBody(props: BodyProps) {
   const deck = useDeck(props);

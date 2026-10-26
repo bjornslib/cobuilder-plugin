@@ -2,10 +2,8 @@ import { EmptyNote } from "@/shell/atoms";
 
 import type { DiffHunk } from "./levels";
 
-/** How many hunks of one file the panel draws before it states the rest. */
 const HUNKS_DRAWN = 6;
 
-/** How many lines of one hunk the panel draws before it states the rest. */
 const LINES_DRAWN = 60;
 
 const NO_HUNK_NOTE =

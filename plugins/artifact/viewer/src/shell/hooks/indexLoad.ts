@@ -24,12 +24,10 @@ function readAll(setLoad: (load: IndexLoad) => void): void {
     .catch((error: unknown) => setLoad(failedLoad(error)));
 }
 
-/**
- * The three files the shell reads, and the retry that reads them again.
- *
- * The shell never waits for this. It renders the top bar and the rail from the route
- * at first paint, and the index fills in behind them, which is the loading state of
- * section 3.1.
+/*
+ * The shell never waits for this. It renders the top bar and the rail from the
+ * route at first paint, and the index fills in behind them (the loading state of
+ * section 3.1).
  */
 export function useIndexLoad(): { load: IndexLoad; reload: () => void } {
   const [load, setLoad] = useState<IndexLoad>({ state: "loading" });

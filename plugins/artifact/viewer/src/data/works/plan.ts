@@ -3,12 +3,9 @@ import type { Sources } from "./sources";
 import type { PlanDocs, WorkPart } from "./types";
 
 /**
- * The planning slug, and where it came from.
- *
- * `docs/plans/<slug>/` names the plan directory, and a design id is not always that
- * slug. The index carries no design-to-slug field, so this derives the slug from the
- * ids of the design's own slices, and accepts it only when the index also holds a
- * plan record under it.
+ * `docs/plans/<slug>/` names the plan directory, and a design id is not always that slug.
+ * The index carries no design-to-slug field, so the slug is derived from the ids of the
+ * design's own slices, and accepted only when the index also holds a plan record under it.
  */
 function planSlugFor(
   designId: string,

@@ -101,11 +101,11 @@ function CounterpartLink({ title }: { title: string }) {
 }
 
 /*
-  The heading row is a band, inset inside the card on all four sides so the
-  card's own padding and border stay visible around it. The disclosure takes a
-  ring and brightens its chevron on hover rather than taking a fill: a white
-  wash over the band mixes back to a colour close to the band itself, so it
-  would break the rule that no hover state fills with the heading colour.
+  The heading row is a band, inset inside the card on all four sides so the card's own
+  padding and border stay visible. The disclosure takes a ring and brightens its
+  chevron on hover rather than taking a fill: a white wash over the band mixes back to
+  a colour close to the band itself, which would break the rule that no hover state
+  fills with the heading colour.
 */
 function PanelHeader(props: PanelCardProps) {
   const { absent = false, action } = props;

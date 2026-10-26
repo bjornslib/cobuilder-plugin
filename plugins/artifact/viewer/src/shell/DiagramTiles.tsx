@@ -1,39 +1,27 @@
 /**
  * The three diagram levels, as three tiles.
  *
- * A tile is a miniature of one drawing, and a press opens that drawing whole. The level
- * used to be three stacked blocks, and each one carried a header bar, a lead sentence, a
- * Render button, and a source block that stood in until a press replaced it. The
- * engineer removed all of that: none of it added any value to a reader who came to see
- * the shape. So a tile holds the drawing and one word for its kind, and nothing else.
+ * A tile is a miniature of one drawing, and a press opens that drawing whole. A tile
+ * holds the drawing and one word for its kind. The engineer removed the old header bar,
+ * lead sentence, Render button, and source block, because none of them helped a reader
+ * who came to see the shape.
  *
- * THE RUNTIME LOADS WHEN THIS SECTION MOUNTS. The old rule, recorded in the prototype's
- * `Diagram.tsx` and in interaction-design section 2.3, was that Mermaid loads on the
- * reader's press and at no other moment, because the runtime is large. A tile cannot wait
- * for a press: the tile IS the drawing. So the rule becomes: the runtime loads when the
- * reader reaches the Diagrams section, and at no other moment. No other level, and
- * nothing before this section mounts, pays for it.
+ * The runtime loads when this section mounts. Interaction-design section 2.3 had Mermaid
+ * load on the reader's press, because the runtime is large. A tile cannot wait for a
+ * press, because the tile is the drawing. So no other level, and nothing before this
+ * section mounts, pays for the runtime.
  *
- * THE OFFLINE FALLBACK SURVIVES. A recorded rule says Mermaid shows the plain source
- * when the CDN is unreachable. With the source block gone, a failed render would leave
- * three empty boxes and a reader with nothing. So a failed tile states the failure in
- * one line, and its dialog shows the source as text. That is the only place the source
- * survives, and it is the fallback, not a feature: the working case has no source
- * toggle, and no reader sees the source unless the drawing could not be made.
+ * The offline fallback survives. Mermaid shows the plain source when the CDN is
+ * unreachable. Without it, a failed render would leave three empty boxes. So a failed
+ * tile states the failure in one line, and its dialog shows the source as text. No
+ * reader sees the source unless the drawing could not be made.
  *
- * ONE RUNTIME, THREE RENDERS. All three levels go through the same `loadMermaid` call,
- * one after the other. Mermaid writes a temporary element per render, so the renders
- * are sequential rather than concurrent.
+ * All three levels go through the same `loadMermaid` call, one after the other. Mermaid
+ * writes a temporary element per render, so the renders are sequential, not concurrent.
  *
- * The drawing itself is Mermaid's output for this repository's own authored source,
- * produced with `securityLevel: "strict"`. It is written with `dangerouslySetInnerHTML`,
- * which is the only inner-HTML write in this shell.
- *
- * THIS FILE IS TWO PROTOTYPES MERGED. The port folds `src/variations/sections-e/Diagram.tsx`
- * into this file, so the runtime, the theme, and the tiles have one home. The
- * prototype's `Diagram` component is not ported: it drew one level on a press, with a
- * source toggle beside it, and no surface in the shell ever read it. Its place is the
- * dialog below, and `loadMermaid`, `uncap`, `Theme`, and `MermaidApi` keep their names.
+ * The drawing is Mermaid's output for this repository's own authored source, produced
+ * with `securityLevel: "strict"`. It is written with `dangerouslySetInnerHTML`, which is
+ * the only inner-HTML write in this shell.
  */
 
 import { useState } from "react";
@@ -51,9 +39,8 @@ export { labelFor, sizeFromViewBox, uncap } from "./diagramTiles/svgText";
 const PENDING: Drawn = { state: "pending" };
 
 interface DiagramTilesProps {
-  /** The level numbers the bundle records, in ascending order: `"1"`, `"2"`, `"3"`. */
+  /** The level numbers in ascending order: `"1"`, `"2"`, `"3"`. */
   levels: string[];
-  /** The Mermaid source, per level. */
   sources: Record<string, string>;
   theme: Theme;
 }
@@ -78,11 +65,10 @@ function LevelTile({ level, sources, drawn, onOpen }: LevelTileProps) {
 }
 
 /*
-  THE ROW KEEPS THREE COLUMNS WHATEVER THE COUNT. A tile is a fixed 200 px tall
-  window onto a drawing laid out at its own size, so a wider tile shows LESS of the
-  drawing, not more: a lone tile at the full pane width scaled this drawing to 94 %
-  and left only its title strip in view. A tile therefore keeps the width it has in
-  a row of three, and a shorter row is simply short.
+  The row keeps three columns whatever the count. A tile is a fixed 200 px tall window
+  onto a drawing laid out at its own size, so a wider tile shows less of the drawing:
+  a lone tile at the full pane width scaled this drawing to 94 % and left only its
+  title strip in view. So a shorter row is simply short.
 */
 function TileGrid({ levels, sources, drawn, onOpen }: TileGridProps) {
   return (

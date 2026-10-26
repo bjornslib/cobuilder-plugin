@@ -136,11 +136,8 @@ function CardTags({ row }: { row: DesignRow }) {
 }
 
 /**
- * One design, as a tile. This is the unit that a bento variation arranges.
- *
- * Every number on the tile comes from the record index. The epic count and the
- * progress figure use `joins.epic_status`, never `epic.state`, because the join is
- * the refined value.
+ * The epic count and the progress figure use `joins.epic_status`, never
+ * `epic.state`, because the join holds the refined value.
  */
 export function DesignCard({ row }: { row: DesignRow }) {
   return (

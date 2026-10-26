@@ -5,14 +5,8 @@ import { fileURLToPath } from "node:url";
 import type { Plugin } from "vite";
 
 const viewerDir = fileURLToPath(new URL(".", import.meta.url));
-/** plugins/artifact/viewer -> the repository root that holds .cobuilder-architect/. */
 export const repoRoot = resolve(viewerDir, "..", "..", "..");
 
-/**
- * The bundle the dev server reads. `.cobuilder-architect/active` is a symlink that
- * holds the absolute path of the bundle in use, so it wins when it exists. The
- * self-bundle is the fallback, and it is the only bundle this repository needs.
- */
 function bundleRoot(): string {
   const link = join(repoRoot, ".cobuilder-architect", "active");
   if (existsSync(link)) {
@@ -83,14 +77,13 @@ function bundleHandler(root: string) {
 /**
  * Serves one real bundle tree at /bundle/ during development.
  *
- * The served viewer reaches its data as sibling `<script src="../data/*.js">` tags,
- * because it is committed inside the bundle. This application lives outside every
- * bundle, so the dev server needs a reader. The mount is the bundle root, not the
- * data directory, so the same path also reaches `assets/pr-N/level-L.png` and the
- * narration audio under `data/audio/`.
+ * The committed viewer reaches its data as sibling `<script src="../data/*.js">` tags
+ * inside the bundle, but this application lives outside every bundle, so the dev server
+ * needs a reader. The mount is the bundle root, not the data directory, so the path also
+ * reaches `assets/pr-N/level-L.png` and the narration audio under `data/audio/`.
  *
- * Read-only, serve-only, and there is no equivalent in the build: a published
- * Artifact inlines its data, per ADR-0001.
+ * Serve-only: the build has no equivalent, because a published Artifact inlines its
+ * data, per ADR-0001.
  */
 export function bundleData(): Plugin {
   return {

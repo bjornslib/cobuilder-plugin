@@ -91,8 +91,8 @@ function EpicOutcome({ work, epic }: { work: WorkItem; epic: EpicEntity }) {
 
 /*
   The slices block is absent when the epic owns no slice, on the same rule sections
-  follow. An epic with no slices states the count on its own row, so a block that
-  held nothing but a sentence about holding nothing is gone.
+  follow. The epic's own row states the count, so a block that held only a sentence
+  about holding nothing is gone.
 */
 function EpicSlices({ slices, epicId }: { slices: SliceEntity[]; epicId: string }) {
   if (slices.length === 0) return null;
@@ -111,17 +111,14 @@ interface EpicDesignProps {
 }
 
 /*
-  THE DESIGN BLOCK RENDERS ONLY WHEN A DESIGN EXISTS. It used to hold a sub-head
-  and a sentence for the case with no document, told apart by whether the work has
-  a plan directory at all. The engineer removed both sentences: a card states what
-  the epic has, and an epic with no document states nothing.
+  The design block renders only when a design exists. A card states what the epic has,
+  and an epic with no document states nothing.
 
-  The sub-head names the document and not the gate. `Gate 4b` is a process step,
-  and the document is a technical solution design.
+  The sub-head names the document and not the gate. `Gate 4b` is a process step, and
+  the document is a technical solution design.
 
-  The two chips went as well. A character count and a plan slug are bookkeeping
-  about where the document lives, and this shell names no field path and no file it
-  read. The action is the whole of what a reader needs.
+  The block has no chips. A character count and a plan slug are bookkeeping about where
+  the document lives, and this shell names no field path and no file it read.
 */
 function EpicDesign({ epic, design, openSheet }: EpicDesignProps) {
   if (!design) return null;
@@ -155,11 +152,10 @@ interface EpicDisclosureProps {
 }
 
 /*
-  THE CARD CARRIES NO BOOKKEEPING ROW. It used to open with the refined state as a
-  pill, the epic's raw state, and its branch. The engineer removed all three: a
-  state of `no-pull-request` and a raw state of `planned` are the bundle talking to
-  itself, and the branch is one line the top bar already states for the work. What
-  is left is what the epic is: its outcome here, its slices below.
+  The card carries no bookkeeping row. The refined state `no-pull-request` and the raw
+  state `planned` are the bundle talking to itself, and the top bar already states the
+  branch for the work. What is left is what the epic is: its outcome here, its slices
+  below.
 */
 export function EpicDisclosure({ work, epicId, index, openSheet }: EpicDisclosureProps) {
   const epic = work.epics.find((candidate) => candidate.epic_id === epicId);

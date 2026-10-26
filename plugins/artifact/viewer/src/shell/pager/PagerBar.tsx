@@ -10,9 +10,9 @@ const BUTTON_BASE = [
   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
 ] as const;
 /*
- * A disabled control keeps its frame and drops its affordance. The fill
- * stays in `--surface-2`, never `--band`: the heading colour on a control
- * reads as a heading.
+ * A disabled control keeps its frame and drops its affordance. The fill stays in
+ * `--surface-2`, never `--band`, because the heading colour on a control reads as a
+ * heading.
  */
 const BUTTON_OFF = "cursor-not-allowed border-dashed bg-surface-2 text-ink-faint";
 const BUTTON_ON = "cursor-pointer hover:bg-surface-2";
@@ -25,7 +25,6 @@ interface PagerButtonProps {
   onClick: () => void;
 }
 
-/** One step of the pager. The icon sits on the side the button moves toward. */
 function PagerButton({ label, icon: Icon, side, disabled, onClick }: PagerButtonProps) {
   return (
     <button
@@ -49,14 +48,14 @@ interface PagerProps {
 /**
  * The bar under the stage.
  *
- * Two navigation words and a count. Nothing here writes anything back to the bundle:
- * this viewer is a read-only projection, so no label may read as an approval. Previous
- * and Next move the reader through the level and say nothing else.
+ * Nothing here writes anything back to the bundle. This viewer is a read-only
+ * projection, so no label may read as an approval: Previous and Next move the reader
+ * through the level and say nothing else.
  *
- * A control at either end is disabled, and it says so twice: `disabled` stops the
- * press, and `aria-disabled` states the reason to a reader who reaches it by keyboard.
- * The pointer cursor is dropped with the state, because a control that cannot act must
- * not look like one that can.
+ * A control at either end is disabled, and it says so twice: `disabled` stops the press,
+ * and `aria-disabled` states the reason to a reader who reaches it by keyboard. The
+ * pointer cursor is dropped with the state, because a control that cannot act must not
+ * look like one that can.
  */
 export function SectionPager({ index, count, onPrevious, onNext }: PagerProps) {
   return (

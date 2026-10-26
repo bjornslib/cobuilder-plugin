@@ -19,12 +19,10 @@ const ACTION_CLASS = "self-start px-3.5 font-mono text-[13px] font-bold";
 /**
  * A control that navigates somewhere, drawn with SmoothUI's `smooth-button`.
  *
- * The engineer asked for every navigating control to become a proper button, and
- * `smooth-button` is the one the design system names. `variant="outline"` suits a
- * document: a reading surface is not a marketing page, and a filled brand button
- * would shout on a page whose subject is a record. The trailing arrow is the
- * `suffix` icon, and it says the control moves the reader forward rather than
- * toggling something in place.
+ * The engineer asked for every navigating control to become a proper button.
+ * `variant="outline"` suits a document: a filled brand button would shout on a page
+ * whose subject is a record. The trailing arrow says the control moves the reader
+ * forward rather than toggling something in place.
  *
  * `size="lg"` is `h-11`, which is 44 px, so section 11.2's hit target holds. The
  * horizontal padding is pulled back from the registry's `px-8`, because a document

@@ -204,3 +204,15 @@ its code.
 
 | File | Unit | Lines | Why it stays |
 |---|---|---|---|
+
+## 8. Kept why-comments
+
+The sensor flags every `//` comment of 10 or more characters and every block or JSDoc
+comment of 15 or more characters, so a comment that explains why can never reach zero
+findings. At the start of slice 6, the viewer held 986 comment findings. The median
+comment had 26 words, and only about 45 of the 980 had 8 words or fewer. The engineer
+chose on 2026-10-27 to keep the comments that explain why in the code, and to record
+them. Slices 6 and 7 review each flagged comment. They delete a comment that restates
+the code, a divider, and dead code. They keep the rest, reworded shorter where that
+helps. The tables in `kept-comments/` hold the kept count per file, and a test enforces
+them. The viewer ends with these kept why-comments as its only comment findings.

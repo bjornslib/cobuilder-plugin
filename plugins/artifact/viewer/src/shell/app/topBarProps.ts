@@ -37,10 +37,9 @@ export function failedBarProps(s: ShellState): TopBarProps {
 }
 
 /*
-  A WORKLESS CHANGE IS NAMED BY ITS PULL REQUEST. The top bar states the work
-  item's own name, and a workless route has no work item, so the id alone would
-  name it. The pull request's title says more, and it is the same word the board's
-  row states for the same pull request.
+  A workless change is named by its pull request. A workless route has no work item, so
+  the id alone would name it. The pull request's title says more, and it is the same
+  word the board's row states for the same pull request.
 */
 function workNameOf(v: ShellView): string | null {
   if (v.work) return v.work.design.name;
@@ -68,10 +67,10 @@ function identityProps(v: ShellView) {
 }
 
 /*
-  A WORKLESS CHANGE NAMES NO WORK ITEM EITHER. The top bar drops the stage badge
-  and reads the switcher as "no work item selected" for both routes, because a stage
-  and a selected work item both belong to a work item and this route has
-  none. The pull request's own state is not a stage, so it takes no badge here.
+  A workless change names no work item either. The top bar drops the stage badge and
+  reads the switcher as "no work item selected" for both routes, because a stage and a
+  selected work item both belong to a work item. The pull request's own state is not a
+  stage, so it takes no badge here.
 */
 function listProps(v: ShellView) {
   return {

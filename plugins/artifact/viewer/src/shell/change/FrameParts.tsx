@@ -4,7 +4,6 @@ import { DiagramTiles, type Theme } from "@/shell/DiagramTiles";
 
 import type { ChangeLevel } from "./levels";
 
-/** Which of the frame's two parts the reader is looking at. */
 export type ArtMode = "image" | "diagram";
 
 const FRAME_MODES = ["image", "diagram"] as const;

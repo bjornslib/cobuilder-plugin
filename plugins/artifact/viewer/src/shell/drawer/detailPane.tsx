@@ -122,7 +122,6 @@ function CloseButton({ onClose }: { onClose: () => void }) {
 interface DetailProps {
   row: DesignRow;
   records: DesignRecords | Record<string, DesignRecord> | null;
-  /** The data layer's own refined epic answer, one epic at a time. */
   epicState: EpicState;
   /** Leave the drawer entirely: the reader chose a route, not a pane. */
   onLeave: () => void;
@@ -130,12 +129,10 @@ interface DetailProps {
 }
 
 /**
- * The detail pane, the same arrangement prototype B reviewed.
- *
- * THE RECORD MARKS ARE THE SHIPPED SHELL'S OWN RULE — `recordVerdicts` from
- * `./readiness` — so this pane and the Work board cannot disagree about one
- * record. The epics' states come from the index's own join answer through
- * `resolvedJoinsOf`, whose result the drawer resolves once and holds.
+ * The detail pane, the arrangement prototype B reviewed. The record marks are
+ * the shell's own `recordVerdicts` rule from `./readiness`, so this pane and
+ * the Work board cannot disagree about one record. The epic states come from
+ * `resolvedJoinsOf`, which the drawer resolves once and holds.
  */
 export function DetailPane({ row, records, epicState, onLeave, onClose }: DetailProps) {
   return (

@@ -16,14 +16,13 @@ function observeFit(box: Box, drawing: Box, setScale: SetScale): (() => void) | 
 }
 
 /*
- * The box is the tile's box, which is the width the miniature has to fit. The drawing
- * ref is the untransformed holder of the drawing. Its `offsetWidth` is the drawing's own
- * width, because `offsetWidth` is a layout measure and an ancestor's `transform` does
- * not change it. `getBoundingClientRect` would report the scaled width instead.
+ * The box is the tile's box, which is the width the miniature has to fit. The drawing ref
+ * is the untransformed holder of the drawing. Its `offsetWidth` is the drawing's own
+ * width, because `offsetWidth` is a layout measure and an ancestor's `transform` does not
+ * change it. `getBoundingClientRect` would report the scaled width instead.
  *
- * The fitted width. The drawing is drawn at its own size and the dialog scales it, so
- * "fit" is the body's width over the drawing's own width. It is measured rather than
- * assumed, because a dialog is 92 vw and a level's drawing can be any width at all.
+ * "Fit" is the body's width over the drawing's own width. It is measured and not assumed,
+ * because a dialog is 92 vw and a level's drawing can be any width at all.
  */
 export function useFitScale<B extends HTMLElement, D extends HTMLElement>(svg: string, initial: number) {
   const boxRef = useRef<B | null>(null);

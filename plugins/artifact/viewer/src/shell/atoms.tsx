@@ -1,8 +1,8 @@
 /**
  * The small pieces every panel of this shell is built from.
  *
- * Four rules hold across all of them, and they come from the engineer's earlier
- * feedback on the prototype.
+ * Four rules hold across all of them. They come from the engineer's feedback on the
+ * prototype.
  *
  *   1. A clickable thing looks clickable. It carries `cursor-pointer`, a hover fill,
  *      a focus ring, and a lucide icon. Tailwind v4 gives a `<button>` the default
@@ -12,19 +12,13 @@
  *   3. No state relies on colour alone. Every badge carries a word and a shape marker,
  *      so the rail and the badges survive greyscale.
  *   4. The shell states absence, and it never states presence. A reader does not need
- *      to be told that a record is there. A reader does need to be told when it is not.
+ *      to be told that a record is there, but does need to be told when it is not.
  *      So one readiness state survives: absent. It reads "not present", and it is the
- *      only state that paints a pill. The present and partial pills are gone.
- *
- * The card, box, and absence vocabulary below is the record-mosaic's, and the copy is now
- * the shipped one. The prototype at `src/variations/sections-e/atoms.tsx` held the same
- * text while the arrangement was under review. The shell is the chosen arrangement, so this
- * file is where the vocabulary landed. The prototypes were removed on 2026-10-08.
+ *      only state that paints a pill.
  *
  * No component here quotes where a value came from. A panel never prints a field path,
- * a file name, or a join name. The rule is the engineer's, and the reason is simple: a
- * reader who wants an outcome does not need to know that the field is called
- * `goal.outcome`.
+ * a file name, or a join name, because a reader who wants an outcome does not need to
+ * know that the field is called `goal.outcome`.
  */
 
 export type { Tone } from "./atoms/tones";

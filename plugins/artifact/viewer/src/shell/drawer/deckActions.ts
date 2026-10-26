@@ -10,9 +10,8 @@ function stepIndex(walk: DesignRow[], selection: Selection | null, step: 1 | -1)
   return Math.min(Math.max(at + step, 0), walk.length - 1);
 }
 
-/* THE SAME ROW AGAIN IS A CLOSE. The dismissed sole is remembered for
-   as long as the same sole result holds, and the deck drops back to its
-   working height. */
+/* The same row again is a close. The dismissed sole stays remembered while
+   the same sole result holds. */
 function dismiss(state: DeckState, id: string, setSnap: SetSnap): void {
   state.setDismissed((prev) => new Set(prev).add(id));
   state.setSelection(null);
@@ -25,17 +24,14 @@ function toggleDetail(state: DeckState, id: string, setSnap: SetSnap): void {
   setSnap(0.95);
 }
 
-/* TYPING RESETS THE FILTER — `filterForTyping` is the one place
-   the rule lives — and the new needle starts a new read, so the
-   dismissed sole of the previous find does not outlive it. */
+/* Typing resets the filter (`filterForTyping` holds the rule) and starts a new
+   read, so the dismissed sole of the previous find does not outlive it. */
 function typeNeedle(state: DeckState, value: string): void {
   state.setNeedle(value);
   state.setLaneFilter(filterForTyping());
   state.setDismissed(new Set());
 }
 
-/* The selection moves through the handler in one word: an empty string is
-   no selection. */
 function selectId(state: DeckState, id: string): void {
   state.setSelection(id.length > 0 ? { id, auto: false } : null);
 }

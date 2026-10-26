@@ -19,11 +19,8 @@ export interface DecisionListProps {
 /**
  * The linked decisions, as an accordion.
  *
- * The pull request a decision reached used to sit here, as a chip on the row and as a
- * block in the body. The engineer removed it: the work item's own state already says
- * whether the work reached a pull request, so a decision did not need to say it a
- * second time. The whole record is still one press away, and it carries the fields
- * the bundle keeps for it.
+ * A decision shows no pull request. The work item's own state already says whether the
+ * work reached one, and the whole record is one press away.
  */
 export function DecisionList({ work, adrs, openSheet }: DecisionListProps) {
   const only = work.linkedAdrs.length === 1 ? [work.linkedAdrs[0].id] : [];

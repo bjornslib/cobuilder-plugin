@@ -37,10 +37,8 @@ function kindOf(line: string): DiffHunk["lines"][number]["kind"] | null {
 }
 
 /**
- * One diff text, split into its hunks and counted.
- *
- * The counts come from the diff's own `+` and `-` lines, so they cannot disagree with the
- * hunks the surface draws under them.
+ * One diff text, split into its hunks and counted. The counts come from the diff's own
+ * `+` and `-` lines, so they cannot disagree with the hunks drawn under them.
  */
 export function diffFile(path: string, text: string): DiffFile {
   const file: DiffFile = { path, adds: 0, dels: 0, binary: false, hunks: [] };
@@ -67,7 +65,6 @@ function addToHunk(file: DiffFile, line: string): void {
   current.lines.push({ kind, text: line.slice(1) });
 }
 
-/** Every file a diff holds, largest change first. */
 export function diffFiles(diff: Record<string, string>): DiffFile[] {
   return Object.entries(diff)
     .map(([path, text]) => diffFile(path, text))

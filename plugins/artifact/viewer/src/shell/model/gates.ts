@@ -6,7 +6,6 @@ export interface Gates {
   pullRequests: boolean;
   shipped: boolean;
   rubrics: boolean;
-  /** The gate steps the index holds for this feature, or null when it holds none. */
   gateSteps: GateStep[] | null;
 }
 
@@ -15,15 +14,12 @@ export interface Gates {
  * One of this work's own epics carries a pull request, or the work states the pull
  * request it will open. A design's `pr-draft.md` is authored before the code exists,
  * and it is the only pull-request record a work in the design stage has. Excluding
- * it left the level absent and the route silently redirected to Intent, which is the
- * shell stating that a level holds nothing while its first block was waiting to be
- * read.
+ * it left the level absent and redirected the route to Intent without a word.
  */
 function hasPullRequest(work: WorkItem): boolean {
   return work.pullRequests.length >= 1 || Boolean(work.record?.pr_draft);
 }
 
-/* The stage is implemented, or a publication exists for one of this work's own. */
 function hasShipped(work: WorkItem): boolean {
   return work.design.stage === "implemented" || work.publications.length >= 1;
 }
@@ -43,10 +39,10 @@ function hasGateRecord(work: WorkItem): boolean {
  * A section that fails its rule is absent from the rail. It is never disabled,
  * because an empty section wastes a click.
  *
- * Two of the three rules are narrow on purpose, and the corpus is why. A work item
- * whose decisions reach pull requests has not thereby opened them:
- * `joins.adr_to_pull_request` never feeds the Pull requests group, and a publication
- * for somebody else's pull request is not evidence that this work shipped.
+ * Two of the three rules are narrow on purpose. A work item whose decisions reach pull
+ * requests has not thereby opened them: `joins.adr_to_pull_request` never feeds the
+ * Pull requests group, and a publication for somebody else's pull request is not
+ * evidence that this work shipped.
  */
 export function gatesOf(work: WorkItem): Gates {
   return {

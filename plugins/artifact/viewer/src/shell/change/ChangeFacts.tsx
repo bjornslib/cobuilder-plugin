@@ -20,7 +20,6 @@ function Tagline({ tagline }: { tagline: string | undefined }) {
   return <p className="mt-1 mb-0 max-w-[92ch] font-serif text-[16px] leading-[1.6] text-ink-mid">{tagline}</p>;
 }
 
-/** The change's own facts: what it is, when it merged, and how big it is. */
 export function ChangeFacts({ entry }: { entry: StoryEntry }) {
   return (
     <div className="flex min-w-0 flex-wrap items-center gap-3">
@@ -44,7 +43,6 @@ function DistrictItem({ district, count }: { district: string; count: number }) 
   );
 }
 
-/** The districts this diff touched, by count. */
 export function Touched({ entry }: { entry: StoryEntry }) {
   const touched = Object.entries(entry.touched ?? {}).sort((a, b) => b[1] - a[1]);
   if (touched.length === 0) return <Missing>This pull request records no touched district.</Missing>;

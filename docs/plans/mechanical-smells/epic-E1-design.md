@@ -82,12 +82,22 @@ are a snapshot of names, not of behavior.
 | 3 | The seven change-surface files report no finding, other than `non-essential-comment`. The hooks finding is gone. | 2 |
 | 4 | The 17 shell and chrome files report no finding, other than `non-essential-comment`. `ShellApp` and `Theme` still export. | 3 |
 | 5 | The 20 test files report no finding, other than `non-essential-comment`, apart from recorded callbacks. Every assertion stays. | 4 |
-| 6 | The 42 source files report no comment finding. The sample review passes. | 5 |
-| 7 | The 20 test files report no comment finding. The sample review passes. | 6 |
+| 6 | The viewer source files report no comment finding beyond the kept-comments records. The code is unchanged once comments are stripped. The sample reviews pass. | 5 |
+| 7 | The test files and `testSupport` files report no comment finding beyond the records. The code is unchanged once comments are stripped. The sample reviews pass. | 6 |
 
 Comment findings follow one rule. Slices 1 to 5 ignore the `non-essential-comment` smell,
 and they must not raise its count in their files. Slices 6 and 7 own that smell. A moved
 unit keeps its comments, so a split does not turn a comment finding into a new one.
+
+Decision on record (2026-10-27, the engineer): the sensor flags every `//` comment of 10
+or more characters and every block or JSDoc comment of 15 or more characters. A comment
+that explains why can therefore never reach zero findings. Slices 6 and 7 review each
+flagged comment. They delete a comment that restates the code, a divider, and dead code.
+They keep a comment that explains why, reworded shorter where that helps, and they record
+the kept count per file in the tables under
+`docs/architecture/designs/mechanical-smells/kept-comments/`. The sensor check allows a
+file no more findings than its record. The viewer ends with the kept why-comments as its
+only comment findings.
 
 The order is a chain, because each slice leaves stable exports for the next. Slice 1 is
 the tracer bullet. It proves the split pattern, the export pin, the sensor check, and the
@@ -100,8 +110,9 @@ byte-identical rebuild on pure logic, where the unit tests alone prove behavior.
   `details.file` is that file, because jscpd reports repo-wide clusters in `--file`
   mode. For slices 1 to 5 it fails while any finding other than `non-essential-comment`
   remains, and it also fails when the comment count of a slice file rises above its
-  count at the start of the slice. For slices 6 and 7 it fails while any
-  `non-essential-comment` finding remains. It skips when `habit-sensors` or
+  count at the start of the slice. For slices 6 and 7 it fails when a file has more
+  `non-essential-comment` findings than its kept-comments record, or when a file with no
+  record has any. It skips when `habit-sensors` or
   `node_modules` is absent. RED adds the entry for its slice, so the check fails before
   GREEN starts.
 - **Export pin, a guard, not a RED test.** `shell/exports.test.ts` passes before GREEN,
@@ -110,9 +121,13 @@ byte-identical rebuild on pure logic, where the unit tests alone prove behavior.
   tests, and it keeps the test count and every assertion.
 - **Build.** `tests/test_viewer_build.py` rebuilds `index.html` and compares bytes. It
   stays green. After slice 1 the rebuild is byte-identical.
-- **Comment sample.** After slice 6 and slice 7, a reviewer takes at least 20 deleted
-  comments, chosen by a fixed seed. The reviewer counts those that explained why. More
-  than one in twenty fires the abort condition. The sample list goes into the slice
+- **Comment code guard.** `tests/test_viewer_comments_only.py` compares the minified code
+  of every viewer file with a baseline taken before slice 6. A comment change leaves the
+  code hash equal, and a code change fails it.
+- **Comment samples.** After slice 6 and slice 7, a reviewer takes at least 20 deleted
+  comments and at least 20 kept comments, chosen by a fixed seed. At most one deleted
+  comment may have explained why, and at most two kept comments may only restate the
+  code. A worse result fires the abort condition. The sample lists go into the slice
   evidence.
 - **Residuals.** A 13-to-30-line unit that stays is listed in the catalog with its file
   and line. The sensor check allows only the listed units.

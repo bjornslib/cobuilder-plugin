@@ -14,14 +14,11 @@ function isRecordIndex(value: unknown): value is RecordIndex {
 }
 
 /**
- * Read the record index, from the inlined global when a published file provided
- * one, and from the served bundle otherwise.
- *
- * The fetch below is the served path: it reaches outside the built file for a
- * sibling. A published Artifact inlines `window.INDEX` as a literal instead, so the
- * served path is the code `export_artifact.py` deletes at that point. The marker
- * pair that names it lives in `src/index.html`'s seam block, because no `.ts` module
- * here can carry a `//` comment through the build.
+ * The fetch below is the served path, and it reaches outside the built file for a
+ * sibling. A published Artifact inlines `window.INDEX` as a literal, so
+ * `export_artifact.py` deletes the served path. The marker pair that names it sits in
+ * `src/index.html`'s seam block, because no `.ts` module here can carry a `//` comment
+ * through the build.
  */
 export async function loadIndex(): Promise<RecordIndex> {
   if (isRecordIndex(window.INDEX)) {
@@ -60,11 +57,8 @@ export function joinsOf(index: RecordIndex): Joins {
 }
 
 /**
- * How many slices the index could not join to an epic.
- *
- * The index carries the unresolved ones as a map keyed by slice id, and the shell shows
- * the count. The key is named here rather than in the shell, so one module knows the
- * shape of the index and no surface does.
+ * The index carries the unresolved slices as a map keyed by slice id. The key is named
+ * here, not in the shell, so one module knows the shape of the index and no surface does.
  */
 export function unresolvedSliceCount(index: RecordIndex): number {
   return Object.keys(joinsOf(index).slice_to_epic_unresolved).length;

@@ -26,7 +26,6 @@ function BeatCards({ work }: { work: WorkItem }) {
   );
 }
 
-/** Problem and solution. Two cards, and the narrative beats are their rows. */
 export function ProblemSolutionSection({ work, levelState }: { work: WorkItem; levelState: LevelState }) {
   return (
     <Panel title="Problem and solution" icon={Scale} absent={!levelState.available}>
@@ -59,7 +58,6 @@ export function RisksSection({ work }: { work: WorkItem }) {
   );
 }
 
-/** Unknowns. */
 export function UnknownsSection({ work }: { work: WorkItem }) {
   const unknowns = work.record?.intent?.unknowns ?? [];
   return (

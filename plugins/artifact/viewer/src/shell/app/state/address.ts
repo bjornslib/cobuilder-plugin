@@ -11,14 +11,13 @@ type Levels = NonNullable<ReturnType<typeof levelsOf>>;
 
 const LEVEL_SECTIONS = ["intent", "problem-and-solution", "architecture"] as const;
 
-/* Which sections this work fills. A section that fails its rule is absent. */
 function levelSections(levels: Levels | null): SectionKey[] {
   if (!levels) return [];
   return LEVEL_SECTIONS.filter((key) => levels[key].available);
 }
 
 /*
- * A WORKLESS PULL REQUEST FILLS THE CHANGE'S ACCOUNT AND NOTHING ELSE. Its four rows
+ * A workless pull request fills the change's account and nothing else. Its four rows
  * live in `pull-requests`, so that section is what its address resolves to, and a route
  * that asks for another section redirects there and states the redirect.
  */
@@ -39,23 +38,19 @@ function useFilledSections(gates: Gates | null, levels: Levels | null, worklessP
 }
 
 /*
- * THE WORKLESS CHANGE. A route whose work segment names no design is not always an
- * address that resolved to nothing. A pull request no design carries has no work item of
- * its own, so no id names one, and `model.pullRequestHref` states that pull request's own
- * number in the work segment. `model.worklessPullRequest` reads the same rule backwards,
- * and this is where the shell applies it. So one segment names either a design or a pull
- * request, and the shell renders whichever the index holds rather than the error.
+ * The workless change. A route whose work segment names no design is not always an
+ * address that resolved to nothing. A pull request no design carries has no work item,
+ * so no id names one, and `model.pullRequestHref` puts that pull request's number in the
+ * work segment. `model.worklessPullRequest` reads the same rule backwards, and this is
+ * where the shell applies it. So one segment names a design or a pull request, and the
+ * shell renders whichever the index holds rather than the error.
  *
  * The lookup runs only where a design did not claim the segment, so a design row and its
  * own pull request can never be two answers to one address.
  *
- * THE BARE ROUTE IS THE BOARD. A route that names an id the bundle lacks is not the
- * board: it is an address that resolved to nothing, and it keeps its own error.
- *
- * THE THIRD ARGUMENT IS "THE ADDRESS RESOLVED TO NOTHING AT ALL". It used to mean "names
- * no design", and a workless pull request named no design while its address resolved to a
- * real surface. So the flag now covers both sources, and only an id neither source holds
- * keeps the route's own section and its own error.
+ * The third argument means the address resolved to nothing at all. A workless pull
+ * request names no design but resolves to a real surface, so the flag covers both
+ * sources, and only an id neither source holds keeps the route's own section and error.
  */
 export function useWorkAddress({ route }: ShellCore, { works, allPullRequests }: Catalog) {
   const work = route.workId ? (works.get(route.workId) ?? null) : null;

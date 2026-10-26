@@ -1,9 +1,6 @@
 /**
- * The In Short strip: a level's short summary, above the section tabs.
- *
  * The strip sits outside the section track, so a change of section leaves it alone.
- * A level with no narration draws nothing: no frame and no sentence. Listen shows only
- * when the caller passes an audio address the bundle serves.
+ * Listen shows only when the caller passes an audio address the bundle serves.
  */
 
 import { ListenControls, useListen } from "./inShort/Listen";

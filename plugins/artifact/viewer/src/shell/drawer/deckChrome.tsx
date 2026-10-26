@@ -99,9 +99,8 @@ function FilterChip({ chip, deck }: { chip: string; deck: Deck }) {
 }
 
 /*
- * THE STATE FILTER. Whole lanes, in the lanes' own vocabulary, with the
- * count each keeps. It combines with the search as AND: the strip narrows
- * where to read, the search narrows what is on the page.
+ * The state filter combines with the search as AND: the strip narrows where
+ * to read, the search narrows what is on the page.
  */
 export function FilterStrip({ deck }: { deck: Deck }) {
   return (

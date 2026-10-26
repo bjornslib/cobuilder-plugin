@@ -23,8 +23,7 @@ function EpicRowTitle({ work, epic }: { work: WorkItem; epic: EpicEntity }) {
 }
 
 /*
-  THE ROW CARRIES NO STATE PILL EITHER. It used to show the refined state beside the
-  slice count, and the refined state of every epic in this work is
+  The row carries no state pill. The refined state of every epic in this work is
   `no-pull-request`, which is the join talking about the absence of a pull request
   rather than about the epic. The count is the epic's own content, so it stays.
 */
@@ -48,14 +47,6 @@ function epicRow(work: WorkItem, epic: EpicEntity, openSheet: OpenSheet): Accord
   };
 }
 
-/**
- * How many epics one section of the paged Build level holds, and the cut itself, are
- * stated in `./model.ts` as `epicGroups`. The cut is a derivation, and the shell keeps
- * every derivation in one file. `EpicGroupSection` below states the same rule to the
- * reader, in the panel's own lead.
- */
-
-/** The accordion rows for a set of epics, in the order the caller gives them. */
 function epicRows(work: WorkItem, epics: EpicEntity[], openSheet: OpenSheet): AccordionItem[] {
   return epics.map((epic) => epicRow(work, epic, openSheet));
 }
@@ -95,8 +86,7 @@ interface EpicGroupSectionProps {
  * One section of the paged Build level: a run of epics in delivery order.
  *
  * The title names the range the section holds, so the strip says which epics are in the
- * box a reader is looking at. The route's epic opens here when it falls in this run, and
- * the section the reader lands on is the one that holds it.
+ * box. The route's epic opens here when it falls in this run.
  */
 export function EpicGroupSection({ work, group, focusEpic, openSheet }: EpicGroupSectionProps) {
   const items = useMemo(() => epicRows(work, group, openSheet), [work, group, openSheet]);
@@ -110,7 +100,6 @@ export function EpicGroupSection({ work, group, focusEpic, openSheet }: EpicGrou
   );
 }
 
-/** Slices that belong to no epic. It renders only while the bundle holds one. */
 export function UnresolvedSlicesSection({ count }: { count: number }) {
   return (
     <Panel title="Unresolved slices" icon={ShieldQuestion} lead="Slices that belong to no epic.">

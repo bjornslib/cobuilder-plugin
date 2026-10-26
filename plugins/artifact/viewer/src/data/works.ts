@@ -2,14 +2,11 @@
  * The work items an index resolves to: every join the shell consumes, computed once.
  *
  * ADR-0018 built the joins into `data/index.json`, and this module reads them. It derives
- * no join of its own, and no file outside `src/data/` names one. That is the rule slice 4
- * of cobuilder-viewer fixes: one fact has one source, and a second derivation in a
- * component is how the index and the shell come to disagree.
- *
- * THIS FILE HELD THE SHELL'S OWN MODEL UNTIL SLICE 4. `src/shell/model.ts` still holds
- * everything a level decides about a resolved work item: which sections it fills, which
- * entries the rail draws, and which route it answers. Those are the shell's rules and
- * they stay there. What moved here is the reading of the index.
+ * no join of its own, and no file outside `src/data/` names one: one fact has one source,
+ * and a second derivation in a component is how the index and the shell come to disagree
+ * (slice 4 of cobuilder-viewer). `src/shell/model.ts` holds what a level decides about a
+ * work item: which sections it fills, which entries the rail draws, and which route it
+ * answers. This module only reads the index.
  *
  * `planSlug` and `hasPlan` are the two values that are not a field of the index. A
  * design id is not always the plan directory's slug, so the slug is derived from the ids

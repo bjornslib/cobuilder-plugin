@@ -14,12 +14,10 @@ export interface TopBarProps {
   supersedes: string[];
   ready: boolean;
   /**
-   * True while the route names no work item, which is the board and a workless change.
-   *
-   * A stage belongs to a work item, so neither route carries a stage badge, and neither
-   * has a work item selected in the switcher. A workless pull request is such a route: its
-   * change account renders, and no work item is selected behind it. The loading and failed
-   * states keep the unknown badge, because "the index has not resolved" is true in both.
+   * True while the route names no work item: the board and a workless change.
+   * Neither route carries a stage badge or a selected work item, because a stage
+   * belongs to a work item. The loading and failed states keep the unknown badge,
+   * because "the index has not resolved" is true in both.
    */
   board: boolean;
   designs: SwitcherDesign[];

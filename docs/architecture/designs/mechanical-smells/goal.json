@@ -10,14 +10,14 @@
     "ADR-0016"
   ],
   "created": "2026-10-24",
-  "outcome": "The viewer reports no habit-hooks finding apart from recorded residuals, and the findings outside the viewer sit in one named epic that a later pass cuts into slices.",
+  "outcome": "The viewer reports no habit-hooks finding apart from the recorded residuals and the recorded kept why-comments, and the findings outside the viewer sit in one named epic that a later pass cuts into slices.",
   "done_when": [
     "The findings catalog lists every smell, its count, its cluster, and a verdict, and a later design reads it instead of a fresh scan",
-    "Re-running habit-sensors reports zero findings in the viewer, apart from the residual below, with the generated components/ui and components/smoothui folders excluded in .habit-hooks/config.toml",
+    "Re-running habit-sensors reports no viewer finding except the recorded residuals and the kept why-comments, with components/ui and components/smoothui excluded in .habit-hooks/config.toml",
     "Each oversized-function residual of 13 to 30 lines is one render unit or one test callback, and the catalog records it",
     "The viewer builds with npm run build, its vitest suite passes, and the committed index.html rebuilds byte-identically after the logic slice",
     "The seven section renderers and the atom and hook export names stay stable, proven by the tests that import them",
-    "A reviewer sample of the comment slices finds no deleted comment that explained why",
+    "A reviewer sample finds at most one deleted comment in twenty that explained why, and at most two kept comments in twenty that only restate the code",
     "The second epic names each remaining finding group with its count and approach, so a later pass can cut its slices"
   ],
   "abort_if": [

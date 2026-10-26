@@ -12,10 +12,9 @@ import { LEVEL_KEYS, LEVEL_TITLE, type ChangeLevel, type LevelKey } from "./keys
 /**
  * The art a level carries, read from the manifest's own hero list.
  *
- * THE MANIFEST IS THE RECORD, AND THE FILENAME IS NOT. A surface that guessed
+ * The manifest is the record, and the filename is not. A surface that guessed
  * `assets/pr-{N}/level-{L}.webp` for every level would ask for a picture the bundle does
  * not hold, and the browser would report a failed request rather than an absent record.
- * `manifest.js` names the levels that carry art, so this reads that list.
  */
 function artFor(manifest: Manifest | null, pr: number, number: number): string | null {
   const wanted = `pr-${pr}/level-${number}.webp`;
@@ -66,10 +65,9 @@ function levelAt(source: LevelSource, key: LevelKey, index: number): ChangeLevel
 /**
  * The four narration levels of one change.
  *
- * THE AUDIO ADDRESS IS DERIVED FROM THE VOICE SCRIPT, and the file itself is a separate
- * question. `data/audio/pr{N}_{level_key}.wav` is the path the bundle serves, so the level
- * key reaches a filename. The script says the level was voiced; `useServedAudio` says
- * whether the bundle still answers at that path.
+ * The audio address derives from the voice script, and the file is a separate question.
+ * The script says the level was voiced, and `useServedAudio` says whether the bundle
+ * still answers at `data/audio/pr{N}_{level_key}.wav`.
  */
 export function changeLevelsOf(
   ...[entry, story, manifest, diagrams]: [
@@ -84,7 +82,6 @@ export function changeLevelsOf(
   return LEVEL_KEYS.map((key, index) => levelAt(source, key, index));
 }
 
-/** The pull request's own timeline entry, or null when the bundle holds none. */
 export function entryOf(story: Story | null, pr: number): StoryEntry | null {
   return story?.timeline?.find((entry) => entry.pr === pr) ?? null;
 }

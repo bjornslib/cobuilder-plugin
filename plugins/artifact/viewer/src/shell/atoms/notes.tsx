@@ -7,7 +7,6 @@ import { cn } from "@/lib/utils";
 const EMPTY_NOTE_CLASS =
   "m-0 flex min-w-0 items-start gap-2 rounded-lg border border-dashed border-line bg-card/60 px-3.5 py-3 font-serif text-[15.5px] leading-[1.55] text-ink-dim";
 
-/** The shape an empty panel uses, kept beside the panel it belongs to. */
 export function EmptyNote({ children, className }: { children: ReactNode; className?: string }) {
   return (
     <p className={cn(EMPTY_NOTE_CLASS, className)}>
@@ -21,7 +20,6 @@ const FIELD_LABEL_CLASS = "font-mono text-[12px] tracking-[0.06em] text-ink-fain
 
 const FIELD_VALUE_CLASS = "font-serif text-[16px] leading-[1.5] break-words text-foreground";
 
-/** A label above its value. The shell's one key/value shape. */
 export function Field({ label, children, className }: { label: string; children: ReactNode; className?: string }) {
   return (
     <div className={cn("flex min-w-0 flex-col gap-1", className)}>
@@ -40,10 +38,9 @@ const MISSING_LINE_CLASS =
 /**
  * A record the panel could not read.
  *
- * This is the shell's empty state, and it is the point of the mockup. A missing record
- * is stated in place, never hidden and never rendered as a blank box. It names the
- * record kind and stops there: the panel does not enumerate the files it looked in,
- * because a reader cannot act on a file name and does not need one.
+ * This is the shell's empty state. A missing record is stated in place, never hidden
+ * and never rendered as a blank box. It names the record kind and stops there, because
+ * a reader cannot act on a file name.
  */
 export function Missing({ children, className }: { children: ReactNode; className?: string }) {
   return (
@@ -69,7 +66,6 @@ export function AbsentLine({ children }: { children: ReactNode }) {
   );
 }
 
-/** A quiet mono line that states an absence of a whole record, with no source named. */
 export function AbsentRecordLine({ children }: { children: ReactNode }) {
   return (
     <p className="m-0 font-mono text-[12px] leading-[1.6] text-ink-faint">{children}</p>

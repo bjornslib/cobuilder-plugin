@@ -14,10 +14,8 @@ function applyTheme(theme: Theme): () => void {
   };
 }
 
-/**
- * The theme, and the attribute that carries it.
- *
- * Light is the default and the preference persists nowhere, per section 2.3. A
+/*
+ * Light is the default and the preference persists nowhere (section 2.3): a
  * published file cannot store a preference, so the shell does not pretend to.
  */
 export function useTheme(): ThemeControl {

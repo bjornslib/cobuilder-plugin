@@ -30,11 +30,10 @@ function UnknownId({ v }: { v: ShellView }) {
 }
 
 /*
- * THE HEADING NAMES THE PULL REQUEST, NOT THE WORK ITEM. There is no work
- * item, so the design's own name has nothing to say here. A paged level
- * keeps its heading `sr-only` and moves focus onto it, so a screen reader
- * hears the pull request it landed on. The number is `worklessPr.id`,
- * which `changePr` equals for this route.
+ * The heading names the pull request, not the work item. There is no work item, so the
+ * design's name has nothing to say here. A paged level keeps its heading `sr-only` and
+ * moves focus onto it, so a screen reader hears the pull request it landed on. The
+ * number is `worklessPr.id`, which `changePr` equals for this route.
  */
 function WorklessHeading({ v, pr }: { v: ShellView; pr: PullRequest }) {
   return <LevelHeading section={v.section} work={null} gates={null} paged={v.paged} title={`Pull request ${pr.id}`} />;
@@ -52,23 +51,19 @@ function WorklessChange({ v, pr }: { v: ShellView; pr: PullRequest }) {
 }
 
 /*
- * THE WORKLESS CHANGE IS NOT THE UNKNOWN-ID ERROR. An id no design carries
- * may still name a pull request, and then the address resolves to that pull
- * request's own change account. `model.worklessPullRequest` answered above, so
- * this branch states the account rather than the error, and only an id neither
- * source holds reaches the error below.
+ * The workless change is not the unknown-id error. An id no design carries may still
+ * name a pull request. `model.worklessPullRequest` answered above, so this branch states
+ * that pull request's change account, and only an id neither source holds reaches the
+ * error.
  *
- * THE ACCOUNT IS THE CHANGE'S OWN, AND NOTHING ELSE. A pull request with no
- * design has no branch, no epic figure, and no supersedes list, so the top bar
- * shows no branch. The rail's two groups read a work item and
- * are therefore absent too, and the account's own four rows are the section
- * strip and the two pager arrows below. So a reader still reaches all four.
+ * The account is the change's own and nothing else. A pull request with no design has no
+ * branch, no epic figure, and no supersedes list, so the top bar shows no branch. The
+ * rail's two groups read a work item and are absent too. The section strip and the two
+ * pager arrows carry the account's four rows, so a reader still reaches all four.
  *
- * THE PULL REQUEST'S OWN NUMBER NAMES THE CHANGE HERE, AND `changePr` IS THAT
- * SAME NUMBER. The derivation above fixes it to the work segment's own pull
- * request for a workless route, so the heading and the rows below read one
- * number and cannot disagree. This branch therefore reads `worklessPr.id` and
- * needs no guard on `changePr`.
+ * `changePr` equals `worklessPr.id` here. The derivation above fixes it to the work
+ * segment's own pull request, so the heading and the rows read one number and cannot
+ * disagree. This branch needs no guard on `changePr`.
  */
 function WorklessContent({ v }: { v: ShellView }) {
   if (v.worklessPr === null) return <UnknownId v={v} />;
@@ -76,12 +71,10 @@ function WorklessContent({ v }: { v: ShellView }) {
 }
 
 /*
- * THE BARE ROUTE HOLDS NOTHING BEHIND THE DRAWER, per ADR-0034. The
- * drawer is the board, and it opens itself on this route, so the
- * landing is an empty pane: no copy, no second control, nothing to
- * read that the deck does not show. The reader who closes the
- * drawer here sees the empty pane and the top bar's Work icon
- * above it — the way back in is the one control the shell keeps.
+ * The bare route holds nothing behind the drawer, per ADR-0034. The drawer is the board,
+ * and it opens itself on this route, so the landing is an empty pane. A reader who
+ * closes the drawer sees the empty pane and the top bar's Work icon, which is the one
+ * way back in that the shell keeps.
  */
 export function PaneContent({ v }: { v: ShellView }) {
   if (v.board) return null;

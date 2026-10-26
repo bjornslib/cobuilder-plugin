@@ -23,7 +23,6 @@ const CLOSE_CLASS = cn(
   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
 );
 
-/* Escape closes, and focus starts on the control that closes it. */
 function useDialogKeys(onClose: () => void) {
   const closeRef = useRef<HTMLButtonElement | null>(null);
   useEffect(() => {
@@ -37,7 +36,6 @@ function useDialogKeys(onClose: () => void) {
   return closeRef;
 }
 
-/* The backdrop is the target only when the press missed the dialog. */
 function closeOnBackdrop(event: MouseEvent<HTMLDivElement>, onClose: () => void): void {
   if (event.target === event.currentTarget) onClose();
 }
@@ -142,11 +140,10 @@ function DialogShell(props: DialogProps) {
  * thousand pixels, and a popover anchored to a 380 px tile would overflow the viewport
  * before the drawing was legible.
  *
- * The pattern is the record Sheet's: a portal to `document.body`, Escape closes, the
- * backdrop closes, and the close button is 44 px. The two z-indexes come from the layer
- * scale in `src/index.css`, which lives on the root so portalled content can read it.
- * The backdrop carries no blur, because this shell already recorded what two
- * `backdrop-filter` layers do to each other in Chrome.
+ * The pattern is the record Sheet's: a portal to `document.body`, with a 44 px close
+ * button. The two z-indexes come from the layer scale in `src/index.css`, which lives on
+ * the root so portalled content can read it. The backdrop carries no blur, because this
+ * shell already recorded what two `backdrop-filter` layers do to each other in Chrome.
  *
  * A level whose render failed shows its source here instead. That is the offline
  * fallback, and the only place the source survives.

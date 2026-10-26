@@ -46,11 +46,9 @@ export interface EpicDesignEntity {
 }
 
 /**
- * One plan's Gate 2b interaction design.
- *
- * The index projects `docs/plans/<slug>/interaction-design.md` into this entity. The
- * shell reads one field from it, and it is not the body: `feature_slug` is the only
- * evidence the index carries that a plan directory exists at all for a work whose plan
+ * One plan's Gate 2b interaction design, projected from
+ * `docs/plans/<slug>/interaction-design.md`. The shell reads only `feature_slug`: it is
+ * the only evidence the index carries that a plan directory exists for a work whose plan
  * holds no gate record and no epic design.
  */
 export interface InteractionDesignEntity {
@@ -63,12 +61,10 @@ export interface InteractionDesignEntity {
 }
 
 /**
- * One slice's blind acceptance rubric.
- *
- * The index projects `.cobuilder/rubrics/<slug>/slice-N.md` into this entity. The id is
- * `<slug>/<n>`, the same string a slice entity carries, so a work joins the two by a
- * plain id lookup and no new join key exists. `body_md` is the whole file text, because
- * the rubric is a single authored document with no fields worth taking apart.
+ * One slice's blind acceptance rubric, projected from `.cobuilder/rubrics/<slug>/slice-N.md`.
+ * The id is `<slug>/<n>`, the same string a slice entity carries, so a work joins the two
+ * by a plain id lookup and no new join key exists. `body_md` is the whole file text,
+ * because the rubric is one authored document with no fields worth taking apart.
  */
 export interface RubricEntity {
   id: string;
@@ -95,9 +91,6 @@ export interface Entities {
   program_design: ProgramDesignEntity[];
   epic_design: EpicDesignEntity[];
   interaction_design: InteractionDesignEntity[];
-  /**
-   * Slice rubrics. Optional like `product_doc`: a bundle built before the kind
-   * existed carries no `rubric` key, and it must keep loading.
-   */
+  /** Optional like `product_doc`: a bundle built before the kind existed has no `rubric` key and must keep loading. */
   rubric?: RubricEntity[];
 }

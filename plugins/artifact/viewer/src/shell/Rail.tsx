@@ -1,44 +1,41 @@
 /**
- * The rail, as a shadcn sidebar. It never scrolls the pane, and it never moves.
+ * The rail never scrolls the pane and never moves. It is a `Sidebar` inside the
+ * shell's `SidebarProvider`, so three things come from the sidebar, not from this
+ * file. Below 768 px the rail is a drawer behind one control in the top bar.
+ * Between 768 px and 1200 px it collapses to icons, and the reader may collapse it
+ * at any width. `Cmd` or `Ctrl` plus `B` toggles it. The rail keeps its own
+ * scroll, per section 11.3.
  *
- * The rail is a `Sidebar` inside the shell's `SidebarProvider`, so three things come
- * from the sidebar rather than from this file. Below 768 px the rail is a drawer
- * behind one control in the top bar. Between 768 px and 1200 px it collapses to
- * icons, and the reader may also collapse it at any width. `Cmd` or `Ctrl` plus `B`
- * toggles it. The rail keeps its own scroll, per section 11.3.
+ * The rail holds no order of its own. It renders the groups `railGroups` returns,
+ * in that order, and every address and count comes from there too. `model.ts`
+ * states the rules. This file decides appearance alone: the frame, the icons, the
+ * current row, the fold, and the tooltip.
  *
- * THE RAIL HOLDS NO ORDER OF ITS OWN. It renders the groups `railGroups` returns, in
- * the order that function returns them. Every address and count comes from there too, and
- * `model.ts` states the rules. This file decides appearance alone: the frame, the icons,
- * the current row, the fold, and the tooltip.
+ * Three groups: Levels holds the three levels of the work, Also holds Plan, Epics,
+ * and Rubrics, and Review holds the four rows of the pull request.
  *
- * THREE GROUPS: LEVELS, ALSO, AND REVIEW. Levels holds the three levels of the work.
- * Also holds Plan, Epics, and Rubrics. Review holds the four rows of the pull request.
+ * The current row is the row the reader arrived on: its address is the reader's
+ * address. A section match would light more than one row at once, because the two
+ * accounts can repeat a section name.
  *
- * THE CURRENT ROW IS THE ROW THE READER ARRIVED ON. A row is current when its address is
- * the reader's address, never when it merely names the reader's section. The two accounts
- * can repeat a section name, so a section match would light more
- * than one row at once.
+ * The fold and the walk obey one convention, and the rail keeps both halves:
  *
- * THE FOLD AND THE WALK OBEY ONE CONVENTION, and the rail keeps both halves of it.
+ *   1. The group holding the current row is always open. The fold refuses to close
+ *      it, and the control states that reason rather than doing nothing in silence.
+ *      The open state is `holdsCurrent || the reader's own choice`, so a row the
+ *      reader arrives on is never hidden by a fold, however the address arrived.
+ *   2. A folded group is not a gap. The arrow walk steps the flat list `rowsOf`
+ *      returns, so it reaches every row of both groups, open or closed.
  *
- *   1. THE GROUP HOLDING THE CURRENT ROW IS ALWAYS OPEN. The fold refuses to close it,
- *      and the control states that reason rather than doing nothing in silence. The open
- *      state is therefore `holdsCurrent || the reader's own choice`, so a row the reader
- *      arrives on is never hidden by a fold, however the address arrived.
- *   2. A FOLDED GROUP IS NOT A GAP. The arrow walk steps the flat list `rowsOf` returns,
- *      so it reaches every row of both groups whether a group is open or closed. One rule,
- *      one place, and the walk stays a walk.
+ * The work board is not in the rail. ADR-0034 makes it a drawer over the shell,
+ * and the top bar's Work icon opens it from any level, so the rail renders the two
+ * groups alone.
  *
- * THE WORK BOARD IS NOT IN THE RAIL, and it is not a row of either account. ADR-0034
- * makes the board a drawer over the shell, and the top bar's Work icon is the one
- * control that opens it from any level, so the rail renders the two groups alone.
- *
- * An available row is a `SidebarMenuButton`, so it takes the sidebar's hover, focus, and
- * active treatment. A row whose record is absent is a plain anchor inside the same
- * `SidebarMenuItem`. The sidebar's own `aria-disabled` treatment sets
- * `pointer-events: none`, which would stop the tooltip that names the missing records from
- * ever opening, so the absent row owns its own frame.
+ * An available row is a `SidebarMenuButton`, so it takes the sidebar's hover,
+ * focus, and active treatment. A row whose record is absent is a plain anchor
+ * inside the same `SidebarMenuItem`, because the sidebar's `aria-disabled`
+ * treatment sets `pointer-events: none` and would stop the tooltip that names the
+ * missing records from opening. So the absent row owns its own frame.
  */
 
 import { SidebarContent, Sidebar, SidebarRail as SidebarCollapseHandle } from "@/components/ui/sidebar";

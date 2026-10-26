@@ -74,9 +74,9 @@ function AbsentTip({ row }: { row: RailRow }) {
 }
 
 /*
- * The reason is in a tooltip, per section 3.2's Nav item Disabled row, so the reader
- * sees the gap in place rather than discovering it on click. The absence is also
- * written on the row itself, so a reader who never opens the tooltip still reads it.
+ * The reason is in a tooltip, per section 3.2's Nav item Disabled row, so the
+ * reader sees the gap in place. The absence is also written on the row, so a reader
+ * who never opens the tooltip still reads it.
  */
 function AbsentRow({ row, icons }: Pick<RowProps, "row" | "icons">) {
   return (
@@ -131,8 +131,8 @@ function AvailableRow({ row, here, icons, who }: RowProps & { who: string }) {
 }
 
 /*
- * The row the reader arrived on, matched by address. A section match would light more
- * than one row at once, because the two groups repeat three section names.
+ * A section match would light more than one row at once, because the two groups
+ * repeat three section names.
  */
 export function RailRowItem({ row, here, icons }: RowProps) {
   if (!row.available) return <AbsentRow row={row} icons={icons} />;

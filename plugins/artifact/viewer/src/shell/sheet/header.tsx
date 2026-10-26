@@ -45,8 +45,8 @@ function HeaderDescription({ subject }: { subject: SheetSubject }) {
 const HEADER_CLASS = "shrink-0 gap-1.5 border-b border-line bg-surface-2 p-4 pr-14";
 
 /*
- * The Sheet is a modal surface, so it takes layer 4 from section 11.1. The
- * overlay carries the same layer, one below the content it dims.
+ * The Sheet is modal, so it takes layer 4 from section 11.1. The overlay carries
+ * the same layer, one below the content it dims.
  */
 export function RecordHeader({ subject }: { subject: SheetSubject }) {
   return (

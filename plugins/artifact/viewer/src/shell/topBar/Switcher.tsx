@@ -21,11 +21,9 @@ const PANEL_CLASS = "w-[420px] max-w-[92vw] rounded-xl border border-line bg-car
 type NameRef = RefObject<HTMLSpanElement | null>;
 
 /*
- * What the control says when it holds no work item.
- *
- * A reader on the board has picked nothing yet, and the control is how they pick. The
- * words state that selection rather than a missing record, so the control reads as the
- * way in and not as a fault. Both phrases are the shell's own.
+ * A reader on the board has picked nothing yet, and the control is how they pick.
+ * The words state that selection rather than a missing record, so the control
+ * reads as the way in and not as a fault. Both phrases are the shell's own.
  */
 function NameText({ bar, nameRef }: { bar: TopBarProps; nameRef: NameRef }) {
   const emptyName = bar.board ? "No work item selected" : "No work item";

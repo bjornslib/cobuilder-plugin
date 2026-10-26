@@ -62,10 +62,7 @@ function BoardTabs({ rows }: { rows: DesignRow[] }) {
 }
 
 /**
- * The Work board: every design in the bundle, one tile each, behind a lane filter.
- *
- * The three bento variations belong here. `Board` is the arrangement to replace,
- * and it is deliberately the only thing that decides where a tile sits.
+ * `Board` alone decides where a tile sits, so a new arrangement replaces only it.
  */
 export function WorkBoard({ rows }: { rows: DesignRow[] }) {
   return (

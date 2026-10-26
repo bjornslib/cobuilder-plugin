@@ -7,7 +7,6 @@ import { AnswerBlock } from "./AssessmentAnswer";
 import { AssessmentFindings } from "./AssessmentFindings";
 import { asLines } from "./sheetLines";
 
-/** The three sections the reading against the diff splits into, one per section of the level. */
 export type AssessmentPart = "assessment" | "findings" | "risk";
 
 type PartProps = { assessment: StoryAssessment };
@@ -84,7 +83,6 @@ export interface ChangeAssessmentPartProps {
   part: AssessmentPart;
 }
 
-/** One section of the reading written against the merged diff. */
 export function ChangeAssessmentPart({ assessment, part }: ChangeAssessmentPartProps) {
   if (!assessment) return <Missing>{NO_ASSESSMENT}</Missing>;
   const Part = ASSESSMENT_PARTS[part];

@@ -1,48 +1,42 @@
 /**
- * The Work drawer: the day deck, ported from prototype B into the shell.
+ * ADR-0034 is this file's record. The Work board is a vaul bottom drawer that the
+ * shell's Work icon opens, at two snap points: 0.6, where it opens, and 0.95,
+ * where a record reads tall. Inside, the deck is the arrangement prototype B won:
+ * five collapsible lanes in one vertical read, a state filter strip whose chips
+ * the arrow keys step, an incremental search that marks its match, and a detail
+ * pane beside the board that follows the selection.
  *
- * ADR-0034 is this file's record. The Work board is a vaul bottom drawer the
- * shell's own Work icon opens, at two snap points: 0.6, where it opens, and
- * 0.95, where a record reads tall. Inside, the deck is the arrangement the
- * two prototypes compared and prototype B won: five collapsible lanes in one
- * vertical read, a state filter strip whose chips the arrow keys step, an
- * incremental search that marks its match, resets the filter the moment it
- * has a needle, and auto-reads a result set of exactly one, and a detail pane
- * beside the board that follows the selection.
+ * The seven refinements are the contract, each stated in one place:
  *
- * THE SEVEN REFINEMENTS ARE THE CONTRACT, each one stated in one place:
- *
- *   1. Typing anything resets the filter to All — `filterForTyping`.
+ *   1. Typing anything resets the filter to All (`filterForTyping`).
  *   2. `/` moves the cursor into the search field, from anywhere in the open
  *      drawer but the field itself.
- *   3. The header states the board's own fact; the held-out rule and its
- *      counts live in the footer, permanently.
- *   4. A result set of exactly one selects itself (`soleOf`), broadening past
- *      one takes the read away, and a changed needle starts a new read.
- *   5. The pane's link reads "Open work item", and opens the shell's own
- *      route for the design.
+ *   3. The header states the board's own fact; the held-out rule and its counts
+ *      live in the footer, permanently.
+ *   4. A result set of exactly one selects itself (`soleOf`), broadening past one
+ *      takes the read away, and a changed needle starts a new read.
+ *   5. The pane's link reads "Open work item", and opens the shell's own route for
+ *      the design.
  *   6. The pane's dismiss reads "Close".
  *   7. `←`/`→` step the filter strip's active chip from its own vocabulary,
  *      stopping at the ends (`chipStepped`).
  *
- * THE LANES FOLD, AND A FOLDED LANE IS NOT A GAP. A fold is a display
- * choice, never an exclusion: the rows stay in the walk and in the counts,
- * and the lane holding the current row refuses to fold, the same rule the
- * rail's groups hold — so the walk never lands on a row the deck cannot
- * show, and nothing a reader folded takes content off the board.
+ * A folded lane is not a gap. A fold is a display choice, never an exclusion: the
+ * rows stay in the walk and in the counts, and the lane holding the current row
+ * refuses to fold, the same rule the rail's groups hold. So the walk never lands
+ * on a row the deck cannot show.
  *
- * THE RAIL'S ARROW WALK SLEEPS WHILE THE DRAWER HOLDS THE KEYS. The shell's
- * rail walks its own rows from a window-level listener; the deck stops the
- * propagation of the keys it takes over, so an arrow inside the drawer never
- * steps the rail behind it, and the two walks never steal each other's keys.
+ * The rail's arrow walk sleeps while the drawer holds the keys. The rail walks its
+ * own rows from a window-level listener, and the deck stops the propagation of the
+ * keys it takes over, so an arrow inside the drawer never steps the rail behind it.
  *
- * THE ESCAPE IS RADIX'S, NOT THIS FILE'S. The dismissable layer listens in
- * the capture phase, so Escape closes the whole drawer before any handler
- * here runs, and the honest hint is the one that implies: Escape closes the
- * drawer, Enter toggles the detail pane.
+ * The Escape is Radix's, not this file's. The dismissable layer listens in the
+ * capture phase, so Escape closes the whole drawer before any handler here runs.
+ * The honest hint is the one that implies it: Escape closes the drawer, Enter
+ * toggles the detail pane.
  *
- * DRAWER STATE RESETS WHEN THE DRAWER CLOSES, so the next open is the whole
- * deck and no read survives a close the reader does not remember.
+ * Drawer state resets when the drawer closes, so the next open is the whole deck
+ * and no read survives a close the reader does not remember.
  */
 
 import { useState } from "react";
@@ -54,9 +48,7 @@ import type { DesignRow, RecordIndex } from "@/data/types";
 import { DrawerBody } from "./drawer/DrawerBody";
 
 /**
- * The drawer the shell mounts, once, over whatever surface it reads.
- *
- * THE RECORDS MAY STILL BE IN FLIGHT. The pane states the load rather than an
+ * The records may still be in flight. The pane states the load rather than an
  * empty pane, and the bundle's own load answers in its own time.
  */
 export interface WorkDrawerProps {
@@ -66,7 +58,6 @@ export interface WorkDrawerProps {
   rows: DesignRow[];
   /** The index, for the held-out counts and the detail pane's one join read. */
   index: RecordIndex | null;
-  /** The loaded design records, for the pane's six marks. */
   records: DesignRecords | null;
 }
 

@@ -1,33 +1,27 @@
-/* --------------------------------------------------------------- story.json */
-
 /** One narrative beat. `kind` names the beat's own job: background, intuition, boundary. */
 export interface StoryBeat {
   kind?: string;
   text?: string;
 }
 
-/** One group of files the fourth level walks together, and why they belong together. */
 export interface StoryDiffGroup {
   title?: string;
   note?: string;
   files?: string[];
 }
 
-/** One level of one pull request's narration, as `story.json` writes it. */
 export interface StoryLevel {
   narration?: string;
   /** Present exactly when the bundle holds narration audio for this level. */
   voice?: string;
   /** The gap the change closes. The second level authors it beside its narration. */
   problem?: string;
-  /** The shape the change closes the gap with. */
   solution?: string;
   beats?: StoryBeat[];
   /** The fourth level's own grouping of the files the diff touches. */
   groups?: StoryDiffGroup[];
 }
 
-/** One rejected option, with the reason the author gives. */
 export interface StoryIntentAlternative {
   option?: string;
   rejected_because?: string;
@@ -35,7 +29,6 @@ export interface StoryIntentAlternative {
 
 /**
  * The author's own statement, captured by Generate mode before the code existed.
- *
  * `source` is `inferred` when no author statement survives and the block is a reading of
  * the diff. The surface states that in place rather than passing it off as authorship.
  */
@@ -58,7 +51,6 @@ export interface StoryIntent {
   unknowns?: string[];
 }
 
-/** One of the assessment's three answers, each with the evidence it stands on. */
 export interface StoryAssessmentAnswer {
   answer?: string;
   verdict?: string;
@@ -84,8 +76,6 @@ export interface StoryBoundaryCheck {
 }
 
 /**
- * The reading written against the merged diff, as `story.json` writes it.
- *
  * `stage` is `design` for an assessment written before the code existed, and
  * `retrospective` for one written after the merge, whose findings are observations.
  */
@@ -105,13 +95,11 @@ export interface StoryAssessment {
 }
 
 /**
- * One pull request's timeline entry.
+ * The levels are keyed by name, not by number: `intent`, `problem_solution`,
+ * `architecture`, and `file_changes`. A level's number is the position of its key in that
+ * order, and no field carries it.
  *
- * THE LEVELS ARE KEYED BY NAME, NOT BY NUMBER. The entry holds `levels` as an object
- * whose keys are `intent`, `problem_solution`, `architecture`, and `file_changes`.
- * A level's number is the position of its key in that order, and no field carries it.
- *
- * A PULL REQUEST WITH NO NARRATION CARRIES NO `levels` KEY AT ALL. An empty object would
+ * A pull request with no narration carries no `levels` key at all. An empty object would
  * state a level record that is not there, and a reader that finds the key cannot tell the
  * two apart. `extract_story.py` writes a stub entry without the key, and `?? {}` below
  * reads an older entry that carries it.
@@ -124,7 +112,6 @@ export interface StoryEntry {
   depth?: string;
   size?: { files?: number; adds?: number; dels?: number };
   touched?: Record<string, number>;
-  /** The decisions this pull request landed, by ADR id. */
   adrs?: string[];
   /** `merged`, or `open` for a pull request that has not merged. */
   status?: string;

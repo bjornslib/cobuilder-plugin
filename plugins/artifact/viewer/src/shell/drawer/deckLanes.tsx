@@ -106,9 +106,8 @@ function LaneBody({ lane, scoped, isOpen, deck }: LaneProps & { scoped: DesignRo
   );
 }
 
-/* Clicking an open lane folds it: `folded[key]` is
-   true when closed, so the next value is `isOpen` —
-   the press inverts what the lane now is. */
+/* `folded[key]` is true when closed, so a press sets the next value to
+   `isOpen`: it inverts what the lane now is. */
 function foldLane(deck: Deck, lane: Lane, { isOpen, holdsSelection }: Flags): void {
   if (holdsSelection) return;
   deck.state.setFolded((was) => ({ ...was, [lane.key]: isOpen }));
@@ -128,12 +127,11 @@ function LaneSection({ lane, deck }: LaneProps) {
 }
 
 /*
- * THE FOLD IS A DISPLAY CHOICE, AND THE CONTENT STAYS. The deck
- * folds a lane to its header line, and the rows remain mounted
- * beneath it — the walk and the counts keep them, the refusal
- * keeps the current row's lane open, and a folded lane opened by
- * the walk stays put. It is the house `rt` fold (mounted content,
- * animated height, inert off), not a v-if, because a v-if is
+ * The fold is a display choice and the content stays: the deck folds a lane to
+ * its header line and the rows remain mounted beneath it. The walk and the
+ * counts keep them, the refusal keeps the current row's lane open, and a folded
+ * lane opened by the walk stays put. It is the house `rt` fold (mounted
+ * content, animated height, inert off), not a v-if, because a v-if is
  * removal: the defect the engineer named.
  */
 export function LaneList({ deck }: { deck: Deck }) {

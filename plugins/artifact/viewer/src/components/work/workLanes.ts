@@ -1,9 +1,9 @@
 import type { DesignRow } from "@/data/types";
 
 /**
- * The lane rule is the one the approved Work board prototype fixes
+ * The approved Work board prototype fixes the lane rule
  * (`docs/architecture/designs/cobuilder-viewer/prototypes/work-prototype.html`).
- * A superseded design belongs to no lane, and it stays reachable under All.
+ * A superseded design has no lane, and stays reachable under All.
  */
 export interface Lane {
   key: string;

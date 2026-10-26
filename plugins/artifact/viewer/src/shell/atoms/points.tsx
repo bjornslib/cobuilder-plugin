@@ -62,15 +62,14 @@ const POINT_LEAD_CLASS =
 /**
  * One column of points: a shadcn `Card`, one unboxed lead, then striped rows.
  *
- * The lead is the record's own words, so it stays. It is set as prose rather than as a
- * box, above the rows, because the rows are the list and the lead is what the list is
- * about. `intent.problem` and `intent.approach` are the two leads this shell passes.
+ * The lead is the record's own words. It is set as prose above the rows and not as a
+ * box, because the rows are the list and the lead is what the list is about.
  *
- * THE STRIPE IS AN EXPLICIT INDEX, not `odd:` or `even:`. The rows sit in an `ol`
+ * The stripe is an explicit index, not `odd:` or `even:`. The rows sit in an `ol`
  * beside a header and a lead paragraph, and an index cannot be thrown off by a sibling
- * that joins the list later. Row 0 paints `bg-card`, which is `--surface` and the card's
- * own colour, and row 1 paints `bg-surface-2`. Both tokens are redefined for dark mode
- * in `index.css`, so the stripe holds in either theme.
+ * that joins the list later. Row 0 paints `bg-card`, the card's own colour, and row 1
+ * paints `bg-surface-2`. Both tokens are redefined for dark mode in `index.css`, so the
+ * stripe holds in either theme.
  */
 export function PointCard({ title, lead, points, className }: PointCardProps) {
   return (

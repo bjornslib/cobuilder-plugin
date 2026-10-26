@@ -35,7 +35,6 @@ export interface AnswerBlockProps {
   answer: StoryAssessmentAnswer | undefined;
 }
 
-/** One of the assessment's three answers: what it says, and what it stands on. */
 export function AnswerBlock({ title, answer }: AnswerBlockProps) {
   if (!answer?.answer) return null;
   return (

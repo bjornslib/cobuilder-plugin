@@ -8,19 +8,18 @@ import type { IndexLoad } from "../../hooks";
 import { buildWorkItems, switcherList, type WorkItem } from "../../model";
 
 /*
- * The board's own rows, resolved by the data layer. The work drawer reads
- * one row per design, and `designRowsOf` is the one derivation of that row.
+ * `designRowsOf` is the one derivation of the board's rows, and the work drawer reads one
+ * row per design.
  *
- * THE INDEX'S JOINS, RESOLVED ONCE AND HELD. The change's own rows read the decisions it
+ * The index's joins are resolved once and held. The change's rows read the decisions it
  * landed from the index's `adr_to_pull_request` and never from a second list, so the
  * account and the index cannot disagree about that set. The hook sits above the loading
- * and error returns, because a hook that runs on one render and not the next is the
- * defect the rules of hooks exist to prevent.
+ * and error returns, because a hook that runs on one render and not the next breaks the
+ * rules of hooks.
  *
- * The index's own pull request entities. They are the second row source the board reads,
- * and the set a workless route resolves against. The value is the index's answer or an
- * empty list, so a route read before the index lands resolves to nothing and keeps its
- * error until the index answers.
+ * The index's pull request entities are the board's second row source, and the set a
+ * workless route resolves against. Before the index lands the list is empty, so the
+ * route resolves to nothing and keeps its error until the index answers.
  */
 export function useCatalog(load: IndexLoad) {
   const ready = load.state === "ready";

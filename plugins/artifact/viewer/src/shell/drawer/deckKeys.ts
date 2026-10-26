@@ -22,10 +22,8 @@ function onChipStrip(event: KeyboardEvent): boolean {
 }
 
 /*
- * THE FILTER OWNS LEFT AND RIGHT FROM ITS STRIP. While a chip holds the
- * focus, the arrows step the active chip through the lanes' vocabulary
- * and stop at the ends. From any row or lane, left and right mean
- * nothing; up and down mean rows, and the two walks never steal a key.
+ * The filter owns left and right while a chip holds the focus. From any row
+ * or lane, left and right mean nothing, so the two walks never steal a key.
  */
 function stepChips({ event, deck }: KeyContext): boolean {
   if (!onChipStrip(event) || (event.key !== "ArrowLeft" && event.key !== "ArrowRight")) return false;
@@ -35,8 +33,6 @@ function stepChips({ event, deck }: KeyContext): boolean {
   return true;
 }
 
-/* THE SLASH FINDS THE FIELD, from any row, chip, fold, or footer. From
-   the field itself, the slash types the character. */
 function focusSearch({ event, onInput, deck }: KeyContext): boolean {
   if (event.key !== "/" || onInput) return false;
   event.preventDefault();
@@ -44,10 +40,9 @@ function focusSearch({ event, onInput, deck }: KeyContext): boolean {
   return true;
 }
 
-/* THE WALK AND THE SEARCH SHARE THE UP AND DOWN ARROWS. The stopPropagation
-   is not housekeeping: the shell's rail walks its own rows from a window
-   listener, and an arrow that took a row in the deck must not take the
-   rail behind it too. */
+/* The stopPropagation is not housekeeping: the shell's rail walks its own
+   rows from a window listener, and an arrow that took a row in the deck must
+   not take the rail behind it too. */
 function walkArrows({ event, deck }: KeyContext): boolean {
   if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return false;
   event.preventDefault();
@@ -65,10 +60,9 @@ function walkLetters({ event, onInput, deck }: KeyContext): boolean {
   return true;
 }
 
-/* TWO ENTERS, TWO JOBS. From the field, Enter reads the first result
-   tall — and again stays tall, because a field press that closed what
-   it never opened would read as a fault. From the board, Enter toggles
-   the shown row: close what is shown, show what is closed. */
+/* From the field, Enter reads the first result tall and again stays tall,
+   because a field press that closed what it never opened would read as a
+   fault. From the board, Enter toggles the shown row. */
 function pressEnter({ event, onInput, deck }: KeyContext): boolean {
   const { walk } = deck.view;
   if (event.key !== "Enter" || walk.length === 0) return false;

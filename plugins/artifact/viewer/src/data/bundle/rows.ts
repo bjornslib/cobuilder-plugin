@@ -9,12 +9,7 @@ function sortedUnique(numbers: number[]): number[] {
   return [...new Set(numbers)].sort((a, b) => a - b);
 }
 
-/**
- * One row per design, for the board, resolved from the index alone.
- *
- * `designRows` below is the derivation. This is the whole of what a board needs, so a
- * surface hands over the index and never the joins it carries.
- */
+/** A surface hands over the index and never the joins it carries. */
 export function designRowsOf(index: RecordIndex): DesignRow[] {
   const entities = entitiesOf(index);
   return designRows(
@@ -104,9 +99,9 @@ function rowSourcesOf(input: Pick<RowSources, "slices" | "joins" | "resolved"> &
 }
 
 /**
- * Resolve one row per design. Every join the Work board needs is computed here and
- * nowhere else, because ADR-0018 already computed them in `index.json` and a second
- * derivation in a component is how the two drift.
+ * Every join the Work board needs is computed here and nowhere else, because ADR-0018
+ * already computed them in `index.json`, and a second derivation in a component is how
+ * the two drift.
  */
 export function designRows(...[designs, epics, slices, joins, resolved]: DesignRowsArgs): DesignRow[] {
   const sources = rowSourcesOf({ epics, slices, joins, resolved });

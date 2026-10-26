@@ -3,7 +3,6 @@ import { useEffect, useId, useRef, useState } from "react";
 import { loadMermaid, type MermaidApi, type Theme } from "./runtime";
 import { sizeFromViewBox, uncap } from "./svgText";
 
-/** One level's drawing, as this file holds it. */
 export type Drawn =
   | { state: "pending" }
   | { state: "ready"; svg: string }
@@ -32,11 +31,10 @@ function reason(error: unknown): string {
 
 /*
   The named runtime slot (ADR-0036) is authored inline SVG, checked by
-  `check_design_svg.py` at authoring time. It never enters the mermaid
-  pipeline: it is already a drawing, so this effect settles it directly,
-  before any mermaid load, so a failed CDN load never blanks it. A script
-  element means the validator was skipped, so the tile says so instead of
-  rendering the file raw.
+  `check_design_svg.py` at authoring time. It never enters the mermaid pipeline, because
+  it is already a drawing. This effect settles it before any mermaid load, so a failed
+  CDN load never blanks it. A script element means the validator was skipped, so the
+  tile says so instead of rendering the file raw.
 */
 function settleRuntime(source: string | undefined, settle: Settle): void {
   if (source === undefined) return;
@@ -48,7 +46,7 @@ function settleRuntime(source: string | undefined, settle: Settle): void {
   );
 }
 
-/* No runtime means no drawing for any level. Each tile says so. */
+/* A failed runtime load leaves no drawing for any level, so each tile says so. */
 function failAll(levels: string[], error: unknown, settle: Settle): void {
   for (const level of levels) {
     if (level !== "runtime") settle(level, { state: "failed", message: reason(error) });

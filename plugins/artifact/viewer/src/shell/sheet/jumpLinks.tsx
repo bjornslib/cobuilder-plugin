@@ -7,7 +7,6 @@ import { cn } from "@/lib/utils";
 import { SHEET_HEADING_ATTR } from "../atoms";
 import { watchList } from "../observe/children";
 
-/** One link in the row. */
 interface SheetHeading {
   id: string;
   label: string;
@@ -29,18 +28,16 @@ function readHeadings(scroll: HTMLElement): SheetHeading[] {
 }
 
 /**
- * The headings the record rendered, in document order.
+ * The record decides the list: `Box` and `SubHead` mark the parts they render and
+ * this reads the marks, as the pane's link bar reads panels. A record with
+ * different parts gets its own row with no list to keep in step.
  *
- * THE RECORD DECIDES THE LIST. `Box` and `SubHead` mark the parts they render, and this
- * reads the marks the way the pane's link bar reads panels, so a record with different
- * parts gets its own row with no code change and no list to keep in step.
+ * A heading's label is its first element child's text, where both atoms put their
+ * words. The whole element would swallow `SubHead`'s count.
  *
- * A heading's label is its first element child's text, which is where both atoms put
- * the words they render. Reading the whole element would swallow `SubHead`'s count.
- *
- * The id is assigned here when the heading lacks one, because the reader is the only
- * place that knows the label and the DOM is its own to address. Setting an attribute
- * fires no child-list mutation, so the observer below cannot loop on itself.
+ * The id is assigned here when the heading lacks one, because only this reader
+ * knows the label. Setting an attribute fires no child-list mutation, so the
+ * observer below cannot loop on itself.
  */
 export function useSheetHeadings(scroll: HTMLElement | null, keys: readonly unknown[]): SheetHeading[] {
   const [headings, setHeadings] = useState<SheetHeading[]>([]);
@@ -99,14 +96,10 @@ interface JumpLinksProps {
 }
 
 /**
- * The row itself.
- *
  * A `nav` of anchors, like the pane's link bar, so a link is focusable and
- * right-clickable. The press is intercepted, because the record scrolls inside its own
- * container and a hash write would move the document instead.
- *
- * The row scrolls sideways when it overflows, so a record with many parts keeps every
- * link reachable rather than clipping the last one.
+ * right-clickable. The press is intercepted because the record scrolls inside its
+ * own container and a hash write would move the document instead. The row scrolls
+ * sideways when it overflows, so no link is clipped.
  */
 export function SheetJumpLinks({ headings, scroll }: JumpLinksProps) {
   const jump = useHeadingJump(scroll);

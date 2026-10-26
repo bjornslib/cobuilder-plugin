@@ -94,9 +94,9 @@ interface PullRequestDetailProps {
 /**
  * One pull request, with its own three levels.
  *
- * Section 5.3 puts this in the scroll pane rather than in a Sheet, so it stays here. The
- * bundle holds a pull request's intent and assessment on the story timeline entry, which
- * this surface does not read. So each level states what it will hold and stops.
+ * Section 5.3 puts this in the scroll pane rather than in a Sheet. The bundle holds a
+ * pull request's intent and assessment on the story timeline entry, which this surface
+ * does not read. So each level states what it will hold and stops.
  */
 export function PullRequestDetail({ work, prNumber, allPullRequests, onOpenPr }: PullRequestDetailProps) {
   const pr = allPullRequests.find((candidate) => candidate.id === prNumber);

@@ -9,13 +9,12 @@ import type { Address } from "./address";
 import type { ShellCore } from "./core";
 
 /*
- * The scroll pane, as an element. The reading-progress strip measures this ref and
- * never the window, because the document cannot scroll at all. A window-scoped
- * progress bar on this page would sit at zero forever.
+ * The reading-progress strip measures the pane ref and never the window, because the
+ * document cannot scroll at all. A window-scoped bar would sit at zero forever.
  *
- * The section links, read from the panels the pane rendered. The keys cover the
- * two moments the pane itself appears and disappears, which is what the observer
- * has to re-attach on.
+ * The jump targets are the section links, read from the panels the pane rendered. The
+ * keys cover the two moments the pane appears and disappears, which is when the observer
+ * must re-attach.
  */
 function usePaneElement({ load, route }: ShellCore) {
   const paneRef = useRef<HTMLElement | null>(null);
@@ -24,7 +23,6 @@ function usePaneElement({ load, route }: ShellCore) {
   return { paneRef, jumpTargets };
 }
 
-/* A redirect is stated, never silent. */
 function redirectInput(core: ShellCore, address: Address) {
   const { route, go, setRedirectedFrom } = core;
   const workMissing = address.work === null && address.worklessPr === null;
@@ -33,15 +31,13 @@ function redirectInput(core: ShellCore, address: Address) {
 }
 
 /*
- * SECTION 8.4'S FOCUS MOVE IS NOT SCHEDULED HERE. It used to be one frame after the
- * route changed, and that frame resolved the heading of the level being left. The move
- * belongs to the level's own mount now, and `LevelHeading` below states the whole
- * reason. This call is the pane's scroll and nothing else.
+ * Section 8.4's focus move is not scheduled here. It once ran one frame after the route
+ * changed, and that frame resolved the heading of the level being left. The move belongs
+ * to the level's own mount now, and `LevelHeading` states the whole reason.
  *
- * A route change starts the reader at the top of the pane. The four fields are the
- * whole route. They are the work item, the section, the sub-view, and the record
- * the sub-view opens, so one list covers a section change, a work-item change, an
- * epic that opens, and a pull request that opens.
+ * A route change starts the reader at the top of the pane. The four fields are the whole
+ * route: the work item, the section, the sub-view, and the record the sub-view opens. One
+ * list covers a section change, a work-item change, and an epic or pull request opening.
  */
 export function usePaneEffects(core: ShellCore, address: Address) {
   const pane = usePaneElement(core);

@@ -3,14 +3,12 @@ import type { SubjectOf } from "./subject";
 
 type Entry = { key: string; value: unknown };
 
-/** One scalar as text. Objects and nulls fall through to the caller's list reader. */
 function scalar(value: unknown): string | null {
   if (typeof value === "string") return value;
   if (typeof value === "number" || typeof value === "boolean") return String(value);
   return null;
 }
 
-/** One value as a list of lines. An entry that is not a string is shown as JSON. */
 function lines(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
   return value
@@ -18,7 +16,7 @@ function lines(value: unknown): string[] {
     .filter((entry): entry is string => typeof entry === "string" && entry.length > 0);
 }
 
-/** The detail map of a boundary rule, minus the two keys the caller already showed. */
+/** Minus the two keys the caller already showed. */
 function detailEntries(detail: Record<string, unknown>): Entry[] {
   return Object.entries(detail)
     .filter(([key]) => key !== "target" && key !== "why")

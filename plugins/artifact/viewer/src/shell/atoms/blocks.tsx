@@ -5,20 +5,12 @@ import { cn } from "@/lib/utils";
 import { TINT_BAR } from "./headings";
 
 /**
- * A labelled box inside a panel.
- *
- * This is the record mosaic's `InfoBox`, and it is the shape that turns prose into a
- * card. The tone names what the box holds rather than how important it is: a problem
- * reads amber, a solution reads green, a note reads dashed and quiet.
- */
-/**
  * The attribute a record part carries to become a link in the Sheet's jumplink row.
  *
  * `Box` and `SubHead` are its only writers, and both write it from the label they
- * already render, so the row cannot name a heading the record does not have. The
- * constant lives here rather than beside its reader in `Sheet.tsx`, because `Sheet.tsx`
- * imports this file and the reverse would be a cycle. `jump.tsx` holds `JUMP_ATTR` for
- * the pane's own links, and that one is read by its own module.
+ * already render, so the row cannot name a heading the record does not have. It lives
+ * here and not beside its reader in `Sheet.tsx`, because `Sheet.tsx` imports this file
+ * and the reverse would be a cycle.
  */
 export const SHEET_HEADING_ATTR = "data-sheet-heading";
 
@@ -40,7 +32,6 @@ interface BoxProps {
   children: ReactNode;
   tone?: BoxTone;
   className?: string;
-  /** True when the Sheet's jumplink row should link to this part. */
   anchor?: boolean;
 }
 
@@ -84,7 +75,6 @@ interface TextListProps {
   className?: string;
 }
 
-/** One list row per entry, so a list of prose reads as a stack of cards. */
 export function TextList({ items, ordered, className }: TextListProps) {
   if (items.length === 0) return null;
   return (
@@ -100,7 +90,6 @@ interface SubHeadProps {
   children: ReactNode;
   count?: number;
   className?: string;
-  /** True when the Sheet's jumplink row should link to this part. */
   anchor?: boolean;
 }
 
@@ -125,7 +114,6 @@ export function SubHead({ children, count, className, anchor = false }: SubHeadP
   );
 }
 
-/** One key and one value on a line, for record metadata. */
 export function KeyValue({ label, value }: { label: string; value: ReactNode }) {
   return (
     <span className="inline-flex min-w-0 items-baseline gap-1.5">

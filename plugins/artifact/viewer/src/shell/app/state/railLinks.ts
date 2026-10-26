@@ -17,11 +17,9 @@ interface Carried {
  * The rail's own input. One object serves the rail, the arrow-key walk, and the Review
  * group's addresses, so all three read one derivation.
  *
- * THE CHANGE THE RAIL ADDRESSES IS THE ROUTE'S CHANGE, AND FAILING THAT THE WORK'S OWN.
- * A reader on a program row still sees where the change's four rows lead, and a reader
- * inside the change's account sees rows that open the address they are on. Without the
- * fallback the current-row match would fail on every program row, because the route
- * names no pull request there.
+ * The change the rail addresses is the route's change, and failing that the work's own.
+ * Without the fallback the current-row match would fail on every program row, because
+ * the route names no pull request there.
  */
 function railChangePrOf(work: WorkItem | null, changePr: number | null): number | null {
   return changePr ?? (work && work.pullRequests.length > 0 ? work.pullRequests[0].id : null);
@@ -35,10 +33,9 @@ function buildRailSource(address: Address, account: Account): RailSource {
 }
 
 /*
- * THE ROOT IS THE BOARD ROUTE. A reader who opens the server's root carries an empty
- * hash, and the shell's own answer is the bare route the deck opens over — so the
- * address normalizes to `#/` and the reader's later steps read one scheme. The
- * replacement carries no history entry: the root was always the board route.
+ * The root is the board route. A reader who opens the server's root carries an empty
+ * hash, so the address normalizes to `#/` and later steps read one scheme. The
+ * replacement carries no history entry, because the root was always the board route.
  */
 function useHomeHash(): void {
   useEffect(() => {
@@ -72,16 +69,15 @@ function panelActionOf({ row, workId, railChangePr, onGo }: ActionInput): PanelA
 }
 
 /*
- * THE LINK ON A SECTION HEADING CROSSES ONLY WHERE BOTH ACCOUNTS CARRY THE SAME SECTION
- * NAME. The row's own `shared` field holds that name or null, so the change's File Diffs
- * row and the program's Epics, Rubrics, and Plan rows get no link. A work whose own epics
- * carry no pull request has no change account to cross to, and `readInLabel` gives null.
+ * The link on a section heading crosses only where both accounts carry the same section
+ * name. The row's `shared` field holds that name or null, so the change's File Diffs row
+ * and the program's Epics, Rubrics, and Plan rows get no link. A work whose epics carry
+ * no pull request has no change account to cross to, and `readInLabel` gives null.
  *
- * THE ADDRESS COMES FROM `counterpartHref`, the one builder that calls both of the
- * account builders. THE SECTION NAME RIDES VIEW STATE AND NOT THE ROUTE (ADR-0028). A
- * press stores the name with the address it opens, and the level that opens there reads
- * the name only while the address still matches. The effect below clears it as soon as
- * the hash is another address, so a later arrival at the same address starts clean.
+ * The address comes from `counterpartHref`. The section name rides view state and not the
+ * route (ADR-0028): a press stores it with the address it opens, and the level that
+ * opens there reads it only while the address still matches. The effect below clears it
+ * once the hash is another address, so a later arrival at the same address starts clean.
  */
 function usePanelAction(go: ShellCore["go"], row: RailRow | null, source: RailSource) {
   const here = window.location.hash;
@@ -95,17 +91,14 @@ function usePanelAction(go: ShellCore["go"], row: RailRow | null, source: RailSo
 }
 
 /*
- * THE READER'S OWN ROW, MATCHED BY ITS ADDRESS AND NEVER BY ITS SECTION NAME. Every
- * section of both accounts carries its account's mark, and the mark is the mark of the
- * row the reader's own address opens. The two groups repeat three section names, so a
- * match on the name would light more than one row at once and the mark would name the
- * wrong account. The address is what a deep link carries, so a reader who arrives on the
- * change's Architecture row reads Architecture's mark and not the account's first row's.
+ * The reader's own row is matched by its address and never by its section name. The
+ * two groups repeat three section names, so a name match would light more than one row
+ * and the mark would name the wrong account. A reader who arrives on the change's
+ * Architecture row reads Architecture's mark and not the account's first row's.
  *
- * A SECTION NO ACCOUNT OWNS HAS NO ROW. The pull-request list and the shipped record are
- * sections of the shell rather than of either account, so no row opens them and no mark
- * stands above them. The board and a work item the bundle lacks render no pane content
- * either way.
+ * A section no account owns has no row. The pull-request list and the shipped record
+ * belong to the shell, not to either account, so no row opens them and no mark stands
+ * above them.
  */
 export function useRailLinks({ go }: ShellCore, address: Address, account: Account) {
   const railSource = buildRailSource(address, account);

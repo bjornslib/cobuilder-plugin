@@ -16,7 +16,6 @@ export function isSectionKey(value: string): value is SectionKey {
   return (SECTION_KEYS as readonly string[]).includes(value);
 }
 
-/** The rail's label for a section. One name for one thing, used everywhere. */
 export const SECTION_LABEL: Record<SectionKey, string> = {
   intent: "Intent",
   "problem-and-solution": "Problem & Solution",

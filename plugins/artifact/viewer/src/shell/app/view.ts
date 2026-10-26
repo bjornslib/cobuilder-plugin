@@ -17,9 +17,8 @@ function pagedLevelOf(levels: ShellState["levels"], key: PagedLevelKey | null): 
 }
 
 /*
- * Why the change's four rows read what they read. A record file that did not load and a
- * story entry the bundle does not hold are two different facts, and the second one is
- * already a whole sentence.
+ * A record file that did not load and a story entry the bundle does not hold are two
+ * different facts, and the second one is already a whole sentence.
  */
 function changeNoticeOf({ changePr, change }: ShellState): string | null {
   if (changePr === null) return null;
@@ -27,7 +26,6 @@ function changeNoticeOf({ changePr, change }: ShellState): string | null {
   return `The change's records did not load, so these four rows state what they could not read: ${change.message ?? "no reason was given"}`;
 }
 
-/* The distinct branches of the work item's epics. A workless route has no work item. */
 function branchesOf(work: ShellState["work"]): string[] {
   return [...new Set((work?.epics ?? []).map((epic) => epic.branch).filter((b): b is string => !!b))];
 }
@@ -37,19 +35,18 @@ function branchesOf(work: ShellState["work"]): string[] {
  * decides it. Every other section stacks its panels in the pane's own scroll, so this
  * reads null there and the layout below stays the shell's.
  *
- * RUBRICS IS NOT PAGED. The rail's Rubrics entry is a sub-view of Build, and it keeps
- * the layout it has always had: one panel, its own scroll. Only the epics sub-view
- * lays an epic per section on a track.
+ * Rubrics is not paged. The rail's Rubrics entry is a sub-view of Build, and it keeps
+ * its one panel and its own scroll. Only the epics sub-view lays an epic per section on
+ * a track.
  *
- * THE CHANGE'S ACCOUNT IS A PAGED SURFACE TOO. Its four rows page through the same
+ * The change's account is a paged surface too. Its four rows page through the same
  * strip, stage, and pager the program's levels use, so the two accounts cannot disagree
- * about how a row reads. `paged` is the layout flag; `programKey` is the one that
- * narrows the section to a level of the program's own records.
+ * about how a row reads. `paged` is the layout flag, and `programKey` narrows the
+ * section to a level of the program's own records.
  *
- * THE APPENDED SEGMENT DECIDES WHICH ROW OPENS. The address
- * `#/<work>/pull-requests/<pr>/architecture` names the change's Architecture row, and each
- * row is a paged level of its own. A segment that names no row of the change opens the
- * first, which is the row the bare address opens.
+ * The appended segment decides which row opens. `#/<work>/pull-requests/<pr>/architecture`
+ * names the change's Architecture row. A segment that names no row opens the first,
+ * which is the row the bare address opens.
  */
 function pagingOf(s: ShellState) {
   const { section, route, levels, changePr } = s;
@@ -65,8 +62,8 @@ function pagingOf(s: ShellState) {
 }
 
 /*
- * How many slices the index could not join. The data module counts them, because the
- * join is the index's own shape and the shell names no key of it.
+ * The data module counts the slices the index could not join, because the join is the
+ * index's own shape and the shell names no key of it.
  */
 function factsOf(s: ShellState) {
   const { load, route } = s;

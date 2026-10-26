@@ -1,19 +1,14 @@
-/* ------------------------------------------------------------------- designs */
-
 /**
- * One design's authored records, as `data/designs.js` writes them.
+ * One design's authored records, as `data/designs.js` writes them. The index carries a
+ * design entity but no record body, and these six fields are the bodies. The Work
+ * board's readiness rule and every panel of the shell read them.
  *
- * The index carries a design entity, and it carries no record body. These six fields are
- * the record bodies. Two surfaces read them: the Work board's readiness rule, and every
- * panel of the shell. Every field below is present in the real corpus, read across the
- * fifteen designs of `self/data/designs.js`.
+ * A record file is derived, so both readers treat every field as possibly absent, even
+ * where the corpus always writes it: a type that promised a value would hide the absence
+ * the panel exists to state.
  *
- * A record file is derived, so both readers treat every field as possibly absent. That is
- * why a field is optional even where the corpus always writes it: a type that promised a
- * value would hide the absence the panel exists to state.
- *
- * This is the one declaration of each shape. A surface that reads a field here re-exports
- * these types rather than restating them, so a renamed field fails the build in one place.
+ * This is the one declaration of each shape. A surface re-exports these types rather
+ * than restating them, so a renamed field fails the build in one place.
  */
 
 /** One row of `goal.epics[]`. The index carries no epic outcome, so this is its source. */
@@ -25,7 +20,6 @@ export interface PlanEpicRow {
   state: string;
   outcome?: string;
   note?: string | null;
-  /** The decision this epic carries, by ADR id. */
   adr?: string | null;
 }
 
@@ -47,7 +41,7 @@ export interface DesignGoal {
   done_when?: string[];
   abort_if?: string[];
   min_work?: MinWork | null;
-  /** The planned epics. The Build level reads each row's outcome, and nothing else. */
+  /** The Build level reads only each row's outcome. */
   epics?: PlanEpicRow[];
   stage?: string;
   supersedes?: string[] | null;
@@ -58,7 +52,6 @@ export interface DesignGoal {
   adrs?: string[];
 }
 
-/** One rejected option, with the reason the design gives. */
 export interface DesignAlternative {
   option: string;
   rejected_because: string;
@@ -77,7 +70,6 @@ export interface DesignIntent {
   why_now?: string;
 }
 
-/** One assessment finding. The board counts findings, and a panel reads the prose. */
 export interface AssessmentFinding {
   kind?: string;
   id?: string;
@@ -105,7 +97,6 @@ export interface NarrativeBeat {
   text: string;
 }
 
-/** One narrative level: the tagline and the narration a reader hears or reads. */
 export interface NarrativeLevel {
   tagline?: string;
   narration?: string;
@@ -121,9 +112,9 @@ export interface DesignNarrative {
   problem_solution?: NarrativeLevel & { problem?: string; solution?: string };
   architecture?: NarrativeLevel;
   /**
-   * The same three levels, when a record wraps them under this key instead of authoring
-   * them at the top level. `review-flight-deck` writes this shape, so a rule that read
-   * only the flat one reported its three levels missing while the text sat one key away.
+   * The same three levels, when a record wraps them under this key. `review-flight-deck`
+   * writes this shape, so a rule that read only the flat one reported its levels missing
+   * while the text sat one key away.
    */
   levels?: {
     intent?: NarrativeLevel;
@@ -131,16 +122,10 @@ export interface DesignNarrative {
     architecture?: NarrativeLevel;
   };
   /**
-   * A LEVEL KEY THIS BUILD DOES NOT NAME IS TOLERATED, AND THE TOLERANCE IS THE POINT.
-   *
-   * ADR-0029 renamed the first level's key, and a record written before that rename carries
-   * the key the level used to have. Such a record is still a record this reader must
-   * compile against and read: `narrativeVerdict` in `src/shell/readiness.ts` asks for the
-   * current key first and for the older one second, so a design narrated before the rename
-   * still reads as narrated instead of crashing a reader on the way in.
-   *
-   * So this index signature is not a hole in the type. It states that one key of this
-   * record is not this build's to name, and every named key above keeps its own type.
+   * A level key this build does not name is tolerated on purpose. ADR-0029 renamed the
+   * first level's key, and an older record carries the old key. `narrativeVerdict` in
+   * `src/shell/readiness.ts` asks for the current key first and the older one second, so
+   * a design narrated before the rename still reads as narrated.
    */
   [unreadLevel: string]: unknown;
 }

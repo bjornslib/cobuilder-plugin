@@ -30,23 +30,19 @@ function useArtState(changePr: number | null) {
 }
 
 /*
- * THE CHANGE'S ACCOUNT. A route that names a pull request number opens the change the
+ * The change's account. A route that names a pull request number opens the change the
  * work's own epics carry, and the four rows read that pull request's own records. The
- * number comes from the route's `sub` field, which is the field the pull-request list
- * already writes, so no second address scheme exists.
+ * number comes from the route's `sub` field, which the pull-request list already writes,
+ * so no second address scheme exists.
  *
- * A WORKLESS ROUTE'S CHANGE IS THE PULL REQUEST ITS WORK SEGMENT NAMES, AND `sub` CANNOT
- * OVERRIDE IT. No design carries the segment, and `model.worklessPullRequest` answered
- * which pull request does. That pull request's change account is the address's whole
- * destination, so a `sub` that named another number would name a change this address does
- * not belong to. The segment therefore wins, and `#/17/pull-requests` and
- * `#/17/pull-requests/17` answer the same change. One derivation, so the heading and the
- * rows read the same number and cannot disagree.
+ * A workless route's change is the pull request its work segment names, and `sub` cannot
+ * override it. A `sub` that named another number would name a change this address does
+ * not belong to. The segment wins, so `#/17/pull-requests` and `#/17/pull-requests/17`
+ * answer the same change. One derivation keeps the heading and the rows on one number.
  *
  * The four hooks sit above the loading and error returns, because a hook that runs on
- * one render and not the next is the defect the rules of hooks exist to prevent. A
- * route that names no pull request reads nothing: `useChangeBundle(null)` answers the
- * idle state and asks the bundle for no file.
+ * one render and not the next breaks the rules of hooks. A route that names no pull
+ * request reads nothing: `useChangeBundle(null)` answers idle and asks for no file.
  */
 export function useChangeAccount({ route }: ShellCore, { section, worklessPr }: Address) {
   const changePr = changePrOf(section, worklessPr, namedPrOf(route.sub));

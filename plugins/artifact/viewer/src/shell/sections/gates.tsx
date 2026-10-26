@@ -23,8 +23,8 @@ function gatePill(short: string, tone: Tone) {
 /**
  * A gate state, as a short pill with the status word and the date only.
  *
- * The full state text sits in a tooltip. It opens on hover and on keyboard focus. The pill
- * does not wrap, so a long note never squeezes the gate name beside it.
+ * The full state text sits in a tooltip that opens on hover and on keyboard focus. The
+ * pill does not wrap, so a long note never squeezes the gate name beside it.
  */
 function GateStatePill({ state, tone }: { state: string; tone: Tone }) {
   const { short, full } = splitGateState(state);

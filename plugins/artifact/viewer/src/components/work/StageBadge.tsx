@@ -8,10 +8,8 @@ import { STAGE_GLOSS, isKnownStage } from "@/data/bundle";
 import { cn } from "@/lib/utils";
 
 /**
- * The stage colours follow the prototype's `.badge.st-*` rules.
- *
- * A stage with no rule falls back to the plain badge, so an unknown stage from a
- * newer index reads as itself and never as an error.
+ * The stage colours follow the prototype's `.badge.st-*` rules. A stage with no rule
+ * falls back to the plain badge, so a stage from a newer index never reads as an error.
  */
 const STAGE_CLASS: Record<string, string> = {
   review: "border-primary bg-accent-wash text-accent-deep",
@@ -41,11 +39,10 @@ function StageGlossTip({ stage }: { stage: string }) {
 }
 
 /*
- * `data-slot` is set twice on purpose. Radix `Slot` hands the trigger's
- * own `data-slot="tooltip-trigger"` down to the child, and `Badge` spreads
- * its remaining props after its own `data-slot="badge"`. Without this line
- * the badge reports itself as a tooltip trigger, and the hook a shadcn
- * selector looks for on a badge is gone.
+ * `data-slot` is set twice on purpose. Radix `Slot` hands the trigger's own
+ * `data-slot="tooltip-trigger"` to the child, and `Badge` spreads its remaining props
+ * after its own `data-slot="badge"`. Without the second one, the badge reports itself
+ * as a tooltip trigger and loses the hook a shadcn selector looks for.
  */
 interface StageBadgeProps {
   stage: string;

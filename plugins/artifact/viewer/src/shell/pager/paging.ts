@@ -1,19 +1,17 @@
 import { useCallback, useEffect, useState, type Dispatch, type SetStateAction } from "react";
 
-/** Which section the reader is on, and how far the track has moved for it. */
 const clamp = (wanted: number, count: number): number =>
   Math.min(Math.max(wanted, 0), Math.max(count - 1, 0));
 
 /**
  * True when a press belongs to something else, so no shell key may act on it.
  *
- * Two rules make one guard. A field owns its own caret keys, so a press inside an input,
- * a textarea, or a select is the field's. A modifier names a command, which the browser
- * or the operating system owns.
+ * A field owns its own caret keys, so a press inside an input, a textarea, or a select is
+ * the field's. A modifier names a command, which the browser or the operating system owns.
  *
- * THE KEY HANDLERS SHARE THIS FUNCTION AND NEVER THE RULE. The pager's own two arrows
- * call it, and so does the shell's rail traversal. A second copy of these two lines is
- * the drift this shell has already been bitten by, so there is one copy.
+ * The key handlers share this function and never the rule. The pager's own two arrows call
+ * it, and so does the shell's rail traversal. A second copy of these two lines is the
+ * drift this shell has already been bitten by, so there is one copy.
  */
 export function keyPressIsTaken(event: KeyboardEvent): boolean {
   if (event.metaKey || event.ctrlKey || event.altKey || event.shiftKey) return true;
@@ -51,22 +49,20 @@ function useSteps(count: number, setState: Dispatch<SetStateAction<number>>) {
 /**
  * The index, and the three ways a reader moves it.
  *
- * THE INDEX IS VIEW STATE AND NEVER A ROUTE. This viewer is a read-only projection of
- * a bundle, so the section on screen says nothing about the bundle and must not become
- * a destination a reader can link to. Nothing here writes the hash.
+ * The index is view state and never a route. This viewer is a read-only projection of a
+ * bundle, so the section on screen says nothing about the bundle and must not become a
+ * destination a reader can link to. Nothing here writes the hash.
  *
  * `routeKey` is the caller's whole route, in the shape `useScrollResetOnRoute` uses. A
- * new route is a new page, and a reader starts at that page's first section. The index
- * is clamped at render as well, so a shorter list can never leave it past its own end.
+ * new route is a new page, and a reader starts at that page's first section. The index is
+ * clamped at render as well, so a shorter list can never leave it past its own end.
  *
- * `start` is the section a new route lands on, and it is 0 for every level whose
- * sections carry no route of their own. The Build level needs it: an epic deep link
- * names one epic, and the section that holds that epic is the one the reader asked for.
+ * `start` is the section a new route lands on, and it is 0 for every level whose sections
+ * carry no route of their own. The Build level needs it: an epic deep link names one
+ * epic, and the section that holds that epic is the one the reader asked for.
  *
- * The two arrow keys step. A field owns its own caret keys, so a press inside an input,
- * a textarea, or a select is left alone, and so is any press with a modifier held.
- * Vertical scrolling needs no other guard: these two keys move sideways and a box
- * scrolls up and down.
+ * The two arrow keys step. Vertical scrolling needs no other guard: these two keys move
+ * sideways and a box scrolls up and down.
  */
 export function useSectionPaging(count: number, routeKey: string, start = 0) {
   const [state, setState] = useState(0);

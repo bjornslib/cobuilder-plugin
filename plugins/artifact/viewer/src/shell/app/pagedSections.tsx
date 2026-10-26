@@ -24,20 +24,16 @@ import {
 /**
  * The levels that page, in the order the rail lists them.
  *
- * A paged level lays its sections on a horizontal track, one section on screen, and it
- * drops its visible heading band for the same reason in every case: the section strip
- * names the level's own sections, so a band above it would repeat the same words. The
- * other sections stack their panels into the pane's own scroll.
+ * A paged level drops its visible heading band, because the section strip names the
+ * level's own sections and a band above it would repeat the same words.
  *
- * The count is never written down. `PagedLevel` takes the sections it renders as one
- * array and reads the length of it, so the strip, the pager text, and the boxes cannot
- * drift apart.
+ * The count is never written down. `PagedLevel` reads the length of the sections array,
+ * so the strip, the pager text, and the boxes cannot drift apart.
  */
 const PAGED_LEVELS = ["intent", "problem-and-solution", "architecture", "build"] as const;
 
 export type PagedLevelKey = (typeof PAGED_LEVELS)[number];
 
-/** True when this section has a track. Build's Rubrics sub-view is the one exception. */
 export function isPaged(section: SectionKey): section is PagedLevelKey {
   return (PAGED_LEVELS as readonly SectionKey[]).includes(section);
 }
@@ -54,16 +50,14 @@ export interface PagedArgs {
 }
 
 /*
- * THE CONTAINER DRAWING SITS INSIDE THE WHY PANEL, at the end of its body. This
- * level used to lead with a Diagrams section of its own, and the engineer moved the
- * drawing into Why. The level therefore renders no section named Diagrams, and the
- * Why panel draws the tiles itself.
+ * The container drawing sits inside the Why panel, at the end of its body. The engineer
+ * moved it there from a Diagrams section of its own, so this level renders no section
+ * named Diagrams, and the Why panel draws the tiles itself.
  *
- * THE LEVEL IS CHOSEN BY ITS NUMBER. A bundle's first diagram level is its container
- * drawing: it names the surfaces and the people who use them, and that answers what
- * this work is and who it is for. The levels after it are mechanism and belong to
- * Architecture. The filter names level "1" rather than taking the first entry, so a
- * record that carries levels 2 and 3 alone draws nothing here.
+ * The level is chosen by its number. A bundle's first diagram level is its container
+ * drawing, which names the surfaces and the people who use them. The later levels are
+ * mechanism and belong to Architecture. The filter names level "1" rather than taking
+ * the first entry, so a record with levels 2 and 3 alone draws nothing here.
  */
 function intentSections({ work, theme }: PagedArgs): ReactNode[] {
   const levels = work.diagramLevels.filter((level) => level === "1");
@@ -85,10 +79,6 @@ function problemSections({ work, levelState }: PagedArgs): ReactNode[] {
   ];
 }
 
-/*
- * The mechanism drawings. The container drawing is the Intent level's, so this level
- * takes every level after the first: the build sequence and the data model.
- */
 function architectureSections({ work, theme, adrs, levelState, openSheet }: PagedArgs): ReactNode[] {
   if (levelState === null) return [];
   return [
@@ -99,7 +89,6 @@ function architectureSections({ work, theme, adrs, levelState, openSheet }: Page
   ];
 }
 
-/* The unresolved-slices panel keeps a section of its own when the bundle holds one. */
 function buildSections({ work, focusEpic, openSheet, unresolvedSlices }: PagedArgs): ReactNode[] {
   const groups = epicGroups(work).map((group, position) => (
     <EpicGroupSection key={`epics-${position}`} work={work} group={group} focusEpic={focusEpic} openSheet={openSheet} />
@@ -118,16 +107,14 @@ const BUILDERS: Record<PagedLevelKey, (args: PagedArgs) => ReactNode[]> = {
 /**
  * The sections a paged level lays on its track, in the order Next walks them.
  *
- * The Build level is the one level whose sections come from the corpus rather than from
- * a fixed list: its epics are chunked, and the chunking rule lives in `./model` beside
- * the other derivations. A route that names an epic is answered by the chunk that holds
- * it, which is also where the reader lands.
+ * Build's sections come from the corpus rather than from a fixed list: its epics are
+ * chunked, and the chunking rule lives in `./model`. A route that names an epic lands on
+ * the chunk that holds it.
  */
 export function pagedSections(args: PagedArgs): ReactNode[] {
   return BUILDERS[args.section](args);
 }
 
-/** The chunk a route's epic falls in, so a deep link lands on the epic itself. */
 export function epicStartIndex(work: WorkItem, focusEpic: string | null): number {
   if (focusEpic === null) return 0;
   const found = epicGroups(work).findIndex((group) =>

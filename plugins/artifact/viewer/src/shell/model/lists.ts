@@ -42,25 +42,24 @@ export function switcherList(works: Map<string, WorkItem>) {
 /**
  * How many epics one section of the paged Build level holds.
  *
- * ONE SECTION IS ONE SCREEN. The box is about 530 px and a collapsed epic row about
- * 50 px, so six rows fill a box and the seventh would make the reader scroll before
- * they had read anything. The same number keeps the level's spine short: thirty-six
- * epics would give exactly six sections, and no plausible work gives more than six.
+ * One section is one screen. The box is about 530 px and a collapsed epic row about
+ * 50 px, so six rows fill a box and a seventh would make the reader scroll before they
+ * had read anything. Thirty-six epics give exactly six sections, and no plausible work
+ * gives more, so the level's spine stays short.
  */
 const EPICS_PER_SECTION = 6;
 
 /**
  * The epics, cut into the sections the Build level pages.
  *
- * THE CUT FOLLOWS THE DELIVERY ORDER, and that is a deliberate second choice. The seam
- * a reader would want is the epic's state, and this corpus does not carry one: all
- * eighteen of this work's epics read `no-pull-request` in the join and `planned` in the
- * entity, all eighteen name the same branch, none names a pull request, and the design
- * records no slices and no epic solution designs. One state over eighteen epics is not
- * a spine. The epic order is the delivery order, so a cut of it keeps the sequence a
- * reader follows and invents no grouping the bundle does not hold.
+ * The cut follows the delivery order, as a deliberate second choice. The seam a reader
+ * would want is the epic's state, and this corpus carries none: all eighteen of this
+ * work's epics read `no-pull-request` in the join and `planned` in the entity, all name
+ * the same branch, and none names a pull request. One state over eighteen epics is not
+ * a spine. A cut of the delivery order keeps the sequence a reader follows and invents
+ * no grouping the bundle does not hold.
  *
- * The panel that renders one group states the same thing to the reader, in its own lead.
+ * The panel that renders one group states the same thing in its own lead.
  */
 export function epicGroups(work: WorkItem): EpicEntity[][] {
   const groups: EpicEntity[][] = [];

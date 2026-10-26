@@ -3,11 +3,6 @@ import { cn } from "@/lib/utils";
 
 import { RECORD_KINDS, RECORD_LABEL, recordVerdicts, type Readiness, type RecordKind, type RecordVerdicts, type Verdict } from "../readiness";
 
-/*
- * The three verdict states, as the shell's own tone table paints them. A whole
- * record takes the good wash, a gap takes the accent wash, and a record that
- * does not exist takes the plain surface.
- */
 const VERDICT_CLASS: Record<Readiness, string> = {
   present: "border-good/60 bg-good/10 text-good",
   partial: "border-primary/60 bg-accent-wash/40 text-accent-deep",

@@ -23,11 +23,10 @@ function BoundaryHead({ rule }: { rule: BoundaryRule }) {
 }
 
 /*
-  SIXTEEN SMALL TILES, AND THEY ARE THE ONE BEST FIT FOR A TILT. A reader
-  picks one up with the pointer, and the two lines it holds do not need to
-  be read in a fixed plane. `glare={false}` is the tilt-without-glare
-  variant: the component renders its glare overlay only when `glare` is
-  true, so the prop is the whole difference.
+  Sixteen small tiles are the best fit for a tilt: a reader picks one up with the
+  pointer, and the two lines it holds do not need a fixed plane. `glare={false}` is
+  the tilt-without-glare variant, because the component renders its glare overlay only
+  when `glare` is true.
 */
 export function BoundaryTile({ rule, children }: { rule: BoundaryRule; children: ReactNode }) {
   return (

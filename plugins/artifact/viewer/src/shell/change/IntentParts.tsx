@@ -6,7 +6,6 @@ import { Box, Chip, Missing, SubHead, TextList } from "@/shell/atoms";
 
 import { asLines } from "./sheetLines";
 
-/** The three sections the author's statement splits into, one per section of the Intent level. */
 export type IntentPart = "why" | "approach" | "scope";
 
 type PartProps = { intent: StoryIntent };
@@ -137,7 +136,6 @@ export interface ChangeIntentPartProps {
   part: IntentPart;
 }
 
-/** One section of the author's own statement of the change. */
 export function ChangeIntentPart({ intent, part }: ChangeIntentPartProps) {
   if (!intent) return <Missing>{NO_INTENT}</Missing>;
   const Part = INTENT_PARTS[part];

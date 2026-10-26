@@ -18,11 +18,10 @@ const NO_WORK_PULL_REQUESTS =
   "No epic of this work carries a pull request yet. The draft above is the one this work will open.";
 
 /*
-  THE PULL REQUEST THIS WORK WILL OPEN LEADS THE SECTION. It used to sit on the
-  Architecture level as "Envisioned pull request", beside the decisions that shaped
-  it. A reader who comes to this level wants the work's pull requests, and the draft
-  is the one this work will open, so it belongs above them. The title says what it
-  is, because a draft is not a pull request that exists.
+  The pull request this work will open leads the section. A reader who comes to this
+  level wants the work's pull requests, and the draft is the one this work will open,
+  so it belongs above them. The title says what it is, because a draft is not a pull
+  request that exists.
 */
 function DraftPanel({ work }: { work: WorkItem }) {
   const draft = work.record?.pr_draft;
@@ -35,12 +34,11 @@ function DraftPanel({ work }: { work: WorkItem }) {
 }
 
 /*
-  THE CONTRACTS SECTION RIDES THE ENVISIONED PULL REQUEST (ADR-0036). The
-  contracts.md file states the endpoints and data models this work will
-  create, so a reader of the pull-request level sees what the surface will
-  be next to the draft that describes it. A design that touched no public
-  surface omits the key, and this section renders nothing — absence, not
-  an error.
+  The contracts section rides the envisioned pull request (ADR-0036). The contracts.md
+  file states the endpoints and data models this work will create, so a reader sees
+  what the surface will be next to the draft that describes it. A design that touched
+  no public surface omits the key, and this section renders nothing: absence, not an
+  error.
 */
 function ContractsPanel({ work }: { work: WorkItem }) {
   const contracts = work.record?.contracts;

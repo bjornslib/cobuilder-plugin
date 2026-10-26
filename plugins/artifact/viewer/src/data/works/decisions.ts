@@ -32,7 +32,6 @@ function boundaryRuleOf(rule: BoundaryRuleEntity): BoundaryRule {
 
 type Landing = WorkPart<"contexts" | "districts" | "boundaryRules">;
 
-/* The contexts and districts the linked decisions land in. */
 function landingOf(linkedAdrs: AdrEntity[], sources: Sources): Landing {
   const contextIds = joinedIds(linkedAdrs, sources.joins.adr_to_context);
   const districtIds = joinedIds(linkedAdrs, sources.joins.adr_to_district);

@@ -70,16 +70,16 @@ export interface DialogBodyProps {
 }
 
 /*
-  The whole drawing, at its own size, on both scroll axes. `w-max` keeps the
-  drawing's width instead of letting a flex parent squeeze it.
+  The drawing keeps its own size on both scroll axes, and `w-max` stops a flex parent
+  from squeezing its width.
 
-  THE ZOOM SCALES THE DRAWING, NOT THE BODY. The body keeps its own scroll, and
-  the drawing's box is sized in pixels, so a zoomed drawing grows the scrollable
-  area and the reader can reach every part of it. A `transform` would leave the
-  layout size alone and put the rest of the drawing out of reach.
+  The zoom scales the drawing, not the body. The body keeps its own scroll, and the
+  drawing's box is sized in pixels, so a zoomed drawing grows the scrollable area and the
+  reader can reach every part of it. A `transform` would leave the layout size alone and
+  put the rest of the drawing out of reach.
 
-  The box carries `w-max` and the transform origin, and the transition is the
-  only thing reduced motion turns off: the zoom itself is a discrete step.
+  The transition is the only thing reduced motion turns off: the zoom itself is a
+  discrete step.
 */
 export function DialogBody({ drawn, level, source, scale, bodyRef, drawingRef }: DialogBodyProps) {
   return (

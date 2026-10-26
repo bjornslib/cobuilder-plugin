@@ -37,10 +37,8 @@ function configure(api: MermaidApi, theme: Theme): void {
 }
 
 /**
- * The runtime, loaded once and shared by every caller.
- *
- * The configuration is the shell's own: in particular `securityLevel: "strict"` is set
- * before the first render call.
+ * The runtime, loaded once and shared by every caller. The configuration is the shell's
+ * own: in particular `securityLevel: "strict"` is set before the first render call.
  */
 export async function loadMermaid(theme: Theme): Promise<MermaidApi> {
   if (!apiPromise) apiPromise = importMermaid();

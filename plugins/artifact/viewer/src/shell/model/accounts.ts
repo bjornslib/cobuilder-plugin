@@ -4,8 +4,7 @@ import { SECTION_LABEL } from "./sections";
  * Which account a group and its rows read.
  *
  * `program` reads the work's own design records. `change` reads the pull request the
- * work's own epics carry. ADR-0029 fixed both ids, and the rail's two groups pair with
- * them one to one.
+ * work's own epics carry. ADR-0029 fixed both ids.
  */
 export type AccountId = "program" | "change";
 
@@ -15,9 +14,8 @@ export type GroupKey = "levels" | "also" | "review";
 /**
  * The three section names both accounts carry.
  *
- * The repetition is what makes the same section reachable on either account, and it is
- * why a row is matched by its address and never by its name: a name match would light
- * more than one row at once.
+ * Because the names repeat, a row is matched by its address and never by its name: a
+ * name match would light more than one row at once.
  */
 export const SHARED_KEYS = ["intent", "problem-and-solution", "architecture"] as const;
 export type SharedKey = (typeof SHARED_KEYS)[number];
@@ -48,9 +46,8 @@ export type ProgramKey = (typeof PROGRAM_KEYS)[number] | typeof PLAN_KEY;
 /**
  * One name for one row, so the rail and the section it opens read the same word.
  *
- * The three shared names come from `SECTION_LABEL`, which is the shell's one name for one
- * section. Epics and Rubrics are rows of the Also group and not sections of a level, so
- * their names live only here.
+ * The three shared names come from `SECTION_LABEL`. Epics and Rubrics are rows of the
+ * Also group and not sections of a level, so their names live only here.
  */
 export const PROGRAM_LABEL: Record<ProgramKey, string> = {
   intent: SECTION_LABEL.intent,

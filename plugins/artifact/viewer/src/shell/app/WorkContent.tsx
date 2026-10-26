@@ -35,16 +35,14 @@ function ProgramPaged({ v, work, section }: WorkProps & { section: PagedLevelKey
 }
 
 /*
- * THE PAGED LEVELS LAY THEIR SECTIONS ON A TRACK. Intent, Problem and
- * solution, Architecture, and Build's epics each hand the pane's
- * remaining height to the track instead of spending it on a column.
- * The order of the array is the order Next walks, and its length is
- * the count the strip and the pager bar read, so nothing here can
- * drift. `start` answers a route that names one section's record,
- * which today means an epic deep link.
+ * The paged levels lay their sections on a track. Intent, Problem and solution,
+ * Architecture, and Build's epics hand the pane's remaining height to the track instead
+ * of spending it on a column. The array's order is the order Next walks, and its length
+ * is the count the strip and the pager bar read, so nothing here can drift. `start`
+ * answers a route that names one section's record, which today means an epic deep link.
  *
- * THE CHANGE'S FOUR ROWS USE THE SAME TRACK. One element per panel, so
- * the strip's links and the boxes' count come from one list.
+ * The change's four rows use the same track. One element per panel, so the strip's links
+ * and the boxes' count come from one list.
  */
 function PagedWork({ v, work }: WorkProps) {
   if (!v.paged) return null;
@@ -94,12 +92,10 @@ function WorkLevel({ v, work }: WorkProps) {
 }
 
 /*
- * THE PAGED LEVEL HAS NO VISIBLE BAND. The section strip right below
- * says the section's own name, so a banner with the same words 105 px
- * higher is a repeat of the strip. The heading stays in the flow as
- * `sr-only`: section 8.4 moves focus to it when the level changes, and
- * the document still needs its one `h1`. A screen reader therefore
- * still hears the level name, and no reader loses the text.
+ * The paged level has no visible band. The section strip right below says the section's
+ * name, so a banner with the same words would repeat it. The heading stays in the flow
+ * as `sr-only`: section 8.4 moves focus to it when the level changes, and the document
+ * still needs its one `h1`.
  */
 function WorkHeading({ v, work }: WorkProps) {
   const title = v.changeAccount ? `Pull request ${v.changePr}` : undefined;

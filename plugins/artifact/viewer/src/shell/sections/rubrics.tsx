@@ -55,17 +55,14 @@ function RubricRow({ slice, rubric, openSheet }: RubricRowProps) {
 }
 
 /*
- * THE RUBRIC READING SURFACE. One row per slice, in slice order. A row with a rubric
- * is a button that opens the whole document in the Sheet, the same way an epic's
- * technical solution design opens, because a rubric is deep content and a panel that
- * held it would bury its own subject. A slice with no rubric keeps its row and
- * states the absence in place. It is not a button, so a press cannot open an empty
- * Sheet, and the honest-absence phrasing the interaction design pins stays where
- * the reader looks for the record.
+ * One row per slice, in slice order. A row with a rubric is a button that opens the
+ * whole document in the Sheet, the same way an epic's technical solution design opens,
+ * because a rubric is deep content and a panel that held it would bury its own
+ * subject. A slice with no rubric keeps its row and states the absence in place. It is
+ * not a button, so a press cannot open an empty Sheet.
  *
- * The block is absent when the work holds no slice, on the rule this file states
- * above: a block that held nothing but a sentence about holding nothing is gone, and
- * each epic's own row already states its slice count.
+ * The block is absent when the work holds no slice, because each epic's own row
+ * already states its slice count.
  */
 function SliceRubrics({ work, openSheet }: { work: WorkItem; openSheet: OpenSheet }) {
   if (work.slices.length === 0) return null;
@@ -80,12 +77,12 @@ function SliceRubrics({ work, openSheet }: { work: WorkItem; openSheet: OpenShee
 }
 
 /*
- * THE ROUTE'S SLICE OPENS ITS RUBRIC HERE. The epic-design Sheet opens only from a
+ * The route's slice opens its rubric here. The epic-design Sheet opens only from a
  * press, and no route reaches it. A rubric tail route names a real record, so this
- * opens the Sheet through the same `openSheet` callback a press uses, on mount. That
- * needs no new state channel: the App owns the subject, and the route names which
- * one. The shell remounts this section when the tail changes, so a second arrival
- * opens the second rubric, and a Sheet the reader closed stays closed.
+ * opens the Sheet on mount through the same `openSheet` callback a press uses. The App
+ * owns the subject, and the route names which one. The shell remounts this section when
+ * the tail changes, so a second arrival opens the second rubric, and a Sheet the reader
+ * closed stays closed.
  */
 function useRubricFocus(work: WorkItem, focus: string | null, openSheet: OpenSheet) {
   const slice = focus !== null ? (work.slices.find((s) => String(s.n) === focus) ?? null) : null;
@@ -115,8 +112,8 @@ interface RubricsSectionProps {
   gated: boolean;
   openSheet: OpenSheet;
   /**
-   * The slice number the route's tail names, or null. A tail that names a slice
-   * with a rubric opens that rubric's Sheet on arrival.
+   * The slice number the route's tail names, or null. A tail that names a slice with a
+   * rubric opens that rubric's Sheet on arrival.
    */
   focus?: string | null;
 }

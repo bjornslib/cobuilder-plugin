@@ -6,11 +6,8 @@ import type { DesignRow } from "@/data/types";
 import { DesignCard } from "./DesignCard";
 
 /**
- * One restrained entrance, and nothing else moves.
- *
- * A document tool earns a fade that says "the board arrived", not an animation a
- * reader has to wait through. 180 ms, four pixels, and a stagger capped at 120 ms
- * so a fifteen-tile board never trails. `useReducedMotion` turns it off whole.
+ * One restrained entrance: a 180 ms fade, a 4 px rise, and a stagger capped at
+ * 120 ms so a fifteen-tile board never trails. `useReducedMotion` turns it off.
  */
 const ENTER_EASE = [0.22, 0.75, 0.3, 1] as const;
 
@@ -35,15 +32,13 @@ function BoardEmpty() {
 }
 
 /*
- * THE DESIGN CARD CARRIES A TILT. It is an object rather than a page: a reader
- * picks it up with the pointer, and a press opens the design behind it, so the
- * tilt says what the card does. `glare={false}` is the tilt-without-glare
- * variant. The component renders its radial glare overlay only when `glare` is
- * true, so that one prop is the whole difference between the two variants.
+ * The card is an object, not a page: the reader picks it up with the pointer, so it
+ * tilts. `glare={false}` is the variant without glare, because the component draws
+ * its radial glare overlay only when `glare` is true.
  *
- * `h-full` on the tilt wrapper keeps the row's equal-height cards. The tilt
- * element sits between the grid item and the card, and a card that asked for
- * `h-full` against an auto-height wrapper would fall back to its own height.
+ * `h-full` on the tilt wrapper keeps the row's cards equal in height. The wrapper
+ * sits between the grid item and the card, and a card with `h-full` against an
+ * auto-height wrapper would fall back to its own height.
  */
 interface TileProps {
   row: DesignRow;

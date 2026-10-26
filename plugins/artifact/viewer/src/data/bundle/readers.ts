@@ -1,13 +1,10 @@
 /**
- * Where a bundle's root sits, relative to whoever reads this file.
+ * The dev server mounts one bundle tree at `/bundle/`, declared in `vite.config.ts`. The
+ * shipped file is committed inside a bundle at `viewer/index.html`, so its bundle root is
+ * the directory above it and its data sits at `../data/`.
  *
- * The dev server mounts one bundle tree at `/bundle/`, declared in `vite.config.ts`.
- * The shipped file is committed inside a bundle at `viewer/index.html`, so its bundle
- * root is the directory above it and its data sits at `../data/`.
- *
- * `import.meta.env.DEV` is Vite's own switch, and it is resolved while the build runs.
- * The build therefore ships one path and drops the other, and no runtime guess decides
- * which reader is in play.
+ * `import.meta.env.DEV` is resolved while the build runs, so the build ships one path and
+ * drops the other, and no runtime guess decides which reader is in play.
  */
 export const BUNDLE_MOUNT = import.meta.env.DEV ? "/bundle/" : "../";
 export const BUNDLE_DATA_URL = `${BUNDLE_MOUNT}data/`;
@@ -19,11 +16,9 @@ const SERVER_HINT =
 type Check<T> = (value: unknown) => value is T;
 
 /**
- * One bundle global, read from the value the script tag assigned.
- *
- * THE NAME IS A PARAMETER, AND EVERY CALLER PASSES A LITERAL. That is deliberate: a
- * caller that writes the name states which global it reads, so one search for a name
- * finds every reader of it. No file outside `src/data/` names a global at all.
+ * The name is a parameter, and every caller passes a literal on purpose: a caller that
+ * writes the name states which global it reads, so one search for a name finds every
+ * reader of it. No file outside `src/data/` names a global.
  *
  * The value is checked rather than trusted. A file that loaded and assigned nothing
  * useful reads as absent, and the reader that needed it says so.
@@ -37,13 +32,10 @@ export function readGlobal<T>(
 }
 
 /**
- * Append one sibling script tag, and resolve once it has run.
- *
- * The tag below is the served path: it reaches outside the built file for a sibling.
- * A published Artifact inlines the global as a literal instead, so this is the code
- * `export_artifact.py` deletes at that point. The pair that names it lives in
- * `src/index.html`'s seam block, because no `.ts` module here can carry a `//`
- * comment through the build.
+ * The tag below is the served path, and it reaches outside the built file for a sibling.
+ * A published Artifact inlines the global as a literal, so `export_artifact.py` deletes
+ * this code. The pair that names it sits in `src/index.html`'s seam block, because no
+ * `.ts` module here can carry a `//` comment through the build.
  *
  * A file the server does not serve rejects with the path and the likely cause, so a
  * surface states the reason rather than showing an empty panel.
@@ -76,10 +68,6 @@ function assignedGlobal<T>(url: string, globalName: string, looksRight: Check<T>
   );
 }
 
-/**
- * Read one sibling file's global: the inlined value when a published file provided
- * one, and the served sibling otherwise.
- */
 export function readScriptGlobal<T>(
   url: string,
   globalName: string,

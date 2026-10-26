@@ -2,47 +2,24 @@
  * How this application reaches a bundle's data.
  *
  * The shipped viewer is committed inside a bundle, so it reads its data as sibling
- * script tags: `<script src="../data/story.js">` assigns `window.STORY`, and so on
- * for every file under `data/`. This application lives outside every bundle, in
- * `plugins/artifact/viewer/src/`, so it needs a reader instead. There are two, and
- * `loadIndex` picks between them at runtime.
+ * script tags: `<script src="../data/story.js">` assigns `window.STORY`. This
+ * application lives outside every bundle, so it needs a reader. There are two, and
+ * `loadIndex` picks one at runtime:
  *
  *   1. Served, during development. `vite.config.ts` mounts the bundle root at
- *      `/bundle/`. The file is read straight off disk, so the dev server always
- *      shows the corpus as it stands, with no regeneration step.
- *
+ *      `/bundle/`, and the file is read straight off disk, so the dev server shows
+ *      the corpus as it stands.
  *   2. Published, as one Artifact. ADR-0001 gives that file a CSP that blocks every
- *      outbound request, so a fetch cannot be how it works. `export_artifact.py`
- *      inlines the data as a global instead, exactly as the shipped viewer does.
+ *      outbound request, so a fetch cannot work. `export_artifact.py` inlines the
+ *      data as a global instead.
  *
- * Both readers meet at the same global, so a surface never asks which one ran.
+ * Both readers meet at the same global, so a surface never asks which one ran. Every
+ * sibling under `data/` has a `.js` twin, and that twin is how a published file sees
+ * it. Only `src/data/` names a global.
  *
- * EVERY SIBLING UNDER `data/` HAS A `.js` TWIN, AND THAT TWIN IS HOW A PUBLISHED
- * FILE SEES IT. The mount serves all of them, so a served surface can read either
- * form. This module reads every one of them, and it is the only place under `src/`
- * that names a global:
- *
- *   data/index.json  window.INDEX     the record index and its joins. Wired here.
- *   data/story.json  window.STORY     the narrated timeline and the world districts.
- *   data/adrs.json   window.ADRS      every decision record, keyed by ADR id. Its
- *                                     reader is at `./adrs`, a sibling module under
- *                                     `src/data/`.
- *   data/designs.js  window.DESIGNS   goal, intent, narrative, and assessment per design.
- *                                     It carries no `.json` twin, so its reader appends a
- *                                     script tag and reads the global that tag assigns.
- *   data/diagrams.js window.DIAGRAMS  Mermaid source per pull request and level.
- *   data/manifest.js window.ODYSSEY   hero art, diff pull requests, excluded pull requests.
- *   data/diffs-pr{N}.js window.DIFFS_BY_PR one pull request's diff hunks, keyed by path.
- *
- * `window.DIFFS_BY_PR` IS THE NAME THE BUNDLE WRITES, and an earlier header here called
- * it `window.DIFFS`. No file in any bundle assigns `window.DIFFS`: `extract_diffs.py`
- * writes one entry of `window.DIFFS_BY_PR` per pull request. The reader reads what the
- * file assigns.
- *
- * The shipped viewer loads them in that order at plugins/artifact/viewer/index.html:1096.
- * `window.STORY`, `window.ODYSSEY`, `window.DIFFS_BY_PR`, `window.ADRS`, `window.DESIGNS`,
- * `window.INDEX`, and `window.DIAGRAMS` are the same globals a published file inlines,
- * so a surface that reads the global works under both readers with no branch.
+ * The diff global is `window.DIFFS_BY_PR`, not `window.DIFFS`: `extract_diffs.py`
+ * writes one entry of it per pull request. The reader reads what the file assigns.
+ * `designs.js` has no `.json` twin, so its reader appends a script tag.
  */
 
 import type { DesignStage } from "./types";
@@ -84,7 +61,6 @@ export type {
 export type { DiagramsByPr, Manifest } from "./bundle/assets";
 export type { DiffByPr } from "./bundle/diffs";
 
-/** A design's stage, in the order the Work board groups by. */
 export const STAGE_ORDER: DesignStage[] = [
   "backlog",
   "decided",
@@ -98,7 +74,6 @@ export function isKnownStage(stage: string): stage is DesignStage {
   return (STAGE_ORDER as string[]).includes(stage);
 }
 
-/** What a stage means, in one line. A badge carries this as its tooltip. */
 export const STAGE_GLOSS: Record<DesignStage, string> = {
   backlog: "Goal only. Design stages 2 to 7 have not run.",
   decided: "The decision is recorded. The build has not started.",

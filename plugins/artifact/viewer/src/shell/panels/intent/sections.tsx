@@ -8,9 +8,8 @@ import { DiagramTiles, type Theme } from "../../DiagramTiles";
 /**
  * A column's own heading.
  *
- * It carries the visible word and nothing else. It used to print the field path under
- * the word, so a reader saw `goal.outcome` where they needed to see `WHY`. The engineer
- * removed that, and the whole shell now follows the rule.
+ * It carries the visible word and nothing else. It does not print the field path, such
+ * as `goal.outcome`, and the whole shell follows that rule.
  */
 function ColumnHead({ label }: { label: string }) {
   return (
@@ -28,14 +27,13 @@ function WhyOutcome({ work }: { work: WorkItem }) {
 
 interface WhyProps {
   work: WorkItem;
-  /** The container drawing's level numbers: `["1"]`, or empty when the record lacks one. */
   levels: string[];
   theme: Theme;
 }
 
 /*
-  The drawing closes the panel, so the reason comes first. It draws nothing when
-  the record carries no level the caller named, and it marks no absence.
+  The drawing closes the panel, so the reason comes first. It draws nothing when the
+  record carries no level the caller named, and it marks no absence.
 */
 function WhyDrawing({ work, levels, theme }: WhyProps) {
   const sources = work.record?.diagrams ?? null;
@@ -46,9 +44,9 @@ function WhyDrawing({ work, levels, theme }: WhyProps) {
 /**
  * Why. The goal record's outcome, and the container drawing.
  *
- * The caller chooses the level numbers, and it names the level by its NUMBER and never by
- * its position in the record. A record that carries levels 2 and 3 alone therefore draws
- * no tile here, because neither of them is the container drawing.
+ * The caller names the level by its number and never by its position in the record. A
+ * record that carries levels 2 and 3 alone therefore draws no tile here, because
+ * neither of them is the container drawing.
  */
 export function WhySection({ work, theme, levels }: WhyProps) {
   return (
@@ -81,7 +79,6 @@ function ContractPart({ title, icon, items, empty, ordered }: ContractPartProps)
   );
 }
 
-/** Done when. The conditions that make the work done. */
 export function DoneWhenSection({ work }: { work: WorkItem }) {
   const done = work.record?.goal?.done_when ?? [];
   return (
@@ -89,7 +86,6 @@ export function DoneWhenSection({ work }: { work: WorkItem }) {
   );
 }
 
-/** Abort if. The conditions that would stop the work. */
 export function AbortIfSection({ work }: { work: WorkItem }) {
   const abort = work.record?.goal?.abort_if ?? [];
   return (
@@ -97,7 +93,6 @@ export function AbortIfSection({ work }: { work: WorkItem }) {
   );
 }
 
-/** Out of scope. The boundary the intent states. */
 export function OutOfScopeSection({ work }: { work: WorkItem }) {
   const scope = work.record?.intent?.out_of_scope ?? [];
   return (

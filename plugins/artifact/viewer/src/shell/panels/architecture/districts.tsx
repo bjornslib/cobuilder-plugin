@@ -11,21 +11,14 @@ import type { WorkItem } from "../../model";
 /**
  * Districts and alternatives considered, merged.
  *
- * The engineer asked to see how the two could merge, and the merge only works at a
- * tighter density. Measured before this change: the reach panel was 440 px and the nine
+ * The merge only works at a tighter density. The reach panel was 440 px and the nine
  * alternatives were 1183 px, so a merge that kept both shapes would have been 1623 px,
- * or three pages of this stage, which is worse than two sections. So the reach loses its
- * two sub-heading rules and its gaps and becomes one strip of chips, and each
- * alternative loses its card padding and sets its two parts on one flowing line.
+ * or three pages of this stage. So the reach is one strip of chips, and each
+ * alternative sets its two parts on one flowing line instead of a padded card.
  *
- * THE REACH STRIP CARRIES PLAIN LABELS, NOT SUB-HEADINGS. `SubHead` draws a tinted bar
- * with a rule under it, which is what made the old panel tall. The two labels here are
- * the shell's 12 px mono label, the same one the top line uses for `branch` and `epics`.
- * Their counts are gone with the sub-headings: the chips are the count.
- *
- * THE ALTERNATIVE ROWS FLOW. The option keeps its semibold weight and the reason keeps
- * the dim ink, and the two share one line that wraps, so a row costs a line or two
- * instead of a padded card.
+ * The reach strip carries plain labels, not sub-headings. `SubHead` draws a tinted bar
+ * with a rule under it, which is what made the old panel tall. The labels are the
+ * shell's 12 px mono label, and the chips are the count.
  */
 export function DistrictsAndAlternativesSection({ work }: { work: WorkItem }) {
   const alternatives = work.record?.intent?.alternatives ?? [];

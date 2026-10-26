@@ -6,6 +6,8 @@ slice adds one key to each table.
 """
 from __future__ import annotations
 
+from _viewer_kept_comments import source_files_with_comments
+
 VIEWER = "plugins/artifact/viewer"
 SRC = f"{VIEWER}/src"
 SHELL = f"{SRC}/shell"
@@ -82,6 +84,7 @@ SLICES: dict[int, list[str]] = {
         f"{SRC}/shell/runtimeTile.test.ts",
         f"{SRC}/shell/workDeck.test.ts",
     ],
+    6: source_files_with_comments(),
 }
 SLICE_GLOBS: dict[int, list[str]] = {
     1: _globs(f"{VIEWER}/src/data", f"{SHELL}/model"),
@@ -98,4 +101,5 @@ SLICE_GLOBS: dict[int, list[str]] = {
         f"{SRC}/**/testSupport/**/*.ts",
         f"{SRC}/**/testSupport/**/*.tsx",
     ],
+    6: [*_globs(SRC), f"{VIEWER}/vite*.ts"],
 }

@@ -98,7 +98,6 @@ function FlightDeckList({ flightDeck, onOpenPr }: { flightDeck: PullRequest[]; o
 interface FlightDeckPanelProps {
   flightDeck: PullRequest[];
   onOpenPr: OpenPr;
-  /** The bento span the caller gives this panel, when the caller lays out a grid. */
   span: TileSpan;
 }
 

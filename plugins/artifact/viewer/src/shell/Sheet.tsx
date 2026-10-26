@@ -1,33 +1,22 @@
 /**
- * The record Sheet.
- *
  * Deep content does not belong in the scroll pane. An ADR carries fourteen fields,
- * including a full authored markdown body, a Gate 4b design carries six kilobytes of
- * prose, and a boundary rule carries a detail map whose keys differ by rule kind.
- * Stacking any of those inside a panel buries the panel's own subject. So the panel
- * shows the one line that matters and offers a control, and the whole record opens
- * here, in a Sheet over the pane.
+ * including a full markdown body, a Gate 4b design carries six kilobytes of prose,
+ * and a boundary rule carries a detail map whose keys differ by rule kind.
+ * Stacked in a panel, they bury the panel's own subject. So the panel shows the
+ * one line that matters and offers a control, and the whole record opens here, in
+ * a Sheet over the pane.
  *
- * Two consequences are deliberate.
+ * Two consequences are deliberate. The pane does not move when a Sheet opens, so a
+ * reader keeps their place. The Sheet owns its own scroll on both axes, so a wide
+ * table in an ADR body stays intact without a second pane scrollbar.
  *
- *   - The pane does not move when a Sheet opens, so a reader keeps their place in the
- *     work while they read the record.
- *   - The Sheet owns its own scroll on both axes, so a wide table in an ADR body keeps
- *     its integrity without the pane growing a second scrollbar.
+ * The engineer removed two blocks from the Sheet. One closed every body with the
+ * file the record came from, and a reader wants the record, not its path. The
+ * other opened with the pull request that reached the decision, and the work
+ * item's own state already says whether the work reached a pull request.
  *
- * The Sheet names no source. It used to close every body with a line saying which file
- * the record came from, and the engineer removed every one of those lines from the
- * shell. A reader who opens a decision record wants the record, not the path it was
- * read from.
- *
- * The Sheet carries no pull request block either. It used to open with one, saying
- * which pull request reached the decision, naming its title, and counting the epics on
- * the join's path. The engineer removed it: the work item's own state already says
- * whether the work reached a pull request, so the decision did not need to say it a
- * second time.
- *
- * This file is presentational. It decides no verdict, computes no join, and reads no
- * file. Its caller holds the subject.
+ * This file is presentational. It decides no verdict, computes no join, and reads
+ * no file. Its caller holds the subject.
  */
 
 import { useCallback, useState } from "react";
@@ -60,15 +49,14 @@ function SheetBody({ subject }: { subject: SheetSubject }) {
 }
 
 /**
- * The Sheet's own scroll container, held as the element the reader works on.
+ * The scroll container arrives after the first render, so this is a callback ref
+ * and not a lookup by id. Radix mounts the Sheet portal when a subject opens, so an
+ * effect that ran on the open would find nothing and never look again. The ref
+ * callback puts the element into state the moment it exists, and the reader below
+ * re-runs on it.
  *
- * IT ARRIVES AFTER THE FIRST RENDER, which is why this is a callback ref and not a
- * lookup by id. The Sheet is a portal that Radix mounts when a subject opens, so an
- * effect that ran on the open would find nothing and never look again. A ref callback
- * puts the element into state the moment it exists, and the reader below re-runs on it.
- *
- * The row lives above the container rather than inside it, so it stays put while the
- * record scrolls under it, and no sticky offset is needed when a link lands a heading.
+ * The link row lives above the container, so it stays put while the record scrolls
+ * under it, and no sticky offset is needed when a link lands a heading.
  */
 function useRecordScroll(subject: SheetSubject | null) {
   const [scroll, setScroll] = useState<HTMLDivElement | null>(null);
@@ -82,12 +70,9 @@ const CONTENT_CLASS =
   "flex flex-col gap-0 p-0 data-[side=right]:w-[min(60rem,94vw)] data-[side=right]:sm:max-w-[min(60rem,94vw)]";
 
 /*
- * The width override carries the same `data-[side=right]` variant the registry
- * item uses. Without the matching variant the registry's `w-3/4` wins on
- * specificity, and the Sheet renders 384 px wide, which is too narrow to read
- * an ADR's body in.
- *
- * The Sheet owns its own scroll on both axes, so a wide block stays intact.
+ * The width override carries the same `data-[side=right]` variant the registry item
+ * uses. Without the matching variant the registry's `w-3/4` wins on specificity,
+ * and the Sheet renders 384 px wide, too narrow to read an ADR's body in.
  */
 function RecordContent({ subject, onCloseAutoFocus }: ContentProps) {
   const { scroll, attachScroll, headings } = useRecordScroll(subject);

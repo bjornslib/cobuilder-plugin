@@ -2,15 +2,15 @@
  * The diff, file by file, ported as it stands.
  *
  * `intent.json` puts the diff's own rendering out of scope for this epic, so this module
- * changes no part of how a diff reads. The file list carries the counts the diff's own `+`
- * and `-` lines give, so the numbers and the hunks under them cannot disagree. A file with
- * no hunk — a binary, or a mode change — says that in place, because an empty hunk list is
- * a fact about that file and not a rendering failure.
+ * changes no part of how a diff reads. The file list carries the counts the diff's own
+ * `+` and `-` lines give, so the numbers and the hunks under them cannot disagree. A file
+ * with no hunk, such as a binary or a mode change, says that in place, because an empty
+ * hunk list is a fact about that file and not a rendering failure.
  *
- * THE LONG FILE IS CUT, AND THE CUT IS STATED. A hunk of six hundred lines inside a pane
- * that cannot scroll sideways would push the reader past the section they came for, so a
- * hunk draws sixty lines and a file draws six hunks. The line that says how many were not
- * drawn is the difference between a cut and a hidden record.
+ * A long file is cut, and the cut is stated. A hunk of six hundred lines in a pane that
+ * cannot scroll sideways would push the reader past the section they came for, so a hunk
+ * draws sixty lines and a file draws six hunks. The line that counts the rest is the
+ * difference between a cut and a hidden record.
  */
 
 import { Missing } from "@/shell/atoms";
@@ -27,9 +27,9 @@ export interface ChangeDiffProps {
 }
 
 /*
-  THIS BLOCK IS NOT A PANEL, AND THAT IS A LAYOUT RULE. The change's four rows each
-  render one `Panel`, and the shell's strip reads one link per panel heading on the page.
-  This block is the fourth row's body, so it carries a sub-heading and no jump target.
+  This block is not a panel, as a layout rule. The change's four rows each render one
+  `Panel`, and the shell's strip reads one link per panel heading on the page. This block
+  is the fourth row's body, so it carries a sub-heading and no jump target.
 */
 export function ChangeDiff({ files, selected, onSelect }: ChangeDiffProps) {
   const shown = files.find((file) => file.path === selected) ?? files[0] ?? null;

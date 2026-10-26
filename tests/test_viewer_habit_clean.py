@@ -10,8 +10,9 @@ Slice scope. A slice has two parts, both in repo-relative paths:
 - SLICE_GLOBS lists globs for files that the slice may add next to them.
 
 The scope is the union of both parts. Slices 1 to 4 drop every `*.test.*`
-file, because slice 5 owns the test files. A later slice adds one key to each
-table.
+file, because slice 5 owns the test files. Slice 6 drops every `*.test.*` file
+and every file under a `testSupport` folder, because slice 7 owns them. A later
+slice adds one key to each table.
 
 A file passes when it has no finding except `non-essential-comment`, which
 slices 6 and 7 own. One more exception exists: a recorded residual. It is an
@@ -19,7 +20,9 @@ slices 6 and 7 own. One more exception exists: a recorded residual. It is an
 findings catalog. The unit is the function name in quotes in the sensor
 message, or `@<line>` for an anonymous function.
 
-The whole-viewer comment total may not rise above COMMENT_BASELINE.
+The whole-viewer comment total may not rise above COMMENT_BASELINE. Slice 6
+keeps why-comments: a file may hold at most the Kept count of its row in
+kept-comments/*.md.
 """
 from __future__ import annotations
 
@@ -32,6 +35,10 @@ from pathlib import Path
 
 import pytest
 from _viewer_habit_slices import SLICE_GLOBS, SLICES, VIEWER
+from _viewer_kept_comments import (
+    comment_counts, is_test_file, is_test_side, kept_limits, kept_rows, over_kept,
+    row_problems,
+)
 
 ROOT = Path(__file__).resolve().parent.parent
 CATALOG = ROOT / "docs/architecture/designs/mechanical-smells/findings-catalog.md"
@@ -39,7 +46,8 @@ RESIDUAL_HEADING = "## 7. Recorded residuals"
 COMMENT_SMELL = "non-essential-comment"
 COMMENT_BASELINE = 1059
 RESIDUAL_MAX_LINES = 30
-TEST_FILE_SLICE = 5
+TEST_SIDE_SLICES = (5, 7)
+COMMENT_SLICE = 6
 
 
 def _sensor_binary() -> str | None:
@@ -65,9 +73,10 @@ def scope_of(slice_no: int) -> list[str]:
     found = set(SLICES[slice_no])
     for pattern in SLICE_GLOBS[slice_no]:
         found.update(p.relative_to(ROOT).as_posix() for p in ROOT.glob(pattern))
-    if slice_no >= TEST_FILE_SLICE:
+    if slice_no in TEST_SIDE_SLICES:
         return sorted(found)
-    return sorted(f for f in found if ".test." not in Path(f).name)
+    dropped = is_test_side if slice_no >= COMMENT_SLICE else is_test_file
+    return sorted(f for f in found if not dropped(f))
 
 
 def flatten(groups: list[dict]) -> list[dict]:
@@ -176,3 +185,15 @@ def test_viewer_comment_total_does_not_rise(findings_by_file):
 def test_residual_table_parses_rows():
     sample = f"{RESIDUAL_HEADING}\n\n| File | Unit | Lines | Why it stays |\n|---|---|---|---|\n| a.tsx | `Foo` | 20 | one |\n"
     assert residual_rows(sample) == [("a.tsx", "Foo")]
+
+
+@pytest.mark.parametrize("path", scope_of(COMMENT_SLICE))
+def test_slice6_comments_fit_kept(path, findings_by_file):
+    found = [f["line"] for f in findings_by_file.get(path, []) if f["smell"] == COMMENT_SMELL]
+    problem = over_kept(path, found, kept_limits(kept_rows()))
+    assert not problem, f"slice 6 {problem}"
+
+
+def test_kept_tables_match_the_start_of_slice_6():
+    problems = row_problems(kept_rows(), comment_counts())
+    assert not problems, "kept-comments tables are unsound:\n" + "\n".join(problems)

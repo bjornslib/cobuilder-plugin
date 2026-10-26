@@ -60,11 +60,10 @@ function Decisions({ props, landed }: { props: ChangeBodyProps; landed: string[]
 }
 
 /*
- * THE DECISIONS COME FROM THE INDEX'S JOIN, AND FROM NOWHERE ELSE. `entry.adrs` is the
- * story entry's own list, and it and `data/index.json` already disagree about which
- * decisions a change landed. One fact has one source, so this row reads the join the
- * index computed and derives none of it. A null join is the index not loaded, which is
- * stated in place rather than answered from the second list.
+ * The decisions come from the index's join and from nowhere else. `entry.adrs` and
+ * `data/index.json` already disagree about which decisions a change landed. One fact has
+ * one source, so this row derives none of it. A null join means the index did not load,
+ * and the row states that in place rather than answering from the second list.
  */
 function landedOf(joins: ResolvedJoins | null, pr: number): string[] {
   return joins === null ? [] : joins.adrIdsForPullRequest(pr);

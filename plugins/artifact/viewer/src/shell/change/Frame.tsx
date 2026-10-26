@@ -1,25 +1,22 @@
 /**
  * The frame: the level's picture, its drawing, and the reader's choice between them.
  *
- * THE FRAME CARRIES BOTH PARTS WHEN THE BUNDLE HOLDS BOTH. A level with a picture and a
- * drawing offers the reader an Image / Diagram toggle, exactly as the viewer this replaces
- * did. A level with one of the two draws it and offers no toggle, because a toggle between
- * one thing and itself is a control that does nothing.
+ * The frame carries both parts when the bundle holds both. A level with a picture and a
+ * drawing offers an Image / Diagram toggle. A level with one of the two draws it and
+ * offers no toggle, because a toggle between one thing and itself does nothing.
  *
- * A LEVEL WITH NEITHER STATES THAT IN PLACE. The fourth level is the diff itself, and it
- * has never carried a picture or a drawing. The block says so rather than drawing an empty
+ * A level with neither states that in place. The fourth level is the diff itself, and it
+ * never carries a picture or a drawing. The block says so rather than drawing an empty
  * frame, so a reader meets a stated absence and not a blank box.
  *
- * THIS BLOCK IS NOT A PANEL, AND IT CARRIES NO HEADING. The picture and the drawing need no
- * caption, because the level's own row names them. The change's four rows each render one
- * `Panel`, and the shell's section strip reads one link per panel heading on the page, so a
- * frame heading would also add a second link to the strip. ADR-0028 states the rule for
+ * This block is not a panel and carries no heading. The level's own row names the
+ * picture and the drawing. The shell's section strip reads one link per panel heading,
+ * so a frame heading would add a second link to the strip. ADR-0028 states the rule for
  * the whole section model.
  *
- * A PICTURE THE BROWSER FAILED ON IS A PICTURE THAT IS NOT THERE. `failedArt` carries the
+ * A picture the browser failed on is a picture that is not there. `failedArt` carries the
  * address that did not load, so the frame counts the parts it can draw rather than the
- * parts its record promised. The toggle and the body read the same condition, so the two
- * cannot disagree.
+ * parts its record promised. The toggle and the body read the same condition.
  */
 
 import type { Theme } from "@/shell/DiagramTiles";
@@ -34,14 +31,13 @@ export interface ChangeFrameProps {
   theme: Theme;
   artMode: ArtMode;
   onArtMode: (mode: ArtMode) => void;
-  /** The picture address that did not load, or null. */
   failedArt: string | null;
   onArtFailed: (url: string) => void;
 }
 
 /*
- * ONE PART DRAWS ITSELF, WHATEVER THE READER CHOSE ON ANOTHER LEVEL. The toggle only
- * exists where both parts do, and the choice is the reader's for the whole change, so a
+ * One part draws itself, whatever the reader chose on another level. The toggle exists
+ * only where both parts do, and the choice is the reader's for the whole change, so a
  * level holding one part resolves to that part rather than to a choice it never offered.
  */
 function resolveMode(hasImage: boolean, hasDiagram: boolean, artMode: ArtMode): ArtMode {

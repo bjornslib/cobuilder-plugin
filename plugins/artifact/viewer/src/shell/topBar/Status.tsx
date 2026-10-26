@@ -9,7 +9,7 @@ const BRANCH_CLASS =
 const UNKNOWN_STAGE = "A stage outside the recorded vocabulary.";
 
 /*
- * THE BOARD CARRIES NO STAGE, and the badge is dropped rather than reworded. A
+ * The board carries no stage, and the badge is dropped rather than reworded: a
  * stage belongs to a work item, so a board badge could only state a value that
  * does not exist. The unknown badge stays for the states where nothing has
  * resolved, which is what its gloss says.
@@ -46,9 +46,9 @@ function ExtraBranches({ count }: { count: number }) {
 }
 
 /*
- * The branch is quiet text. It truncates and never wraps the bar, and it hides on a
- * phone width where it would crowd the bar. Several branches show the first, with a
- * "+N" mark, and the title lists them all.
+ * The branch is quiet text. It hides on a phone width where it would crowd the
+ * bar. Several branches show the first, with a "+N" mark, and the title lists
+ * them all.
  */
 function BranchMark({ branch, branches }: Pick<TopBarProps, "branch" | "branches">) {
   if (!branch) return null;

@@ -13,20 +13,19 @@ import { DecisionList, UnresolvedAdrs, type DecisionListProps } from "./decision
 interface DiagramsSectionProps {
   work: WorkItem;
   theme: Theme;
-  /** The level numbers to draw, in the order to draw them. */
   levels: string[];
 }
 
 /**
  * Diagrams. The tiles for the levels the caller names, and a press opens one whole.
  *
- * THE CALLER CHOOSES THE LEVELS, and the two levels of this shell choose different ones.
- * A bundle's first diagram level is its container drawing: it names the surfaces and the
- * people who use them, which is the question the Intent level answers. The levels after
- * it are mechanism, and they stay in Architecture. `App.tsx` cuts the list.
+ * The caller chooses the levels, and the two levels of this shell choose different
+ * ones. A bundle's first diagram level is its container drawing: it names the surfaces
+ * and the people who use them, which is the question the Intent level answers. The
+ * levels after it are mechanism, and they stay in Architecture. `App.tsx` cuts the list.
  *
- * The grid follows the count. A row of three columns leaves a hole when two tiles are in
- * it, and a single tile in a three-column row is a third of the page wide.
+ * The grid follows the count. A row of three columns leaves a hole when two tiles are
+ * in it, and a single tile in a three-column row is a third of the page wide.
  */
 export function DiagramsSection({ work, theme, levels }: DiagramsSectionProps) {
   const sources = work.record?.diagrams ?? null;
@@ -45,7 +44,6 @@ interface DecisionsSectionProps extends DecisionListProps {
   levelState: LevelState;
 }
 
-/** Architecture Decisions. */
 export function DecisionsSection({ work, adrs, levelState, openSheet }: DecisionsSectionProps) {
   return (
     <Panel title="Architecture Decisions" icon={ScrollText} absent={!levelState.available}>
@@ -64,7 +62,6 @@ interface BoundariesProps {
   openSheet: (subject: SheetSubject) => void;
 }
 
-/** Boundaries. The rules the touched contexts declare, unchanged. */
 export function BoundariesSection({ work, openSheet }: BoundariesProps) {
   const count = work.boundaryRules.length;
   return (

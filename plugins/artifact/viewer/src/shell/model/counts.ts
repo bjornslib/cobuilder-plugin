@@ -21,9 +21,8 @@ function planCount(work: WorkItem): string {
 }
 
 /*
- * The row names the rubric documents the page reads. A work that holds none keeps
- * an absence word, because a zero would read as a count of records the rail read
- * and the row below states the absence per slice in place.
+ * A work with no rubric documents keeps an absence word, because a zero would read as a
+ * count of records the rail read. The row below states the absence per slice.
  */
 function rubricCount(work: WorkItem): string {
   return work.rubrics.length > 0 ? `${work.rubrics.length} rubrics` : "none";
@@ -56,9 +55,8 @@ const PROGRAM_COUNTS: Record<ProgramKey, (work: WorkItem) => string> = {
 /**
  * How many records one program row reads, in the row's own terms.
  *
- * The count is the section's own list length, and never a number this file picks: a row
- * whose record is absent reads zero, and the body under the row states the absence in
- * place.
+ * A row whose record is absent reads zero, and the body under the row states the
+ * absence in place.
  */
 export function programCount(work: WorkItem, section: ProgramKey): string {
   return PROGRAM_COUNTS[section](work);
@@ -67,17 +65,15 @@ export function programCount(work: WorkItem, section: ProgramKey): string {
 /**
  * How many records one change row reads.
  *
- * A COUNT THE RAIL HAS NOT READ IS NO COUNT. The change's records load when the route
- * names the change's account, and the rail addresses the change's rows from a program row
- * too. There the rail holds no level and no diff, and a row that said `0 of 4 parts` would
- * state a number nobody read. So it states nothing, and the row's own name still says what
- * it opens.
+ * A count the rail has not read is no count. The change's records load when the route
+ * names the change's account, but the rail also addresses the change's rows from a
+ * program row. There the rail holds no level and no diff, and a row that said
+ * `0 of 4 parts` would state a number nobody read. So it states nothing.
  *
- * WHEN IT HAS READ THEM, the count names the level's own parts and every part it cannot
- * reach counts zero. The audio is the one part no record can settle on its own: a level's
- * `voice` script says the level was voiced and names the address, and only the browser can
- * say whether a file answers there. So the audio counts only once `servedAudio` has
- * confirmed it.
+ * Once read, the count names the level's own parts, and every part it cannot reach
+ * counts zero. The audio is the one part no record can settle: a level's `voice` script
+ * names the address, and only the browser can say whether a file answers there. So the
+ * audio counts only once `servedAudio` has confirmed it.
  */
 interface ChangeCountInput {
   level: ChangeLevel | null;

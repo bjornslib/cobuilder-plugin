@@ -2,7 +2,6 @@ import type { ContextEntity, EpicDesignEntity, EpicEntity, RubricEntity, SliceEn
 
 import type { AdrRecord } from "../records";
 
-/** Everything a Sheet can show. One member per record kind. */
 export type SheetSubject =
   | {
       kind: "adr";
@@ -28,7 +27,6 @@ export type SheetSubject =
     }
   | {
       kind: "rubric";
-      /** The rubric document the slice was scored against. */
       doc: RubricEntity;
       /** The slice the rubric belongs to, for the sheet's own badges and description. */
       slice: SliceEntity;

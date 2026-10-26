@@ -2,7 +2,6 @@ import { BUILD_ROW_KEYS } from "./accounts";
 import { changeRowsOf, programRowOf } from "./railRows";
 import type { RailGroup, RailReading, RailRow, RailSource } from "./railTypes";
 
-/** The rows a press can reach: the ones whose record the rail could read. */
 function reached(rows: RailRow[]): RailRow[] {
   return rows.filter((row) => row.available);
 }
@@ -10,10 +9,9 @@ function reached(rows: RailRow[]): RailRow[] {
 /**
  * Every row a press can reach, in the order the rail renders them.
  *
- * ONE FLAT LIST SERVES THE WALK. The arrow-key traversal steps this list, so a folded
- * group is a display choice and never a gap: the walk reaches every reachable row of both
- * groups whether a group is open or closed. The list carries the rows of both accounts, so
- * a group boundary is one step.
+ * One flat list serves the walk. The arrow-key traversal steps this list, so a folded
+ * group is a display choice and never a gap: the walk reaches every reachable row of
+ * both groups whether a group is open or closed, and a group boundary is one step.
  */
 export function rowsOf(groups: RailGroup[]): RailRow[] {
   return groups.flatMap((group) => group.entries);
@@ -39,14 +37,13 @@ function groupsOf(reading: RailReading): RailGroup[] {
 /**
  * The rail's three groups, in the order a reader reads down them.
  *
- * LEVELS LISTS THE WORK'S THREE LEVELS. ALSO LISTS THE ROWS OF THE WORK NO LEVEL OWNS:
- * Plan, Epics, and Rubrics. REVIEW LISTS THE PULL REQUEST'S FOUR ROWS: its three levels
- * and File Diffs. A row of the Review group opens the pull request's account, so a reader
- * reaches it from any address. One function returns all three groups, so the rail and the
- * arrow walk cannot drift.
+ * Levels lists the work's three levels. Also lists the rows no level owns: Plan, Epics,
+ * and Rubrics. Review lists the pull request's four rows: its three levels and File
+ * Diffs. A Review row opens the pull request's account, so a reader reaches it from any
+ * address. One function returns all three groups, so the rail and the arrow walk cannot
+ * drift.
  *
- * With no change the Review group keeps one disabled File Diffs row that states why. The
- * board is not a row of any group, and `Rail.tsx` draws no row for it.
+ * The board is not a row of any group, and `Rail.tsx` draws no row for it.
  */
 export function railGroups(source: RailSource): RailGroup[] {
   const { work, gates, levels } = source;

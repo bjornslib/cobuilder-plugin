@@ -8,8 +8,8 @@ import type { ChangeLevel } from "./keys";
 /**
  * What the change's account reads, and why it is absent when it is.
  *
- * `diff` is the fourth row's whole content, and `diffMessage` states why it is not there:
- * a pull request the manifest does not list carries no diff, and a listed one whose file
+ * `diff` is the fourth row's whole content, and `diffMessage` states why it is not there.
+ * A pull request the manifest does not list carries no diff, and a listed one whose file
  * did not load carries an unreadable one. The two are different facts, so they are two
  * fields.
  */
@@ -94,13 +94,13 @@ function readChange(pr: number | null, setBundle: Setter): (() => void) | undefi
 /**
  * The change's records, read once per pull request.
  *
- * THE DIFF IS MANIFEST-GATED, AND THAT IS NOT AN OPTIMISATION. `diffs-pr{N}.js` is read by
+ * The diff is manifest-gated, and that is not an optimisation. `diffs-pr{N}.js` is read by
  * appending a script tag, and a tag for a file the bundle does not hold fails loudly: the
  * browser reports the missing resource, and the reader meets a broken page rather than a
  * stated absence. `manifest.js` names the pull requests that carry a diff, so this asks
  * only for one it holds and states the absence for every other.
  *
- * A FAILED READ OF THE STORY OR THE MANIFEST IS A STATED FAILURE. The entry, the levels,
+ * A failed read of the story or the manifest is a stated failure. The entry, the levels,
  * the art, and the audio all come from those two files, so a page that cannot read them
  * renders no change's account and says why.
  */

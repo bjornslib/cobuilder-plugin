@@ -1,26 +1,20 @@
 /**
- * The section-link bar, and the pane scroll it drives.
+ * The bar is not a fourth fixed region: interaction-design section 2.1 gives the
+ * shell three fixed regions and one scrolling region. It is the first child of the
+ * scroll pane and it is `sticky`, so the pane still owns the only scroll.
  *
- * Interaction-design section 2.1 gives the shell three fixed regions and one
- * scrolling region. The bar is not a fourth fixed region. It is the first child of
- * the scroll pane and it is `sticky`, so the pane still owns the only scroll and
- * the bar stays at the pane's top edge while the pane moves under it.
+ * One link per panel the section actually rendered, read through a
+ * `MutationObserver` on the pane. A panel that a section gates away has no link.
+ * Nothing here holds a list of section names, because such a list would drift the
+ * moment a section changed its panels.
  *
- * ONE LINK PER PANEL ON THE PAGE, and the page decides which those are. The bar
- * reads the panels the section actually rendered, through a `MutationObserver` on
- * the pane. A panel that a section gates away, or one that only renders when its
- * record exists, therefore has no link. Nothing here holds a list of section
- * names, because such a list would drift from the sections the moment one of them
- * changed its panels.
- *
- * THE PANE SCROLLS, NEVER THE WINDOW. `useDocumentNoScroll` guarantees the
- * document cannot scroll, so `window.scrollTo` would do nothing at all. Every
- * press therefore moves the pane element, and the horizontal offset the reader
- * chose is left exactly where it was.
+ * The pane scrolls, never the window: `useDocumentNoScroll` guarantees the document
+ * cannot scroll, so `window.scrollTo` would do nothing. A press leaves the
+ * horizontal offset the reader chose where it was.
  *
  * The offset subtracts the bar's own height, so a target heading lands under the
- * bar rather than behind it. `topOffset` adds any sticky chrome that sits above the
- * bar in the same band, which today is the reading-progress strip.
+ * bar rather than behind it. `topOffset` adds any sticky chrome above the bar in
+ * the same band, which today is the reading-progress strip.
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -32,20 +26,17 @@ import { cn } from "@/lib/utils";
 import { watchList } from "./observe/children";
 
 /**
- * The attribute a panel carries to become a jump target, and the id it points at.
- *
  * `Panel` in `atoms.tsx` is the only writer. The attribute holds the panel's own
  * heading, so the link label and the heading can never disagree.
  */
 export const JUMP_ATTR = "data-shell-panel";
 
-/** One link in the bar. */
 export interface JumpTarget {
   id: string;
   label: string;
 }
 
-/** The id a panel's heading word becomes. Two panels may not share a heading. */
+/** Two panels may not share a heading. */
 export function panelId(title: string): string {
   return `panel-${title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`;
 }
@@ -58,17 +49,15 @@ function readTargets(pane: HTMLElement): JumpTarget[] {
 }
 
 /**
- * The panels the pane currently holds, in document order.
- *
  * The pane is read rather than a React registry, because document order is the
  * order a reader sees and a registry would have to be sorted back into it. The
  * observer covers the section crossfade, a section change, and a work-item change,
  * all of which replace panels without unmounting the pane.
  *
- * The `keys` argument is the caller's. The pane does not exist while the index is
- * still loading or after it failed, so the observer has to attach again when a
- * mount brings the pane into the document. The dependency list is the caller's and
- * it is spread into the effect, in the shape `useScrollResetOnRoute` already uses.
+ * The `keys` argument is the caller's dependency list. The pane does not exist
+ * while the index is loading or after it failed, so the observer has to attach
+ * again when a mount brings the pane into the document. It is spread into the
+ * effect, as `useScrollResetOnRoute` does.
  */
 export function useJumpTargets(paneId: string, keys: readonly unknown[]): JumpTarget[] {
   const [targets, setTargets] = useState<JumpTarget[]>([]);
@@ -86,11 +75,9 @@ export interface JumpBarProps {
   paneId: string;
   targets: JumpTarget[];
   /**
-   * Pixels of sticky chrome above this bar inside the same band.
-   *
-   * The bar measures itself and cannot see a sibling, so the caller states it. The
-   * reading-progress strip is the one case today, and without this number a
-   * jumped-to heading would land under the strip's own height.
+   * The bar measures itself and cannot see a sibling, so the caller states the
+   * pixels of sticky chrome above it. Without it, a jumped-to heading would land
+   * under the reading-progress strip.
    */
   topOffset?: number;
 }
@@ -146,17 +133,13 @@ function JumpLink({ target, onJump }: { target: JumpTarget; onJump: JumpHandler 
   );
 }
 
-/**
- * The bar itself.
- *
+/*
  * A `nav` of anchors, like the rail, so a link is focusable, right-clickable, and
  * openable in a new tab. The press is intercepted, because a hash write would move
  * the document and the document must not move.
- */
-/*
- * No links means no bar. An empty bar would spend a strip of the pane on nothing
- * and would state a presence the page does not have, which section 1.1's rule 8
- * forbids.
+ *
+ * No links means no bar. An empty bar would spend a strip of the pane on nothing and
+ * would state a presence the page does not have, which section 1.1's rule 8 forbids.
  */
 export function JumpBar({ paneId, targets, topOffset = 0 }: JumpBarProps) {
   const barRef = useRef<HTMLElement>(null);

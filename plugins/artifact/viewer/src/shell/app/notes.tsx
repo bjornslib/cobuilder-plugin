@@ -27,11 +27,10 @@ export function RedirectNote({ from, section, reason }: RedirectProps) {
 }
 
 /*
- * A RECORD THE BUNDLE COULD NOT GIVE THE CHANGE IS STATED ABOVE THE ROWS.
- * A story entry the bundle does not hold, and a record file that did not
- * load, are both read failures. The rows below state what each one could
- * not read; this line states why, once, so a reader is not left to guess
- * whether the change is thin or the page is broken.
+ * A record the bundle could not give the change is stated above the rows. A missing
+ * story entry and a record file that did not load are both read failures. The rows state
+ * what each one could not read, and this line states why, once, so a reader is not left
+ * to guess whether the change is thin or the page is broken.
  */
 export function ChangeNotice({ notice }: { notice: string | null }) {
   if (notice === null) return null;

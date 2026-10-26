@@ -11,10 +11,9 @@ const LINK_BASE =
   "inline-flex min-h-8 shrink-0 cursor-pointer items-center rounded-[10px] border border-transparent px-2.5 font-mono text-[12.5px] whitespace-nowrap";
 const LINK_MOTION = "transition-colors duration-150 ease-house";
 /*
- * The active heading takes the band fill. This is the one selected
- * state the band may carry, because it marks a heading and the panel
- * headings it names already wear the same fill. The ring is
- * `--band-ink`, because the teal ring is 1.4 to 1 on the band.
+ * The active heading takes the band fill. This is the one selected state the band may
+ * carry, because it marks a heading and the panel headings it names already wear the
+ * same fill. The ring is `--band-ink`, because the teal ring is 1.4 to 1 on the band.
  */
 const LINK_ON = cn("bg-band font-bold text-band-ink", BAND_FOCUS);
 const LINK_OFF = cn(
@@ -55,10 +54,10 @@ interface StripProps {
 /**
  * The section headings, one press away from its box.
  *
- * The list comes from `useJumpTargets`, which reads the panels the boxes rendered. So
- * the strip holds one heading per panel with no list of its own, and a label can never
- * disagree with the heading it names. This is the jump bar's mechanism with one change:
- * a press sets the active index instead of scrolling the pane to an anchor.
+ * The list comes from `useJumpTargets`, which reads the panels the boxes rendered. So the
+ * strip holds one heading per panel with no list of its own, and a label can never
+ * disagree with the heading it names. This is the jump bar's mechanism, except that a
+ * press sets the active index instead of scrolling the pane to an anchor.
  *
  * The anchors stay anchors. A reader can still focus one, and it still carries an href.
  * The press is intercepted, because a hash write would move the document and this shell

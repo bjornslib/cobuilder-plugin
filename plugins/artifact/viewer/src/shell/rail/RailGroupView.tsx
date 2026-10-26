@@ -38,9 +38,8 @@ export function useRailView(open: RailView["open"], onToggleGroup: RailView["onT
   /* Icon mode is the sidebar's own collapse, and never applies to the mobile drawer. */
   const icons = state === "collapsed" && !isMobile;
   /*
-   * The reader's own address, which is the hash the shell writes. A row is current when
-   * it opens this address. An empty hash is the bare route — the drawer — where no work
-   * row is current.
+   * A row is current when it opens the hash the shell writes. An empty hash is the
+   * bare route (the drawer), where no work row is current.
    */
   return { here: window.location.hash, icons, open, onToggleGroup, reduce };
 }
@@ -117,9 +116,9 @@ function toggleHandler(holdsCurrent: boolean, onToggleGroup: RailView["onToggleG
 }
 
 /*
- * THE READER'S OWN GROUP NEVER CLOSES. The rule is enforced twice on purpose:
- * the control refuses the press, and the open state ignores a fold the reader
- * set before they arrived here, so a deep link and a walked step obey it too.
+ * The reader's own group never closes. The rule is enforced twice on purpose: the
+ * control refuses the press, and the open state ignores a fold the reader set
+ * before they arrived here, so a deep link and a walked step obey it too.
  */
 export function RailGroupView({ group, view }: GroupProps) {
   const holdsCurrent = group.rows.some((row) => row.href === view.here);

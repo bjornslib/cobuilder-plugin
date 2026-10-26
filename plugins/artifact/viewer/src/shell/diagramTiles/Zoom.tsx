@@ -5,15 +5,12 @@ import { Maximize2, ZoomIn, ZoomOut, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /**
- * The zoom steps, as multiples of the fitted size.
- *
- * A step list rather than a multiplying factor, so every reading is a whole number a
- * reader recognises: 100 % is the drawing fitted to the dialog, and the ends are the
- * 50 % to 400 % the engineer asked for.
+ * The zoom steps, as multiples of the fitted size. A step list rather than a multiplying
+ * factor keeps every reading a whole number a reader recognises: 100 % is the drawing
+ * fitted to the dialog, and the ends are the 50 % to 400 % the engineer asked for.
  */
 const ZOOM_STEPS = [0.5, 0.75, 1, 1.25, 1.5, 2, 2.5, 3, 4] as const;
 
-/** The step the dialog opens on: the drawing fitted to the width of the body. */
 const FIT_STEP = ZOOM_STEPS.indexOf(1);
 
 const LAST_STEP = ZOOM_STEPS.length - 1;
@@ -36,7 +33,6 @@ export interface Zoom {
   reset: () => void;
 }
 
-/* The zoom is a step index into `ZOOM_STEPS`, so every reading is a whole number. */
 export function useZoom(): Zoom {
   const [step, setStep] = useState(FIT_STEP);
   return {
@@ -57,12 +53,9 @@ interface ZoomButtonProps {
 }
 
 /**
- * One zoom control.
- *
- * Every target is 44 px, per section 11.2, and every one carries an `aria-label`,
- * because the icon is the whole control. A control at the end of the range states that
- * it cannot act, with `disabled` and `aria-disabled` together, and it drops the pointer
- * cursor with the state.
+ * Every target is 44 px, per section 11.2, and carries an `aria-label`, because the icon
+ * is the whole control. A control at the end of the range sets `disabled` and
+ * `aria-disabled` together, and drops the pointer cursor with the state.
  */
 function ZoomButton({ label, icon: Icon, disabled, onClick }: ZoomButtonProps) {
   return (

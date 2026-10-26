@@ -15,17 +15,14 @@ function hasItems(value: unknown[] | undefined | null): boolean {
 }
 
 /**
- * The key this shell's first level carried before ADR-0029 renamed it.
+ * The key this shell's first level carried before ADR-0029 renamed it. A design
+ * record authored before the rename holds its narration under this key, and
+ * `designs.js` is a projection of records authored over months. So the reader asks
+ * for the current key first and this one second, and a design narrated before the
+ * rename still reads as narrated rather than as an empty level.
  *
- * A design record authored before the rename holds its narration under the key the level
- * used to have, and `designs.js` is a projection of records authored over months. So the
- * reader asks for the level's current key first and for this one second, and a design
- * narrated before the rename still reads as narrated rather than as an empty level.
- *
- * Nothing writes this key. The level list above carries the one name the shell asks for
- * and shows, and this table is a read of an older record and not a second name for the
- * level. A future session that drops the read is free to, once no bundle in service
- * predates the rename.
+ * Nothing writes this key: it is a read of an older record, not a second name for
+ * the level. Drop the read once no bundle in service predates the rename.
  */
 const PRE_RENAME_LEVEL_KEY: Record<string, string> = { intent: "landscape" };
 
@@ -37,11 +34,10 @@ function levelNamed(source: Record<string, unknown>, name: string): LevelRead {
 }
 
 /**
- * One narrative level, whatever shape the record wrote it in.
- *
- * `review-flight-deck` wraps its three levels under `levels` instead of authoring them at
- * the top level. Both shapes are read, because a rule that saw only the flat one reported
- * that design's three levels missing while the text sat one key away.
+ * `review-flight-deck` wraps its three levels under `levels` instead of authoring
+ * them at the top level. Both shapes are read, because a rule that saw only the
+ * flat one reported that design's three levels missing while the text sat one key
+ * away.
  */
 export function narrativeLevel(record: DesignRecord, key: string): LevelRead {
   const narrative = record.narrative;
@@ -52,7 +48,6 @@ export function narrativeLevel(record: DesignRecord, key: string): LevelRead {
   return names.map((name) => levelNamed(source, name)).find((level) => level !== null) ?? null;
 }
 
-/** Every `##` section of a draft, as a table of contents. */
 function draftSections(markdown: string): string[] {
   return markdown
     .split("\n")
@@ -61,11 +56,10 @@ function draftSections(markdown: string): string[] {
 }
 
 /**
- * The goal, and the one rule that reads `min_work`.
- *
- * A goal that records `challenge_stage_run` false is a backlog entry. Design mode stopped
- * after stage 1, so the record is whole in its own terms and the design is not. The rule
- * names that, because a reader comparing two rows has to see the difference.
+ * A goal that records `challenge_stage_run` false is a backlog entry: design mode
+ * stopped after stage 1, so the record is whole in its own terms and the design is
+ * not. The rule names that, because a reader comparing two rows has to see the
+ * difference.
  */
 export function goalVerdict(goal: DesignRecord["goal"]): Verdict {
   if (!goal) return verdictOf("absent");

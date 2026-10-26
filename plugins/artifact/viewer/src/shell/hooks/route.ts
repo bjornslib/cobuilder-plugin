@@ -45,12 +45,10 @@ function useGo(selfRewrite: RefObject<boolean>): (href: string) => void {
   );
 }
 
-/**
- * The route, read from the hash and kept in step with it.
- *
- * The rail renders from the route, so a deep link lands on the same screen a reader
- * reached by clicking. A hash change the shell did not make clears the redirect
- * notice, because the reader chose that destination.
+/*
+ * The rail renders from the route, so a deep link lands where a click would. A
+ * hash change the shell did not make clears the redirect notice, because the
+ * reader chose that destination.
  */
 export function useHashRoute(): RouteControl {
   const [route, setRoute] = useState<Route>(() => readRoute());

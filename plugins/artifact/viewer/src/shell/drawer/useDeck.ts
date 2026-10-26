@@ -14,7 +14,6 @@ export interface BodyProps {
   records: DesignRecords | null;
   /** The drawer's own open state, so a closed drawer forgets its last read. */
   open: boolean;
-  /** Leave the drawer for a route the reader chose inside it. */
   onLeave: () => void;
   /** The controlled snap, so Enter's expand contract can set the height. */
   setSnap: SetSnap;

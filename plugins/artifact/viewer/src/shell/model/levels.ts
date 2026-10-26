@@ -4,7 +4,6 @@ import type { LevelKey } from "./sections";
 
 export interface LevelState {
   key: LevelKey;
-  /** True when the work fills the level. False turns the rail item disabled. */
   available: boolean;
   /** The records the level could not read. Empty when the level is available. */
   missing: string[];

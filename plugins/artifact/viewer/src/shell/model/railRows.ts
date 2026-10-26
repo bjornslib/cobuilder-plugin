@@ -1,8 +1,8 @@
 /*
  * The change's own four rows, and the table from a row's word to the bundle's level key.
- * Slice 15 declared both in `./change/sections`, and this file reads them rather than
- * copying them: two lists of the same four names would let the row the rail opens and
- * the row the pager renders disagree.
+ * This file reads them from `../change/sections` and never copies them: two lists of the
+ * same four names would let the row the rail opens and the row the pager renders
+ * disagree.
  */
 import { CHANGE_LABEL, CHANGE_KEYS, CHANGE_LEVEL_KEY, type ChangeKey } from "../change/sections";
 import type { ChangeLevel } from "../change/levels";
@@ -11,7 +11,6 @@ import { changeCount, programCount } from "./counts";
 import { changeHref, programHref } from "./routes";
 import type { RailReading, RailRow } from "./railTypes";
 
-/** The section name this row shares with the other account, or null when it shares none. */
 function sharedOf(section: string): SharedKey | null {
   return (SHARED_KEYS as readonly string[]).includes(section) ? (section as SharedKey) : null;
 }
@@ -34,8 +33,8 @@ function baseRow(reading: RailReading, section: ProgramKey): RailRow {
 }
 
 /*
- * A level's record is absent rather than empty, and the row states it in place: the
- * reader needs the gap where they would have clicked, not a click that leads nowhere.
+ * A level's record is absent rather than empty. The row states it in place, so the
+ * reader sees the gap where they would have clicked.
  */
 function levelRow(row: RailRow, section: ProgramKey, reading: RailReading): RailRow {
   const state = reading.levels?.[section];
@@ -65,7 +64,6 @@ export function programRowOf(reading: RailReading, section: ProgramKey): RailRow
   return rule ? rule(row, reading) : levelRow(row, section, reading);
 }
 
-/** The change's own narration level behind one of its four rows. */
 function levelOf(changeLevels: ChangeLevel[], section: ChangeKey): ChangeLevel | null {
   const key = CHANGE_LEVEL_KEY[section];
   return changeLevels.find((level) => level.key === key) ?? null;
@@ -77,7 +75,6 @@ function changeCountOf(reading: RailReading, section: ChangeKey): string {
   return changeCount({ level, diffFiles, section, servedAudio, read: changeLevels.length > 0 });
 }
 
-/* Slice 15 renders all four rows, and each states in place what it could not read. */
 function changeRowOf(reading: RailReading, section: ChangeKey, changePr: number): RailRow {
   return {
     key: `change-${section}`,
@@ -90,7 +87,6 @@ function changeRowOf(reading: RailReading, section: ChangeKey, changePr: number)
   };
 }
 
-/* No change to read: File Diffs stays as one disabled row that says why. */
 function noChangeRow(): RailRow {
   return {
     key: "change-file-diffs",

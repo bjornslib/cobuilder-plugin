@@ -10,20 +10,16 @@ export interface Selection {
 }
 
 /*
- * The deck's own reduce answer: a reduced reader folds with no height
- * animation, like every other animated thing the house draws.
+ * A reduced reader folds with no height animation, like every other animated
+ * thing the house draws. The state filter selects whole lanes; `all` clears it.
  *
- * The state filter selects whole lanes; `all` is the value that clears it.
+ * A folded lane collapses to its header line only: its rows stay in the walk
+ * and the counts, and the lane holding the current row refuses the fold.
  *
- * THE FOLD, PER LANE KEY. A folded lane collapses to its header line — a
- * display choice only. Its rows stay in the walk and in the counts, and
- * the lane holding the current row refuses the fold.
- *
- * THE SELECTION AND ITS TWO SOURCES. An explicit selection is a row the
- * reader chose; an automatic one is the mirror of a result set of exactly
- * one. A dismissed automatic read is remembered for as long as the same
- * sole result holds — a Close or a second press is a decision the deck does
- * not undo — and a changed needle starts a new read.
+ * An explicit selection is a row the reader chose; an automatic one mirrors a
+ * result set of exactly one. A dismissed automatic read is remembered while
+ * the same sole result holds, because a Close or a second press is a decision
+ * the deck does not undo. A changed needle starts a new read.
  */
 export function useDeckState() {
   const [needle, setNeedle] = useState("");
@@ -40,10 +36,8 @@ function isStale(selection: Selection | null, walk: DesignRow[]): boolean {
   return selection !== null && (selection.auto || !walk.some((row) => row.design.id === selection.id));
 }
 
-/* The auto of this very sole is already in: bailing on the same
-   value is what keeps this effect from re-rendering forever,
-   because setState with a new object is a change even when no
-   field changed. */
+/* Bail on the same value: it keeps this effect from re-rendering forever,
+   because setState with a new object is a change even when no field changed. */
 function nextSelection(was: Selection | null, sole: DesignRow, walk: DesignRow[]): Selection | null {
   if (was !== null && was.id === sole.design.id && was.auto) return was;
   if (was === null || was.auto || !walk.some((row) => row.design.id === was.id)) {
@@ -53,11 +47,10 @@ function nextSelection(was: Selection | null, sole: DesignRow, walk: DesignRow[]
 }
 
 /*
- * THE SELECTION FOLLOWS THE RESULT SET. A sole result mirrors itself into
- * the deck with no second press; a set that broadens past one takes the
- * automatic read away entirely, because an automatic selection was never
- * the reader's own and a highlight without its pane is a lie; an explicit
- * one stays only while its row is visible.
+ * A sole result mirrors itself into the deck with no second press. A set that
+ * broadens past one drops the automatic read, because it was never the
+ * reader's own and a highlight without its pane is a lie. An explicit one
+ * stays only while its row is visible.
  */
 function useSelectionFollow(walk: DesignRow[], state: DeckState): void {
   const { selection, setSelection, dismissed } = state;
@@ -72,10 +65,8 @@ function useSelectionFollow(walk: DesignRow[], state: DeckState): void {
 }
 
 /*
- * THE LANE HOLDING THE CURRENT ROW OPENS. The walk never lands on a row
- * the board cannot show, so the fold cannot hold the row the selection
- * is on: it opens the moment the walk steps onto it. Same rule, enforced
- * from the selection side.
+ * The walk never lands on a row the board cannot show, so the fold cannot
+ * hold the selected row: it opens the moment the walk steps onto it.
  */
 function useFoldOpens(rows: DesignRow[], { selection, folded, setFolded }: DeckState): void {
   useEffect(() => {
@@ -95,10 +86,8 @@ function resetDeck(state: DeckState): void {
 }
 
 /*
- * THE DRAWER RESETS WHEN IT CLOSES, so the next open is the whole deck: the
- * needle, the filter, the fold, the selection, and the dismissed sole all
- * come back to their first state. The guard keeps the reset from firing on
- * the drawer's first mount while it is still open.
+ * The drawer resets when it closes, so the next open is the whole deck. The
+ * guard keeps the reset from firing on the first mount while it is open.
  */
 function useResetOnClose(open: boolean, state: DeckState): void {
   const wasOpen = useRef(open);

@@ -18,7 +18,6 @@ export const TONE_PILL: Record<Tone, string> = {
   danger: "border-destructive bg-danger-wash text-destructive",
 };
 
-/** A box's left rule, keyed by tone. */
 export const TONE_RULE: Record<Tone, string> = {
   neutral: "border-l-line",
   accent: "border-l-primary",
@@ -41,7 +40,6 @@ export const TONE_MARK: Record<Tone, LucideIcon> = {
   danger: CircleAlert,
 };
 
-/** The tone for a stage word the index carries. */
 export function toneForStage(stage: string): Tone {
   if (stage === "implemented") return "good";
   if (stage === "review") return "accent";
@@ -53,9 +51,9 @@ export function toneForStage(stage: string): Tone {
 /**
  * The tone for a pull request's own state word.
  *
- * A pull request that belongs to no design holds no stage, so its row states the state
- * the index writes for it. `merged` is done, so it reads good. `open` is live and waits
- * on somebody, so it reads accent, the same tone a design in review takes.
+ * A pull request that belongs to no design holds no stage. `merged` is done, so it
+ * reads good. `open` is live and waits on somebody, so it reads accent, the same tone a
+ * design in review takes.
  */
 export function toneForState(state: string): Tone {
   if (state === "merged") return "good";
