@@ -6,8 +6,8 @@ Status: design, round 10. The sketch is `schemas/dspy_modules.py`. It runs with 
 
 | Job | Model | Why | Adapter |
 |---|---|---|---|
-| Triage, Pick, Fill, Card | `openrouter/deepseek/deepseek-v4.1-flash-1017` | The engineer chose it on 24 October 2026. Its OpenRouter entry lists `structured_outputs` and `response_format`. The window is 1,048,576 tokens. The list price is USD 0.15 for a million input tokens and USD 0.60 for a million output tokens | `JSONAdapter` is the first try. `ChatAdapter` is the fallback |
-| Digest, Shrink | `openrouter/thinkingmachines/inkling-small` | The engineer chose it on 24 October 2026, because `inkling:free` refuses direct calls (403). The window is 524,288 tokens. The list price is USD 0.45 for a million input tokens and USD 1.20 for a million output tokens. Its entry lists `reasoning` but no `response_format`. DSPy returns a dict with `text` and `reasoning_content` | `ChatAdapter`, which parses text fields |
+| Triage, Pick, Fill, Card | `nvidia_nim/minimaxai/minimax-m3.1-flash` | The engineer switched to it on 26 October 2026, after the OpenRouter account ran out of credits. The endpoint is `https://integrate.api.nvidia.com/v1`. JSON `response_format` verified working on that date. The list price is unknown | `JSONAdapter` is the first try. `ChatAdapter` is the fallback |
+| Digest, Shrink | `nvidia_nim/minimaxai/minimax-m3.1-flash` | Same switch. The digest keeps the text adapter | `ChatAdapter`, which parses text fields |
 
 I do not know the size of the interpreter model. A short schema suits any small or fast model. This drives the design in section 3.
 
