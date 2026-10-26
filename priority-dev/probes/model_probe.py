@@ -1,14 +1,16 @@
-"""Model probe: one Nemo call on the end of one transcript.
+"""Model probe: model calls on the end of one transcript.
 
-The probe reads a Claude Code transcript, redacts it, and builds a short stop brief. It makes one
-model call. The model returns the five facts, a kind, and an exact quote. Code checks the reply and
-the quote, and it stores the call. A failed call or a bad reply ends as an abstain, not as an error.
+The probe builds a complete stop brief from a Claude Code transcript, then calls one model.
+The model returns five facts, one action kind, and an exact evidence quote.
+The probe checks the reply and quote, then stores the call. A failed call or reply becomes an abstain.
 
-    uv run python priority-dev/probes/model_probe.py <transcript.jsonl> [--log-dir DIR]
+    uv run python priority-dev/probes/model_probe.py <transcript.jsonl> [--model interpreter|digest]
+        [--repeat N] [--log-dir DIR]
 """
 from __future__ import annotations
 
 import argparse
+from collections import Counter
 import hashlib
 import json
 import logging
@@ -27,12 +29,16 @@ if __name__ == "__main__":  # the root env has no priority or dspy, so re-run un
         here = Path(__file__).resolve()
         os.execvp("uv", ["uv", "run", "--project", str(here.parents[1]), "python", str(here), *sys.argv[1:]])
 
+from priority.brief import Abstain, build_brief
 from priority.config import load_key
 
-MODEL_ID = "openrouter/mistralai/mistral-nemo"
+INTERPRETER_MODEL = "openrouter/deepseek/deepseek-v4.1-flash-1017"
+DIGEST_MODEL = "openrouter/thinkingmachines/inkling-small"
+MODELS = {"interpreter": INTERPRETER_MODEL, "digest": DIGEST_MODEL}
+JSON_MODE = {INTERPRETER_MODEL}  # the models that accept response_format json_object; inkling-small does not
+MAX_TOKENS = 3000  # a reasoning model spends tokens on its reasoning first, so a low cap cuts the reply text
 PROBES = Path(__file__).resolve().parent
 LOG_DIR = PROBES / "logs"
-MAX_LINES, CLIP_CHARS = 40, 300  # the run in the brief: the last 40 lines, each clipped
 log = logging.getLogger("model_probe")
 
 STATUS = ("done", "waiting_answer", "waiting_permission", "blocked", "failed", "continuing")
@@ -42,18 +48,31 @@ PRIORITY = ("can wait", "soon", "now")
 KINDS = ("reply", "continue", "continue_until", "approve_permission", "deny_permission", "pick_option",
          "approve_gate", "send_feedback", "interrupt", "ask_human", "snooze", "dismiss", "set_priority_hint")
 
-INSTRUCTIONS = f"""A coding agent stopped. Read the stop brief below. Reply with one JSON object and nothing else.
-The object has these keys:
-  "status": one of {list(STATUS)}
-  "needs_human": true when only the human can give the answer, else false
-  "answer_class": one of {list(ANSWER_CLASS)}
-  "risk": one of {list(RISK)}, the cost of a wrong answer
-  "priority_hint": one of {list(PRIORITY)}, how soon the human should look
-  "kind": the next step, one of {list(KINDS)}
-  "evidence_quote": words copied exactly from the stop brief that support the kind. Use "" for ask_human.
+INSTRUCTIONS = f"""You advise a developer who runs several coding agents at the same time. One agent has stopped.
+Read the complete stop brief below, including the human ask, all run items, and the final reply.
+Use tool inputs and results as evidence. Do not infer a result that the brief does not show.
+Reply with one JSON object and nothing else.
+Use these field definitions:
+  "status": one of {list(STATUS)}. done means the work ended; continuing means more work is due; waiting_answer means a human answer is due; waiting_permission means permission is due; blocked means an external dependency stops work; failed means the work failed.
+  "needs_human": true only when the next decision requires the developer; otherwise false.
+  "answer_class": one of {list(ANSWER_CLASS)}. none means no answer is due; approve_continue means approve more work; pick_default means choose the proposed default; provide_fact means give missing information; decide means choose between alternatives; external_action means act outside the session.
+  "risk": one of {list(RISK)}. low means a wrong action has a small, reversible effect; medium means it has a costly or wider effect; high means it can cause major or irreversible harm.
+  "priority_hint": one of {list(PRIORITY)}. can wait means no prompt action is needed; soon means act in the current work period; now means act before the session continues.
+  "kind": the one next step, one of {list(KINDS)}. reply sends text; continue sends one nudge; continue_until repeats nudges to a goal; approve_permission accepts a tool request; deny_permission rejects it; pick_option selects an offered option; approve_gate approves a CoBuilder gate; send_feedback returns a gate with notes; interrupt stops the turn; ask_human queues a human task; snooze hides the item temporarily; dismiss closes the item; set_priority_hint changes its proposed rank.
+  "evidence_quote": exact words from the stop brief that support the action. Use "" for ask_human.
+This probe accepts one action only. If a safe response needs a sequence, choose its first action.
 
 STOP BRIEF
 """
+
+
+def brief_text(transcript: Path) -> str:
+    """Return the complete redacted stop brief, or raise when the brief must abstain."""
+    brief = build_brief(transcript)
+    if isinstance(brief, Abstain):
+        raise ValueError(f"cannot build stop brief: {brief.reason}: {brief.detail}")
+    return brief.for_model()
+
 
 # ---- redaction ------------------------------------------------------------------
 
@@ -73,83 +92,29 @@ def redact(text: str) -> str:
     return _ASSIGNED.sub(r"\1[REDACTED]", _SECRET.sub("[REDACTED]", text))
 
 
-# ---- the stop brief -------------------------------------------------------------
-
-def _records(path: Path) -> list[dict]:
-    out = []
-    for line in path.read_text(errors="replace").splitlines():
-        try:
-            rec = json.loads(line)
-        except json.JSONDecodeError:
-            continue
-        if rec.get("type") in ("user", "assistant") and not rec.get("isSidechain"):
-            out.append(rec)
-    return out
-
-
-def _blocks(rec: dict) -> list[dict]:
-    content = rec.get("message", {}).get("content")
-    if isinstance(content, str):
-        return [{"type": "text", "text": content}]
-    return [b for b in content if isinstance(b, dict)] if isinstance(content, list) else []
-
-
-def _is_ask(rec: dict) -> bool:
-    blocks = _blocks(rec)
-    return (rec["type"] == "user" and not rec.get("isMeta") and bool(blocks)
-            and all(b.get("type") == "text" for b in blocks) and any(b.get("text", "").strip() for b in blocks))
-
-
-def _flat(value) -> str:
-    if isinstance(value, list):
-        value = " ".join(b.get("text", "") for b in value if isinstance(b, dict))
-    return " ".join(str(value).split())
-
-
-def _clip(text: str) -> str:
-    return text if len(text) <= CLIP_CHARS else text[:CLIP_CHARS] + "..."
-
-
-def _line(block: dict) -> str | None:
-    kind = block.get("type")
-    if kind == "text":
-        return f"[agent] {_clip(_flat(block['text']))}"
-    if kind == "tool_use":
-        return f"[tool {block.get('name')}] {_clip(_flat(json.dumps(block.get('input'))))}"
-    if kind == "tool_result":
-        return f"[result] {_clip(_flat(block.get('content', '')))}"
-    return None
-
-
-def brief_text(transcript: Path) -> str:
-    """The redacted stop brief: the ask, the end of the run, and the whole final reply."""
-    recs = _records(transcript)
-    ends = [i for i, r in enumerate(recs) if r["type"] == "assistant"]
-    if not ends:
-        raise ValueError(f"no assistant turn in {transcript}")
-    msg_id = recs[ends[-1]].get("message", {}).get("id")
-    start = ends[-1]
-    while start > 0 and recs[start - 1]["type"] == "assistant" and recs[start - 1].get("message", {}).get("id") == msg_id:
-        start -= 1
-    final = "\n".join(b["text"] for r in recs[start:] if r["type"] == "assistant" for b in _blocks(r)
-                      if b.get("type") == "text")
-    asks = [i for i in range(start) if _is_ask(recs[i])]
-    first = asks[-1] if asks else -1
-    ask = "\n".join(b["text"] for b in _blocks(recs[first])) if asks else ""
-    run = [t for r in recs[first + 1:start] for b in _blocks(r) if (t := _line(b))]
-    parts = ["ASK:", ask, "RUN (the last lines, clipped):", *run[-MAX_LINES:], "FINAL REPLY:", final]
-    return redact("\n".join(parts))
-
 
 # ---- the model ------------------------------------------------------------------
 
-def call_model(prompt: str) -> str:
-    """The one function that reaches the model. It makes no retry, so a 429 shows in the call log."""
+def call_model(prompt: str, model: str = INTERPRETER_MODEL) -> dict:
+    """Make one model call and return its text, reasoning, usage, and cost.
+
+    DSPy can return the target JSON as a dict, so serialize it unless it is a text envelope.
+    """
     import dspy
 
-    lm = dspy.LM(MODEL_ID, api_key=load_key(), temperature=0, max_tokens=500, timeout=60, num_retries=0,
-                 cache=False, response_format={"type": "json_object"})
-    return lm(prompt)[0]
+    options = {"response_format": {"type": "json_object"}} if model in JSON_MODE else {}
+    lm = dspy.LM(model, api_key=load_key(), temperature=0, max_tokens=MAX_TOKENS, timeout=120, num_retries=0,
+                 cache=False, **options)
+    out = lm(prompt)[0]
+    if isinstance(out, dict) and "text" in out:
+        text, reasoning = out["text"], out.get("reasoning_content")
+    elif isinstance(out, dict):
+        text, reasoning = json.dumps(out), None
+    else:
+        text, reasoning = out, None
+    entry = lm.history[-1] if lm.history else {}
+    return {"text": text, "reasoning_content": reasoning,
+            "usage": entry.get("usage"), "cost": entry.get("cost")}
 
 
 # ---- the check ------------------------------------------------------------------
@@ -169,6 +134,7 @@ class ProbeResult(NamedTuple):
 
 FACT_VALUES = {"status": STATUS, "answer_class": ANSWER_CLASS, "risk": RISK, "priority_hint": PRIORITY}
 PRINTED = ("status", "needs_human", "answer_class", "risk", "priority_hint", "kind", "quote", "quote_in_text")
+AGREEMENT_FIELDS = ("status", "needs_human", "answer_class", "risk", "priority_hint", "kind")
 
 
 def _problem(data) -> str | None:
@@ -208,14 +174,29 @@ def check(raw: str, brief: str) -> ProbeResult:
     return result
 
 
-def _store(log_dir: Path, transcript: Path, prompt: str, raw: str | None, error: str | None, started: float) -> None:
+def _unpack(reply) -> tuple[str | None, str | None, dict]:
+    """The text, the reasoning, and the extras of a model reply. The text is None for a shape that is not allowed."""
+    if isinstance(reply, str):
+        return reply, None, {}
+    if isinstance(reply, dict) and isinstance(reply.get("text"), str):
+        reasoning = reply.get("reasoning_content")
+        extras = {key: reply.get(key) for key in ("usage", "cost")}
+        return reply["text"], reasoning if isinstance(reasoning, str) else None, extras
+    return None, None, {}
+
+
+def _store(log_dir: Path, transcript: Path, model: str, prompt: str, started: float, **outcome) -> None:
+    """Append one call record. The outcome holds raw_reply, reasoning, error, usage, and cost."""
     log_dir.mkdir(parents=True, exist_ok=True)
-    record = {"ts": datetime.now(timezone.utc).isoformat(), "transcript": transcript.name, "model_id": MODEL_ID,
+    clean = {key: None if value is None else redact(value) for key, value in outcome.items()
+             if key in ("raw_reply", "reasoning", "error")}
+    record = {"ts": datetime.now(timezone.utc).isoformat(), "transcript": transcript.name, "model_id": model,
               "prompt_hash": hashlib.sha256(prompt.encode()).hexdigest(), "prompt_chars": len(prompt),
-              "latency_ms": round((time.monotonic() - started) * 1000),
-              "raw_reply": None if raw is None else redact(raw), "error": error}
+              "latency_ms": round((time.monotonic() - started) * 1000), "prompt": prompt,
+              "raw_reply": None, "reasoning": None, "error": None, **clean,
+              "usage": outcome.get("usage"), "cost": outcome.get("cost")}
     with (log_dir / "calls.jsonl").open("a") as handle:
-        handle.write(json.dumps(record) + "\n")
+        handle.write(json.dumps(record, default=str) + "\n")
 
 
 def _describe(exc: Exception) -> str:
@@ -224,39 +205,75 @@ def _describe(exc: Exception) -> str:
     return redact(f"{type(exc).__name__}{where}: {exc}")
 
 
-def run(transcript: Path, *, log_dir: Path | None = None) -> ProbeResult:
+def run(transcript: Path, *, model: str = INTERPRETER_MODEL, log_dir: Path | None = None) -> ProbeResult:
     """One model call. Any failure ends as a ProbeResult with an abstain reason."""
     transcript, log_dir = Path(transcript), Path(log_dir) if log_dir else LOG_DIR
-    brief = brief_text(transcript)
+    built = build_brief(transcript)
+    if isinstance(built, Abstain):
+        return ProbeResult(abstain_reason=built.reason, abstain_detail=built.detail)
+    brief = built.for_model()
     prompt = INSTRUCTIONS + brief
     started = time.monotonic()
     try:
-        raw = call_model(prompt)
+        reply = call_model(prompt, model)
     except Exception as exc:  # any failure of the call is an abstain, never a crash
         reason = "model_timeout" if isinstance(exc, TimeoutError) or "Timeout" in type(exc).__name__ else "model_error"
         detail = _describe(exc)
         log.warning("%s: %s", reason, detail)
-        _store(log_dir, transcript, prompt, None, detail, started)
+        _store(log_dir, transcript, model, prompt, started, error=detail)
         return ProbeResult(abstain_reason=reason, abstain_detail=detail)
-    _store(log_dir, transcript, prompt, raw, None, started)
-    result = check(raw, brief)
+    text, reasoning, extras = _unpack(reply)
+    _store(log_dir, transcript, model, prompt, started, raw_reply=text, reasoning=reasoning, **extras)
+    if text is None:
+        detail = f"the model reply is {type(reply).__name__}, not text or a dict with text"
+        log.info("invalid_output: %s", detail)
+        return ProbeResult(abstain_reason="invalid_output", abstain_detail=detail)
+    result = check(text, brief)
     if result.abstain_reason:
         log.info("%s: %s", result.abstain_reason, result.abstain_detail)
     return result
 
 
-def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("transcript", type=Path)
-    parser.add_argument("--log-dir", type=Path, default=None)
-    args = parser.parse_args(argv)
-    logging.basicConfig(level=logging.INFO)
-    result = run(args.transcript, log_dir=args.log_dir)
+def repeat(transcript: Path, n: int, *, model: str = INTERPRETER_MODEL, log_dir: Path | None = None) -> list[ProbeResult]:
+    """n calls on one transcript. A failed call stays in the list as an abstain."""
+    return [run(transcript, model=model, log_dir=log_dir) for _ in range(n)]
+
+
+def agreement(results: list[ProbeResult]) -> dict[str, float]:
+    """For the five facts and the kind, the share of results that hold the most common value."""
+    shares = {}
+    for field in AGREEMENT_FIELDS:
+        values = [("abstain" if r.abstain_reason else getattr(r, field)) for r in results]
+        shares[field] = Counter(values).most_common(1)[0][1] / len(values)
+    return shares
+
+
+def _print_result(result: ProbeResult) -> None:
     for name in PRINTED:
         print(f"{name}: {getattr(result, name)}")
     if result.abstain_reason:
         print(f"abstain_reason: {result.abstain_reason}")
         print(f"abstain_detail: {result.abstain_detail}")
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("transcript", type=Path)
+    parser.add_argument("--model", choices=sorted(MODELS), default="interpreter")
+    parser.add_argument("--repeat", type=int, default=1, metavar="N")
+    parser.add_argument("--log-dir", type=Path, default=None)
+    args = parser.parse_args(argv)
+    if args.repeat < 1:
+        parser.error("--repeat must be 1 or more")
+    logging.basicConfig(level=logging.INFO)
+    results = repeat(args.transcript, args.repeat, model=MODELS[args.model], log_dir=args.log_dir)
+    for number, result in enumerate(results, 1):
+        if args.repeat > 1:
+            print(f"run {number} of {args.repeat}")
+        _print_result(result)
+    if args.repeat > 1:
+        for field, share in agreement(results).items():
+            print(f"agreement: {field}={share:.2f}")
     return 0
 
 

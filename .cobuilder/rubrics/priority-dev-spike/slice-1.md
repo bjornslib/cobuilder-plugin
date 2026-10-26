@@ -71,15 +71,28 @@ Run the exact command from the repo root with no `--project` flag. A form that n
 - 0.5 — values exist for one model only, or one value does not match.
 - 0.0 — no agreement is reported, or the values are invented.
 
-### C7 — The stop is a real agent message, and the brief names its speakers
-**Must be true:** a transcript whose last assistant record has model `<synthetic>` does not give that record as the stop. The human line of the brief starts `HUMAN ASKED:`. The instruction block states that the model advises the developer who runs the agents.
+### C7 — The stop is a real agent message, and a blind reader understands the prompt
+**Must be true:**
+- (Structure) A transcript whose last assistant record has model `<synthetic>` does not give that record as the stop.
+- (Behaviour) A fresh subagent that sees only the stored prompt text of one log record, with no rubric and no hint about what is checked, can state who wrote the human line (the developer, not the agent) and what it must produce (a JSON object that proposes the developer's next step). The prompt text is the `prompt` field of the log. The check reads no wording of the prompt.
 **Evidence to check:**
-- Build the brief from a made-up fixture that ends on a synthetic assistant record, and read the stop.
-- Read the prompt text of one log record.
+- Build the brief from `fixtures/made-up/synthetic-tail.jsonl` and read the stop.
+- Spawn one blind subagent with the prompt of `173ae36f` and the prompt of `5d2114e3` from the log. Ask it two plain questions: who wrote the line after the human label, and what is the reply for? Record its tool calls and answers as evidence.
 **Scoring:**
-- 1.0 — the synthetic record is skipped, the label is `HUMAN ASKED:`, and the role sentence is present.
-- 0.5 — two of the three hold.
-- 0.0 — a synthetic record is the stop.
+- 1.0 — the synthetic record is skipped, and the blind reader names the developer as the speaker and the next-step proposal as the task, for both prompts.
+- 0.5 — the synthetic record is skipped, and the reader is right for one prompt only.
+- 0.0 — a synthetic record is the stop, or the reader names the agent as the speaker for both prompts.
+
+### C8 — The report scores correctness twice, and names the cause of each miss [CRITICAL]
+**Must be true:** `priority-dev/fixtures/labels.json` holds, for each of the three stops, a label of the right answer for the five facts and the kind. It holds two labels: Score A, the right answer for the true end of the session, and Score B, the right answer for a careful reader who sees only the logged prompt. The engineer confirmed both. The report scores each of the 18 replies against both labels, and names one cause for each miss: the brief builder, the prompt definitions, or the model. The report does not blame the model for a fact that the prompt never held.
+**Evidence to check:**
+- Read `labels.json` and check that each stop has both labels and a note of who confirmed them.
+- Recompute the two scores for three replies from the log and the labels, and compare them to the report.
+- For `173ae36f`, check that the report names the brief builder as the cause of the Score A misses.
+**Scoring:**
+- 1.0 — both labels exist for all three stops, both scores are in the report for all 18 replies and match the recomputation, and each miss has a cause.
+- 0.5 — only one of the two scores is reported, or causes are missing, or one score does not match.
+- 0.0 — no labels, or the report scores replies without a label.
 
 ## Regression check
 - All tests that passed before this slice must still pass.

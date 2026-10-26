@@ -1,0 +1,62 @@
+{
+  "confirmed_by": "the engineer",
+  "confirmed_on": "2026-10-24",
+  "notes": "Score A is the right answer for the true end of the session. Score B is the right answer for a careful reader who sees only the logged prompt. Score B was drafted by a blind reader of the three prompts and confirmed by the engineer. A value that is a list accepts any member.",
+  "stops": {
+    "173ae36f": {
+      "A": {
+        "status": ["failed", "blocked"],
+        "needs_human": true,
+        "answer_class": "external_action",
+        "risk": "low",
+        "priority_hint": ["soon", "now"],
+        "kind": "ask_human",
+        "why": "The session hit its limit. The human wrote continue. The client reported that the selected model may not exist. The human wrote continue again."
+      },
+      "B": {
+        "status": "continuing",
+        "needs_human": false,
+        "answer_class": "none",
+        "risk": "low",
+        "priority_hint": "can wait",
+        "kind": "continue"
+      }
+    },
+    "36752881": {
+      "A": {
+        "status": "done",
+        "needs_human": false,
+        "answer_class": "none",
+        "risk": "low",
+        "priority_hint": "can wait",
+        "kind": "dismiss"
+      },
+      "B": {
+        "status": "done",
+        "needs_human": false,
+        "answer_class": "none",
+        "risk": "low",
+        "priority_hint": "can wait",
+        "kind": "dismiss"
+      }
+    },
+    "5d2114e3": {
+      "A": {
+        "status": "waiting_answer",
+        "needs_human": true,
+        "answer_class": "decide",
+        "risk": "low",
+        "priority_hint": "can wait",
+        "kind": ["reply", "ask_human"]
+      },
+      "B": {
+        "status": "waiting_answer",
+        "needs_human": true,
+        "answer_class": "decide",
+        "risk": "low",
+        "priority_hint": "can wait",
+        "kind": "reply"
+      }
+    }
+  }
+}
