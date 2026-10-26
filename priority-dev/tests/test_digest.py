@@ -37,7 +37,7 @@ def test_digest_module_exports():
     assert callable(api.digest_lm)
 
 
-def test_the_digest_model_is_the_inkling_small_model(monkeypatch):
+def test_the_digest_model_is_the_minimax_model(monkeypatch):
     api = digest_api()
     config = require("priority.config")
     monkeypatch.setattr(config, "load_key", lambda: "sk-or-v1-not-a-real-key")
