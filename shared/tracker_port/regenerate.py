@@ -93,10 +93,26 @@ def _status_line(line: str, gates: dict, by_n: dict[int, TrackerRecord]) -> str:
     return _skipped_note(line) if _skipped(record) else line
 
 
+def _split_table_cells(line: str) -> list[str]:
+    cells = []
+    start = 0
+    escaped = False
+    for index, char in enumerate(line):
+        if char == "\\":
+            escaped = not escaped
+            continue
+        if char == "|" and not escaped:
+            cells.append(line[start:index])
+            start = index + 1
+        escaped = False
+    cells.append(line[start:])
+    return cells
+
+
 def _table_row(line: str, by_n: dict[int, TrackerRecord]) -> str:
     if TABLE_ROW_RE.match(line) is None:
         return line
-    cells = line.split("|")
+    cells = _split_table_cells(line)
     record = by_n.get(int(cells[1]))
     if record is None or len(cells) != 8:
         return line
