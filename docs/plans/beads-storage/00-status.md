@@ -64,6 +64,14 @@ Initial checks, 2026-10-17:
 - [x] Slice 28 — `claim-next`
 - [x] Slice 29 — `migrate-mapping` with dry run
 - [x] Slice 30 — Docs, install, usage
+- [x] Slice 31 — Spike notes into the adapter notes
+- [x] Slice 32 — The tracker creates the program record, and design mode says so
+- [x] Slice 33 — The index reads the stage from the tracker, with a fallback
+- [x] Slice 34 — The strip step and the schema change
+- [x] Slice 35 — Epic and slice status on the board
+- [x] Slice 36 — Next ready and pull request state on the board
+- [x] Slice 37 — `repair-status` with a dry run
+- [x] Slice 38 — Live repair, docs, and install
 
 ## Escalated
 

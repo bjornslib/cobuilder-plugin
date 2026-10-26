@@ -256,7 +256,8 @@ temporary folders.
   is soft and warns. A field over twice its cap is a ceiling breach, and
   `verify_bundle.py` fails the bundle on it (`prose.budget`). A first draft of
   the thirty-second voice script helps, but it is optional.
-- **`goal.stage` must be one of `_bundle_meta.DESIGN_STAGES`.** `build_index.py`
+- **The resolved stage must be one of `_bundle_meta.DESIGN_STAGES`.** The stage
+  comes from the tracker, or from the legacy `goal.stage` field. `build_index.py`
   rejects another stage, and the Work board does not show it. `design` is an
   `assessment.json` stage, not a design stage.
 - **`goal.json` list fields must be lists.** `build_index.py` stops when

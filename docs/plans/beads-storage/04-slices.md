@@ -1,6 +1,6 @@
 # Slices: beads-storage
 
-Gate 4a for the whole program. The slices cover six built or proposed epics, E1 to E5 and E7. Slice numbers run 1 to 30 across the program. E6 stays unbuilt, so it has no row. Epic E7 is a proposal until the engineer approves it. The epic designs for E2 to E4 come later, at their own Gate 4 run. Gate 4b and 4c stay pending.
+Gate 4a for the whole program. The slices cover seven built or proposed epics, E1 to E5, E7 and E8. Slice numbers run 1 to 38 across the program. E6 stays unbuilt, so it has no row. Epic E8 is approved and follows E7. The epic designs for E2 to E4 come later, at their own Gate 4 run. Gate 4b and 4c stay pending.
 
 Test command for each slice: `uv run pytest tests -q`. Run it once after the implementation, not in each slice.
 
@@ -50,9 +50,18 @@ Each slice ends in one thing that a test asserts or a reader sees. A slice never
 | 28 | `beads-storage/E7` | **`claim-next`** | One call claims the first ready slice. Nothing ready gives `null` and exit 0. | 1 (attempt 1) | done |
 | 29 | `beads-storage/E7` | **`migrate-mapping` with dry run** | A legacy scratch tracker converts in one sync. A dry run writes nothing. A second run changes nothing. | 1 (attempt 1) | done |
 | 30 | `beads-storage/E7` | **Docs, install, usage** | The docs name the two operations and the migration. `tracker.py --help` lists them. | 1 (attempt 2) | done |
+| | **`beads-storage/E8` — The tracker is the source of stage and status, and the Work board shows it.** The tracker holds a program's stage and creates its record. The index and the Work board read stage, epic and slice status, the next ready slice, and pull request state from the tracker. A repair step brings old records in line. It starts after E7. See `epic-E8-design.md` and ADR-0047. | | | | |
+| 31 | `beads-storage/E8` | **Spike notes into the adapter notes** | The notes hold each spike finding with its command and exit code | 1 (attempt 1) | done |
+| 32 | `beads-storage/E8` | **The tracker creates the program record, and design mode says so** | `set-program-stage --plans-dir` creates a missing record. A write refuses on a duplicate. | 1 (attempt 1) | done |
+| 33 | `beads-storage/E8` | **The index reads the stage from the tracker, with a fallback** | `design.stage` comes from the tracker, then from the file. The build makes at most three bd calls. | 1 (attempt 1) | done |
+| 34 | `beads-storage/E8` | **The strip step and the schema change** | Design mode writes no `goal.stage` when a tracker exists. The strip script passes its tests. | 0.97 (attempt 1) | done |
+| 35 | `beads-storage/E8` | **Epic and slice status on the board** | The words follow the table. `done` counts `completed` epics. | 0.95 (attempt 1) | done |
+| 36 | `beads-storage/E8` | **Next ready and pull request state on the board** | A card shows the next ready slice and the state of each pull request record. | 0.9 (attempt 1) | done |
+| 37 | `beads-storage/E8` | **`repair-status` with a dry run** | A scratch tracker repairs in one sync. A dry run writes nothing. A second run changes nothing. | 0.95 (attempt 1) | done |
+| 38 | `beads-storage/E8` | **Live repair, docs, and install** | The three live steps run in order. The docs name the new operations and the strip. | 0.97 (attempt 1) | done |
 
 ## Escalation and order
 
-- Each epic runs in order, E1 then E2 then E3 then E4 then E5 then E7. E7 starts after E5 slice 22. E2 does not start until E1 slice 5 closes. E3 does not start until E1 slice 5 closes, because the read model runs on the files and fake adapters. E4 does not start until E3 slice 12 closes. The Dolt clone check of E2 slice 9 gates the close of E2 and of the program. A failure of that check returns the decision to the engineer.
+- Each epic runs in order, E1 then E2 then E3 then E4 then E5 then E7 then E8. E7 starts after E5 slice 22. E8 starts after E7 slice 30. E2 does not start until E1 slice 5 closes. E3 does not start until E1 slice 5 closes, because the read model runs on the files and fake adapters. E4 does not start until E3 slice 12 closes. The Dolt clone check of E2 slice 9 gates the close of E2 and of the program. A failure of that check returns the decision to the engineer.
 - Plugin version bumps land in the first E4 slice of each plugin: implement at slice 13, architect at slice 14, pr at slice 15, artifact at slice 16, and cobuilder-full-lifecycle at slice 17. `plugin.json` and `marketplace.json` change together. The `implement:start` pointer to the backfill reference lands in slice 13.
 - An escalation goes to `## Escalated` in `00-status.md`, as the build skill directs.

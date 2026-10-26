@@ -31,6 +31,7 @@ from .beads_writes import _WriteMixin
 from .beads_migrate import migrate_mapping
 from .beads_skip import _BeadsSkipMixin
 from .beads_sync import _SyncModeMixin
+from .beads_repair import _RepairMixin
 from .port import AdapterError, ArgumentError
 from .sync_state import SYNC_MODES, spawn_worker
 from .record import Capabilities, Kind, TrackerRecord
@@ -39,7 +40,7 @@ from .regenerate import regenerate
 __all__ = ["LIST_ARGS", "BeadsAdapter", "_cb_block", "_metadata_arg"]
 
 
-class BeadsAdapter(_LookupMixin, _ReadyMixin, _ClaimNextMixin, _SyncModeMixin, _WriteMixin, _PullRequestMixin, _SeedMixin, _BeadsSkipMixin):
+class BeadsAdapter(_LookupMixin, _ReadyMixin, _ClaimNextMixin, _SyncModeMixin, _WriteMixin, _PullRequestMixin, _SeedMixin, _BeadsSkipMixin, _RepairMixin):
     name = "beads"
     # A slice is ready when bd says so (beads_ready.py). The claim is atomic: bd update --claim.
     capabilities = Capabilities(native_ready=True, atomic_claim=True, rich_envelope=True, offline_read=True)
@@ -102,13 +103,16 @@ class BeadsAdapter(_LookupMixin, _ReadyMixin, _ClaimNextMixin, _SyncModeMixin, _
 
     @staticmethod
     def _find_row(rows: list[dict[str, Any]], id: str, kinds: tuple[str, ...]) -> dict[str, Any]:
-        for row in rows:
-            cb = _cb_block(row)
-            if cb["id"] == id:
-                if cb["kind"] not in kinds:
-                    raise ArgumentError(f"{id} is a {cb['kind']}, not one of {kinds}")
-                return row
-        raise ArgumentError(f"no record with id {id}")
+        matches = [row for row in rows if _cb_block(row)["id"] == id]
+        if not matches:
+            raise ArgumentError(f"no record with id {id}")
+        if len(matches) > 1:
+            raise AdapterError(f"two bd rows hold the id {id}: {matches[0]['id']} and {matches[1]['id']}")
+        row = matches[0]
+        cb = _cb_block(row)
+        if cb["kind"] not in kinds:
+            raise ArgumentError(f"{id} is a {cb['kind']}, not one of {kinds}")
+        return row
 
     def _after(
         self,
@@ -159,6 +163,11 @@ class BeadsAdapter(_LookupMixin, _ReadyMixin, _ClaimNextMixin, _SyncModeMixin, _
 
     def list_pull_requests(self) -> list[TrackerRecord]:
         return self._of_kind("pr")
+
+    def all_records(self) -> list[TrackerRecord]:
+        rows = self._rows()
+        to_cb_id = self._cb_ids(rows)
+        return sorted((self._record(row, to_cb_id) for row in rows), key=lambda record: record.id)
 
     def get_slice(self, id: str) -> TrackerRecord:
         record = self._records().get(id)

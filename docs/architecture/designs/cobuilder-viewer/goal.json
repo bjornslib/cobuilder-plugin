@@ -166,7 +166,6 @@
       "note": "New in round 3, when the engineer narrowed the scope to the Work surface and FlightDeck at parity. The shell had no landing surface before it: a reader arrived on a route that named a work item, and nothing listed the bundle's designs. The board lists them, says what each one holds, and opens one."
     }
   ],
-  "stage": "review",
   "supersedes": [
     "react-viewer",
     "review-flight-deck"

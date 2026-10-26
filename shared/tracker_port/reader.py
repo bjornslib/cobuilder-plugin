@@ -12,7 +12,28 @@ from pathlib import Path
 from .config import load_adapter
 from .files import FilesAdapter
 from .projector import _score_text
+from .port import AdapterError
 from .record import TrackerRecord
+
+
+@dataclass
+class TrackerSnapshot:
+    """One read of the whole tracker, keyed for the build's lookups.
+
+    `programs` is keyed by record id. The other dicts use the keys the
+    existing `epic_records` uses: design-qualified epic keys for epics, and
+    record ids for slices and pull requests. `ready` is None when the
+    adapter computes no ready work (the files adapter) or when its read
+    failed. `error` holds the read error text when the tracker could not
+    be read.
+    """
+
+    programs: dict[str, TrackerRecord]
+    epics: dict[str, TrackerRecord]
+    slices: dict[str, TrackerRecord]
+    pull_requests: dict[str, TrackerRecord]
+    ready: list[TrackerRecord] | None
+    error: str | None
 
 
 @dataclass
@@ -35,10 +56,38 @@ def open_adapter(repo_root: Path):
     return FilesAdapter(plans) if plans.is_dir() else None
 
 
+def snapshot(repo_root: Path) -> TrackerSnapshot:
+    """One read of the whole tracker. An unreadable tracker gives an error, not a raise."""
+    adapter = open_adapter(repo_root)
+    if adapter is None:
+        # No adapter (and no docs/plans to read) is a plain empty read, not an error.
+        return TrackerSnapshot(
+            programs={}, epics={}, slices={}, pull_requests={}, ready=None, error=None
+        )
+    try:
+        records, _ = _all_records(adapter)
+        ready: list[TrackerRecord] | None = None
+        if adapter.name != "files":
+            ready = adapter.next_ready("slice")
+    except AdapterError as error:
+        return TrackerSnapshot(
+            programs={}, epics={}, slices={}, pull_requests={}, ready=None,
+            error=str(error),
+        )
+    return TrackerSnapshot(
+        programs={r.id: r for r in records if r.kind == "program"},
+        epics={epic_key(r.parent or "", r.id): r for r in records if r.kind == "epic"},
+        slices={r.id: r for r in records if r.kind == "slice"},
+        pull_requests={r.id: r for r in records if r.kind == "pr"},
+        ready=ready,
+        error=None,
+    )
+
+
 def _all_records(adapter) -> tuple[list[TrackerRecord], list[dict]]:
-    if isinstance(adapter, FilesAdapter):
-        return adapter.all_records(), list(adapter.conflicts)
-    return adapter.list_programs() + adapter.list_epics() + adapter.list_slices(), []
+    records = adapter.all_records()
+    conflicts = list(adapter.conflicts) if isinstance(adapter, FilesAdapter) else []
+    return records, conflicts
 
 
 def slice_records(repo_root: Path) -> tuple[list[TrackerRecord], list[dict]]:
@@ -46,10 +95,8 @@ def slice_records(repo_root: Path) -> tuple[list[TrackerRecord], list[dict]]:
     adapter = open_adapter(repo_root)
     if adapter is None:
         return [], []
-    if isinstance(adapter, FilesAdapter):
-        records = adapter.all_records()
-        return [r for r in records if r.kind == "slice"], list(adapter.conflicts)
-    return adapter.list_slices(), []
+    records, conflicts = _all_records(adapter)
+    return [r for r in records if r.kind == "slice"], conflicts
 
 
 def epic_records(repo_root: Path) -> dict[str, TrackerRecord]:

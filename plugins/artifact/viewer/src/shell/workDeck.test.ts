@@ -36,6 +36,12 @@ const row = (id: string, stage: string, outcome = "", pullRequests: number[] = [
   epics: [],
   slices: [],
   done: 0,
+    slicesDone: 0,
+  slicesTotal: 0,
+  nextReady: null,
+  trackerPullRequests: [],
+  stageSource: "goal",
+  trackerRead: false,
   pullRequests,
 });
 

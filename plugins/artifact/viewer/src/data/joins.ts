@@ -20,7 +20,7 @@
  * it carries.
  */
 
-import type { AdrToPullRequest, EpicEntity, GateStep, RecordIndex } from "./types";
+import type { AdrToPullRequest, DesignTracker, EpicEntity, GateStep, RecordIndex } from "./types";
 import { joinsOf } from "./bundle";
 
 /**
@@ -82,6 +82,12 @@ export interface ResolvedJoins {
   featureGates(slug: string): GateStep[] | null;
   /** Every plan slug the gate join holds. */
   featureGateSlugs(): string[];
+  /** What the tracker holds for one design, or null for an older index. */
+  designTracker(designId: string): DesignTracker | null;
+  /** True when the index build read the tracker. False for an older index. */
+  trackerRead(): boolean;
+  /** The tracker adapter name, or null for an older index. */
+  trackerAdapter(): string | null;
 }
 
 /** Resolve one index's joins. See the interface above for what each answer means. */
@@ -97,6 +103,7 @@ export function resolvedJoinsOf(index: RecordIndex): ResolvedJoins {
     ),
   );
   const adrToPullRequest = new Map(Object.entries(joins.adr_to_pull_request));
+  const designTracker = joins.design_tracker ?? {};
   const featureGates = new Map(Object.entries(joins.feature_gates));
 
   return {
@@ -131,5 +138,9 @@ export function resolvedJoinsOf(index: RecordIndex): ResolvedJoins {
 
     featureGates: (slug) => featureGates.get(slug) ?? null,
     featureGateSlugs: () => [...featureGates.keys()],
+
+    designTracker: (designId) => designTracker[designId] ?? null,
+    trackerRead: () => joins.tracker?.read ?? false,
+    trackerAdapter: () => joins.tracker?.adapter ?? null,
   };
 }

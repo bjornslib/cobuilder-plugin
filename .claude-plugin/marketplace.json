@@ -10,19 +10,19 @@
       "name": "architect",
       "description": "Design a change, audit the repo, track drift, explore options, and diagnose failures. Five self-only commands for a local git repo.",
       "source": "./plugins/architect",
-      "version": "0.14.0"
+      "version": "0.14.1"
     },
     {
       "name": "pr",
       "description": "Interview an author and open a PR with intent, then narrate it after the merge. Output is a portable .cobuilder-architect/ bundle.",
       "source": "./plugins/pr",
-      "version": "0.10.0"
+      "version": "0.10.1"
     },
     {
       "name": "artifact",
       "description": "Open a local viewer for designs, decisions, builds, and PRs. Publish one PR as a Claude Artifact. Draw a design as a tldraw canvas.",
       "source": "./plugins/artifact",
-      "version": "0.12.1"
+      "version": "0.12.2"
     },
     {
       "name": "implement",
@@ -34,7 +34,7 @@
       "name": "cobuilder-full-lifecycle",
       "description": "Install all of CoBuilder: architecture, implementation, review, and maintenance, with the engineer in charge at each stage.",
       "source": "./plugins/cobuilder-full-lifecycle",
-      "version": "0.5.8"
+      "version": "0.5.9"
     },
     {
       "name": "cobuilder-memory",

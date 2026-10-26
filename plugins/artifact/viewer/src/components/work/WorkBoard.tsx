@@ -43,8 +43,7 @@ const LANES: Lane[] = [
     key: "shipped",
     label: "Shipped",
     stages: ["implemented"],
-    blurb:
-      "Design mode recorded the design as implemented. A shipped design may still carry an epic that a merged pull request holds open in the index.",
+    blurb: "The tracker holds the stage implemented.",
   },
 ];
 

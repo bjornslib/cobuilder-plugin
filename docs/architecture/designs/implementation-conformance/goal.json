@@ -53,7 +53,6 @@
       "note": "The difference is stated where a reader finds it. The check must reach the output and not only a computed field, and story-mode.md already says the author's account and the code's account can disagree. This epic owns the words and the placement: one entry per difference in the assessment the pull request carries, and the same difference stated in the narrative a reader reads, at the altitude each level already uses. It also owns the single sentence a pull request that belongs to no program writes, because a statement that says nothing must not read as a clean result. review-mode.md section 7 keeps the four existing drift kinds drawn from the pull request's own intent, so this epic adds a separate record rather than a fifth kind, or it says why the array is the right home after all. It also owns the rendered review, so the difference survives into render_review.py's output."
     }
   ],
-  "stage": "backlog",
   "supersedes": null,
   "rounds": []
 }

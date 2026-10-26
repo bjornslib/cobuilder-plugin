@@ -1,6 +1,6 @@
 {
   "name": "artifact",
-  "version": "0.12.1",
+  "version": "0.12.2",
   "description": "Open a local viewer for designs, decisions, builds, and PRs. Publish one PR as a Claude Artifact. Draw a design as a tldraw canvas.",
   "author": {
     "name": "bjornslib"

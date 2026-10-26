@@ -105,10 +105,12 @@ that join here.
    problem. **Report what you searched and how many designs exist.**
    Never give a bare "none found". If the tree is empty, say so, and say
    this is the first design. If you searched N designs and none match,
-   say so. On a hit, show the match and its `goal.stage`. Let the
-   engineer choose with `AskUserQuestion`: resume it, supersede it, or
-   proceed because it is genuinely different. A superseded design gets
-   `stage: "superseded"`, and a pointer to the new name.
+   say so. On a hit, show the match and its stage, read with
+   `tracker.py list-programs`. Let the engineer choose with
+   `AskUserQuestion`: resume it, supersede it, or proceed because it is
+   genuinely different. For a superseded design, run
+   `tracker.py set-program-stage <old name> superseded`, and add a pointer
+   to the new name.
 
 4. **Stage 1 — Ground.** **Auto-baseline check.** If
    `<bundle-dir>/data/story.json` or `<bundle-dir>/inventory.yaml` is

@@ -265,6 +265,12 @@ function designRowOf(stage: string, pullRequests: number[] = []): DesignRow {
     epics: [],
     slices: [],
     done: 0,
+        slicesDone: 0,
+    slicesTotal: 0,
+    nextReady: null,
+    trackerPullRequests: [],
+    stageSource: "goal",
+    trackerRead: false,
     pullRequests,
   };
 }

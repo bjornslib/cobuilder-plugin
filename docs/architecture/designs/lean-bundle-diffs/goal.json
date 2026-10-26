@@ -30,7 +30,6 @@
       "note": "Migrate the existing committed bundles (self, and the two fixture bundles) so history stops growing: remove the checked-in diffs-pr{N}.js files, or move them under .gitignore, per E1's decision. This does not touch story.json's authored fields, so it is a bundle-file change, not a schema migration. Update 2026-10-13: done for the self bundle, under the user's direction, to pass the plugin directory's 5 MiB cap. The ten diffs-pr{N}.js files are removed and .gitignore carries .cobuilder-architect/self/data/diffs-pr*.js. The two fixture bundles keep their diff files (0.4 MB and 1.3 MB, under the cap), because fixtures are committed test data. Story.json holds no diff fields, so no migration ran."
     }
   ],
-  "stage": "backlog",
   "supersedes": null,
   "rounds": []
 }

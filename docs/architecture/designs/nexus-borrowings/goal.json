@@ -49,7 +49,6 @@
       "note": "All eight slices built in one pass on design/nexus-borrowings/runtime-arch-diagram (2026-10-01): contract, validator, build_index projections, viewer tile + contracts section, stage-6 spawn, contracts artifact, vocabulary bootstrap + mode surfaces, implement guards + bumps. Behavioral rubrics score on the first real design runs."
     }
   ],
-  "stage": "implemented",
   "supersedes": null,
   "rounds": [
     {

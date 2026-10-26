@@ -142,6 +142,28 @@ def test_records_carry_the_text_fields_outside_equality(adapter: Any) -> None:
         assert dataclasses.replace(record, title="Name", description="d", acceptance_criteria="a", design="g") == record
 
 
+# Case 5c (E8-3): all_records returns every kind from one read, on every adapter.
+@pytest.mark.parametrize("adapter_id", list(READ_ADAPTER_BUILDERS))
+def test_all_records_holds_every_kind(adapter_id: str) -> None:
+    adapter = READ_ADAPTER_BUILDERS[adapter_id](CORPUS_DIR)
+
+    kinds = {record.kind for record in adapter.all_records()}
+    assert kinds == {"program", "epic", "slice", "pr"}
+
+
+def test_all_records_matches_the_kind_lists(adapter: Any) -> None:
+    expected = {
+        record.id
+        for record in [
+            *adapter.list_programs(),
+            *adapter.list_epics(),
+            *adapter.list_slices(),
+            *adapter.list_pull_requests(),
+        ]
+    }
+    assert {record.id for record in adapter.all_records()} == expected
+
+
 # Case 6: no adapter. load_adapter returns None for a missing config.
 def test_load_adapter_without_config_returns_none(tmp_path: Path) -> None:
     from tracker_port.config import load_adapter

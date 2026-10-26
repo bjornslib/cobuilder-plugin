@@ -54,6 +54,7 @@ import type {
   RecordIndex,
   SliceEntity,
 } from "./types";
+import { resolvedJoinsOf, type ResolvedJoins } from "./joins";
 
 /**
  * Where a bundle's root sits, relative to whoever reads this file.
@@ -697,7 +698,7 @@ export function loadDiff(pr: number): Promise<Record<string, string>> {
 
 /* --------------------------------------------------------------- the index */
 
-const DONE_STATES = new Set(["completed", "merged"]);
+const DONE_STATES = new Set(["completed"]);
 
 function emptyEntities(): Entities {
   return {
@@ -750,7 +751,13 @@ function sortedUnique(numbers: number[]): number[] {
  */
 export function designRowsOf(index: RecordIndex): DesignRow[] {
   const entities = entitiesOf(index);
-  return designRows(entities.design, entities.epic, entities.slice, joinsOf(index));
+  return designRows(
+    entities.design,
+    entities.epic,
+    entities.slice,
+    joinsOf(index),
+    resolvedJoinsOf(index),
+  );
 }
 
 /**
@@ -763,6 +770,7 @@ export function designRows(
   epics: EpicEntity[],
   slices: SliceEntity[],
   joins: Joins,
+  resolved: ResolvedJoins,
 ): DesignRow[] {
   const epicsByDesign = new Map<string, EpicEntity[]>();
   for (const epic of epics) {
@@ -797,13 +805,20 @@ export function designRows(
     }
 
     ownSlices.sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }));
+    const tracker = resolved.designTracker(design.id);
 
     return {
       design,
       epics: own,
       slices: ownSlices,
       done,
+      slicesDone: ownSlices.filter((slice) => slice.state === "completed").length,
+      slicesTotal: ownSlices.length,
+      nextReady: (tracker?.next_ready ? slices.find((slice) => slice.id === tracker.next_ready) : undefined) ?? null,
       pullRequests: sortedUnique(pullRequests),
+      trackerPullRequests: tracker?.pull_requests ?? [],
+      stageSource: tracker?.stage_source ?? "goal",
+      trackerRead: resolved.trackerRead(),
     };
   });
 }

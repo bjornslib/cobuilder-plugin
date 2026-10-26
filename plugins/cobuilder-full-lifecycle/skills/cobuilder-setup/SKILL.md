@@ -143,6 +143,12 @@ This part runs after the engineer configures the tracker adapter. It follows `sh
    with the tracker export described in `shared/tracker-adapter-beads.md`.
    Then run `tracker.py migrate-mapping --dry-run` and show the changes to
    the engineer. Get approval, then run `tracker.py migrate-mapping`.
+   For an existing tracker, take three more steps in this order.
+   1. Take a snapshot, as in the snapshot step above.
+   2. Run `tracker.py repair-status --dry-run --plans-dir docs/plans --index .cobuilder-architect/self/data/index.json`. Read the list with the engineer and get approval. Then run the same command without `--dry-run`, and run `tracker.py sync`.
+   3. Rebuild the index with `build_index.py`. Run `uv run shared/strip_goal_stage.py --dry-run` and read the list. Then run it without `--dry-run`.
+
+   A design with no stage anywhere needs `tracker.py set-program-stage <design> backlog --plans-dir docs/plans`.
 3. **Prepare beads.** When the adapter is beads, ask the engineer to approve the setup before you run `tracker.py prepare`. If the engineer declines, stop this part.
 4. **Run the dry run.** Run `tracker.py seed-from-files <plans-dir> --dry-run`. Show the engineer the list of planned creates.
 5. **Ask for consent.** Ask the engineer for explicit consent to write. Do not write on silence or on a vague answer.

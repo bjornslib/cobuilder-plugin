@@ -10,7 +10,7 @@ from slice_table import parse_header_epic_id, parse_table
 
 from .design_records import epic_state
 from .plan_epic_rows import _header_epic_titles, _row_epics
-from .plan_texts import epic_texts
+from .plan_texts import clean_name, epic_texts
 from .port import AdapterError
 from .record import TrackerRecord
 
@@ -153,7 +153,7 @@ def _epic_and_slice_records(
             "ends_with": row.ends_with,
             "feature": program,
             "n": row.n,
-            "title": row.name,
+            "title": clean_name(row.name),
             "score": score,
         }
         if attempts is not None:
@@ -167,7 +167,7 @@ def _epic_and_slice_records(
                 lifecycle=_slice_lifecycle(checked, row.state),
                 assignee=None,
                 envelope=envelope,
-                title=row.name,
+                title=clean_name(row.name),
                 acceptance_criteria=row.ends_with,
                 external_ref=slice_id,
             )

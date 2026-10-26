@@ -36,7 +36,6 @@
       "note": "The active-work view. The viewer renders in-flight work beside merged history, so a reader sees one timeline rather than two."
     }
   ],
-  "stage": "backlog",
   "supersedes": null,
   "rounds": []
 }

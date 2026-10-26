@@ -102,10 +102,16 @@ class FilesAdapter:
     def migrate_mapping(self, dry_run: bool = False, plans_dir: Path | None = None) -> None:
         _refuse(self)
 
+    def repair_status(
+        self, dry_run: bool = False, plans_dir: Path | None = None, index: Path | None = None
+    ) -> None:
+        _refuse(self)
+
     sync = _refuse
     claim_slice = _refuse
     claim_next = _refuse
-    set_program_stage = _refuse
+    def set_program_stage(self, program: str, stage: str, plans_dir: Path | None = None) -> TrackerRecord:
+        _refuse(self)
     set_gate_value = _refuse
     set_epic_state = _refuse
     set_slice_state = _refuse

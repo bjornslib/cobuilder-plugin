@@ -49,7 +49,6 @@
       "note": "Each mode owns its own part. The five view modes stop interleaving: the 50 scattered mode-predicate calls collapse into one registry, and renderContextsMainContent, renderBuildsMainContent, and renderMainContent stop being three functions of over 200 lines that live beside each other. Adding a sixth mode becomes one new part plus one registry entry."
     }
   ],
-  "stage": "superseded",
   "supersedes": null,
   "rounds": [],
   "superseded_by": "react-viewer",
