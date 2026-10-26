@@ -88,15 +88,15 @@ class StopBrief:
 
     def _render(self, exclude_older_payloads: bool = False) -> str:
         lines: list[str] = self._render_previous() + ["HUMAN ASKED:", self.ask.text, "RUN:"]
-        tool_items = [it for it in self.items if it.type == "tool"]
-        older_tools = set(tool_items[:-3]) if len(tool_items) > 3 else set()
-        for item in self.items:
+        tool_indexes = [i for i, it in enumerate(self.items) if it.type == "tool"]
+        older_tools = set(tool_indexes[:-3])  # by index: equal tool items must not hide each other
+        for index, item in enumerate(self.items):
             if item.type == "text":
                 lines.append(f"[agent] {item.text}")
             elif item.type == "human":
                 lines.append(f"[human] {item.text}")
             elif item.type == "tool":
-                if exclude_older_payloads and item in older_tools:
+                if exclude_older_payloads and index in older_tools:
                     lines.append(f"[tool {item.tool}]")
                     lines.append("[result]")
                 else:

@@ -18,4 +18,4 @@ Command: `uv run priority interpret <fixture> --log-dir <dir>`, in `priority-dev
 
 ## Abort condition
 
-This report informs the first condition in `goal.json`: "the interpreter model returns valid, grounded output on too few real stops to build on". Result: **not measured**. Three of three stops gave valid output with quotes that code accepted. Three stops are too few for a rate. Slice 7 measures the rate.
+This report informs the first condition in `goal.json`: "the interpreter model returns valid, grounded output on too few real stops to build on, and the digest model cannot digest either". This report speaks only to the interpreter clause. Result: **not measured**. Three of three stops gave valid output with quotes that code accepted. Three stops are too few for a rate. Slice 7 measures the rate. The call rows of these runs are in `priority-dev/reports/logs/slice5/`, which Git ignores because the rows hold real transcript text.

@@ -16,4 +16,4 @@ Date: 26 October 2026. Digest model: `openrouter/thinkingmachines/inkling-small`
 
 ## Abort condition
 
-This report informs the first condition in `goal.json`: the interpreter model fails on too many stops, "and the digest model cannot digest either". Result: **not measured**. The digest model produced a valid digest on real runs and one valid Shrink. This is too small a sample for a rate. Slice 7 measures it.
+This report informs the first condition in `goal.json`: "the interpreter model returns valid, grounded output on too few real stops to build on, and the digest model cannot digest either". This report speaks only to the digest clause. Result: **not measured**. The digest model produced a valid digest on real runs and one valid Shrink. This is too small a sample for a rate. Slice 7 measures it. The call rows of these runs are in `priority-dev/reports/logs/slice6/`, which Git ignores because the rows hold real transcript text.
