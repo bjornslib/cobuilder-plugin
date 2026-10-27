@@ -30,6 +30,7 @@ compiled programs, so a small gain is weak evidence.
 
 - Judge the GEPA program on the 6-session holdout against the base program on the holdout, each run twice for the noise check. The 0.626 to 0.661 train band is fitted and does not count.
 - The BootstrapFewShot program's 0.665 holdout number was measured correctly, but its demos were selected under the floored metric, so they are near-random. Recompile it on the fixed wrappers before comparing it with GEPA or calling either the compiled artifact.
+- Holdout duel, 27 October 2026, 6 sessions and 30 stops, each arm run twice, zero 429s and at most 2 invalid rows per arm. Base 0.700 and 0.702. GEPA best 0.713 and 0.685. Recompiled bootstrap 0.665 and 0.705. Nothing beats the base, and the base is the tightest. The compiled artifact is the base chain. The fill caveat stands: the metric cannot see fill quality (to_prediction keeps only step kinds, pick's evidence_quote, and the question; labels carry no payload fields), so fill-level tuning optimises parse rate only until payload labels and a payload metric component exist.
 
 ## Limits
 
