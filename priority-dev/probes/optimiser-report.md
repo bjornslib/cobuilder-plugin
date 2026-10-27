@@ -22,6 +22,7 @@ compiled programs, so a small gain is weak evidence.
 - Rate limits returned despite serial execution: the evaluator still bursts its rollouts, and poisoned rollouts starved one round of reflective traces.
 - The saved programs hold no demos and unchanged instructions. GEPA proposed no change that beat the base on any run: seed 0 on DeepSeek, seed 7 on NVIDIA, and the expanded run above.
 - Verdict: no improvement found. The optimiser runs are not the problem; the setup gives them nothing to climb. The next step is a retry-with-backoff on 429s plus a check of whether proposals change the valset outputs at all, before spending further runs.
+- Manual A/B, 27 October 2026: base program file against the same file with only the triage instruction swapped for GEPA's 7,688-character proposal, full 14-session train split, back to back. Both arms clean: no 429s, no error abstains. Result: control 0.661, variant 0.638. Session means moved on 13 of 14 sessions, 10 down and 3 up. Raw triage replies differed on 37 of 67 stops, with the differences cascading into pick, fill, and card. The evaluation sees instruction changes clearly. The proposal direction itself is worse, and GEPA's gate was right to skip it.
 ## MIPROv2
 
 - Not run. The project env has no optuna, and nothing was installed for this spike. The constructor also needs prompt and task models wired. The report records this instead of a score.
