@@ -476,7 +476,8 @@ def run(manifest: Path, labels: Path, real_dir: Path,
         print(f"optimise failed: {optimiser} compile failed: {exc}")
         return 1
     _restore_seed_demos(compiled, seed_demos)
-    program = PROGRAM_DIR / f"{optimiser}-budget{budget}-seed{seed}.json"
+    stem = f"{optimiser}-seeded" if seed_program is not None else optimiser
+    program = PROGRAM_DIR / f"{stem}-budget{budget}-seed{seed}.json"
     save_program(compiled, program)
     append_report(REPORT_RELATIVE, optimiser, budget, seed, parts, program, minibatch, threads,
                   val_sessions)
