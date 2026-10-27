@@ -44,22 +44,24 @@ def gepa_feedback(example: object, prediction: object, trace: object = None,
     import dspy
 
     from priority.evaluation.metric import score
+    from priority.evaluation.runner import to_prediction
 
-    value, feedback = score(example, prediction, trace, pred_name, pred_trace)
+    value, feedback = score(example, to_prediction(prediction), trace, pred_name, pred_trace)
     return dspy.Prediction(score=value, feedback=feedback)
 
 
 def plain_score(example: object, prediction: object, *ignored: object) -> float:
     """The float-only metric for MIPROv2 and BootstrapFewShot."""
     from priority.evaluation.metric import score
+    from priority.evaluation.runner import to_prediction
 
-    value, _ = score(example, prediction)
+    value, _ = score(example, to_prediction(prediction))
     return value
 
 
 def build_trainset(manifest: Path, labels_path: Path,
                    real_dir: Path) -> tuple[list, dict[str, list[str]]]:
-    """One dspy example per train stop, with the brief text as the input."""
+    """One dspy example per train stop, with the brief text and final reply as inputs."""
     import dspy
 
     from priority.brief import StopBrief, build_brief
@@ -88,12 +90,15 @@ def build_trainset(manifest: Path, labels_path: Path,
                 raise ValueError(f"session {session_id} stop {key} has no label")
             label = session_labels[key]
             brief = build_brief(transcript, stop=number)
-            text = brief.for_model() if isinstance(brief, StopBrief) else ""
+            if isinstance(brief, StopBrief):
+                text, final = brief.for_model(), brief.final
+            else:
+                text, final = "", ""
             fields = {field: label[field] for field in FACT_FIELDS}
             examples.append(dspy.Example(
-                session_id=session_id, stop=key, brief_text=text,
+                session_id=session_id, stop=key, brief_text=text, final_text=final,
                 steps=label["steps"], ambiguous=label["ambiguous"], **fields,
-            ).with_inputs("brief_text"))
+            ).with_inputs("brief_text", "final_text"))
     return examples, parts
 
 
@@ -271,6 +276,26 @@ def schema_guard(component_name: object) -> str:
     return f"Schema guard for {component_name}: {fields}. {SCHEMA_GUARD_LINE}"
 
 
+MAX_PROPOSAL_CHARS = 4000
+
+
+def _strip_guard(text: str) -> str:
+    """The draft without any earlier schema guard block."""
+    head = text.split(SCHEMA_GUARD_LINE, 1)[0]
+    marker = head.rfind("Schema guard for ")
+    if marker != -1:
+        head = head[:marker]
+    return head.rstrip()
+
+
+def _cap_draft(text: str, limit: int = MAX_PROPOSAL_CHARS) -> str:
+    """The draft within the length cap, cut back to the last space."""
+    if len(text) <= limit:
+        return text
+    cut = text[:limit]
+    return cut.rsplit(" ", 1)[0] if " " in cut else cut
+
+
 def guided_instruction_proposer(candidate: dict, reflective_dataset: dict,
                                 components_to_update: list) -> dict:
     """The GEPA instruction proposer: the default reflective flow plus a schema guard.
@@ -280,7 +305,9 @@ def guided_instruction_proposer(candidate: dict, reflective_dataset: dict,
     Outputs, Feedback), and the components to update. It returns the new
     instruction mapping. Each proposed instruction gains the exact Pydantic
     field list of its predictor, so drifted fields and invented names fail
-    the shape check instead of slipping into the prompt.
+    the shape check instead of slipping into the prompt. An earlier guard
+    is stripped before the fresh one is appended, so guards do not pile up
+    across rounds, and each draft is capped at MAX_PROPOSAL_CHARS.
     """
     from dspy.teleprompt.gepa import InstructionProposer
 
@@ -289,7 +316,8 @@ def guided_instruction_proposer(candidate: dict, reflective_dataset: dict,
         reflective_dataset=reflective_dataset,
         components_to_update=components_to_update,
     )
-    return {name: text.rstrip() + "\n\n" + schema_guard(name) for name, text in proposed.items()}
+    return {name: _cap_draft(_strip_guard(text)) + "\n\n" + schema_guard(name)
+            for name, text in proposed.items()}
 
 
 def _build_optimiser(optimiser: str, cls: object, budget: int, seed: int,
