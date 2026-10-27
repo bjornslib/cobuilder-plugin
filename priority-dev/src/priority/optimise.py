@@ -123,7 +123,7 @@ def _reflection_lm() -> object | None:
     """The interpreter model for GEPA reflection, or None when the key is stubbed out."""
     try:
         from priority.interpreter.module import interpreter_lm
-        return interpreter_lm()
+        return interpreter_lm(retries=3)
     except AssertionError:
         # The made-up-world tests block the real key this way. Their stub
         # teleprompter needs no model, so the run continues without one.
@@ -383,7 +383,7 @@ def run(manifest: Path, labels: Path, real_dir: Path,
         print(f"optimise skipped: dspy has no {CLASS_BY_OPTIMISER[optimiser]} teleprompter here")
         return 0
     try:
-        student_lm = interpreter_mod.interpreter_lm()
+        student_lm = interpreter_mod.interpreter_lm(retries=3)
     except (AssertionError, RuntimeError):
         # Offline (or the made-up-world tests, which stub the key): the stub
         # teleprompter needs no model, so the run continues without one.

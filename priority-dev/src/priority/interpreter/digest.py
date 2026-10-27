@@ -14,13 +14,13 @@ from priority.interpreter.module import MAX_TOKENS
 DIGEST_MODEL = config.model()
 
 
-def digest_lm() -> dspy.LM:
+def digest_lm(retries: int = 0) -> dspy.LM:
     """The real digest model. It has no response_format, so its calls use the text adapter.
 
     Only the command line calls this, because it reads the key.
     """
     return dspy.LM(DIGEST_MODEL, api_key=config.load_key(), api_base=config.base_url(),
-                   temperature=config.temperature(), max_tokens=MAX_TOKENS, timeout=120, num_retries=0, cache=False)
+                   temperature=config.temperature(), max_tokens=MAX_TOKENS, timeout=120, num_retries=retries, cache=False)
 
 
 class RunDigest(Strict):

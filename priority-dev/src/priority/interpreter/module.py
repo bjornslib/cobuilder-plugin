@@ -39,10 +39,10 @@ def notify_excerpt(final: str, limit: int = NOTIFY_LIMIT) -> str:
     return head[: ends[-1]] if ends else head
 
 
-def interpreter_lm() -> dspy.LM:
+def interpreter_lm(retries: int = 0) -> dspy.LM:
     """The real interpreter model. Only the command line calls this, because it reads the key."""
     return dspy.LM(INTERPRETER_MODEL, api_key=config.load_key(), api_base=config.base_url(),
-                   temperature=config.temperature(), max_tokens=MAX_TOKENS, timeout=120, num_retries=0, cache=False)
+                   temperature=config.temperature(), max_tokens=MAX_TOKENS, timeout=120, num_retries=retries, cache=False)
 
 
 class _Fault(Exception):
