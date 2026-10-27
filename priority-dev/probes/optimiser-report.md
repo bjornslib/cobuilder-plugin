@@ -61,7 +61,7 @@ The artifact is the base chain. GEPA tuned instructions and bootstrap added demo
 - held-out score after: n/a in this run (score the saved program with `priority eval --split holdout --program probes/programs/gepa-budget10-seed7.json`)
 - spread over repeats: read each gain against the slice 16 baseline spread (probes/eval-baseline.md); a gain smaller than that spread is not a result
 - cost: optimiser budget 10; model-call count is not metered by this command
-- program: probes/programs/gepa-budget10-seed7.json (load it with `priority eval --program`)
+- program: probes/programs/gepa-budget10-seed7.json (superseded twice over; the file now holds the seeded program below)
 
 ## gepa (budget 10, seed 7, unseeded, fixed wrappers)
 
