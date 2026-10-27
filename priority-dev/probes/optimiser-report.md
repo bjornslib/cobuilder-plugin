@@ -93,6 +93,7 @@ The artifact is the base chain. GEPA tuned instructions and bootstrap added demo
 - held-out score before: n/a in this run (no holdout scoring without model calls)
 - held-out score after: 0.713 then 0.676 (30 stops each, paired against relaxed base 0.697 and 0.712)
 - verdict: does not beat the base; paired sessions show no systematic direction
+- Transfer gap closed, 27 October 2026: seed program and 0.848 winner rescored on the 15 valset stops through the eval path, twice each. Seed 0.794 and 0.794, winner 0.798 and 0.844 (10 stops scored in all four arms). The winner's edge is +0.00 to +0.05 with its own spread at 0.046. GEPA's internal +0.11 came from scoring each candidate once and keeping the lucky draw. There was nothing solid to transfer, so the holdout needs no further explanation. Side note: GEPA-internal seed 0.735 against eval-path 0.794 is a denominator difference, 15 stops against 10, not a second bug.
 - spread over repeats: read each gain against the slice 16 baseline spread (probes/eval-baseline.md); a gain smaller than that spread is not a result
 - cost: optimiser budget 10; model-call count is not metered by this command
 - program: probes/programs/gepa-seeded-budget10-seed7.json (load it with `priority eval --program`)
