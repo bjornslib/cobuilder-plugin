@@ -2,13 +2,13 @@
 
 Each test fails until the variant exists. The contract: `uv run priority
 eval --variant combined` runs Triage and one call that writes the steps, the
-payloads, and the card. Code still sets session, author, and confidence, and
-still checks every kind and every quote (a bad kind or a quote not in the
-brief in any step gives an Abstain naming the step). Four or more steps give
-an Abstain. A contradiction check counts proposals where the card and the
-first step disagree (a snooze beside a question card), for both variants. All
-briefs, labels, and DummyLM replies here are made up, and no test makes a
-live model call.
+payloads, and the card. Code sets session, author, and confidence. A bad kind
+or an empty quote in any step gives an Abstain naming the step, while a quote
+that is only not in the brief stays in the proposal (grounding scores 0 for
+it). Four or more steps give an Abstain. A contradiction check counts
+proposals where the card and the first step disagree (a snooze beside a
+question card), for both variants. All briefs, labels, and DummyLM replies
+here are made up, and no test makes a live model call.
 """
 from __future__ import annotations
 
@@ -54,11 +54,11 @@ def test_combined_returns_the_same_types_as_the_chain(tmp_path):
 
 def test_combined_abstain_has_the_same_type_as_the_chain(tmp_path):
     brief = make_brief(tmp_path)
-    bad_chain = [BLOCKED, pick(("reply", NOT_IN_BRIEF))]
-    bad_combined = [BLOCKED, combined_reply([("reply", NOT_IN_BRIEF, 0.8, {"text": REPLY_TEXT})])]
-    assert type(interpret_combined(dummy(bad_combined), brief).abstained) is type(
-        interpret_chain(dummy(bad_chain), brief).abstained)
-
+    bad_chain = [BLOCKED, pick(("approve_gate", QUOTE_1))]
+    bad_combined = [BLOCKED, combined_reply([("approve_gate", QUOTE_1, 0.8, {"scope": "once"})])]
+    kwargs = {"allowed_kinds": ("reply",)}
+    assert type(interpret_combined(dummy(bad_combined), brief, **kwargs).abstained) is type(
+        interpret_chain(dummy(bad_chain), brief, **kwargs).abstained)
 
 # ---- 3. One call after Triage -----------------------------------------------
 
@@ -100,13 +100,13 @@ def test_bad_kind_in_step_two_gives_a_named_step_abstain(tmp_path):
     assert step_names_in(out.abstained) == {2}
 
 
-def test_bad_quote_in_step_two_gives_a_named_step_abstain(tmp_path):
+def test_bad_quote_in_step_two_stays_in_the_proposal(tmp_path):
     steps = [("reply", QUOTE_1, 0.8, {"text": REPLY_TEXT}),
              ("reply", NOT_IN_BRIEF, 0.8, {"text": REPLY_TEXT})]
     out = interpret_combined(dummy([BLOCKED, combined_reply(steps)]), make_brief(tmp_path))
-    assert out.advice is None
-    assert out.abstained.reason == "quote_not_in_brief"
-    assert step_names_in(out.abstained) == {2}
+    assert out.abstained is None
+    assert [step.kind for step in out.advice.proposal.steps] == ["reply", "reply"]
+    assert out.advice.proposal.steps[1].evidence_quote == NOT_IN_BRIEF
     assert out.facts.status == "blocked"
 
 

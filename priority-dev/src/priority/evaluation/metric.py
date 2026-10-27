@@ -118,8 +118,71 @@ def _feedback(example: object, prediction: object, parts: dict) -> str:
     return " ".join(notes)
 
 
+def _trace_snippet(pred_trace: object, limit: int = 200) -> str:
+    """One line of the named predictor's trace, or "" when it holds nothing."""
+    try:
+        if not pred_trace:
+            return ""
+        text = " ".join(repr(pred_trace).split())
+    except Exception:  # noqa: BLE001 (a trace may hold anything, and feedback must never fail)
+        return ""
+    return text[:limit]
+
+
+def _predictor_feedback(example: object, prediction: object, parts: dict,
+                        pred_name: object, pred_trace: object) -> str:
+    """Feedback for one GEPA predictor: its own fields and trace. The score is untouched."""
+    name = pred_name if isinstance(pred_name, str) else repr(pred_name)
+    if not isinstance(pred_name, str):
+        return f"predictor {name}: " + _feedback(example, prediction, parts)
+    notes: list = []
+    if name == "triage":
+        for field in FACT_FIELDS:
+            if not parts["fact_ok"][field]:
+                notes.append(f"fact {field}: predicted {_get(prediction, field)!r}, "
+                             f"label {_get(example, field)!r}")
+        if not notes:
+            notes.append("all facts match the label.")
+    elif name == "pick":
+        label_steps = _get(example, "steps", []) or []
+        pred_steps = _get(prediction, "steps", []) or []
+        if parts["first_step"] == 0.0:
+            notes.append(f"first step: predicted {pred_steps[0]!r}" if pred_steps
+                         else f"first step: predicted no step, label {label_steps!r}")
+        if parts["step_list"] == 0.0:
+            notes.append(f"step list: predicted {pred_steps!r}, label {label_steps!r}")
+        if not notes:
+            notes.append("the picked steps match the label.")
+    elif name.startswith("fill"):
+        if parts["grounding"] == 0.0:
+            notes.append(f"quote: not in the brief text {list(_get(prediction, 'quotes') or [])!r}")
+        reason = _abstain_reason(prediction)
+        if reason is not None:
+            notes.append(f"parse: the stop abstained ({reason}: {_get(_get(prediction, 'abstain'), 'detail')})")
+        if not notes:
+            notes.append("the quote is in the brief and the payload parsed.")
+    elif name in ("card", "combined"):
+        question = _get(prediction, "question")
+        if _get(prediction, "needs_human") and question is None:
+            notes.append("card: the stop needs the human but the question card is missing.")
+        elif not _get(prediction, "needs_human") and question is not None:
+            notes.append("card: the stop needs nobody but a question card was written.")
+        else:
+            notes.append("the question card matches the stop.")
+    else:
+        return f"predictor {name}: " + _feedback(example, prediction, parts)
+    snippet = _trace_snippet(pred_trace)
+    if snippet:
+        notes.append(f"trace: {snippet}")
+    return f"predictor {name}: " + " ".join(notes)
+
+
 def score(example: object, prediction: object, trace: object = None,
           pred_name: object = None, pred_trace: object = None) -> tuple[float, str]:
-    """Score one stop from 0 to 1 with GEPA feedback. Extra args are ignored."""
+    """Score one stop from 0 to 1 with GEPA feedback. The extra args target the
+
+    feedback at one predictor; the score never changes with them."""
     parts = components(example, prediction)
-    return (parts["overall"], _feedback(example, prediction, parts))
+    if pred_name is None:
+        return (parts["overall"], _feedback(example, prediction, parts))
+    return (parts["overall"], _predictor_feedback(example, prediction, parts, pred_name, pred_trace))

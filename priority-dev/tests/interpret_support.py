@@ -18,10 +18,12 @@ The contract that these tests pin (the sketches `docs/design/schemas/interpreter
   `risk`, `priority_hint`, `unsure`. Pick: `steps`, a JSON list of objects with `kind`,
   `evidence_quote`, and `confidence`. Fill: `payload`, the JSON of the fields that the kind adds to
   the shared ones. Card: `card`, the JSON of a Question.
-- A fault in a step gives one Abstain whose `reason` is `quote_not_in_brief` or `kind_not_allowed`.
-  The text "step N" (N from 1) is in the `detail`. A model call that raises gives the reason
-  `model_error`. A reply that does not parse gives the reason `invalid_output`. Both write a log
-  record at level INFO or above that holds the reason and the error text. No exception escapes.
+- A fault in a step gives one Abstain whose `reason` is `quote_not_in_brief` (the quote is empty)
+  or `kind_not_allowed`. A quote that is only not in the brief stays in the proposal, and the
+  metric scores 0 grounding for it. The text "step N" (N from 1) is in the `detail`. A model call
+  that raises gives the reason `model_error`. A reply that does not parse gives the reason
+  `invalid_output`. Both write a log record at level INFO or above that holds the reason and the
+  error text. No exception escapes.
 - `log_dir/calls.jsonl` holds one JSON object for each model call, with the keys `stage` (triage,
   pick, fill, or card), `model_id`, `prompt_hash` (the SHA-256 of `rendered_input`), `rendered_input`,
   and `raw_reply`. A call that raised also has the key `error`.

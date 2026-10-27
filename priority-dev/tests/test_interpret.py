@@ -132,12 +132,12 @@ def test_zero_steps_give_an_abstain():
 
 # ---- 4. The checks of kind and quote ------------------------------------------
 
-def test_quote_not_in_brief_gives_an_abstain():
+def test_quote_not_in_brief_stays_in_the_proposal():
     lm = dummy(script(BLOCKED, [("reply", NOT_IN_BRIEF)]))
     out = interpret(lm)
-    assert out.advice is None
-    assert out.abstained.reason == "quote_not_in_brief"
-    assert step_names_in(out.abstained) == {1}
+    assert out.abstained is None
+    assert [step.kind for step in out.advice.proposal.steps] == ["reply"]
+    assert out.advice.proposal.steps[0].evidence_quote == NOT_IN_BRIEF
     assert out.facts.status == "blocked"
 
 
@@ -158,10 +158,6 @@ def test_allowed_kinds_reach_the_pick_call():
 
 
 FAULTS = {
-    "quote in step 1": ([("reply", NOT_IN_BRIEF), ("pick_option", QUOTE_2)], "quote_not_in_brief", 1),
-    "quote in step 2": ([("reply", QUOTE_1), ("pick_option", NOT_IN_BRIEF)], "quote_not_in_brief", 2),
-    "quote in step 3": ([("reply", QUOTE_1), ("pick_option", QUOTE_2), ("reply", NOT_IN_BRIEF)],
-                        "quote_not_in_brief", 3),
     "kind in step 1": ([("approve_gate", QUOTE_1), ("reply", QUOTE_2)], "kind_not_allowed", 1),
     "kind in step 2": ([("reply", QUOTE_1), ("approve_gate", QUOTE_2)], "kind_not_allowed", 2),
     "kind in step 3": ([("reply", QUOTE_1), ("pick_option", QUOTE_2), ("approve_gate", QUOTE_3)],
@@ -179,13 +175,13 @@ def test_a_fault_names_its_step(steps, reason, number):
 
 
 def test_the_first_faulty_step_is_the_one_named():
-    steps = [("reply", QUOTE_1), ("pick_option", NOT_IN_BRIEF), ("approve_gate", QUOTE_3)]
+    steps = [("reply", QUOTE_1), ("pick_option", QUOTE_2), ("approve_gate", QUOTE_3)]
     out = interpret(dummy(script(BLOCKED, steps)), allowed_kinds=("reply", "pick_option"))
-    assert step_names_in(out.abstained) == {2}
+    assert step_names_in(out.abstained) == {3}
 
 
 def test_a_fault_in_a_later_step_gives_no_proposal_for_the_good_steps():
-    steps = [("reply", QUOTE_1), ("pick_option", NOT_IN_BRIEF)]
+    steps = [("reply", QUOTE_1), ("pick_option", "")]
     out = interpret(dummy(script(BLOCKED, steps)))
     assert out.advice is None
     assert out.abstained is not None
@@ -315,12 +311,12 @@ def test_each_stage_has_its_own_rendered_input(tmp_path):
 
 
 def test_an_abstain_run_still_stores_the_calls_it_made(tmp_path):
-    lm = dummy(script(BLOCKED, [("reply", NOT_IN_BRIEF)]))
+    lm = dummy(script(BLOCKED, [("reply", QUOTE_1), ("reply", "")]))
     out = interpret(lm, log_dir=tmp_path)
     assert out.abstained.reason == "quote_not_in_brief"
     calls = read_calls(tmp_path)
     assert calls[0]["stage"] == "triage" and calls[1]["stage"] == "pick"
-    assert NOT_IN_BRIEF in calls[1]["raw_reply"]
+    assert QUOTE_1 in calls[1]["raw_reply"]
 
 
 def test_a_failed_call_is_stored_with_its_error(tmp_path):
@@ -373,7 +369,7 @@ def test_the_cli_prints_an_interpretation(monkeypatch, capsys):
 
 
 def test_the_cli_prints_an_abstain_for_a_faulty_step(monkeypatch, capsys):
-    lm = dummy(script(BLOCKED, [("reply", QUOTE_1), ("reply", NOT_IN_BRIEF)]))
+    lm = dummy(script(BLOCKED, [("reply", QUOTE_1), ("reply", "")]))
     code, out = run_cli(monkeypatch, capsys, lm, FIXTURES / "waiting-question.jsonl")
     assert code == 0
     data = json.loads(out)

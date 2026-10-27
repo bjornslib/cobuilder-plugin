@@ -40,7 +40,10 @@ def assert_train_only(examples: list, holdout_ids: list[str]) -> None:
 def gepa_feedback(example: object, prediction: object, trace: object = None,
                   pred_name: object = None, pred_trace: object = None,
                   program_trace: object = None) -> object:
-    """The slice 16 score as a GEPA ScoreWithFeedback prediction."""
+    """The slice 16 score as a GEPA ScoreWithFeedback prediction.
+
+    The score is the program-level number, so acceptance sums stay comparable.
+    The feedback targets the named predictor: its own fields and trace."""
     import dspy
 
     from priority.evaluation.metric import score
@@ -112,6 +115,34 @@ def save_program(compiled: object, path: Path) -> Path:
     else:
         target.write_text(json.dumps({"program": repr(compiled)}, indent=2) + "\n")
     return target
+
+
+def load_seed_program(path: Path | str) -> object:
+    """A fresh student carrying one saved program's instructions and demos."""
+    from priority import interpreter as interpreter_mod
+
+    student = interpreter_mod.Interpreter(lm=None, variant="chain")
+    student.load(str(path))
+    return student
+
+
+def _restore_seed_demos(compiled: object, seed_demos: dict) -> None:
+    """Copy seeded demos onto compiled predictors that lost them.
+
+    GEPA deepcopies the student, so its demos survive on their own. The
+    bootstrap compile resets its student copy, so seeded demos are merged
+    back in front of the bootstrapped ones, matched by value."""
+    named = getattr(compiled, "named_predictors", None)
+    if not seed_demos or not callable(named):
+        return
+    for name, predictor in named():
+        seeded = seed_demos.get(name, [])
+        if not seeded:
+            continue
+        have = list(getattr(predictor, "demos", None) or [])
+        missing = [demo for demo in seeded if demo not in have]
+        if missing:
+            predictor.demos = missing + have
 
 
 def _teleprompter(optimiser: str) -> object | None:
@@ -393,7 +424,8 @@ def append_report(report: Path, optimiser: str, budget: int, seed: int,
 
 def run(manifest: Path, labels: Path, real_dir: Path,
         optimiser: str, budget: int, seed: int, minibatch: int | None = None,
-        threads: int | None = None, val_sessions: int = 1) -> int:
+        threads: int | None = None, val_sessions: int = 1,
+        seed_program: Path | str | None = None) -> int:
     """Compile the chain interpreter with one optimiser. Return exit code."""
     from priority import interpreter as interpreter_mod
 
@@ -417,6 +449,17 @@ def run(manifest: Path, labels: Path, real_dir: Path,
         # teleprompter needs no model, so the run continues without one.
         student_lm = None
     student = interpreter_mod.Interpreter(lm=student_lm, variant="chain")
+    seed_demos: dict = {}
+    if seed_program is not None:
+        try:
+            student = load_seed_program(seed_program)
+            if student_lm is not None:
+                student.lm = student_lm
+        except (OSError, ValueError) as exc:
+            print(f"optimise failed: cannot load seed program {seed_program}: {exc}")
+            return 1
+        seed_demos = {name: list(predictor.demos) for name, predictor in student.named_predictors()
+                      if list(getattr(predictor, "demos", None) or [])}
     try:
         if optimiser == "gepa":
             busy_names = busy_predictor_names(labels, parts["train"])
@@ -432,6 +475,7 @@ def run(manifest: Path, labels: Path, real_dir: Path,
     except Exception as exc:
         print(f"optimise failed: {optimiser} compile failed: {exc}")
         return 1
+    _restore_seed_demos(compiled, seed_demos)
     program = PROGRAM_DIR / f"{optimiser}-budget{budget}-seed{seed}.json"
     save_program(compiled, program)
     append_report(REPORT_RELATIVE, optimiser, budget, seed, parts, program, minibatch, threads,

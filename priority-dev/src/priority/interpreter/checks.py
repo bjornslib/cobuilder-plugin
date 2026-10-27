@@ -6,11 +6,13 @@ from collections.abc import Sequence
 from priority.interpreter.models import Abstain
 
 MAX_STEPS = 3
-PREVIEW = 80
-
 
 def check_steps(text: str, picked: Sequence, allowed_kinds: Sequence[str]) -> Abstain | None:
-    """The Abstain for the first step that fails a check, or None when each step passes."""
+    """The Abstain for the first step that fails a check, or None when each step passes.
+
+    A quote that is not in the brief is not a check fault: the step stays in
+    the proposal and grounding scores 0 for that quote. Only an empty quote
+    still abstains the whole stop."""
     if not 1 <= len(picked) <= MAX_STEPS:
         return Abstain(reason="invalid_output",
                        detail=f"Pick returned {len(picked)} steps, and a proposal holds one to {MAX_STEPS}")
@@ -21,7 +23,4 @@ def check_steps(text: str, picked: Sequence, allowed_kinds: Sequence[str]) -> Ab
             continue  # a human task needs no quote
         if not step.evidence_quote:
             return Abstain(reason="quote_not_in_brief", detail=f"step {number}: the quote is empty")
-        if step.evidence_quote not in text:
-            return Abstain(reason="quote_not_in_brief",
-                           detail=f"step {number}: the quote {step.evidence_quote[:PREVIEW]!r} is not in the stop brief")
     return None

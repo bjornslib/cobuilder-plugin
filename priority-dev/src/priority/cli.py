@@ -65,7 +65,8 @@ def optimise_run(args: argparse.Namespace) -> int:
                         args.optimiser, args.budget, args.seed,
                         minibatch=getattr(args, "minibatch", None),
                         threads=getattr(args, "threads", None),
-                        val_sessions=getattr(args, "val_sessions", 1))
+                        val_sessions=getattr(args, "val_sessions", 1),
+                        seed_program=getattr(args, "seed_program", None))
 
 
 def replay(args: argparse.Namespace) -> int:
@@ -147,6 +148,8 @@ def main(argv: list[str] | None = None) -> int:
                                  help="Confirmed labels file")
     optimise_parser.add_argument("--real-dir", type=Path, default=Path("fixtures/real"),
                                  help="Folder with the real sessions, must be Git-ignored")
+    optimise_parser.add_argument("--seed-program", type=Path, default=None,
+                                 help="A saved program file to load as the compile student")
 
     args = parser.parse_args(argv)
     if args.command == "brief":
