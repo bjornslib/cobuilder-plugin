@@ -38,6 +38,7 @@ The held-out part is 30 stops. The train part is 67. A gain on 30 stops with two
 
 This report informs the first condition in `goal.json`: "the interpreter model returns valid, grounded output on too few real stops to build on, and the digest model cannot digest either". This report speaks only to the interpreter clause. Result: the base chain scores 0.700 and 0.702 on the held-out stops. Neither GEPA tuning nor demo bootstrapping beats it. Whether the base is enough to build on is a judgement call for the engineer.
 The artifact is the base chain. GEPA tuned instructions and bootstrap added demos, and neither beat it on held-out sessions. MIPROv2 did not run.
+- Quote relaxation, 27 October 2026: base chain rescored under the relaxed rule, holdout twice: 0.697 and 0.712 against strict 0.700 and 0.702. The net effect is about zero. Survival rises and grounding falls, and they cancel. Seeded GEPA (bootstrap program as student, per-predictor feedback) is running.
 
 ## gepa (budget 3, seed 7)
 
