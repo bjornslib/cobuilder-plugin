@@ -30,7 +30,8 @@ the floored metric.
 
 - Judge the GEPA program on the 6-session holdout against the base program on the holdout, each run twice for the noise check. The 0.626 to 0.661 train band is fitted and does not count.
 - The BootstrapFewShot program's 0.665 holdout number was measured correctly, but its demos were selected under the floored metric, so they are near-random. Recompile it on the fixed wrappers before comparing it with GEPA or calling either the compiled artifact.
-- Holdout duel, 27 October 2026, 6 sessions and 30 stops, each arm run twice, zero 429s and at most 2 invalid rows per arm. Base 0.700 and 0.702. GEPA best 0.713 and 0.685. Recompiled bootstrap 0.665 and 0.705. Nothing beats the base, and the base is the tightest. The compiled artifact is the base chain. The fill caveat stands: the metric cannot see fill quality (to_prediction keeps only step kinds, pick's evidence_quote, and the question; labels carry no payload fields), so fill-level tuning optimises parse rate only until payload labels and a payload metric component exist.
+- Holdout duel, 27 October 2026, 6 sessions and 30 stops, each arm run twice, zero 429s and at most 2 invalid rows per arm. Base 0.700 and 0.702. Unseeded GEPA best 0.713 and 0.685. Recompiled bootstrap 0.665 and 0.705. Nothing beats the base, and the base is the tightest. The unseeded best file is superseded (overwritten by the seeded run; build output is gitignored); its numbers stand in this report and the run logs.
+- Seeded duel, 27 October 2026: tuned-instructions-plus-demos program (probes/programs/gepa-seeded-budget10-seed7.json) against the relaxed base, holdout twice, zero 429s, 1 and 4 invalid rows. Seeded 0.713 and 0.676, base 0.697 and 0.712. Paired session means show no systematic direction. Spread 0.037, inside noise. The stack does not beat the base either. The artifact stays the base chain.
 
 ## Limits
 
@@ -62,16 +63,16 @@ The artifact is the base chain. GEPA tuned instructions and bootstrap added demo
 - cost: optimiser budget 10; model-call count is not metered by this command
 - program: probes/programs/gepa-budget10-seed7.json (load it with `priority eval --program`)
 
-## gepa (budget 10, seed 7)
+## gepa (budget 10, seed 7, unseeded, fixed wrappers)
 
 - settings: candidates: 10 (max_full_evals); reflection model: openai/mercury-3 (same as the interpreter); reflection minibatch size: 14; threads (num_threads): 1; valset sessions: 3; schema-guarded instruction proposer; format failures as feedback; seed 7
 - train sessions (14): 1b3b2a95-562c-43cd-af92-b711a4c45f38, 36752881-735f-42c3-9c8b-50aa4ea3d829, 438c1bee-bcc0-4c64-a53f-a5aa6323514f, 44a2c88e-baaf-4dac-85d2-1512f19a862d, 46ffdc01-3599-48af-99d5-56994fe1d1b6, 4e30e1cc-f5f6-4077-8f6b-541e9939a532, 5d2114e3-e7c4-41bd-8ed3-46446c37711a, 73eb1c54-f241-4495-a7cc-bc35cf1e7c23, 7b7b1107-c6c2-4fc3-b665-0316f8c24d70, 7ba9f3e6-f833-4232-b414-400803a73115, 99a61cfd-ceb8-4fd9-bab2-d1b82b958f4c, a03fc399-8633-4967-bc20-cdfc5b73e466, b61517c7-cce8-44fd-a8f8-2c6c18152858, da522ac2-ef34-4915-be26-50aa7ecc3892
 - held-out sessions (6): 173ae36f-0371-42ea-8519-ed26b52a5389, 71a58b52-8c51-44ba-9222-9f64360b8751, 7f26f5b0-d0c6-4a24-9f54-9e43e1f3fc90, 7f58085f-7121-4ec1-a263-ec8a6fe7c321, a2f34209-85df-49db-a40d-f015a3da5348, e924e1e7-394f-4599-9a47-9360cc6b1f19
-- held-out score after: 0.713 then 0.685 (30 stops each, holdout-twice duel; base 0.700 and 0.702)
+- held-out score after: 0.713 then 0.685 (30 stops each, holdout-twice duel; base 0.700 and 0.702; program file superseded by the seeded run, numbers stand)
 - verdict: does not beat the base
 - spread over repeats: read each gain against the slice 16 baseline spread (probes/eval-baseline.md); a gain smaller than that spread is not a result
 - cost: optimiser budget 10; model-call count is not metered by this command
-- program: probes/programs/gepa-budget10-seed7.json (load it with `priority eval --program`)
+- program: probes/programs/gepa-budget10-seed7.json (superseded; load the seeded file below for the current best)
 
 ## bootstrap (budget 5, seed 7)
 
@@ -83,3 +84,15 @@ The artifact is the base chain. GEPA tuned instructions and bootstrap added demo
 - spread over repeats: read each gain against the slice 16 baseline spread (probes/eval-baseline.md); a gain smaller than that spread is not a result
 - cost: optimiser budget 5; model-call count is not metered by this command
 - program: probes/programs/bootstrap-budget5-seed7.json (load it with `priority eval --program`)
+
+## gepa seeded (budget 10, seed 7)
+
+- settings: candidates: 10 (max_full_evals); seed program probes/programs/bootstrap-budget5-seed7.json; per-predictor feedback; reflection model: openai/mercury-3 (same as the interpreter); reflection minibatch size: 14; threads (num_threads): 1; valset sessions: 3; schema-guarded instruction proposer with guard dedupe and 4,000-char cap; seed 7; seed valset 0.735, best 0.848 (fill['pick_option'], iteration 5)
+- train sessions (14): 1b3b2a95-562c-43cd-af92-b711a4c45f38, 36752881-735f-42c3-9c8b-50aa4ea3d829, 438c1bee-bcc0-4c64-a53f-a5aa6323514f, 44a2c88e-baaf-4dac-85d2-1512f19a862d, 46ffdc01-3599-48af-99d5-56994fe1d1b6, 4e30e1cc-f5f6-4077-8f6b-541e9939a532, 5d2114e3-e7c4-41bd-8ed3-46446c37711a, 73eb1c54-f241-4495-a7cc-bc35cf1e7c23, 7b7b1107-c6c2-4fc3-b665-0316f8c24d70, 7ba9f3e6-f833-4232-b414-400803a73115, 99a61cfd-ceb8-4fd9-bab2-d1b82b958f4c, a03fc399-8633-4967-bc20-cdfc5b73e466, b61517c7-cce8-44fd-a8f8-2c6c18152858, da522ac2-ef34-4915-be26-50aa7ecc3892
+- held-out sessions (6): 173ae36f-0371-42ea-8519-ed26b52a5389, 71a58b52-8c51-44ba-9222-9f64360b8751, 7f26f5b0-d0c6-4a24-9f54-9e43e1f3fc90, 7f58085f-7121-4ec1-a263-ec8a6fe7c321, a2f34209-85df-49db-a40d-f015a3da5348, e924e1e7-394f-4599-9a47-9360cc6b1f19
+- held-out score before: n/a in this run (no holdout scoring without model calls)
+- held-out score after: 0.713 then 0.676 (30 stops each, paired against relaxed base 0.697 and 0.712)
+- verdict: does not beat the base; paired sessions show no systematic direction
+- spread over repeats: read each gain against the slice 16 baseline spread (probes/eval-baseline.md); a gain smaller than that spread is not a result
+- cost: optimiser budget 10; model-call count is not metered by this command
+- program: probes/programs/gepa-seeded-budget10-seed7.json (load it with `priority eval --program`)
