@@ -62,7 +62,10 @@ def optimise_run(args: argparse.Namespace) -> int:
     from priority import optimise  # a lazy import: only this command needs dspy
 
     return optimise.run(args.manifest, args.labels, args.real_dir,
-                        args.optimiser, args.budget, args.seed)
+                        args.optimiser, args.budget, args.seed,
+                        minibatch=getattr(args, "minibatch", None),
+                        threads=getattr(args, "threads", None),
+                        val_sessions=getattr(args, "val_sessions", 1))
 
 
 def replay(args: argparse.Namespace) -> int:
@@ -132,6 +135,12 @@ def main(argv: list[str] | None = None) -> int:
                                  help="The optimiser candidate budget (default: 5)")
     optimise_parser.add_argument("--seed", type=int, default=7,
                                  help="The optimiser seed (default: 7)")
+    optimise_parser.add_argument("--minibatch", type=int, default=None,
+                                 help="GEPA reflection minibatch size (default: GEPA's own default)")
+    optimise_parser.add_argument("--threads", type=int, default=None,
+                                 help="GEPA threads (default: GEPA's own default)")
+    optimise_parser.add_argument("--val-sessions", type=int, default=1,
+                                 help="Train sessions carved as the GEPA valset (default: 1)")
     optimise_parser.add_argument("--manifest", type=Path, default=Path("fixtures/set-manifest.json"),
                                  help="Manifest with session ids and stop numbers")
     optimise_parser.add_argument("--labels", type=Path, default=Path("fixtures/real/labels-confirmed.json"),

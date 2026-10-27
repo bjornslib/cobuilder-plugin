@@ -14,7 +14,10 @@ ANSWER_DUE = {"waiting_answer", "waiting_permission", "blocked", "failed"}
 
 
 class TriageLM(dspy.Signature):
-    """Read the end of a run of a coding agent. Report the state of the session."""
+    """Read the end of a run of a coding agent. Report the state of the session.
+
+    status is one of done, waiting_answer, waiting_permission, blocked, failed, continuing. answer_class is one of none, approve_continue, pick_default, provide_fact, decide, external_action. risk is one of low, medium, high. priority_hint is one of can_wait, soon, now. Output uses exactly the declared fields."""
+
     brief_text: str = dspy.InputField()
     status: Literal["done", "waiting_answer", "waiting_permission", "blocked", "failed", "continuing"] = \
         dspy.OutputField(desc="What the session does now")
@@ -45,7 +48,9 @@ class PickedStep(BaseModel):
 
 class PickStep(dspy.Signature):
     """Choose the next steps for a waiting coding session, one to three, in the order to do them.
-    Quote the words of the stop brief that support each step."""
+    Quote the words of the stop brief that support each step.
+
+    Choose the kind of each step from allowed_kinds only. Each step has exactly the fields kind, evidence_quote, confidence. Output uses exactly the declared fields."""
     brief_text: str = dspy.InputField()
     facts: str = dspy.InputField(desc="The facts from the triage step, as JSON")
     allowed_kinds: list[str] = dspy.InputField(desc="Choose the kind of each step from these kinds only")
@@ -53,7 +58,9 @@ class PickStep(dspy.Signature):
 
 
 class Fill(dspy.Signature):
-    """Write the fields of one action for a waiting coding session. Use only facts in the stop brief."""
+    """Write the fields of one action for a waiting coding session. Use only facts in the stop brief.
+
+    Write only the payload fields of the action schema for the given kind. Output uses exactly the declared fields."""
     brief_text: str = dspy.InputField()
     kind: str = dspy.InputField(desc="The kind of action to write")
     evidence_quote: str = dspy.InputField(desc="The words of the stop brief that this step answers")
@@ -61,7 +68,9 @@ class Fill(dspy.Signature):
 
 
 class WriteCard(dspy.Signature):
-    """Write the question card that a busy human reads. Be short. Give options only if the agent gave them."""
+    """Write the question card that a busy human reads. Be short. Give options only if the agent gave them.
+
+    The card has exactly the fields ask, options, multi_select, free_text, agent_recommendation, helps. Each help has kind one of copy_command, open_file, open_url, explain, plus label and value. Output uses exactly the declared fields."""
     brief_text: str = dspy.InputField()
     card: Question = dspy.OutputField()
 
@@ -75,7 +84,9 @@ class CombinedAction(BaseModel):
 
 
 class WriteCombined(dspy.Signature):
-    """Write the steps, their payloads, and the question card in one call."""
+    """Write the steps, their payloads, and the question card in one call.
+
+    Choose the kind of each step from allowed_kinds only. Each action has exactly the fields kind, evidence_quote, confidence, payload. The card is null when no card is due. Output uses exactly the declared fields."""
     brief_text: str = dspy.InputField()
     facts: str = dspy.InputField(desc="The facts from the triage step, as JSON")
     allowed_kinds: list[str] = dspy.InputField(desc="Choose the kind of each step from these kinds only")

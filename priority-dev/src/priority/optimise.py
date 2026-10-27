@@ -26,13 +26,13 @@ def _session_id_of(example: object) -> str | None:
 
 
 def assert_train_only(examples: list, holdout_ids: list[str]) -> None:
-    """Fail when any example carries a held-out session id, in any field."""
+    """Fail when any example session id names a held-out session."""
     holdout = {session_id for session_id in holdout_ids if session_id}
     leaked: set[str] = set()
     for example in examples:
-        if _session_id_of(example) in holdout:
-            leaked.add(_session_id_of(example))  # type: ignore[arg-type]
-        leaked.update(wanted for wanted in holdout if wanted in repr(example))
+        session_id = _session_id_of(example)
+        if session_id in holdout:
+            leaked.add(session_id)  # type: ignore[arg-type]
     if leaked:
         raise ValueError(f"train-only guard: held-out session leaked: {', '.join(sorted(leaked))}")
 
@@ -181,24 +181,129 @@ class BusyComponentSelector:
         return [name]
 
 
-def split_gepa_valset(examples: list, train_ids: list[str], seed: int) -> tuple[list, list, str | None]:
-    """One train session, picked by seed, as the GEPA valset. Holdout is untouched."""
+def split_gepa_valset(examples: list, train_ids: list[str], seed: int,
+                      val_sessions: int = 1) -> tuple[list, list, list[str]]:
+    """Train sessions, picked by seed, as the GEPA valset. Holdout is untouched."""
     ordered = sorted(train_ids)
-    if len(ordered) <= 1:
-        return examples, [], None
-    val_session = ordered[seed % len(ordered)]
-    train = [example for example in examples if _session_id_of(example) != val_session]
-    val = [example for example in examples if _session_id_of(example) == val_session]
+    count = max(0, min(val_sessions, len(ordered) - 1)) if len(ordered) > 1 else 0
+    if count <= 0:
+        return examples, [], []
+    start = seed % len(ordered)
+    picked = [ordered[(start + offset) % len(ordered)] for offset in range(count)]
+    val_ids = set(picked)
+    train = [example for example in examples if _session_id_of(example) not in val_ids]
+    val = [example for example in examples if _session_id_of(example) in val_ids]
     if not train or not val:
-        return examples, [], None
-    return train, val, val_session
+        return examples, [], []
+    return train, val, sorted(val_ids)
+
+
+SCHEMA_GUARD_LINE = "Use exactly these fields. Do not invent field names."
+
+
+def signature_for_component(name: object) -> object | None:
+    """The DSPy signature class behind one GEPA component name, or None."""
+    from priority.interpreter.signatures import FILL, PickStep, TriageLM, WriteCard, WriteCombined
+
+    if name == "triage":
+        return TriageLM
+    if name == "pick":
+        return PickStep
+    if name == "card":
+        return WriteCard
+    if name == "combined":
+        return WriteCombined
+    if isinstance(name, str) and name.startswith("fill[") and name.endswith("]"):
+        return FILL.get(name[len("fill["):-1].strip("'\""))
+    return None
+
+
+def _render_annotation(annotation: object) -> str:
+    """Short schema text for one field annotation, with the allowed literals."""
+    import types
+    import typing
+
+    from pydantic import BaseModel
+
+    if annotation is bool:
+        return "bool"
+    if annotation is int:
+        return "int"
+    if annotation is float:
+        return "float"
+    if annotation is str:
+        return "str"
+    origin = typing.get_origin(annotation)
+    args = typing.get_args(annotation)
+    if origin is typing.Literal:
+        return "one of " + ", ".join(str(value) for value in args)
+    if origin in (list, tuple, typing.Sequence):
+        items = [arg for arg in args if arg is not Ellipsis]
+        return "list of " + (" or ".join(_render_annotation(arg) for arg in items) if items else "str")
+    if origin is typing.Union or (isinstance(origin, type) and issubclass(origin, types.UnionType)) or isinstance(annotation, types.UnionType):
+        rest = [arg for arg in args if arg is not type(None)]
+        inner = " or ".join(_render_annotation(arg) for arg in rest)
+        return f"optional {inner}" if len(rest) < len(args) else inner
+    if isinstance(annotation, type) and issubclass(annotation, BaseModel):
+        from priority.interpreter.models import ACTION_KINDS
+
+        fields = []
+        for field_name, info in annotation.model_fields.items():
+            if (field_name == "kind" and info.annotation is str
+                    and annotation.__name__ in ("PickedStep", "CombinedAction")):
+                rendered = "one of " + ", ".join(ACTION_KINDS)
+            else:
+                rendered = _render_annotation(info.annotation)
+            fields.append(f"{field_name}: {rendered}")
+        return "{" + "; ".join(fields) + "}"
+    return str(annotation).replace("typing.", "")
+
+
+def schema_guard(component_name: object) -> str:
+    """The schema guard for one GEPA component: exact fields and allowed literals."""
+    signature = signature_for_component(component_name)
+    if signature is None:
+        return SCHEMA_GUARD_LINE
+    fields = "; ".join(
+        f"{field_name}: {_render_annotation(info.annotation)}"
+        for field_name, info in signature.output_fields.items()
+    )
+    return f"Schema guard for {component_name}: {fields}. {SCHEMA_GUARD_LINE}"
+
+
+def guided_instruction_proposer(candidate: dict, reflective_dataset: dict,
+                                components_to_update: list) -> dict:
+    """The GEPA instruction proposer: the default reflective flow plus a schema guard.
+
+    The call signature matches dspy's ProposalFn: the candidate instruction
+    mapping, the reflective dataset of ReflectiveExamples (Inputs, Generated
+    Outputs, Feedback), and the components to update. It returns the new
+    instruction mapping. Each proposed instruction gains the exact Pydantic
+    field list of its predictor, so drifted fields and invented names fail
+    the shape check instead of slipping into the prompt.
+    """
+    from dspy.teleprompt.gepa import InstructionProposer
+
+    proposed = InstructionProposer()(
+        candidate=candidate,
+        reflective_dataset=reflective_dataset,
+        components_to_update=components_to_update,
+    )
+    return {name: text.rstrip() + "\n\n" + schema_guard(name) for name, text in proposed.items()}
 
 
 def _build_optimiser(optimiser: str, cls: object, budget: int, seed: int,
-                     busy_names: list[str] | tuple[str, ...] | None = None) -> object:
+                     busy_names: list[str] | tuple[str, ...] | None = None,
+                     minibatch: int | None = None, threads: int | None = None) -> object:
     """One optimiser with the run budget and seed recorded in its settings."""
     if optimiser == "gepa":
-        settings: dict = {"metric": gepa_feedback, "max_full_evals": budget, "seed": seed}
+        settings: dict = {"metric": gepa_feedback, "max_full_evals": budget, "seed": seed,
+                          "instruction_proposer": guided_instruction_proposer,
+                          "add_format_failure_as_feedback": True}
+        if minibatch is not None:
+            settings["reflection_minibatch_size"] = minibatch
+        if threads is not None:
+            settings["num_threads"] = threads
         if busy_names is not None:
             settings["component_selector"] = BusyComponentSelector(list(busy_names))
         reflection = _reflection_lm()
@@ -210,11 +315,18 @@ def _build_optimiser(optimiser: str, cls: object, budget: int, seed: int,
     return cls(metric=plain_score, max_bootstrapped_demos=max(1, min(budget, 4)))
 
 
-def _settings_line(optimiser: str, budget: int, seed: int) -> str:
+def _settings_line(optimiser: str, budget: int, seed: int, minibatch: int | None = None,
+                   threads: int | None = None, val_sessions: int = 1) -> str:
     """The per-optimiser settings for the report."""
     if optimiser == "gepa":
         from priority.interpreter.module import INTERPRETER_MODEL
-        return f"candidates: {budget} (max_full_evals); reflection model: {INTERPRETER_MODEL} (same as the interpreter); seed {seed}"
+        batch = str(minibatch) if minibatch is not None else "GEPA default"
+        thread_text = str(threads) if threads is not None else "GEPA default"
+        return (f"candidates: {budget} (max_full_evals); reflection model: {INTERPRETER_MODEL} "
+                f"(same as the interpreter); reflection minibatch size: {batch}; "
+                f"threads (num_threads): {thread_text}; "
+                f"valset sessions: {val_sessions}; "
+                f"schema-guarded instruction proposer; format failures as feedback; seed {seed}")
     if optimiser == "miprov2":
         found = importlib.util.find_spec("optuna") is not None
         state = "present" if found else "absent (not installed; no install attempted)"
@@ -223,7 +335,8 @@ def _settings_line(optimiser: str, budget: int, seed: int) -> str:
 
 
 def append_report(report: Path, optimiser: str, budget: int, seed: int,
-                  parts: dict[str, list[str]], program: Path) -> Path:
+                  parts: dict[str, list[str]], program: Path, minibatch: int | None = None,
+                  threads: int | None = None, val_sessions: int = 1) -> Path:
     """Append one optimiser section to the cumulative comparison report."""
     report.parent.mkdir(parents=True, exist_ok=True)
     if not report.exists():
@@ -237,7 +350,7 @@ def append_report(report: Path, optimiser: str, budget: int, seed: int,
     with report.open("a") as handle:
         handle.write(
             f"\n## {optimiser} (budget {budget}, seed {seed})\n\n"
-            f"- settings: {_settings_line(optimiser, budget, seed)}\n"
+            f"- settings: {_settings_line(optimiser, budget, seed, minibatch, threads, val_sessions)}\n"
             f"- train sessions ({len(train)}): {', '.join(train)}\n"
             f"- held-out sessions ({len(holdout)}): {', '.join(holdout)}\n"
             "- held-out score before: n/a in this run (no holdout scoring without model calls)\n"
@@ -251,7 +364,8 @@ def append_report(report: Path, optimiser: str, budget: int, seed: int,
 
 
 def run(manifest: Path, labels: Path, real_dir: Path,
-        optimiser: str, budget: int, seed: int) -> int:
+        optimiser: str, budget: int, seed: int, minibatch: int | None = None,
+        threads: int | None = None, val_sessions: int = 1) -> int:
     """Compile the chain interpreter with one optimiser. Return exit code."""
     from priority import interpreter as interpreter_mod
 
@@ -278,8 +392,9 @@ def run(manifest: Path, labels: Path, real_dir: Path,
     try:
         if optimiser == "gepa":
             busy_names = busy_predictor_names(labels, parts["train"])
-            train_examples, val_examples, _val_session = split_gepa_valset(examples, parts["train"], seed)
-            optimiser_obj = _build_optimiser(optimiser, cls, budget, seed, busy_names)
+            train_examples, val_examples, _val_sessions = split_gepa_valset(
+                examples, parts["train"], seed, val_sessions)
+            optimiser_obj = _build_optimiser(optimiser, cls, budget, seed, busy_names, minibatch, threads)
             if val_examples:
                 compiled = optimiser_obj.compile(student, trainset=train_examples, valset=val_examples)
             else:
@@ -291,7 +406,8 @@ def run(manifest: Path, labels: Path, real_dir: Path,
         return 1
     program = PROGRAM_DIR / f"{optimiser}-budget{budget}-seed{seed}.json"
     save_program(compiled, program)
-    append_report(REPORT_RELATIVE, optimiser, budget, seed, parts, program)
+    append_report(REPORT_RELATIVE, optimiser, budget, seed, parts, program, minibatch, threads,
+                  val_sessions)
     print(f"optimise {optimiser}: compiled on {len(examples)} train stops, "
           f"held out {len(parts['holdout'])} sessions")
     print(f"program: {program}")

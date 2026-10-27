@@ -17,13 +17,11 @@ compiled programs, so a small gain is weak evidence.
 
 ## GEPA
 
-- Budget 5, seed 7 (the flag reaches the teleprompter since the seed fix; the earlier DeepSeek run used seed 0). Reflection model: the interpreter model. Ran on NVIDIA.
-- GEPA warned that no valset was provided, so it used the trainset as its valset. A rerun should split a valset off the train sessions.
-- Iterations 1 to 3 each proposed a new instruction text (triage, pick, one fill). Each scored 0.6000 on the subsample, exactly tied with the old text, and GEPA keeps a proposal only when it scores strictly higher. All three were skipped.
-- Iterations 4 and 5 failed to build a reflective dataset ("no valid predictions found") and proposed nothing. The run ended with executor shutdown errors after the program saved; those errors are cleanup noise, not a failed compile.
-- The saved program `probes/programs/gepa-budget5-seed7.json` holds no demos and the base instructions. GEPA found no improvement. Scoring it would only rescore the baseline, so no holdout scoring run was spent on it.
-- Cost: not metered. About 109 minutes of model calls.
-- Verdict: no change proposed. This is a measured zero, not a missing result. The next step is a rerun with a separate valset, or accepting the bootstrap program.
+- Budget 10, seed 7, minibatch 14, one thread, valset of 3 sessions (14 stops). Reflection limited to the 9 busy predictors. Killed by decision after 9 iterations with no acceptance, because the pattern was decisive.
+- Every proposed instruction tied the base exactly and was skipped. The strict-better gate plus coarse totals makes ties the steady state: different wordings keep producing identical measured totals.
+- Rate limits returned despite serial execution: the evaluator still bursts its rollouts, and poisoned rollouts starved one round of reflective traces.
+- The saved programs hold no demos and unchanged instructions. GEPA proposed no change that beat the base on any run: seed 0 on DeepSeek, seed 7 on NVIDIA, and the expanded run above.
+- Verdict: no improvement found. The optimiser runs are not the problem; the setup gives them nothing to climb. The next step is a retry-with-backoff on 429s plus a check of whether proposals change the valset outputs at all, before spending further runs.
 ## MIPROv2
 
 - Not run. The project env has no optuna, and nothing was installed for this spike. The constructor also needs prompt and task models wired. The report records this instead of a score.
@@ -33,3 +31,25 @@ The held-out part is 15 stops. The train part is 33. A gain on 15 stops is sugge
 
 This report informs the first condition in `goal.json`: "the interpreter model returns valid, grounded output on too few real stops to build on, and the digest model cannot digest either". This report speaks only to the interpreter clause. Result: **not measured**. No threshold defines too few. The bootstrap program scores 0.665 including and 0.661 excluding on the held-out stops, against a baseline mean of 0.609 and 0.603. Whether that is enough to build on is a judgement call for the engineer.
 The chain stays, compiled with BootstrapFewShot demos. GEPA proposed no change on NVIDIA, and MIPROv2 did not run. The bootstrap program is the first compiled interpreter, pending repeats of its holdout score.
+
+## gepa (budget 3, seed 7)
+
+- settings: candidates: 3 (max_full_evals); reflection model: openai/mercury-3 (same as the interpreter); seed 7
+- train sessions (7): 1b3b2a95-562c-43cd-af92-b711a4c45f38, 36752881-735f-42c3-9c8b-50aa4ea3d829, 438c1bee-bcc0-4c64-a53f-a5aa6323514f, 44a2c88e-baaf-4dac-85d2-1512f19a862d, 46ffdc01-3599-48af-99d5-56994fe1d1b6, 5d2114e3-e7c4-41bd-8ed3-46446c37711a, da522ac2-ef34-4915-be26-50aa7ecc3892
+- held-out sessions (3): 173ae36f-0371-42ea-8519-ed26b52a5389, 7ba9f3e6-f833-4232-b414-400803a73115, e924e1e7-394f-4599-9a47-9360cc6b1f19
+- held-out score before: n/a in this run (no holdout scoring without model calls)
+- held-out score after: n/a in this run (score the saved program with `priority eval --split holdout --program probes/programs/gepa-budget3-seed7.json`)
+- spread over repeats: read each gain against the slice 16 baseline spread (probes/eval-baseline.md); a gain smaller than that spread is not a result
+- cost: optimiser budget 3; model-call count is not metered by this command
+- program: probes/programs/gepa-budget3-seed7.json (load it with `priority eval --program`)
+
+## gepa (budget 10, seed 7)
+
+- settings: candidates: 10 (max_full_evals); reflection model: openai/mercury-3 (same as the interpreter); reflection minibatch size: 50; schema-guarded instruction proposer; format failures as feedback; seed 7
+- train sessions (14): 1b3b2a95-562c-43cd-af92-b711a4c45f38, 36752881-735f-42c3-9c8b-50aa4ea3d829, 438c1bee-bcc0-4c64-a53f-a5aa6323514f, 44a2c88e-baaf-4dac-85d2-1512f19a862d, 46ffdc01-3599-48af-99d5-56994fe1d1b6, 4e30e1cc-f5f6-4077-8f6b-541e9939a532, 5d2114e3-e7c4-41bd-8ed3-46446c37711a, 73eb1c54-f241-4495-a7cc-bc35cf1e7c23, 7b7b1107-c6c2-4fc3-b665-0316f8c24d70, 7ba9f3e6-f833-4232-b414-400803a73115, 99a61cfd-ceb8-4fd9-bab2-d1b82b958f4c, a03fc399-8633-4967-bc20-cdfc5b73e466, b61517c7-cce8-44fd-a8f8-2c6c18152858, da522ac2-ef34-4915-be26-50aa7ecc3892
+- held-out sessions (6): 173ae36f-0371-42ea-8519-ed26b52a5389, 71a58b52-8c51-44ba-9222-9f64360b8751, 7f26f5b0-d0c6-4a24-9f54-9e43e1f3fc90, 7f58085f-7121-4ec1-a263-ec8a6fe7c321, a2f34209-85df-49db-a40d-f015a3da5348, e924e1e7-394f-4599-9a47-9360cc6b1f19
+- held-out score before: n/a in this run (no holdout scoring without model calls)
+- held-out score after: n/a in this run (score the saved program with `priority eval --split holdout --program probes/programs/gepa-budget10-seed7.json`)
+- spread over repeats: read each gain against the slice 16 baseline spread (probes/eval-baseline.md); a gain smaller than that spread is not a result
+- cost: optimiser budget 10; model-call count is not metered by this command
+- program: probes/programs/gepa-budget10-seed7.json (load it with `priority eval --program`)
