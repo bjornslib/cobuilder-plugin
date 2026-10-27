@@ -174,19 +174,24 @@ the test code it split.
 
 ## 5. The second epic, E2
 
-Epic E2 holds 703 findings in 129 files, in named groups. It has no slices. A
-later pass cuts them.
+Epic E2 held 703 findings in 129 files when the catalog was written. A scan on
+2026-10-27, after epic E1 and the merge of `master`, finds 734 findings in 130 files.
+The new Python helpers of epic E1 and the merged files added the difference, mostly
+duplicated code. The nine slices 8 to 16 cut the 734 findings. The slice plan and
+`epic-E2-design.md` hold the end states.
 
-| Group | Findings | Approach |
-|---|---|---|
-| Duplicated code | 206 | Judge the stack prose copies, then fix the Python and test clusters |
-| `cobuilder-memory` type surface | 157 | Type each `any`, or record a deliberate stub, per file |
-| Comments outside the viewer | 146 | Apply the per-comment review from epic E1 |
-| `cobuilder-memory` structure | 96 | Split by area, as in epic E1 |
-| Python scripts and root tests, structure | 71 | Split by area, keeping each script's command line stable |
-| Unused imports and variables | 15 | Delete, with the tests as proof |
-| Swallowed exceptions | 12 | Narrow each catch, or record a `noqa` with a reason |
-| **Total** | **703** | |
+| Slice | Area | Findings | Approach |
+|---|---|---|---|
+| 8 | `shared/` scripts | 25 | Split by area, narrow each blind catch, and pin names and `--help` text |
+| 9 | Plugin scripts, `.claude`, and the docs probe | 39 | Split by area, keeping each script's command line stable |
+| 10 | Root `tests/*.py` files | 45 | Split the long files, delete unused names, and keep every test and assert |
+| 11 | `cobuilder-memory` hooks | 34 | Split by area, and type each `any` |
+| 12 | Memory test support and six smaller tests | 128 | Type the fakes, split the long callbacks, and share the setup |
+| 13 | Memory `pane.test.ts` and `run.test.ts` | 155 | Split by concern, type the stubs, and share the setup |
+| 14 | Duplicated Python code | 118 | Judge each cluster, and move the common part into one helper |
+| 15 | Duplicated prose | 44 | Keep one copy of each rule, and link to it |
+| 16 | Comments outside the viewer | 146 | Apply the per-comment review from epic E1 |
+| | **Total** | **734** | |
 
 ## 6. Verdicts, at a glance
 

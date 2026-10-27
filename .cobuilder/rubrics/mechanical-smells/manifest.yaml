@@ -6,10 +6,19 @@ thresholds:
   investigate: 0.70
 max_attempts: 3
 slices:
-  - {id: 1, name: "The logic layer: data/* and shell/model.ts (tracer bullet)", weight: 0.20}
-  - {id: 2, name: "The atoms and sections", weight: 0.14}
-  - {id: 3, name: "The change surface", weight: 0.14}
-  - {id: 4, name: "The shell and chrome", weight: 0.18}
-  - {id: 5, name: "The viewer test files", weight: 0.14}
-  - {id: 6, name: "The comments in viewer source", weight: 0.10}
-  - {id: 7, name: "The comments in viewer tests", weight: 0.10}
+  - {id: 1, name: "The logic layer: data/* and shell/model.ts (tracer bullet)", weight: 0.10}
+  - {id: 2, name: "The atoms and sections", weight: 0.07}
+  - {id: 3, name: "The change surface", weight: 0.07}
+  - {id: 4, name: "The shell and chrome", weight: 0.09}
+  - {id: 5, name: "The viewer test files", weight: 0.07}
+  - {id: 6, name: "The comments in viewer source", weight: 0.05}
+  - {id: 7, name: "The comments in viewer tests", weight: 0.05}
+  - {id: 8, name: "The shared scripts (tracer bullet for epic E2)", weight: 0.05}
+  - {id: 9, name: "The plugin scripts", weight: 0.05}
+  - {id: 10, name: "The root test files", weight: 0.06}
+  - {id: 11, name: "The memory hooks", weight: 0.05}
+  - {id: 12, name: "The memory test support and smaller tests", weight: 0.06}
+  - {id: 13, name: "The memory pane and run tests", weight: 0.06}
+  - {id: 14, name: "The duplicated Python code", weight: 0.06}
+  - {id: 15, name: "The duplicated prose", weight: 0.04}
+  - {id: 16, name: "The comments outside the viewer", weight: 0.07}
