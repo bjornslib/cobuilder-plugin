@@ -506,12 +506,15 @@ def write_eval_rows(compiled: object, examples: list, path: Path) -> list[dict]:
 def run(manifest: Path, labels: Path, real_dir: Path,
         optimiser: str, budget: int, seed: int, minibatch: int | None = None,
         threads: int | None = None, val_sessions: int = 1,
-        seed_program: Path | str | None = None) -> int:
+        seed_program: Path | str | None = None, tag: str | None = None) -> int:
     """Compile the chain interpreter with one optimiser. Return exit code."""
     from priority import interpreter as interpreter_mod
 
     if optimiser not in CLASS_BY_OPTIMISER:
         print(f"optimise failed: unknown optimiser {optimiser!r}: use one of {', '.join(OPTIMISERS)}")
+        return 1
+    if tag is not None and (not tag or "/" in tag or "\\" in tag):
+        print(f"optimise failed: tag {tag!r} must be a plain filename part, with no path separator")
         return 1
     try:
         examples, parts = build_trainset(manifest, labels, real_dir)
@@ -557,7 +560,9 @@ def run(manifest: Path, labels: Path, real_dir: Path,
         print(f"optimise failed: {optimiser} compile failed: {exc}")
         return 1
     _restore_seed_demos(compiled, seed_demos)
-    stem = f"{optimiser}-seeded" if seed_program is not None else optimiser
+    stem = optimiser if tag is None else f"{optimiser}-{tag}"
+    if seed_program is not None:
+        stem += "-seeded"
     program = PROGRAM_DIR / f"{stem}-budget{budget}-seed{seed}.json"
     save_program(compiled, program)
     append_report(REPORT_RELATIVE, optimiser, budget, seed, parts, program, minibatch, threads,
