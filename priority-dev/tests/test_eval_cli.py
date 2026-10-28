@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import contextlib
 import io
+import re
 
 from eval_support import (metric_api, require, stub_predictions_for,
                           StubInterpreter, write_eval_world)
@@ -92,3 +93,14 @@ def test_eval_reports_ambiguous_stops_with_and_without(
         lowered = printed.lower()
         assert "including ambiguous" in lowered
         assert "excluding ambiguous" in lowered
+
+
+def test_eval_prints_one_score_line_per_stop(monkeypatch, capsys, tmp_path):
+    _, printed, parts = run_eval(monkeypatch, capsys, tmp_path, "train")
+    score_lines = re.findall(
+        r"^score stop session=(\S+) stop=(\d+) overall=([\d.]+) ambiguous=(yes|no)$",
+        printed, re.M)
+    stop_lines = re.findall(r"^stop (\S+) 0*(\d+): ", printed, re.M)
+    assert score_lines
+    assert len(score_lines) == len(stop_lines)
+    assert {session for session, *_ in score_lines} == set(parts["train"])

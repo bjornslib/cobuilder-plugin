@@ -193,6 +193,9 @@ def run(manifest: Path, labels: Path, real_dir: Path, split_name: str,
               f"grounding {_mean(session_rows, 'grounding'):.3f} "
               f"validity {_mean(session_rows, 'validity'):.3f}")
     for row in rows:
+        print(f"score stop session={row['session']} stop={row['stop']} "
+              f"overall={row['overall']:.3f} ambiguous={'yes' if row['ambiguous'] else 'no'}")
+    for row in rows:
         print(f"stop {row['session']} {row['stop']}: {row['overall']:.3f}")
     for field in FACT_FIELDS:
         hits = sum(1 for row in rows if row["fact_ok"][field])
