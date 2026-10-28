@@ -20,15 +20,14 @@ from probe_support import FIXTURES, PRIORITY_DEV  # noqa: F401 (re-exported)
 if str(PRIORITY_DEV / "src") not in sys.path:
     sys.path.insert(0, str(PRIORITY_DEV / "src"))
 
-# The slice 16 contract: facts 0.4 (each of the five fields the same share),
-# step kinds 0.4 (first step 0.2, whole ordered list 0.2), grounding 0.1
-# (every quote is in the brief), validity 0.1 (no Abstain from a model fault).
+# The metric contract: facts 0.5 (each of the five fields 0.10),
+# step kinds 0.4 (first step 0.2, whole ordered list 0.2),
+# validity 0.1 (no Abstain from a model fault). Quotes are not scored.
 FACT_FIELDS = ("status", "needs_human", "answer_class", "risk", "priority_hint")
-FACTS_WEIGHT = 0.4
-EACH_FACT_SHARE = 0.08
+FACTS_WEIGHT = 0.5
+EACH_FACT_SHARE = 0.10
 FIRST_STEP_SHARE = 0.2
 STEP_LIST_SHARE = 0.2
-GROUNDING_SHARE = 0.1
 VALIDITY_SHARE = 0.1
 
 BRIEF_TEXT = ("The blue widget trial ended in the north shed. "

@@ -11,7 +11,7 @@ def check_steps(text: str, picked: Sequence, allowed_kinds: Sequence[str]) -> Ab
     """The Abstain for the first step that fails a check, or None when each step passes.
 
     A quote that is not in the brief is not a check fault: the step stays in
-    the proposal and grounding scores 0 for that quote. Only an empty quote
+    the proposal and the metric ignores the quote text. Only an empty quote
     still abstains the whole stop."""
     if not 1 <= len(picked) <= MAX_STEPS:
         return Abstain(reason="invalid_output",

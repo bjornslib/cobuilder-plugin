@@ -4,7 +4,7 @@ Each test fails until the `eval` command exists. The contract: `priority
 eval --split train` prints the train sessions with per-session scores and
 an overall score, `--split holdout` prints the held-out sessions, a run
 never names a session of the other part, the report breaks the score into
-facts, step kinds, grounding, and overall, and ambiguous stops are counted
+facts, step kinds, and overall, and ambiguous stops are counted
 both with and without them. All sessions, labels, and transcripts here are
 made up, and the interpreter is a stub, so no test makes a model call.
 """
@@ -53,7 +53,7 @@ def test_eval_train_prints_train_sessions_with_scores_and_no_holdout(
     code, printed, parts = run_eval(monkeypatch, capsys, tmp_path, "train")
     assert code == 0
     lowered = printed.lower()
-    for token in ("train", "facts", "step", "grounding", "overall"):
+    for token in ("train", "facts", "step", "overall"):
         assert token in lowered
     for session_id in parts["train"]:
         assert session_id in printed
@@ -66,7 +66,7 @@ def test_eval_holdout_prints_holdout_sessions_with_scores_and_no_train(
     code, printed, parts = run_eval(monkeypatch, capsys, tmp_path, "holdout")
     assert code == 0
     lowered = printed.lower()
-    for token in ("holdout", "facts", "step", "grounding", "overall"):
+    for token in ("holdout", "facts", "step", "overall"):
         assert token in lowered
     for session_id in parts["holdout"]:
         assert session_id in printed

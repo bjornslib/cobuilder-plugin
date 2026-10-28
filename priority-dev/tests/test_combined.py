@@ -4,7 +4,7 @@ Each test fails until the variant exists. The contract: `uv run priority
 eval --variant combined` runs Triage and one call that writes the steps, the
 payloads, and the card. Code sets session, author, and confidence. A bad kind
 or an empty quote in any step gives an Abstain naming the step, while a quote
-that is only not in the brief stays in the proposal (grounding scores 0 for
+that is only not in the brief stays in the proposal (the metric ignores
 it). Four or more steps give an Abstain. A contradiction check counts
 proposals where the card and the first step disagree (a snooze beside a
 question card), for both variants. All briefs, labels, and DummyLM replies

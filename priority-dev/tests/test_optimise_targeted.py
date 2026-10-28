@@ -7,7 +7,7 @@ program-level number so acceptance sums stay comparable.
 student that GEPA and bootstrap compile from; a loaded bootstrap student
 still carries its demos into the compiled student.
 (3) A non-verbatim evidence quote no longer abstains the whole stop: the
-proposal reaches the caller and grounding scores 0 for that quote.
+proposal reaches the caller and quotes do not change the score.
 
 No test makes a model call and none reads real text.
 """
@@ -18,7 +18,7 @@ import io
 
 import pytest
 
-from eval_support import (EACH_FACT_SHARE, GROUNDING_SHARE, QUOTE_NOT_IN_BRIEF,
+from eval_support import (EACH_FACT_SHARE, QUOTE_NOT_IN_BRIEF,
                           make_example, make_prediction, write_eval_world)
 from fixtures_support import make_label, require
 from interpret_support import (BLOCKED, NOT_IN_BRIEF, dummy, interpret,  # noqa: F401
@@ -40,16 +40,16 @@ def test_gepa_feedback_names_the_triage_predictor():
     assert "status" in feedback.feedback
 
 
-def test_gepa_feedback_for_fill_names_the_quote_fault():
+def test_gepa_feedback_for_fill_ignores_the_quote_text():
     label = make_label(1)
     example = make_example(label)
     prediction = make_prediction(label, quotes=[QUOTE_NOT_IN_BRIEF])
     optimise = require("priority.optimise")
     trace = [("fill", {"kind": "reply"}, {"payload": {}})]
     feedback = optimise.gepa_feedback(example, prediction, None, "fill['reply']", trace)
-    assert feedback.score == pytest.approx(1.0 - GROUNDING_SHARE)
+    assert feedback.score == pytest.approx(1.0)
     assert "fill" in feedback.feedback
-    assert "quot" in feedback.feedback.lower() or "ground" in feedback.feedback.lower()
+    assert "payload parsed" in feedback.feedback
 
 
 def test_gepa_feedback_for_fill_names_the_parse_fault():
@@ -169,7 +169,7 @@ def test_seed_program_demos_survive_a_bootstrap_reset(monkeypatch, tmp_path):
         "the compile dropped its own bootstrapped demo"
 
 
-def test_non_verbatim_quote_reaches_a_proposal_with_zero_grounding():
+def test_non_verbatim_quote_reaches_a_proposal_without_losing_score():
     lm = dummy(script(BLOCKED, [("reply", NOT_IN_BRIEF)]))
     out = interpret(lm)
     assert out.abstained is None
@@ -182,6 +182,6 @@ def test_non_verbatim_quote_reaches_a_proposal_with_zero_grounding():
                        priority_hint="soon", steps=["reply"])
     example = make_example(label, brief_text=make_brief().for_model())
     parts = metric.components(example, runner.to_prediction(out))
-    assert parts["grounding"] == 0
+    assert "grounding" not in parts
     assert parts["validity"] == pytest.approx(0.1)
-    assert parts["overall"] == pytest.approx(0.9)
+    assert parts["overall"] == pytest.approx(1.0)

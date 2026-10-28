@@ -44,7 +44,7 @@ REPLY_TEXT = "Starting with the north wall today."
 
 MEASURE_PREFIXES = ("sessions:", "session ", "stop ", "fact status:", "fact needs_human:",
                     "fact answer_class:", "fact risk:", "fact priority_hint:", "steps:",
-                    "grounding:", "overall including ambiguous:", "overall excluding ambiguous:",
+                    "overall including ambiguous:", "overall excluding ambiguous:",
                     "calls:", "chars sent:")
 
 

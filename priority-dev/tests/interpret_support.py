@@ -20,7 +20,7 @@ The contract that these tests pin (the sketches `docs/design/schemas/interpreter
   the shared ones. Card: `card`, the JSON of a Question.
 - A fault in a step gives one Abstain whose `reason` is `quote_not_in_brief` (the quote is empty)
   or `kind_not_allowed`. A quote that is only not in the brief stays in the proposal, and the
-  metric scores 0 grounding for it. The text "step N" (N from 1) is in the `detail`. A model call
+  metric ignores the quote text. The text "step N" (N from 1) is in the `detail`. A model call
   that raises gives the reason `model_error`. A reply that does not parse gives the reason
   `invalid_output`. Both write a log record at level INFO or above that holds the reason and the
   error text. No exception escapes.

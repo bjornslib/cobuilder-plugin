@@ -3,7 +3,7 @@
 For each manifest stop of the requested part, the runner builds the stop
 brief from the transcript, runs the interpreter, and scores the outcome
 against the confirmed label. A brief that abstains makes no model call.
-The report breaks the score into facts, step kinds, grounding, and an
+The report breaks the score into facts, step kinds, and an
 overall score, counting ambiguous stops both with and without them.
 """
 from __future__ import annotations
@@ -190,7 +190,6 @@ def run(manifest: Path, labels: Path, real_dir: Path, split_name: str,
         print(f"session {session_id} overall {_mean(session_rows, 'overall'):.3f} "
               f"({len(session_rows)} stops) facts {_mean(session_rows, 'facts'):.3f} "
               f"steps {_mean(session_rows, 'steps'):.3f} "
-              f"grounding {_mean(session_rows, 'grounding'):.3f} "
               f"validity {_mean(session_rows, 'validity'):.3f}")
     for row in rows:
         print(f"score stop session={row['session']} stop={row['stop']} "
@@ -202,7 +201,6 @@ def run(manifest: Path, labels: Path, real_dir: Path, split_name: str,
         print(f"fact {field}: {hits / len(rows):.3f} ({hits}/{len(rows)})")
     print(f"steps: {_mean(rows, 'steps'):.3f}")
     print(f"contradictions: {contradiction_count(predictions)} ({len(predictions)} stops)")
-    print(f"grounding: {_mean(rows, 'grounding'):.3f}")
     print(f"overall including ambiguous: {_mean(rows, 'overall'):.3f} ({len(rows)} stops)")
     if plain:
         print(f"overall excluding ambiguous: {_mean(plain, 'overall'):.3f} ({len(plain)} stops)")

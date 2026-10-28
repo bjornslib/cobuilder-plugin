@@ -1,14 +1,15 @@
 """The optimiser metrics must score real Interpretations, not raw ones.
 
-`metric.score` reads top-level status/steps/quotes/abstain fields. A raw
+`metric.score` reads top-level status/steps/abstain fields. A raw
 Interpretation nests those under .facts/.advice/.abstained, so scoring it
-raw floors every candidate at 0.2 and GEPA cannot tell instructions apart.
+raw floors every candidate at 0.1 and GEPA cannot tell instructions apart.
 These tests feed real Interpretations through `gepa_feedback` and
 `plain_score` and pin the wrappers to the eval runner's `to_prediction`
 numbers. No test makes a model call.
 """
 from __future__ import annotations
 
+import pytest
 from eval_support import (BRIEF_TEXT, FACT_FIELDS, QUOTE_IN_BRIEF,  # noqa: F401
                           make_example, write_eval_world)
 from fixtures_support import make_label
@@ -32,10 +33,10 @@ def _waiting_interpretation():
 
 
 def test_raw_interpretation_floors_at_constant():
-    """A raw Interpretation scores 0.2: facts 0, steps 0, grounding and validity vacuous."""
+    """A raw Interpretation scores 0.1: facts 0, steps 0, validity vacuous."""
     interp, label = _waiting_interpretation()
     metric = require("priority.evaluation.metric")
-    assert metric.score(make_example(label), interp)[0] == 0.2
+    assert metric.score(make_example(label), interp)[0] == 0.1
 
 
 def test_wrappers_match_runner_on_waiting_stop():
@@ -46,7 +47,7 @@ def test_wrappers_match_runner_on_waiting_stop():
     metric = require("priority.evaluation.metric")
     optimise = require("priority.optimise")
     expected, _ = metric.score(example, runner.to_prediction(interp))
-    assert expected == 1.0
+    assert expected == pytest.approx(1.0)
     assert optimise.plain_score(example, interp) == expected
     assert optimise.gepa_feedback(example, interp).score == expected
 
@@ -61,7 +62,7 @@ def test_wrappers_match_runner_on_abstain():
     metric = require("priority.evaluation.metric")
     optimise = require("priority.optimise")
     expected, _ = metric.score(example, runner.to_prediction(interp))
-    assert expected == 0.2
+    assert expected == 0.1
     assert optimise.plain_score(example, interp) == expected
     assert optimise.gepa_feedback(example, interp).score == expected
 

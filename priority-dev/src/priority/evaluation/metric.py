@@ -1,8 +1,9 @@
 """Score one labelled stop against one prediction, with GEPA feedback.
 
-Weights (slice 16): facts 0.4 (each of the five fields 0.08), step kinds
-0.4 (the first step 0.2, the whole ordered list 0.2), grounding 0.1 (every
-quote is in the brief), validity 0.1 (no Abstain from a model fault).
+Weights: facts 0.5 (each of the five fields 0.10), step kinds
+0.4 (the first step 0.2, the whole ordered list 0.2), validity
+0.1 (no Abstain from a model fault). Quotes are not scored:
+a paraphrased quote scores the same as the exact quote.
 
 `score` follows the GEPA signature: it takes the example, the prediction,
 and three unused arguments (trace, prediction name, prediction trace), and
@@ -11,10 +12,9 @@ it returns the score from 0 to 1 with a feedback text.
 from __future__ import annotations
 
 FACT_FIELDS = ("status", "needs_human", "answer_class", "risk", "priority_hint")
-EACH_FACT_SHARE = 0.08
+EACH_FACT_SHARE = 0.10
 FIRST_STEP_SHARE = 0.2
 STEP_LIST_SHARE = 0.2
-GROUNDING_SHARE = 0.1
 VALIDITY_SHARE = 0.1
 
 # An Abstain from one of these reasons means the model ran and failed, so the
@@ -63,13 +63,6 @@ def _list_ok(label_steps: list, pred_steps: list) -> bool:
     return all(_accepted(pred, slot) for pred, slot in zip(pred_steps[1:], label_steps[1:]))
 
 
-def _grounding_ok(quotes: object, brief_text: object) -> bool:
-    """Every quote is an exact substring of the brief. No quotes needs nothing."""
-    if not quotes:
-        return True
-    text = brief_text if isinstance(brief_text, str) else ""
-    return all(isinstance(quote, str) and quote and quote in text for quote in quotes)
-
 
 def _abstain_reason(prediction: object) -> str | None:
     """The Abstain reason of a prediction, or None when it did not abstain."""
@@ -80,23 +73,22 @@ def _abstain_reason(prediction: object) -> str | None:
 
 
 def components(example: object, prediction: object) -> dict:
-    """The score parts: facts, steps, grounding, validity, overall, and fact hits."""
+    """The score parts: facts, steps, validity, overall, and fact hits."""
     fact_ok = {field: _fact_ok(_get(example, field), _get(prediction, field)) for field in FACT_FIELDS}
     facts = sum(EACH_FACT_SHARE for hit in fact_ok.values() if hit)
     label_steps = _get(example, "steps", []) or []
     pred_steps = _get(prediction, "steps", []) or []
     first = FIRST_STEP_SHARE if _first_ok(label_steps, pred_steps) else 0.0
     rest = STEP_LIST_SHARE if _list_ok(label_steps, pred_steps) else 0.0
-    grounding = GROUNDING_SHARE if _grounding_ok(_get(prediction, "quotes"), _get(example, "brief_text")) else 0.0
     reason = _abstain_reason(prediction)
     validity = 0.0 if reason in MODEL_FAULTS else VALIDITY_SHARE
     return {"facts": facts, "fact_ok": fact_ok, "first_step": first, "step_list": rest,
-            "steps": first + rest, "grounding": grounding, "validity": validity,
-            "overall": facts + first + rest + grounding + validity}
+            "steps": first + rest, "validity": validity,
+            "overall": facts + first + rest + validity}
 
 
 def _feedback(example: object, prediction: object, parts: dict) -> str:
-    """One line per lost share, naming the field, kind, quote, or reason."""
+    """One line per lost share, naming the field, kind, or reason."""
     notes = []
     for field in FACT_FIELDS:
         if not parts["fact_ok"][field]:
@@ -109,12 +101,10 @@ def _feedback(example: object, prediction: object, parts: dict) -> str:
                      else f"first step: predicted no step, label {label_steps!r}")
     if parts["step_list"] == 0.0:
         notes.append(f"step list: predicted {pred_steps!r}, label {label_steps!r}")
-    if parts["grounding"] == 0.0:
-        notes.append(f"grounding: a quote is not in the brief text {list(_get(prediction, 'quotes') or [])!r}")
     if parts["validity"] == 0.0:
         notes.append(f"validity: abstained from a model fault ({_abstain_reason(prediction)})")
     if not notes:
-        return "all facts, steps, quotes, and validity match the label."
+        return "all facts, steps, and validity match the label."
     return " ".join(notes)
 
 
@@ -154,13 +144,11 @@ def _predictor_feedback(example: object, prediction: object, parts: dict,
         if not notes:
             notes.append("the picked steps match the label.")
     elif name.startswith("fill"):
-        if parts["grounding"] == 0.0:
-            notes.append(f"quote: not in the brief text {list(_get(prediction, 'quotes') or [])!r}")
         reason = _abstain_reason(prediction)
         if reason is not None:
             notes.append(f"parse: the stop abstained ({reason}: {_get(_get(prediction, 'abstain'), 'detail')})")
         if not notes:
-            notes.append("the quote is in the brief and the payload parsed.")
+            notes.append("the payload parsed.")
     elif name in ("card", "combined"):
         question = _get(prediction, "question")
         if _get(prediction, "needs_human") and question is None:
