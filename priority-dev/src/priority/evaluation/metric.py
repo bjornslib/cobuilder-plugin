@@ -6,11 +6,12 @@ an out-of-range step count, or an ask_human step with no questions) abstains
 with a named 0.00 score and never reaches the judge. Otherwise, when the
 example carries the expected payloads and the prediction carries the raw
 payloads, the judge grades meaning and the metric only clamps its score and
-wraps it as feedback. When the judge inputs are absent (older worlds without
-payload labels), the metric falls back to the legacy weights: facts 0.5 (each
-of the five fields 0.10), step kinds 0.4 (the first step 0.2, the whole
-ordered list 0.2), validity 0.1 (no Abstain from a model fault). Quotes are
-not scored: a paraphrased quote scores the same as the exact quote.
+wraps it as feedback. When the example carries no expected payloads (older worlds
+without payload labels), the metric falls back to the legacy weights: facts 0.5
+(each of the five fields 0.10), step kinds 0.4 (the first step 0.2, the whole
+ordered list 0.2), validity 0.1 (no Abstain from a model fault). It skips the
+payload part and names the skip in the feedback. Quotes are not scored: a
+paraphrased quote scores the same as the exact quote.
 
 `score` follows the GEPA signature: it takes the example, the prediction,
 and three unused arguments (trace, prediction name, prediction trace), and
@@ -28,12 +29,23 @@ VALIDITY_SHARE = 0.1
 # validity share is lost. A brief-level Abstain means the model never ran.
 MODEL_FAULTS = frozenset({"model_error", "invalid_output", "quote_not_in_brief", "kind_not_allowed"})
 
+# The skip note: when the example carries no expected payloads, the metric
+# scores facts and steps only and names the skipped payload part.
+PAYLOAD_SKIP_NOTE = "payload: skipped (no expected payload labels, scored facts and steps only)."
+
 # The label-free gate: a mechanical fault scores 0.00 with a named note and
 # never calls the judge. Brief-level faults (the model never ran) keep the
 # legacy path so older worlds still score.
 GATE_REASONS = frozenset({"invalid_output", "kind_not_allowed", "quote_not_in_brief"})
 
 _MISSING = object()
+
+
+def _with_skip_note(feedback: str) -> str:
+    """The legacy feedback with the skipped payload part named."""
+    if not feedback:
+        return PAYLOAD_SKIP_NOTE
+    return feedback + " " + PAYLOAD_SKIP_NOTE
 
 
 def _get(obj: object, name: str, default: object = None) -> object:
@@ -287,6 +299,11 @@ def score(example: object, prediction: object, trace: object = None,
                 text += f" trace: {snippet}"
             return (value, text)
     parts = components(example, prediction)
+    if expected is _MISSING:
+        if pred_name is None:
+            return (parts["overall"], _with_skip_note(_feedback(example, prediction, parts)))
+        return (parts["overall"], _with_skip_note(
+            _predictor_feedback(example, prediction, parts, pred_name, pred_trace)))
     if pred_name is None:
         return (parts["overall"], _feedback(example, prediction, parts))
     return (parts["overall"], _predictor_feedback(example, prediction, parts, pred_name, pred_trace))

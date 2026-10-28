@@ -3,7 +3,10 @@
 The metric calls `judge` with the brief text plus the raw predicted payloads
 plus the expected payloads. It returns the final score in 0..1 with one note
 per part. Closed fields compare exactly inside the rubric. Open fields compare
-by meaning. Until the real judge model lands, a missing model scores 0.
+by meaning. The default model is the interpreter LM (Inception, with retries
+like the optimise path), so a real run works without extra wiring. An
+explicit model or the configured dspy model still wins, so the tests keep
+their stub seam. Until the real judge model lands, a missing model scores 0.
 """
 from __future__ import annotations
 
@@ -33,8 +36,15 @@ RUBRIC = ("Grade the predicted payload against the expected payload. Compare "
           "one note per part.")
 
 
+def _default_lm() -> dspy.LM:
+    """The interpreter LM for the judge, with retries like the optimise path."""
+    from priority.interpreter.module import interpreter_lm
+
+    return interpreter_lm(retries=3)
+
+
 def judge(brief_text: object, predicted_payloads: object,
-          expected_payloads: object) -> tuple[float, list[str]]:
+          expected_payloads: object, lm: dspy.LM | None = None) -> tuple[float, list[str]]:
     """Grade the raw payloads and return the final score with one note per part."""
     try:
         pred_json = json.dumps(predicted_payloads, default=str)
@@ -45,12 +55,19 @@ def judge(brief_text: object, predicted_payloads: object,
     except Exception:  # noqa: BLE001 (labels may hold anything, and the judge must not fail)
         exp_json = str(expected_payloads)
     try:
-        out = dspy.Predict(JudgePayloads)(
-            brief_text=str(brief_text or ""),
-            predicted_payloads=pred_json,
-            expected_payloads=exp_json,
-            rubric=RUBRIC,
-        )
+        active = lm if lm is not None else dspy.settings.lm
+        if active is None:
+            try:
+                active = _default_lm()
+            except Exception:  # noqa: BLE001 (offline runs score 0, and the stub seam stays)
+                return (0.0, ["judge stub: no judge model reached, scored 0"])
+        with dspy.context(lm=active):
+            out = dspy.Predict(JudgePayloads)(
+                brief_text=str(brief_text or ""),
+                predicted_payloads=pred_json,
+                expected_payloads=exp_json,
+                rubric=RUBRIC,
+            )
         return (float(out.score), list(out.notes))
     except Exception:  # noqa: BLE001 (no model in offline runs, and the stub scores 0)
         return (0.0, ["judge stub: no judge model reached, scored 0"])
