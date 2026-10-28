@@ -16,7 +16,7 @@ from pydantic import ValidationError
 
 from priority import config
 from priority.interpreter.calls import CallRecorder
-from priority.interpreter.checks import check_steps
+from priority.interpreter.checks import check_fill_payload, check_steps
 from priority.interpreter.models import (ACTION_CLASS, ACTION_KINDS, Abstain, Advice, Facts, Interpretation,
                                          Notify, Proposal, digest)
 from priority.interpreter.signatures import (ANSWER_DUE, FACT_FIELDS, FILL, HINT, RISK, PickStep, TriageLM,
@@ -189,6 +189,10 @@ class _Run:
         """Run Fill for one step. Code sets the fields that the model must not write."""
         payload = self.call("fill", self.owner.fill[picked.kind], kind=picked.kind,
                             evidence_quote=picked.evidence_quote).payload
+        fault = check_fill_payload(picked.kind, payload)
+        if fault is not None:
+            raise _Fault(Abstain(reason=fault.reason,
+                                 detail=f"step {number}: {fault.detail}"))
         try:
             return ACTION_CLASS[picked.kind](
                 session_id=self.owner.session_id, author="interpreter", evidence_quote=picked.evidence_quote,

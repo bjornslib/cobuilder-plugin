@@ -202,8 +202,7 @@ def test_ask_human_needs_no_quote():
     assert step.kind == "ask_human"
     assert step.evidence_quote == ""
     assert step.detail.role == "decide"
-    assert step.detail.question.ask == CARD["ask"]
-
+    assert step.detail.questions[0].ask == CARD["ask"]
 
 def test_ask_human_after_a_session_step_keeps_both():
     lm = dummy(script(BLOCKED, [("reply", QUOTE_1), ("ask_human", "")]))

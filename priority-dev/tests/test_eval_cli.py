@@ -98,7 +98,7 @@ def test_eval_reports_ambiguous_stops_with_and_without(
 def test_eval_prints_one_score_line_per_stop(monkeypatch, capsys, tmp_path):
     _, printed, parts = run_eval(monkeypatch, capsys, tmp_path, "train")
     score_lines = re.findall(
-        r"^score stop session=(\S+) stop=(\d+) overall=([\d.]+) ambiguous=(yes|no)$",
+        r"^score stop session=(\S+) stop=(\d+) overall=([\d.]+).*ambiguous=(yes|no)",
         printed, re.M)
     stop_lines = re.findall(r"^stop (\S+) 0*(\d+): ", printed, re.M)
     assert score_lines

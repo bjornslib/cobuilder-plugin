@@ -45,15 +45,20 @@ def to_prediction(result: object) -> dict:
             "status": facts.status, "needs_human": facts.needs_human,
             "answer_class": facts.answer_class, "risk": _nearest(RISK, facts.risk),
             "priority_hint": _nearest(HINT, facts.priority_hint)})
-    steps, quotes = [], []
+    steps, quotes, asked = [], [], []
     advice = getattr(result, "advice", None)
     if advice is not None:
         for action in advice.proposal.steps:
             steps.append(action.kind)
             if action.kind != "ask_human" and action.evidence_quote:
                 quotes.append(action.evidence_quote)
-    question = advice.question if advice is not None else None
-    prediction.update({"steps": steps, "quotes": quotes, "question": question, "card": question,
+            if action.kind == "ask_human":
+                detail = getattr(action, "detail", None)
+                items = getattr(detail, "questions", ()) if detail is not None else ()
+                asked.extend(items)
+    if not asked and advice is not None and getattr(advice, "question", None) is not None:
+        asked = [advice.question]
+    prediction.update({"steps": steps, "quotes": quotes, "questions": asked,
                        "abstain": None})
     abstained = getattr(result, "abstained", None)
     if abstained is not None:
@@ -66,7 +71,8 @@ def contradiction_count(predictions: list) -> int:
     count = 0
     for prediction in predictions:
         steps = prediction.get("steps") or []
-        has_card = prediction.get("question") is not None or prediction.get("card") is not None
+        asked = prediction.get("questions") or []
+        has_card = bool(asked) or prediction.get("question") is not None or prediction.get("card") is not None
         if steps and steps[0] == "snooze" and has_card:
             count += 1
     return count
@@ -175,10 +181,17 @@ def run(manifest: Path, labels: Path, real_dir: Path, split_name: str,
                 brief_text = ""
             example = {field: label[field] for field in FACT_FIELDS} | {
                 "steps": label["steps"], "ambiguous": label["ambiguous"], "brief_text": brief_text}
-            value, _ = score(example, prediction)
+            if "expected_payloads" in label:
+                example["expected_payloads"] = label["expected_payloads"]
+            elif "payloads" in label:
+                example["expected_payloads"] = label["payloads"]
+            value, feedback = score(example, prediction)
             predictions.append(prediction)
+            abstain = prediction.get("abstain") if isinstance(prediction, dict) else None
+            gate = abstain.get("reason") if isinstance(abstain, dict) else "pass"
             rows.append({"session": session_id, "stop": key, "overall": value,
-                         **components(example, prediction), "ambiguous": _is_ambiguous(label)})
+                         **components(example, prediction), "ambiguous": _is_ambiguous(label),
+                         "payload": value, "gate": gate, "feedback": feedback})
     if not rows:
         print(f"eval failed: split {split_name} holds no stops")
         return 1
@@ -193,7 +206,8 @@ def run(manifest: Path, labels: Path, real_dir: Path, split_name: str,
               f"validity {_mean(session_rows, 'validity'):.3f}")
     for row in rows:
         print(f"score stop session={row['session']} stop={row['stop']} "
-              f"overall={row['overall']:.3f} ambiguous={'yes' if row['ambiguous'] else 'no'}")
+              f"overall={row['overall']:.3f} payload={row['payload']:.3f} gate={row['gate']} "
+              f"ambiguous={'yes' if row['ambiguous'] else 'no'}")
     for row in rows:
         print(f"stop {row['session']} {row['stop']}: {row['overall']:.3f}")
     for field in FACT_FIELDS:

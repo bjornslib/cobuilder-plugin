@@ -37,30 +37,49 @@ def assert_train_only(examples: list, holdout_ids: list[str]) -> None:
         raise ValueError(f"train-only guard: held-out session leaked: {', '.join(sorted(leaked))}")
 
 
+def _has_expected(example: object) -> bool:
+    """Whether the example carries expected payloads for the judge."""
+    if isinstance(example, dict):
+        return example.get("expected_payloads") is not None
+    return getattr(example, "expected_payloads", None) is not None
+
+
+def _is_interp(prediction: object) -> bool:
+    """Whether the prediction is a raw Interpretation, not a flat dict."""
+    return hasattr(prediction, "advice") and hasattr(prediction, "brief_id")
+
+
+def _metric_inputs(example: object, prediction: object) -> object:
+    """The raw Interpretation when the judge can read it, else the runner flat."""
+    from priority.evaluation.runner import to_prediction
+
+    if _is_interp(prediction) and _has_expected(example):
+        return prediction
+    return to_prediction(prediction)
+
+
 def gepa_feedback(example: object, prediction: object, trace: object = None,
                   pred_name: object = None, pred_trace: object = None,
                   program_trace: object = None) -> object:
-    """The slice 16 score as a GEPA ScoreWithFeedback prediction.
+    """The judge score as a GEPA ScoreWithFeedback prediction.
 
     The score is the program-level number, so acceptance sums stay comparable.
-    The feedback targets the named predictor: its own fields and trace."""
+    The feedback targets the named predictor: its own fields and trace. The
+    raw Interpretation passes through when the judge can read its steps."""
     import dspy
 
     from priority.evaluation.metric import score
-    from priority.evaluation.runner import to_prediction
 
-    value, feedback = score(example, to_prediction(prediction), trace, pred_name, pred_trace)
+    value, feedback = score(example, _metric_inputs(example, prediction), trace, pred_name, pred_trace)
     return dspy.Prediction(score=value, feedback=feedback)
 
 
 def plain_score(example: object, prediction: object, *ignored: object) -> float:
     """The float-only metric for MIPROv2 and BootstrapFewShot."""
     from priority.evaluation.metric import score
-    from priority.evaluation.runner import to_prediction
 
-    value, _ = score(example, to_prediction(prediction))
+    value, _ = score(example, _metric_inputs(example, prediction))
     return value
-
 
 def build_trainset(manifest: Path, labels_path: Path,
                    real_dir: Path) -> tuple[list, dict[str, list[str]]]:
@@ -98,6 +117,10 @@ def build_trainset(manifest: Path, labels_path: Path,
             else:
                 text, final = "", ""
             fields = {field: label[field] for field in FACT_FIELDS}
+            if "expected_payloads" in label:
+                fields["expected_payloads"] = label["expected_payloads"]
+            elif "payloads" in label:
+                fields["expected_payloads"] = label["payloads"]
             examples.append(dspy.Example(
                 session_id=session_id, stop=key, brief_text=text, final_text=final,
                 steps=label["steps"], ambiguous=label["ambiguous"], **fields,
@@ -420,6 +443,64 @@ def append_report(report: Path, optimiser: str, budget: int, seed: int,
             f"- cost: optimiser budget {budget}; model-call count is not metered by this command\n"
             f"- program: {program} (load it with `priority eval --program`)\n")
     return report
+def _call_compiled(compiled: object, example: object) -> object:
+    """Run one compiled program on one train example, whatever its call shape."""
+    brief_text = getattr(example, "brief_text", "")
+    final_text = getattr(example, "final_text", "")
+    try:
+        return compiled(brief_text=brief_text, final_text=final_text)  # type: ignore[operator]
+    except TypeError:
+        pass
+    try:
+        return compiled(brief_text)  # type: ignore[operator]
+    except TypeError:
+        return compiled(example)  # type: ignore[operator]
+
+
+def _row_for(example: object, prediction: object) -> dict:
+    """One runner-format per-stop row for one compiled output."""
+    from priority.evaluation.metric import _clamp
+
+    from priority.evaluation.judge import judge
+
+    session = getattr(example, "session_id", "")
+    stop = getattr(example, "stop", "")
+    abstained = getattr(prediction, "abstained", None)
+    if abstained is None and isinstance(prediction, dict):
+        abstained = prediction.get("abstain")
+    reason = None
+    if abstained is not None:
+        reason = abstained.reason if hasattr(abstained, "reason") else abstained.get("reason")
+    if reason is not None:
+        return {"session": session, "stop": stop, "score": 0.0, "parts": [], "gate": reason}
+    predicted = None
+    if hasattr(prediction, "advice") and hasattr(prediction, "brief_id"):
+        try:
+            predicted = [step.model_dump() for step in prediction.advice.proposal.steps]
+        except AttributeError:
+            predicted = None
+    elif isinstance(prediction, dict):
+        predicted = prediction.get("payloads")
+    expected = getattr(example, "expected_payloads", [])
+    brief_text = getattr(example, "brief_text", "")
+    if predicted is None:
+        return {"session": session, "stop": stop, "score": 0.0, "parts": [], "gate": "no_payload"}
+    raw, notes = judge(brief_text, predicted, expected)
+    return {"session": session, "stop": stop, "score": _clamp(raw),
+            "parts": list(notes), "gate": "pass"}
+
+
+def write_eval_rows(compiled: object, examples: list, path: Path) -> list[dict]:
+    """Score the compiled program on its train stops and write runner-format rows."""
+    import json
+
+    rows = [_row_for(example, _call_compiled(compiled, example)) for example in examples]
+    target = Path(path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    with target.open("w") as handle:
+        for row in rows:
+            handle.write(json.dumps(row) + "\n")
+    return rows
 
 
 def run(manifest: Path, labels: Path, real_dir: Path,
@@ -481,6 +562,14 @@ def run(manifest: Path, labels: Path, real_dir: Path,
     save_program(compiled, program)
     append_report(REPORT_RELATIVE, optimiser, budget, seed, parts, program, minibatch, threads,
                   val_sessions)
+    try:
+        rows = write_eval_rows(compiled, examples,
+                               PROGRAM_DIR / f"{stem}-budget{budget}-seed{seed}-rows.jsonl")
+    except Exception:  # noqa: BLE001 (a stub teleprompter has no callable program; rows stay unwritten)
+        rows = []
+    if rows:
+        mean = sum(row["score"] for row in rows) / len(rows)
+        print(f"train overall {mean:.6f} ({len(rows)} stops)")
     print(f"optimise {optimiser}: compiled on {len(examples)} train stops, "
           f"held out {len(parts['holdout'])} sessions")
     print(f"program: {program}")

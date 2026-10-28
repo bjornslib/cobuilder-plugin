@@ -110,7 +110,7 @@ PAYLOADS = {
     "approve_gate": {"gate": "design", "notes": ""},
     "send_feedback": {"notes": "Use backoff."},
     "deny_permission": {"reason": "Too risky."},
-    "ask_human": {"detail": {"role": "decide", "question": CARD}, "why_escalated": "A human owns the cost."},
+    "ask_human": {"detail": {"role": "decide", "questions": [CARD]}, "why_escalated": "A human owns the cost."},
 }
 
 

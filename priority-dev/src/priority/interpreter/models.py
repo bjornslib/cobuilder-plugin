@@ -117,7 +117,7 @@ class Interrupt(ActionBase):
 
 class Decide(Strict):
     role: Literal["decide"] = "decide"
-    question: Question
+    questions: tuple[Question, ...] = Field(min_length=1)
 
 
 class Do(Strict):
