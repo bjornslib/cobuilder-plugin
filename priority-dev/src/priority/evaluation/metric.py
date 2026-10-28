@@ -1,18 +1,18 @@
 """Score one labelled stop against one prediction, with GEPA feedback.
-
-Two paths: the judge path and the legacy path. The gate runs first with no
-label: a mechanical fault (unparsable output, a bad enum, a disallowed kind,
-an out-of-range step count, or an ask_human step with no questions) abstains
-with a named 0.00 score and never reaches the judge. Otherwise, when the
-example carries the expected payloads and the prediction carries the raw
-payloads, the judge grades meaning and the metric only clamps its score and
-wraps it as feedback. When the example carries no expected payloads (older worlds
-without payload labels), the metric falls back to the legacy weights: facts 0.5
-(each of the five fields 0.10), step kinds 0.4 (the first step 0.2, the whole
-ordered list 0.2), validity 0.1 (no Abstain from a model fault). It skips the
-payload part and names the skip in the feedback. Quotes are not scored: a
-paraphrased quote scores the same as the exact quote.
-
+Two paths: the judge path and the offline legacy path. The gate runs first
+with no label: a mechanical fault (unparsable output, a bad enum, a
+disallowed kind, an out-of-range step count, or an ask_human step with no
+questions) abstains with a named 0.00 score and never reaches the judge.
+Otherwise the judge grades every stop. When the example carries the expected
+payloads and the prediction carries the raw payloads, the judge grades the
+payload meaning and the metric only clamps its score and wraps it as
+feedback. When the example carries no expected payloads (older worlds
+without payload labels), the judge still runs: it grades facts and steps
+against their labels with the payload part skipped through an explicit
+empty-payload marker, and the feedback names the skip. Quotes are not
+scored: a paraphrased quote scores the same as the exact quote. The legacy
+weights (facts 0.5, step kinds 0.4, validity 0.1) survive only as the
+offline fallback when no judge model exists.
 `score` follows the GEPA signature: it takes the example, the prediction,
 and three unused arguments (trace, prediction name, prediction trace), and
 it returns the score from 0 to 1 with a feedback text.
@@ -29,13 +29,20 @@ VALIDITY_SHARE = 0.1
 # validity share is lost. A brief-level Abstain means the model never ran.
 MODEL_FAULTS = frozenset({"model_error", "invalid_output", "quote_not_in_brief", "kind_not_allowed"})
 
-# The skip note: when the example carries no expected payloads, the metric
-# scores facts and steps only and names the skipped payload part.
+# The skip note: when the example carries no expected payloads, the judge
+# still runs with facts and steps and the payload part skipped, and the
+# feedback names the skipped part.
 PAYLOAD_SKIP_NOTE = "payload: skipped (no expected payload labels, scored facts and steps only)."
+
+# The explicit empty-payload marker: when the example carries no expected
+# payloads, the metric still calls the judge with this marker as the
+# expected payloads, so the judge knows the part is skipped rather than
+# failed. It is never a silent omission.
+SKIPPED_PAYLOADS = {"skipped": True, "reason": "no expected payload labels"}
 
 # The label-free gate: a mechanical fault scores 0.00 with a named note and
 # never calls the judge. Brief-level faults (the model never ran) keep the
-# legacy path so older worlds still score.
+# legacy path as the offline fallback so older worlds still score.
 GATE_REASONS = frozenset({"invalid_output", "kind_not_allowed", "quote_not_in_brief"})
 
 _MISSING = object()
@@ -45,7 +52,39 @@ def _with_skip_note(feedback: str) -> str:
     """The legacy feedback with the skipped payload part named."""
     if not feedback:
         return PAYLOAD_SKIP_NOTE
+    if "skip" in feedback.lower():
+        return feedback if PAYLOAD_SKIP_NOTE in feedback else feedback + " " + PAYLOAD_SKIP_NOTE
     return feedback + " " + PAYLOAD_SKIP_NOTE
+
+
+def _is_judge_stub(notes: object) -> bool:
+    """Whether the judge notes report no model, so the caller falls back."""
+    try:
+        items = list(notes) if notes else []
+    except TypeError:
+        return False
+    return any("judge stub" in str(note).lower() for note in items)
+
+
+def _judge_facts(source: object) -> dict:
+    """The five fact fields of one example or prediction, for the judge."""
+    return {field: _get(source, field) for field in FACT_FIELDS}
+
+
+def _skipped_expected(example: object) -> dict:
+    """The judge expected payloads when the label holds none: facts, steps,
+    and the explicit skipped-payload marker."""
+    return {"facts": _judge_facts(example),
+            "steps": _get(example, "steps", []) or [],
+            "payloads": SKIPPED_PAYLOADS, "payload_skipped": True}
+
+
+def _skipped_predicted(prediction: object) -> dict:
+    """The judge predicted payloads when the label holds none: facts, steps,
+    and the raw payloads with the part marked skipped."""
+    return {"facts": _judge_facts(prediction),
+            "steps": _get(prediction, "steps", []) or [],
+            "payloads": _predicted_payloads(prediction), "payload_skipped": True}
 
 
 def _get(obj: object, name: str, default: object = None) -> object:
@@ -282,6 +321,32 @@ def score(example: object, prediction: object, trace: object = None,
             text += f" trace: {snippet}"
         return (0.0, text)
     expected = _expected_payloads(example)
+    if expected is _MISSING:
+        try:
+            from priority.evaluation.judge import judge
+
+            brief_text = _get(example, "brief_text", "")
+            raw, notes = judge(brief_text, _skipped_predicted(prediction),
+                               _skipped_expected(example))
+        except Exception:  # noqa: BLE001 (no judge model offline: the legacy path scores)
+            raw, notes = None, None
+        if raw is None or _is_judge_stub(notes):
+            parts = components(example, prediction)
+            if pred_name is None:
+                return (parts["overall"], _with_skip_note(_feedback(example, prediction, parts)))
+            return (parts["overall"], _with_skip_note(
+                _predictor_feedback(example, prediction, parts, pred_name, pred_trace)))
+        value = _clamp(raw)
+        joined = " ".join(notes) if notes else ""
+        if PAYLOAD_SKIP_NOTE not in joined:
+            joined = (joined + " " + PAYLOAD_SKIP_NOTE).strip() if joined else PAYLOAD_SKIP_NOTE
+        if pred_name is None:
+            return (value, joined)
+        text = f"predictor {pred_name}: " + joined
+        snippet = _trace_snippet(pred_trace)
+        if snippet:
+            text += f" trace: {snippet}"
+        return (value, text)
     if expected is not _MISSING and reason is None:
         predicted = _predicted_payloads(prediction)
         if predicted is not None:
@@ -299,11 +364,6 @@ def score(example: object, prediction: object, trace: object = None,
                 text += f" trace: {snippet}"
             return (value, text)
     parts = components(example, prediction)
-    if expected is _MISSING:
-        if pred_name is None:
-            return (parts["overall"], _with_skip_note(_feedback(example, prediction, parts)))
-        return (parts["overall"], _with_skip_note(
-            _predictor_feedback(example, prediction, parts, pred_name, pred_trace)))
     if pred_name is None:
         return (parts["overall"], _feedback(example, prediction, parts))
     return (parts["overall"], _predictor_feedback(example, prediction, parts, pred_name, pred_trace))
