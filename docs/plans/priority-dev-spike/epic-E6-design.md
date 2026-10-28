@@ -7,7 +7,7 @@ Epic ID: E6
 
 E5 showed that instruction tuning and demos move train and valset numbers but prove nothing on held-out stops, and that the metric cannot see payload quality: `to_prediction` keeps only step kinds, pick's evidence quote, and the card question, while labels carry no payload fields. A fill rewrite can therefore only move the score through parse success. E6 gives the scorer eyes: labels record the expected payload, and a judge model grades meaning.
 
-The flow is fixed: build input data, run TriageLM, PickStep, FILL, and WriteCard, pass the label-free mechanical gate, then judge the raw payload against the expected payload. The judge returns the final score with one note per part. The metric only clamps the score and wraps it in `dspy.Prediction`. A gate failure scores 0 with feedback naming the failed check, so reflection still sees format failures.
+The target diagram in `priority-dev/probes/schema-flow-target.svg` is the flow contract for this epic. Code that disagrees with it is wrong.
 
 E6 builds no policy and no actuator. It changes the interpreter schema, the metric, and the labels. It does not change the brief or the chain order.
 
