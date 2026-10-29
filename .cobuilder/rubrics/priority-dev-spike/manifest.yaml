@@ -28,3 +28,4 @@ slices:
   - {id: 16, name: "E5 metric and baseline", weight: 0.08}
   - {id: 17, name: "E5 one-call variant", weight: 0.06}
   - {id: 18, name: "E5 optimiser comparison", weight: 0.08}
+  - {id: 20, name: "E6 reference payloads and judge validation", weight: 0.08}
