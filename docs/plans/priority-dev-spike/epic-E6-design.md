@@ -34,7 +34,7 @@ E6 builds no policy and no actuator. It changes the interpreter schema, the metr
 ## Slice Decomposition
 
 1. Slice 19: the code flow. Label-free gate, `Decide.questions`, ask_human fill emits the list, readers move to the list, judge module with a stub judge for tests, metric calls the judge then clamps and wraps with closed fields exact inside the rubric, per-stop rows carry the payload score, `gepa_feedback` calls the judge. Made-up fixtures only, no live calls. A pilot set of 10 labelled stops with payloads proves the path end to end.
-2. Slice 20: payload labels and judge validation. Payloads for the busy kinds first, one `ask_human` step per stop with all its questions, engineer-confirmed. The judge needs an agreement bar against human grades before it scores anything. Then rescore every arm under the new metric.
+2. Slice 20: reference payloads and judge validation. The judge scores the payload only, against a reference payload in the model's own shape. Facts and step kinds are no longer judge inputs. A stop with no reference does not count until it has one. The drafter writes each reference from the stop brief only and never sees a seed or candidate payload, as for the pilot set. The engineer corrects and confirms each draft. Seed outputs serve only as a regression check, never as a draft or a reference. Target: about 40 train stops plus the 6 holdout stops, one `ask_human` step per stop with all its questions. The judge needs an agreement bar against human grades before it scores anything. Then rescore every arm under the new metric.
 
 Slices run in order. Slice 20 needs slice 19.
 
@@ -52,3 +52,4 @@ Slices run in order. Slice 20 needs slice 19.
 - Relabelling adds payloads to the existing steps. Step lists do not split: one `ask_human` step keeps all its questions.
 - Payload labels are a judgement. The engineer's confirmation is the ground truth, as with the existing labels.
 - The judge returns the final score, so there is no payload-share weight to set. The metric only clamps and wraps.
+- A reference drafted from a seed output anchors the reviewer to seed wording, so the score drifts back to closeness to the seed. Drafts come from the brief only.
