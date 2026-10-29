@@ -85,7 +85,8 @@ def run_optimise_with_stubs(monkeypatch, tmp_path, canned, optimiser="bootstrap"
 
     Return the exit code, the printed text, and the split parts.
     """
-    manifest_path, labels_path, real_dir, parts = write_eval_world(tmp_path)
+    manifest_path, labels_path, real_dir, parts = write_eval_world(
+        tmp_path, payloads=[{"kind": "continue"}])
     import dspy
     import dspy.teleprompt as teleprompt
 

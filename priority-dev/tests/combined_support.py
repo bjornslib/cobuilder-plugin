@@ -127,6 +127,7 @@ EVAL_SESSIONS = [f"combined-made-up-{index:02d}" for index in range(1, 11)]
 def write_combined_world(tmp_path):
     """A made-up manifest, labels, and one-stop transcripts with invented text."""
     require("priority.evaluation.split")
+    from eval_support import with_payloads
     from priority.evaluation.split import split
 
     manifest_path = tmp_path / "set-manifest.json"
@@ -134,7 +135,8 @@ def write_combined_world(tmp_path):
     real_dir = tmp_path / "real"
     real_dir.mkdir(exist_ok=True)
     manifest_path.write_text(json.dumps(make_manifest(EVAL_SESSIONS, 1), indent=2) + "\n")
-    labels_path.write_text(json.dumps(make_labels(EVAL_SESSIONS, 1), indent=2) + "\n")
+    labels = with_payloads(make_labels(EVAL_SESSIONS, 1), [])
+    labels_path.write_text(json.dumps(labels, indent=2) + "\n")
     for session_id in EVAL_SESSIONS:
         simple(real_dir / f"{session_id}.jsonl", ask=ASK, final=FINAL)
     return manifest_path, labels_path, real_dir, split(list(EVAL_SESSIONS))

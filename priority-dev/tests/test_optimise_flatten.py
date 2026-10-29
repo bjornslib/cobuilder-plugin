@@ -1,11 +1,9 @@
-"""The optimiser metrics must score real Interpretations, not raw ones.
+"""The optimiser metrics score real Interpretations like the eval runner does.
 
-`metric.score` reads top-level status/steps/abstain fields. A raw
-Interpretation nests those under .facts/.advice/.abstained, so scoring it
-raw floors every candidate at 0.1 and GEPA cannot tell instructions apart.
-These tests feed real Interpretations through `gepa_feedback` and
-`plain_score` and pin the wrappers to the eval runner's `to_prediction`
-numbers. No test makes a model call.
+`gepa_feedback` and `plain_score` must give the number that the runner
+gives through `to_prediction`. Since slice 20, `to_prediction` carries the
+payloads, so both paths reach the judge with the same steps. The judge is a
+stub here, and no test makes a model call.
 """
 from __future__ import annotations
 
@@ -14,6 +12,7 @@ from eval_support import (BRIEF_TEXT, FACT_FIELDS, QUOTE_IN_BRIEF,  # noqa: F401
                           make_example, write_eval_world)
 from fixtures_support import make_label
 from interpret_support import DONE, dummy, no_live_call  # noqa: F401
+from judge_ref_support import JudgeRecorder, install_judge
 from optimise_support import require
 
 
@@ -32,37 +31,35 @@ def _waiting_interpretation():
     return interp, label
 
 
-def test_raw_interpretation_floors_at_constant():
-    """A raw Interpretation scores 0.1: facts 0, steps 0, validity vacuous."""
+def test_wrappers_match_runner_on_waiting_stop(monkeypatch):
+    """The runner path and both wrappers send the same steps to the judge."""
+    judge = install_judge(monkeypatch, JudgeRecorder(0.7))
     interp, label = _waiting_interpretation()
-    metric = require("priority.evaluation.metric")
-    assert metric.score(make_example(label), interp)[0] == 0.1
-
-
-def test_wrappers_match_runner_on_waiting_stop():
-    """The wrappers flatten before scoring, so a perfect stop scores 1.0 through them."""
-    interp, label = _waiting_interpretation()
-    example = make_example(label)
+    example = make_example(label) | {"expected_payloads": [{"kind": "continue"}]}
     runner = require("priority.evaluation.runner")
     metric = require("priority.evaluation.metric")
     optimise = require("priority.optimise")
     expected, _ = metric.score(example, runner.to_prediction(interp))
-    assert expected == pytest.approx(1.0)
+    assert expected == pytest.approx(0.7), f"the runner path scored {expected}, not the judge score"
     assert optimise.plain_score(example, interp) == expected
     assert optimise.gepa_feedback(example, interp).score == expected
+    assert len(judge.calls) == 3 and all(call["predicted"] == judge.calls[0]["predicted"]
+                                         for call in judge.calls), \
+        "the runner path and the wrappers sent different steps to the judge"
 
 
 def test_wrappers_match_runner_on_abstain():
-    """An abstained stop scores the runner's number through both wrappers."""
+    """An abstained stop scores 0 with its reason through both wrappers."""
     models = require("priority.interpreter.models")
     interp = models.Interpretation(brief_id="b", abstained=models.Abstain(
         reason="no_agent_reply", detail="the final reply is empty"))
-    example = make_example(make_label(2))
+    example = make_example(make_label(2)) | {"expected_payloads": [{"kind": "continue"}]}
     runner = require("priority.evaluation.runner")
     metric = require("priority.evaluation.metric")
     optimise = require("priority.optimise")
-    expected, _ = metric.score(example, runner.to_prediction(interp))
-    assert expected == 0.1
+    expected, feedback = metric.score(example, runner.to_prediction(interp))
+    assert expected == pytest.approx(0.0)
+    assert "no_agent_reply" in feedback
     assert optimise.plain_score(example, interp) == expected
     assert optimise.gepa_feedback(example, interp).score == expected
 

@@ -28,10 +28,11 @@ def test_excluding_ambiguous_drops_the_ambiguous_stop(monkeypatch, tmp_path):
     manifest = [{"session": fid, "stops": [1]} for fid in full_ids]
     labels = {"sessions": {
         fid[:8]: {"stops": {"001": make_label(1, confirmed_by="engineer",
-                                              confirmed_on="2026-10-26")}}
+                                              confirmed_on="2026-10-26", payloads=[])}}
         for fid in full_ids}}
-    # The target stop is the outlier: wrong status, and the only ambiguous one.
-    # It must sit in the train split, so compute the split first.
+    # The target stop is the outlier: wrong status, a payload where none is
+    # due, and the only ambiguous one. It must sit in the train split, so
+    # compute the split first.
     wanted_first = sorted(set(split(full_ids)["train"]))[0]
     labels["sessions"][wanted_first[:8]]["stops"]["001"]["ambiguous"] = True
     manifest_path = tmp_path / "set-manifest.json"
@@ -50,9 +51,10 @@ def test_excluding_ambiguous_drops_the_ambiguous_stop(monkeypatch, tmp_path):
         label = labels["sessions"][fid[:8]]["stops"]["001"]
         if fid == target:
             wrong = "done" if label["status"] != "done" else "failed"
-            predictions.append(make_prediction(label, status=wrong))
+            predictions.append(make_prediction(label, status=wrong,
+                                               payloads=[{"kind": "reply", "text": "Use blue."}]))
         else:
-            predictions.append(make_prediction(label))
+            predictions.append(make_prediction(label, payloads=[]))
     monkeypatch.setattr(config, "load_key",
                         lambda *_a, **_k: (_ for _ in ()).throw(
                             AssertionError("a test reached for the real key")))

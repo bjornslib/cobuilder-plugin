@@ -13,7 +13,6 @@ from __future__ import annotations
 
 import contextlib
 import io
-import json
 
 import pytest
 
@@ -22,6 +21,7 @@ from eval_support import stub_predictions_for, write_eval_world
 from fixtures_support import make_label
 from interpret_support import (CARD, QUOTE_1, DummyLM, card, dspy, dummy, fill, interpret,
                                no_live_call, pick, stages, triage)  # noqa: F401
+from judge_ref_support import stripped
 
 
 Q2 = {"ask": "Who pays for the extra run?",
@@ -241,8 +241,8 @@ def test_interpretation_step_payloads_flow_through_as_the_final_score(monkeypatc
     value, feedback = score_of(example, interp)
     assert value == pytest.approx(0.75), f"the metric moved the judge score to {value}"
     assert "the questions match" in feedback, f"the judge note is missing: {feedback}"
-    assert calls and calls[0]["predicted"] == [step.model_dump() for step in steps], \
-        "the judge never saw the proposal steps as produced"
+    assert calls and calls[0]["predicted"] == stripped([step.model_dump() for step in steps]), \
+        "the judge never saw the proposal steps, less the code-set fields"
 
 
 def test_metric_clamps_out_of_range_judge_scores(monkeypatch):
@@ -263,27 +263,11 @@ def test_metric_forwards_raw_payloads_never_flattened(monkeypatch):
     example, interp, steps = interp_pair()
     score_of(example, interp)
     assert calls, "the metric never called the judge"
-    assert calls[0]["predicted"] == [step.model_dump() for step in steps], \
+    assert calls[0]["predicted"] == stripped([step.model_dump() for step in steps]), \
         f"the judge saw flattened payloads: {calls[0]['predicted']}"
-    assert calls[0]["expected"] == example["expected_payloads"], \
+    assert calls[0]["expected"] == stripped(example["expected_payloads"]), \
         "the judge never saw the expected payloads"
     assert calls[0]["brief_text"] == BRIEF_TEXT, "the judge never saw the brief text"
-
-
-def test_metric_ignores_the_flattened_prediction_path(monkeypatch):
-    """to_prediction drops payloads, yet the judge still gets the real ones."""
-    api = judge_api()
-    calls = []
-    monkeypatch.setattr(api, "judge", recording_stub(calls, 0.75, JUDGE_NOTES))
-    runner = require("priority.evaluation.runner")
-    example, interp, steps = interp_pair()
-    flat = runner.to_prediction(interp)
-    assert "Use backoff." not in json.dumps(flat), \
-        f"the flattened path still carries payloads: {flat}"
-    value, _ = score_of(example, interp)
-    assert value == pytest.approx(0.75), f"the metric moved the judge score to {value}"
-    assert calls and calls[0]["predicted"] == [step.model_dump() for step in steps], \
-        "the metric read the flattened path instead of the proposal steps"
 
 
 def test_gate_abstain_scores_zero_without_calling_the_judge(monkeypatch):
@@ -295,7 +279,8 @@ def test_gate_abstain_scores_zero_without_calling_the_judge(monkeypatch):
                                  detail="step 1: the kind launch_missile is not allowed"))
     calls = []
     monkeypatch.setattr(api, "judge", recording_stub(calls, 0.0, JUDGE_NOTES))
-    example = make_example(make_label(2)) | {"brief_text": BRIEF_TEXT}
+    example = make_example(make_label(2)) | {"brief_text": BRIEF_TEXT,
+                                             "expected_payloads": [{"kind": "continue"}]}
     value, feedback = score_of(example, abstained)
     assert value == pytest.approx(0.0), f"a gate fault scored {value}, want 0.00"
     assert "disallowed" in feedback.lower(), f"feedback names no kind check: {feedback}"

@@ -82,12 +82,21 @@ def score_of(example: dict, prediction: dict, *gepa_args):
     return metric_api().score(example, prediction, *gepa_args)
 
 
-def write_eval_world(tmp_path: Path):
+def with_payloads(labels: dict, payloads: list) -> dict:
+    """The labels document with one reference payload list on every stop."""
+    for per_session in labels["sessions"].values():
+        for label in per_session["stops"].values():
+            label["payloads"] = json.loads(json.dumps(payloads))
+    return labels
+
+
+def write_eval_world(tmp_path: Path, payloads: list | None = None):
     """Write a made-up manifest, labels, and one transcript per session.
 
     Return the manifest path, the labels path, the transcripts dir, and the
     expected split parts. The transcripts copy a made-up fixture, so brief
-    building stays offline.
+    building stays offline. Every stop label carries the reference payload
+    list `payloads` (default `[]`, "no payload due"), so no stop is excluded.
     """
     from priority.evaluation.split import split
 
@@ -96,7 +105,8 @@ def write_eval_world(tmp_path: Path):
     transcripts = tmp_path / "real"
     transcripts.mkdir(exist_ok=True)
     manifest_path.write_text(json.dumps(make_manifest(), indent=2) + "\n")
-    labels_path.write_text(json.dumps(make_labels(), indent=2) + "\n")
+    labels = with_payloads(make_labels(), [] if payloads is None else payloads)
+    labels_path.write_text(json.dumps(labels, indent=2) + "\n")
     source = FIXTURES / "waiting-question.jsonl"
     for session_id in SESSION_IDS:
         shutil.copy(source, transcripts / f"{session_id}.jsonl")
@@ -116,12 +126,12 @@ class StubInterpreter:
 
 
 def stub_predictions_for(manifest_path: Path, labels_path: Path) -> list[dict]:
-    """One perfect prediction per manifest stop, in manifest order."""
+    """One perfect prediction per manifest stop, in manifest order, with no payload."""
     manifest = json.loads(manifest_path.read_text())
     labels = json.loads(labels_path.read_text())["sessions"]
     out = []
     for entry in manifest:
         for number in entry["stops"]:
             label = labels[entry["session"]]["stops"][stop_key(number)]
-            out.append(make_prediction(label, quotes=[]))
+            out.append(make_prediction(label, quotes=[], payloads=[]))
     return out

@@ -83,7 +83,9 @@ def plain_score(example: object, prediction: object, *ignored: object) -> float:
 
 def build_trainset(manifest: Path, labels_path: Path,
                    real_dir: Path) -> tuple[list, dict[str, list[str]]]:
-    """One dspy example per train stop, with the brief text and final reply as inputs."""
+    """One dspy example per train stop, with the brief text and final reply as inputs.
+
+    A stop whose label has no `payloads` key is excluded, and the count is printed."""
     import dspy
 
     from priority.brief import StopBrief, build_brief
@@ -96,7 +98,7 @@ def build_trainset(manifest: Path, labels_path: Path,
     labels_by_session = load_labels(labels_path)
     parts = split([entry["session"] for entry in entries])
     train = set(parts["train"])
-    examples = []
+    examples, excluded = [], 0
     for entry in entries:
         session_id = entry["session"]
         if session_id not in train:
@@ -111,20 +113,21 @@ def build_trainset(manifest: Path, labels_path: Path,
             if key not in session_labels:
                 raise ValueError(f"session {session_id} stop {key} has no label")
             label = session_labels[key]
+            if "payloads" not in label:
+                excluded += 1
+                continue
             brief = build_brief(transcript, stop=number)
             if isinstance(brief, StopBrief):
                 text, final = brief.for_model(), brief.final
             else:
                 text, final = "", ""
             fields = {field: label[field] for field in FACT_FIELDS}
-            if "expected_payloads" in label:
-                fields["expected_payloads"] = label["expected_payloads"]
-            elif "payloads" in label:
-                fields["expected_payloads"] = label["payloads"]
             examples.append(dspy.Example(
                 session_id=session_id, stop=key, brief_text=text, final_text=final,
-                steps=label["steps"], ambiguous=label["ambiguous"], **fields,
+                steps=label["steps"], ambiguous=label["ambiguous"],
+                expected_payloads=label["payloads"], **fields,
             ).with_inputs("brief_text", "final_text"))
+    print(f"excluded: {excluded} stops (no reference payload)")
     return examples, parts
 
 
@@ -458,10 +461,8 @@ def _call_compiled(compiled: object, example: object) -> object:
 
 
 def _row_for(example: object, prediction: object) -> dict:
-    """One runner-format per-stop row for one compiled output."""
-    from priority.evaluation.metric import _clamp
-
-    from priority.evaluation.judge import judge
+    """One runner-format per-stop row for one compiled output, scored by the metric."""
+    from priority.evaluation.metric import score
 
     session = getattr(example, "session_id", "")
     stop = getattr(example, "stop", "")
@@ -471,23 +472,9 @@ def _row_for(example: object, prediction: object) -> dict:
     reason = None
     if abstained is not None:
         reason = abstained.reason if hasattr(abstained, "reason") else abstained.get("reason")
-    if reason is not None:
-        return {"session": session, "stop": stop, "score": 0.0, "parts": [], "gate": reason}
-    predicted = None
-    if hasattr(prediction, "advice") and hasattr(prediction, "brief_id"):
-        try:
-            predicted = [step.model_dump() for step in prediction.advice.proposal.steps]
-        except AttributeError:
-            predicted = None
-    elif isinstance(prediction, dict):
-        predicted = prediction.get("payloads")
-    expected = getattr(example, "expected_payloads", [])
-    brief_text = getattr(example, "brief_text", "")
-    if predicted is None:
-        return {"session": session, "stop": stop, "score": 0.0, "parts": [], "gate": "no_payload"}
-    raw, notes = judge(brief_text, predicted, expected)
-    return {"session": session, "stop": stop, "score": _clamp(raw),
-            "parts": list(notes), "gate": "pass"}
+    value, feedback = score(example, _metric_inputs(example, prediction))
+    parts = [feedback] if feedback and reason is None else []
+    return {"session": session, "stop": stop, "score": value, "parts": parts, "gate": reason or "pass"}
 
 
 def write_eval_rows(compiled: object, examples: list, path: Path) -> list[dict]:
@@ -507,8 +494,13 @@ def run(manifest: Path, labels: Path, real_dir: Path,
         optimiser: str, budget: int, seed: int, minibatch: int | None = None,
         threads: int | None = None, val_sessions: int = 1,
         seed_program: Path | str | None = None, tag: str | None = None) -> int:
-    """Compile the chain interpreter with one optimiser. Return exit code."""
+    """Compile the chain interpreter with one optimiser. Return exit code.
+
+    A run that compiles ends on the judge call and token totals."""
     from priority import interpreter as interpreter_mod
+    from priority.evaluation.judge import reset_usage, usage_line
+
+    reset_usage()
 
     if optimiser not in CLASS_BY_OPTIMISER:
         print(f"optimise failed: unknown optimiser {optimiser!r}: use one of {', '.join(OPTIMISERS)}")
@@ -579,4 +571,5 @@ def run(manifest: Path, labels: Path, real_dir: Path,
           f"held out {len(parts['holdout'])} sessions")
     print(f"program: {program}")
     print(f"report: {REPORT_RELATIVE}")
+    print(usage_line())
     return 0

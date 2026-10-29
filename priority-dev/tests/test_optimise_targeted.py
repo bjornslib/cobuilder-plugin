@@ -18,45 +18,53 @@ import io
 
 import pytest
 
-from eval_support import (EACH_FACT_SHARE, QUOTE_NOT_IN_BRIEF,
+from eval_support import (QUOTE_IN_BRIEF, QUOTE_NOT_IN_BRIEF,
                           make_example, make_prediction, write_eval_world)
 from fixtures_support import make_label, require
 from interpret_support import (BLOCKED, NOT_IN_BRIEF, dummy, interpret,  # noqa: F401
                                make_brief, no_live_call, script)
+from judge_ref_support import CODE, JudgeRecorder, ask_step, install_judge
 from optimise_support import BUDGET, SEED, block_live_calls, run_optimise
 
 
-def test_gepa_feedback_names_the_triage_predictor():
+def judged_pair(**overrides):
+    """A made-up stop 1 example and prediction that both hold one ask_human step."""
     label = make_label(1)
-    example = make_example(label)
-    prediction = make_prediction(label, status="done")
+    example = make_example(label) | {"expected_payloads": [ask_step()]}
+    prediction = make_prediction(label, **overrides)
+    prediction.setdefault("payloads", [ask_step()])
+    return example, prediction
+
+
+def test_gepa_feedback_names_the_triage_predictor(monkeypatch):
+    install_judge(monkeypatch, JudgeRecorder(0.7))
+    example, prediction = judged_pair(status="done")
     metric = require("priority.evaluation.metric")
     optimise = require("priority.optimise")
     base, _ = metric.score(example, prediction)
-    assert base == pytest.approx(1.0 - EACH_FACT_SHARE)
+    assert base == pytest.approx(0.7)
     feedback = optimise.gepa_feedback(example, prediction, None, "triage", None)
     assert feedback.score == pytest.approx(base)
     assert "triage" in feedback.feedback
-    assert "status" in feedback.feedback
 
 
-def test_gepa_feedback_for_fill_ignores_the_quote_text():
-    label = make_label(1)
-    example = make_example(label)
-    prediction = make_prediction(label, quotes=[QUOTE_NOT_IN_BRIEF])
+def test_gepa_feedback_for_fill_ignores_the_quote_text(monkeypatch):
+    judge = install_judge(monkeypatch, JudgeRecorder(0.7))
     optimise = require("priority.optimise")
     trace = [("fill", {"kind": "reply"}, {"payload": {}})]
-    feedback = optimise.gepa_feedback(example, prediction, None, "fill['reply']", trace)
-    assert feedback.score == pytest.approx(1.0)
-    assert "fill" in feedback.feedback
-    assert "payload parsed" in feedback.feedback
+    values = []
+    for quote in (QUOTE_IN_BRIEF, QUOTE_NOT_IN_BRIEF):
+        example, prediction = judged_pair(payloads=[ask_step(**(CODE | {"evidence_quote": quote}))])
+        values.append(optimise.gepa_feedback(example, prediction, None, "fill['reply']", trace))
+    assert values[0].score == pytest.approx(values[1].score)
+    assert all("fill" in value.feedback for value in values)
+    assert judge.calls[0]["predicted"] == judge.calls[1]["predicted"], \
+        "the evidence quote reached the judge"
 
 
 def test_gepa_feedback_for_fill_names_the_parse_fault():
-    label = make_label(1)
-    example = make_example(label)
-    prediction = make_prediction(label, abstain={"reason": "invalid_output",
-                                                 "detail": "fill: the payload did not parse"})
+    example, prediction = judged_pair(abstain={"reason": "invalid_output",
+                                               "detail": "fill: the payload did not parse"})
     metric = require("priority.evaluation.metric")
     optimise = require("priority.optimise")
     base, _ = metric.score(example, prediction)
@@ -66,10 +74,9 @@ def test_gepa_feedback_for_fill_names_the_parse_fault():
     assert "pars" in feedback.feedback.lower() or "invalid_output" in feedback.feedback
 
 
-def test_gepa_feedback_keeps_the_program_score_for_every_predictor():
-    label = make_label(1, status="done")
-    example = make_example(label)
-    prediction = make_prediction(label, status="done", quotes=[QUOTE_NOT_IN_BRIEF])
+def test_gepa_feedback_keeps_the_program_score_for_every_predictor(monkeypatch):
+    install_judge(monkeypatch, JudgeRecorder(0.7))
+    example, prediction = judged_pair(status="done", quotes=[QUOTE_NOT_IN_BRIEF])
     metric = require("priority.evaluation.metric")
     optimise = require("priority.optimise")
     base, _ = metric.score(example, prediction)

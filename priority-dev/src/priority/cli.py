@@ -70,6 +70,13 @@ def optimise_run(args: argparse.Namespace) -> int:
                         tag=getattr(args, "tag", None))
 
 
+def judge_check(args: argparse.Namespace) -> int:
+    """Measure the judge against the human picks, the closed-field probe, and repeat flips."""
+    from priority.evaluation import judge_check as check  # a lazy import: only this command needs dspy
+
+    return check.run(args.pairs, args.labels, args.real_dir, args.repeats)
+
+
 def replay(args: argparse.Namespace) -> int:
     """Replay each transcript of a folder, and write the report. Each model error ends as an Abstain."""
     from priority.replay import runner  # a lazy import: only this command needs dspy and the key
@@ -153,6 +160,15 @@ def main(argv: list[str] | None = None) -> int:
                                  help="A saved program file to load as the compile student")
     optimise_parser.add_argument("--tag", default=None,
                                  help="Text inserted into the saved program name, as <optimiser>-<tag>-budget... (default: none)")
+    judge_check_parser = subparsers.add_parser("judge-check", help="Measure the judge against the agreement bar")
+    judge_check_parser.add_argument("--pairs", type=Path, required=True,
+                                    help="Pairs file: two payload lists per stop and the human pick")
+    judge_check_parser.add_argument("--labels", type=Path, default=Path("fixtures/real/labels-confirmed.json"),
+                                    help="Confirmed labels file with the reference payloads")
+    judge_check_parser.add_argument("--real-dir", type=Path, default=Path("fixtures/real"),
+                                    help="Folder with the real sessions, must be Git-ignored")
+    judge_check_parser.add_argument("--repeats", type=int, default=2,
+                                    help="Judge calls per side of each pair (default: 2)")
 
     args = parser.parse_args(argv)
     if args.command == "brief":
@@ -173,6 +189,8 @@ def main(argv: list[str] | None = None) -> int:
         return eval_split(args)
     if args.command == "optimise":
         return optimise_run(args)
+    if args.command == "judge-check":
+        return judge_check(args)
 
     if args.command == "fixtures" and args.fixtures_command == "check":
         return fixtures_check(args)

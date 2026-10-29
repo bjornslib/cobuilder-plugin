@@ -24,7 +24,7 @@ def test_full_manifest_ids_match_short_prefix_labels_keys(monkeypatch, capsys, t
     manifest = [{"session": fid, "stops": [1]} for fid in full_ids]
     labels = {"sessions": {
         fid[:8]: {"stops": {"001": make_label(1, confirmed_by="engineer",
-                                              confirmed_on="2026-10-26")}}
+                                              confirmed_on="2026-10-26", payloads=[])}}
         for fid in full_ids}}
     manifest_path = tmp_path / "set-manifest.json"
     labels_path = tmp_path / "labels.json"
@@ -32,7 +32,8 @@ def test_full_manifest_ids_match_short_prefix_labels_keys(monkeypatch, capsys, t
     labels_path.write_text(json.dumps(labels) + "\n")
     for fid in full_ids:
         shutil.copy(FIXTURES / "waiting-question.jsonl", tmp_path / f"{fid}.jsonl")
-    predictions = [make_prediction(labels["sessions"][fid[:8]]["stops"]["001"], quotes=[])
+    predictions = [make_prediction(labels["sessions"][fid[:8]]["stops"]["001"], quotes=[],
+                                   payloads=[])
                    for fid in full_ids]
     monkeypatch.setattr(config, "load_key",
                         lambda *a, **k: (_ for _ in ()).throw(

@@ -2,7 +2,8 @@
 
 Each stop label holds the fields the engineer confirmed: the fact fields,
 the ordered steps (0 to 3 kinds, where a list at one position accepts any
-one of those kinds), and the confirmation stamp. An unconfirmed stop never
+one of those kinds), and the confirmation stamp. A label may also hold the
+reference payload `payloads`, which the loader keeps. An unconfirmed stop never
 counts, so a missing stamp is an error, not a default.
 """
 from __future__ import annotations
@@ -52,14 +53,18 @@ def _check_steps(steps: object, session_id: str, key: str) -> None:
 
 
 def _check_label(session_id: str, key: str, label: object) -> dict:
-    """Validate one stop label and return it with exactly the label fields."""
+    """Validate one stop label and return it with exactly the label fields,
+    plus the reference payload `payloads` when the label holds one."""
     if not isinstance(label, dict):
         raise _fail(session_id, key, f"label must be an object, got {label!r}")
     for field in LABEL_FIELDS:
         if field not in label or label[field] in (None, ""):
             raise _fail(session_id, key, f"missing {field}")
     _check_steps(label["steps"], session_id, key)
-    return {field: label[field] for field in LABEL_FIELDS}
+    kept = {field: label[field] for field in LABEL_FIELDS}
+    if "payloads" in label:
+        kept["payloads"] = label["payloads"]
+    return kept
 
 
 def load_labels(path: str | Path) -> dict[str, dict[str, dict]]:

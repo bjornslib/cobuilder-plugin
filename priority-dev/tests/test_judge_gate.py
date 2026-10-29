@@ -20,9 +20,9 @@ from interpret_support import QUOTE_1, dummy, fill, interpret, no_live_call, pic
 
 
 def gate_score(out):
-    """Score one abstained stop against the made-up ask_human label."""
+    """Score one abstained stop against the made-up ask_human label and reference."""
     runner = require("priority.evaluation.runner")
-    example = make_example(make_label(1))
+    example = make_example(make_label(1)) | {"expected_payloads": [{"kind": "ask_human"}]}
     return score_of(example, runner.to_prediction(out))
 
 

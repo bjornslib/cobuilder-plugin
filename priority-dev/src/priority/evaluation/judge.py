@@ -1,12 +1,15 @@
-"""The judge model grades the raw payload against the expected payload.
+"""The judge model grades the raw payload against the reference payload.
 
-The metric calls `judge` with the brief text plus the raw predicted payloads
-plus the expected payloads. It returns the final score in 0..1 with one note
-per part. Closed fields compare exactly inside the rubric. Open fields compare
-by meaning. The default model is the interpreter LM (Inception, with retries
-like the optimise path), so a real run works without extra wiring. An
-explicit model or the configured dspy model still wins, so the tests keep
-their stub seam. Until the real judge model lands, a missing model scores 0.
+The metric calls `judge` with the brief text plus the predicted step list
+plus the reference step list, with the code-set fields already removed. It
+returns the final score in 0..1 with one note per part. The judge grades only
+the fields that the reference states. Closed fields compare exactly inside
+the rubric. Open fields compare by meaning. The default model is the
+interpreter LM (Inception, with retries like the optimise path), so a real
+run works without extra wiring. An explicit model or the configured dspy
+model still wins, so the tests keep their stub seam. A missing model scores 0.
+`USAGE` counts each judge model call and its tokens, and `usage_line` reports
+the totals. The price per token is not known, so the meter holds tokens only.
 """
 from __future__ import annotations
 
@@ -29,11 +32,42 @@ class JudgePayloads(dspy.Signature):
     notes: list[str] = dspy.OutputField(desc="One note per part")
 
 
-RUBRIC = ("Grade the predicted payload against the expected payload. Compare "
-          "closed fields exactly: kinds, roles, option labels, and other fixed "
-          "words must match exactly for full credit. Judge open fields by meaning: "
-          "free text that asks the same thing in other words still counts. Return "
-          "one note per part.")
+RUBRIC = ("Grade the predicted payload against the reference payload. Both are "
+          "lists of steps. Grade only the fields that the reference states, and "
+          "ignore extra fields in the prediction. The order of questions does not "
+          "count. Compare closed fields exactly: kind, role, multi_select, "
+          "free_text, and option labels must match exactly for full credit. Judge "
+          "open text by meaning: free text that asks the same thing in other words "
+          "still counts. Return one note per part, each note one short sentence.")
+
+# The judge writes one note per part, so the task cap of 3000 tokens cut its
+# reply on a two-question payload. A cut reply does not parse.
+JUDGE_MAX_TOKENS = 8000
+
+USAGE = {"calls": 0, "prompt_tokens": 0, "completion_tokens": 0}
+
+
+def reset_usage() -> None:
+    """Set the judge call and token counts back to zero."""
+    for name in USAGE:
+        USAGE[name] = 0
+
+
+def usage_line() -> str:
+    """The judge call and token totals as one report line."""
+    return (f"judge calls: {USAGE['calls']} prompt_tokens: {USAGE['prompt_tokens']} "
+            f"completion_tokens: {USAGE['completion_tokens']}")
+
+
+def _meter(lm: dspy.LM, before: int) -> None:
+    """Add one call, and the tokens of the history entry that this call added."""
+    USAGE["calls"] += 1
+    history = getattr(lm, "history", None) or []
+    if len(history) <= before:
+        return
+    usage = history[-1].get("usage") or {}
+    for name in ("prompt_tokens", "completion_tokens"):
+        USAGE[name] += int(usage.get(name) or 0)
 
 
 def _default_lm() -> dspy.LM:
@@ -54,13 +88,16 @@ def judge(brief_text: object, predicted_payloads: object,
         exp_json = json.dumps(expected_payloads, default=str)
     except Exception:  # noqa: BLE001 (labels may hold anything, and the judge must not fail)
         exp_json = str(expected_payloads)
+    active = lm if lm is not None else dspy.settings.lm
+    if active is None:
+        try:
+            active = _default_lm()
+        except Exception:  # noqa: BLE001 (offline runs score 0, and the stub seam stays)
+            return (0.0, ["judge stub: no judge model reached, scored 0"])
+    if isinstance(active, dspy.LM):
+        active = active.copy(max_tokens=JUDGE_MAX_TOKENS)
+    before = len(getattr(active, "history", None) or [])
     try:
-        active = lm if lm is not None else dspy.settings.lm
-        if active is None:
-            try:
-                active = _default_lm()
-            except Exception:  # noqa: BLE001 (offline runs score 0, and the stub seam stays)
-                return (0.0, ["judge stub: no judge model reached, scored 0"])
         with dspy.context(lm=active):
             out = dspy.Predict(JudgePayloads)(
                 brief_text=str(brief_text or ""),
@@ -68,6 +105,9 @@ def judge(brief_text: object, predicted_payloads: object,
                 expected_payloads=exp_json,
                 rubric=RUBRIC,
             )
-        return (float(out.score), list(out.notes))
-    except Exception:  # noqa: BLE001 (no model in offline runs, and the stub scores 0)
-        return (0.0, ["judge stub: no judge model reached, scored 0"])
+        score, notes = float(out.score), list(out.notes)
+    except Exception as error:  # noqa: BLE001 (a failed judge call must not fail the metric)
+        _meter(active, before)
+        return (0.0, [f"judge error: the judge call failed ({type(error).__name__}), scored 0"])
+    _meter(active, before)
+    return (score, notes)
