@@ -59,3 +59,5 @@ Slices run in order. Slice 20 needs slice 19.
 - Payload labels are a judgement. The engineer's confirmation is the ground truth, as with the existing labels.
 - The judge returns the final score, so there is no payload-share weight to set. The metric only clamps and wraps.
 - A reference drafted from a seed output anchors the reviewer to seed wording, so the score drifts back to closeness to the seed. Drafts come from the brief only.
+- Open, raised by the engineer on 30 October: the interface needs a digest of the human message and the final agent reply. The current `RunDigest` sums up a run for the next stop brief and is not shown to users. This is an architecture change outside slice 20, and it needs a design decision first.
+- Open: the question card from `WriteCard` is not part of the payload, so no score grades it.
