@@ -1,6 +1,6 @@
 # Slices: priority-dev-spike
 
-Gate 4a for the whole program. The slices cover six epics, E1 to E6. E5 was added on 26 October 2026 and its gates wait for the engineer's approval. E6 was added on 27 October 2026 at the engineer's direction for judge-scored payloads. Slice numbers run 1 to 20 across the program. The first batch to build is slices 1 to 5. Gate 4b and 4c stay pending until the engineer approves this plan.
+Gate 4a for the whole program. The slices cover six epics, E1 to E6. E5 was added on 26 October 2026 and its gates wait for the engineer's approval. E6 was added on 27 October 2026 at the engineer's direction for judge-scored payloads. Slice numbers run 1 to 21 across the program. The first batch to build is slices 1 to 5. Gate 4b and 4c stay pending until the engineer approves this plan.
 
 Test command for each slice: `uv run pytest priority-dev/tests -q`. The command runs inside `priority-dev/`, which has its own `pyproject.toml`. The plugin tests never collect it.
 
@@ -39,7 +39,8 @@ Each slice ends in one thing that a command prints or a file shows. A probe slic
 | 18 | `priority-dev-spike/E5` | **Optimiser comparison** | `uv run priority optimise --optimiser gepa` and `--optimiser miprov2` compile the chosen interpreter on the train sessions only. `probes/optimiser-report.md` gives the held-out score before and after for each, with BootstrapFewShot as the cheap baseline, the cost of each run, and the saved programs | 0.7 (attempt 2) | pending |
 | | **`priority-dev-spike/E6` — Judge-scored payloads.** Labels record the expected payload, and a judge model grades meaning. Added 27 October 2026 at the engineer's direction. | | | | |
 | 19 | `priority-dev-spike/E6` | **Judge-scored payload flow** | The label-free gate, `Decide.questions`, the judge module, and the metric wiring run end to end on made-up fixtures with a stub judge: each gate fault abstains with a named 0-score note, a multi-question payload parses, readers use the list, the judge returns a clamped score with per-part notes, and per-stop rows carry the payload score | 1 (attempt 2) | done |
-| 20 | `priority-dev-spike/E6` | **Payload labels and judge validation** | Payload labels for the busy kinds, engineer-confirmed, one `ask_human` step per stop with all its questions. The judge clears an agreement bar against human grades. `probes/optimiser-report.md` rescores every arm under the new metric | — | pending |
+| 20 | `priority-dev-spike/E6` | **Reference payloads and judge validation** | Every stop has an engineer-confirmed reference payload drafted from the brief only. The judge scores the payload only, and it clears an agreement bar against human grades. `probes/optimiser-report.md` rescores every arm under the new metric. The live runs need slice 21 | — | pending |
+| 21 | `priority-dev-spike/E6` | **Every stop reaches Pick and Fill** | Triage no longer chooses a route: every stop with a brief runs Pick, Pick may return no step, and each Fill sees the triage facts and the steps filled before it. Saved programs still load and run | — | pending |
 
 ## Notes for the gates
 
