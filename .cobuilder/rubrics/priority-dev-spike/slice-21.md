@@ -1,80 +1,72 @@
-# Rubric: Slice 21 — Every stop reaches Pick and Fill
+# Rubric: Slice 21 — One typed call
 
 Feature: priority-dev-spike
 Epic: E6
-Slice goal: Triage no longer chooses a route. Every stop with a brief runs Pick. Pick may return no step. Each Fill call sees the triage facts and the steps filled before it. Notify and ask_human steps carry a priority. GEPA tunes the predictors that the references use. Saved programs still load and run.
+Slice goal: One predictor, `ProposeStop`, reads the stop brief and returns the status, `needs_human`, 0 to 3 typed steps, and one priority for the whole payload. Schema validation is the only gate. Eval and GEPA score the same prediction object, GEPA tunes one component, and reference demos can seed the prompt. The chain, its routing, and its gates are gone. Design: `priority-dev/probes/program-flow-v2.svg`.
 Test command: `uv run --project priority-dev pytest priority-dev/tests -q`
 
 ## Criteria
 
-### C1 — No route by status [CRITICAL]
-**Must be true:** for each of the six statuses, with and without an unsure field, a stop with a brief runs Pick. The code-built notify of the done route and its `no_agent_reply` abstain are gone from the source. A done stop gets whatever steps Pick and Fill write. The one-call variant follows the same rule.
+### C1 — One predictor with the designed signature [CRITICAL]
+**Must be true:** `Interpreter.named_predictors()` yields exactly one predictor. Its signature has one input, `brief_text`, and the outputs `status` (six literals), `needs_human` (bool), `steps` (a list of at most 3, discriminated on `kind` over the 14 payload models), and `priority` (`P1`, `P2`, `P3`). No step model in the output schema holds `session_id`, `author`, `confidence`, or `evidence_quote`.
 **Evidence to check:**
-- Run the routing tests with a stub model for each status, chain and combined.
-- Grep `module.py` for `done_outcome`, `ANSWER_DUE` used as a route, and `no_agent_reply`.
+- Run the signature tests. Read `signatures.py` and the output JSON schema that the adapter renders.
 **Scoring:**
-- 1.0 — Pick (or the combined call) runs for all six statuses in both variants, and the old route code is gone.
-- 0.5 — the chain is fixed but the combined variant still routes by status, or dead route code remains.
-- 0.0 — any status still skips Pick.
+- 1.0 — one predictor, the exact fields, the union, the cap of 3, and no code-set fields in the schema.
+- 0.5 — one predictor, but a field, the cap, or the union differs.
+- 0.0 — more than one predictor, or the chain still runs.
 
-### C2 — Pick may return no step [CRITICAL]
-**Must be true:** a Pick result of 0 steps gives an Interpretation with the facts and no advice, and no abstain. 1 to 3 steps still work. 4 or more steps still abstain with `invalid_output`. `to_prediction` gives `payloads: []` for the 0-step case, and the metric scores it 1 against a `[]` reference.
+### C2 — Schema validation is the only gate [CRITICAL]
+**Must be true:** a reply that does not parse, a step with an unknown kind, a step with a missing required field, 4 steps, and a priority outside P1 to P3 each give an abstain with `invalid_output` and an error text that names the fault. That text reaches the metric feedback. `check_steps`, `check_fill_payload`, the routing by status, and `done_outcome` are gone from the source. 0 steps is valid.
 **Evidence to check:**
-- Run the step-count tests with a stub Pick for 0, 1, 3, and 4 steps.
+- Run the gate tests with a stub model for each fault.
+- Grep `src/priority` for the removed names.
 **Scoring:**
-- 1.0 — all four counts behave as stated, and the 0-step case scores 1 against `[]`.
-- 0.5 — 0 steps works but the metric path does not reach 1.
-- 0.0 — 0 steps abstains, or 4 steps passes.
+- 1.0 — all five faults abstain with named text, 0 steps passes, and the removed names are gone.
+- 0.5 — the faults abstain but one text is generic, or one removed name remains.
+- 0.0 — a fault passes, or a fault raises.
 
-### C3 — Fill sees the facts and the earlier steps [CRITICAL]
-**Must be true:** each Fill call receives the triage facts as JSON and the list of steps already filled in this proposal, in order, as JSON with `session_id`, `author`, `confidence`, and `evidence_quote` removed. The first Fill receives an empty list. The second Fill of a two-step proposal receives exactly the first step's payload.
+### C3 — One prediction object for eval and GEPA [CRITICAL]
+**Must be true:** `forward` returns a `dspy.Prediction` with `status`, `needs_human`, `priority`, `steps` (dicts with `session_id` and `author` set by code), and `abstain`. The runner and the GEPA metric score that object with no flattening step. The metric compares `{priority, steps}` with the reference built from the label fields `priority` and `payloads`. The slice 20 payload rules still hold.
 **Evidence to check:**
-- Run the Fill-input tests with a stub model that records each call's inputs.
+- Run the metric and runner tests with a stub model and a stub judge, and record the judge input.
+- Grep the scoring path for `to_prediction`.
 **Scoring:**
-- 1.0 — recorded inputs match for the first, second, and third Fill.
-- 0.5 — facts arrive but the earlier steps are missing, wrong in order, or keep code-set fields.
-- 0.0 — Fill inputs are unchanged.
+- 1.0 — the same object reaches the metric on both paths, the judge sees `{priority, steps}` on both sides, and the rules hold.
+- 0.5 — one path still converts the object, or priority does not reach the judge.
+- 0.0 — the payload or the priority is lost on either path.
 
-### C4 — Saved programs still load and run
-**Must be true:** each JSON program committed under `priority-dev/probes/programs/` loads into the new chain, and one stop runs end to end with a stub model, without an exception.
+### C4 — GEPA tunes one component, and demos come from references
+**Must be true:** the GEPA run has one component, the `propose` predictor, and no `BusyComponentSelector`. A demo option picks up to 4 train stops from the references, prints them by name, gives each its brief and its full reference, and removes those stops from the GEPA valset and the train rescore. No holdout stop becomes a demo.
 **Evidence to check:**
-- Run the load test over every committed program file.
+- Run the optimise tests on made-up fixtures with a stub GEPA and a stub model.
 **Scoring:**
-- 1.0 — every program loads and runs.
-- 0.5 — loads, but one program fails to run.
-- 0.0 — a program does not load.
+- 1.0 — one component, demos printed, excluded, and train only.
+- 0.5 — demos work but a demo stop stays in the valset or the rescore.
+- 0.0 — the selector or several components remain, or a holdout stop becomes a demo.
 
-### C5 — A live stop shows the new route
-**Must be true:** one live `priority eval` run on stops that the old chain routed as done or continuing shows Pick and Fill rows in `calls.jsonl` for those stops, and the per-stop lines print.
+### C5 — `judge-check` probes the priority
+**Must be true:** the closed-field probe also makes a copy of each reference with the priority changed, and counts it like the other copies.
 **Evidence to check:**
-- Read the call log of the live smoke run.
+- Run the probe tests and check that the copies differ from the reference in exactly one field.
 **Scoring:**
-- 1.0 — Pick and Fill rows appear for a done or continuing stop.
+- 1.0 — priority copies exist and count.
+- 0.0 — no priority copy.
+
+### C6 — A live stop runs end to end
+**Must be true:** one live `priority eval` run on a few referenced stops shows one model call per stop in `calls.jsonl`, the per-stop lines, the judge usage line, and a non-zero judge call count. At least one stop reaches the judge.
+**Evidence to check:**
+- Read the call log and the output of the live smoke run.
+**Scoring:**
+- 1.0 — one call per stop and a judged stop.
 - 0.0 — no live evidence.
 
-### C6 — Notify and ask_human carry a priority [CRITICAL]
-**Must be true:** `Notify` and `AskHuman` have a required `priority` field with the values `P1`, `P2`, `P3` and no other. A Fill payload for either kind without it, or with another value, fails the gate as `invalid_output`. `to_prediction` and the judge input keep the field.
-**Evidence to check:**
-- Run the model and Fill tests for each value and for a missing or wrong value.
-**Scoring:**
-- 1.0 — the three values pass, a missing or wrong value abstains, and the field reaches the judge.
-- 0.5 — the field exists but is optional, or one kind lacks it.
-- 0.0 — no priority field.
-
-### C7 — GEPA tunes the predictors that the references use
-**Must be true:** the GEPA component list holds `triage`, `pick`, and one `fill[...]` per kind found in the train reference payloads. It is built from `payloads`, not from the step-kind labels, and it holds no `card` and no `combined`.
-**Evidence to check:**
-- Run the busy-predictor test on a made-up labels file whose payload kinds differ from its step-kind labels.
-**Scoring:**
-- 1.0 — the list matches the payload kinds exactly.
-- 0.0 — the list still follows the step-kind labels or holds `card`.
-
 ## Regression check
-- All tests that passed before this slice must still pass, except tests that pinned the removed done route or the 1-step minimum.
+- All tests that passed before this slice must still pass, except tests that pinned the removed chain, its routing, its gates, its predictors, or the chain programs.
 - No test makes a live model call.
 - Files outside `priority-dev/` and `docs/plans/priority-dev-spike/` stay unchanged.
 
 ## Out of scope — do not penalise
-- The question card, `WriteCard`, and its inputs.
-- A switch to `WriteCombined`.
-- Reference payloads and the live rescore, which belong to slice 20.
+- The UI digest of the human ask and the final reply.
+- The slice 20 live runs: the agreement bar, the rescore, and the holdout duel.
+- A judge model other than Mercury.

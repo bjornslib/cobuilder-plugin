@@ -1,0 +1,172 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 930" role="img" aria-label="Slice 21 program design: one typed call, schema gate, payload rules, judge, consumers">
+<defs>
+<marker id="a" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="none" stroke="#555"/></marker>
+<marker id="r" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="none" stroke="#b03a2e"/></marker>
+</defs>
+<g font-family="system-ui, sans-serif" font-size="12" fill="#1d1d1d">
+
+<!-- Band labels -->
+<text x="12" y="22" font-size="11" fill="#777" letter-spacing="1">1  DATA</text>
+<text x="12" y="212" font-size="11" fill="#777" letter-spacing="1">2  PROGRAM (dspy.Module)</text>
+<text x="12" y="532" font-size="11" fill="#777" letter-spacing="1">3  SCORE</text>
+<text x="12" y="712" font-size="11" fill="#777" letter-spacing="1">4  USE</text>
+
+<!-- Row 1: data -->
+<rect x="12" y="32" width="250" height="150" rx="6" fill="none" stroke="#555"/>
+<text x="24" y="54" font-weight="bold">fixtures/set-manifest.json</text>
+<text x="24" y="74">20 sessions, 97 stops</text>
+<text x="24" y="92">split.py: train 67 stops</text>
+<text x="24" y="110">holdout 30 stops (never in a prompt,</text>
+<text x="24" y="126">never in GEPA)</text>
+<text x="24" y="150" font-size="11" fill="#555">GEPA valset: train sessions</text>
+<text x="24" y="166" font-size="11" fill="#555">picked by seed</text>
+
+<rect x="282" y="32" width="250" height="150" rx="6" fill="none" stroke="#555"/>
+<text x="294" y="54" font-weight="bold">brief.build_brief(transcript, stop)</text>
+<text x="294" y="74">StopBrief.for_model() → brief_text</text>
+<text x="294" y="94" font-family="ui-monospace, monospace" font-size="11">PREVIOUS RUN (digest)</text>
+<text x="294" y="110" font-family="ui-monospace, monospace" font-size="11">HUMAN ASKED</text>
+<text x="294" y="126" font-family="ui-monospace, monospace" font-size="11">RUN: [agent] [tool] [result]</text>
+<text x="294" y="142" font-family="ui-monospace, monospace" font-size="11">FINAL REPLY</text>
+<text x="294" y="166" font-size="11" fill="#555">median 11k chars, max 89k</text>
+
+<rect x="552" y="32" width="270" height="150" rx="6" fill="none" stroke="#555"/>
+<text x="564" y="54" font-weight="bold">fixtures/real/labels-confirmed.json</text>
+<text x="564" y="74">reference, engineer-confirmed:</text>
+<text x="564" y="92" font-family="ui-monospace, monospace" font-size="11">priority: P1 | P2 | P3</text>
+<text x="564" y="108" font-family="ui-monospace, monospace" font-size="11">payloads: 0..3 steps (full union)</text>
+<text x="564" y="130">diagnostic only, never scored:</text>
+<text x="564" y="146" font-family="ui-monospace, monospace" font-size="11">status, needs_human</text>
+<text x="564" y="168" font-size="11" fill="#555">97 of 97 stops referenced</text>
+
+<rect x="842" y="32" width="246" height="150" rx="6" fill="none" stroke="#555" stroke-dasharray="5,4"/>
+<text x="854" y="54" font-weight="bold">demo picker (code)</text>
+<text x="854" y="74">up to 4 train stops,</text>
+<text x="854" y="90">short briefs, one per main shape</text>
+<text x="854" y="108">input: brief_text</text>
+<text x="854" y="124">output: the full reference</text>
+<text x="854" y="146" font-size="11" fill="#555">printed by name; excluded from</text>
+<text x="854" y="162" font-size="11" fill="#555">the valset and the train rescore</text>
+
+<!-- Row 2: program -->
+<rect x="12" y="220" width="1076" height="290" rx="8" fill="none" stroke="#1d1d1d" stroke-width="1.6"/>
+<text x="26" y="244" font-weight="bold" font-size="14">Interpreter(dspy.Module)   one predictor:  self.propose = dspy.Predict(ProposeStop)</text>
+
+<rect x="26" y="258" width="560" height="236" rx="6" fill="none" stroke="#555"/>
+<text x="38" y="280" font-weight="bold">class ProposeStop(dspy.Signature)</text>
+<text x="38" y="298" font-size="11" fill="#555">docstring = the instruction that GEPA rewrites</text>
+<text x="38" y="320" font-family="ui-monospace, monospace" font-size="11">IN   brief_text: str</text>
+<text x="38" y="342" font-family="ui-monospace, monospace" font-size="11">OUT  status: Literal[done, waiting_answer, waiting_permission,</text>
+<text x="38" y="358" font-family="ui-monospace, monospace" font-size="11">                     blocked, failed, continuing]</text>
+<text x="38" y="376" font-family="ui-monospace, monospace" font-size="11">     needs_human: bool</text>
+<text x="38" y="394" font-family="ui-monospace, monospace" font-size="11">     steps: list[Step]   0 to 3, in run order</text>
+<text x="38" y="412" font-family="ui-monospace, monospace" font-size="11">     priority: Literal[P1, P2, P3]   for the whole payload</text>
+<text x="38" y="436" font-size="11">Step = one of 14 payload models, discriminated on kind:</text>
+<text x="38" y="452" font-size="11">reply, continue, continue_until, approve_permission, deny_permission,</text>
+<text x="38" y="468" font-size="11">pick_option, approve_gate, send_feedback, interrupt, ask_human, snooze,</text>
+<text x="38" y="484" font-size="11">dismiss, notify (excerpt), set_priority_hint (open: remove?)</text>
+
+<rect x="606" y="258" width="230" height="110" rx="6" fill="none" stroke="#b03a2e"/>
+<text x="618" y="280" font-weight="bold" fill="#b03a2e">the only gate</text>
+<text x="618" y="300">adapter parse + pydantic</text>
+<text x="618" y="316">validation of the union</text>
+<text x="618" y="338" font-size="11">fail → Abstain(invalid_output,</text>
+<text x="618" y="354" font-size="11">the validator's error text)</text>
+
+<rect x="606" y="384" width="230" height="110" rx="6" fill="none" stroke="#555"/>
+<text x="618" y="406" font-weight="bold">code, no judgement</text>
+<text x="618" y="426" font-size="11">sets session_id and author</text>
+<text x="618" y="442" font-size="11">on each step</text>
+<text x="618" y="464" font-size="11">returns dspy.Prediction(status,</text>
+<text x="618" y="480" font-size="11">needs_human, priority, steps, abstain)</text>
+
+<rect x="856" y="258" width="218" height="236" rx="6" fill="none" stroke="#555" stroke-dasharray="5,4"/>
+<text x="868" y="280" font-weight="bold">not in the model output</text>
+<text x="868" y="302" font-size="11">session_id, author: code</text>
+<text x="868" y="320" font-size="11">confidence, evidence_quote:</text>
+<text x="868" y="336" font-size="11">dropped (quote penalty gone)</text>
+<text x="868" y="358" font-size="11">card: dropped, the ask_human</text>
+<text x="868" y="374" font-size="11">questions are the card (open)</text>
+<text x="868" y="396" font-size="11">answer_class, risk,</text>
+<text x="868" y="412" font-size="11">priority_hint: dropped,</text>
+<text x="868" y="428" font-size="11">priority replaces them</text>
+<text x="868" y="452" font-size="11">UI digest of the ask and the</text>
+<text x="868" y="468" font-size="11">final reply: separate design</text>
+<text x="868" y="484" font-size="11">(open item)</text>
+
+<!-- Row 3: score -->
+<rect x="12" y="540" width="520" height="150" rx="6" fill="none" stroke="#555"/>
+<text x="24" y="562" font-weight="bold">metric.score(example, prediction): rules first, no model</text>
+<text x="24" y="584" font-size="11">abstain → 0, the note names the reason (a parse error included)</text>
+<text x="24" y="602" font-size="11">reference has steps, prediction has none → 0, the note names the status</text>
+<text x="24" y="620" font-size="11">reference is [ ], prediction has steps → 0, the note names each kind</text>
+<text x="24" y="638" font-size="11">both [ ] → 1, no judge call</text>
+<text x="24" y="662" font-size="11" fill="#555">no reference → the stop is excluded and counted, never scored</text>
+<text x="24" y="678" font-size="11" fill="#555">the same Prediction object on the eval path and the GEPA path</text>
+
+<rect x="552" y="540" width="536" height="150" rx="6" fill="none" stroke="#555"/>
+<text x="564" y="562" font-weight="bold">judge.judge(brief_text, predicted, reference) → (score, notes)</text>
+<text x="564" y="584" font-size="11">predicted and reference: {priority, steps}, code fields removed</text>
+<text x="564" y="602" font-size="11">closed fields exact: priority, kind, role, multi_select, free_text,</text>
+<text x="564" y="618" font-size="11">option labels, until_event, scope; open text by meaning</text>
+<text x="564" y="636" font-size="11">metric clamps to 0..1 and wraps dspy.Prediction(score, feedback)</text>
+<text x="564" y="660" font-size="11" fill="#555">judge = Mercury, the task model (engineer's choice):</text>
+<text x="564" y="676" font-size="11" fill="#555">self-preference stays a named risk; metered calls and tokens</text>
+
+<!-- Row 4: use -->
+<rect x="12" y="720" width="250" height="120" rx="6" fill="none" stroke="#555"/>
+<text x="24" y="742" font-weight="bold">priority eval (runner.py)</text>
+<text x="24" y="762" font-size="11">one row per stop: score, gate,</text>
+<text x="24" y="778" font-size="11">notes; session and split means;</text>
+<text x="24" y="794" font-size="11">excluded count; usage line</text>
+<text x="24" y="816" font-size="11" fill="#555">facts kept as diagnostics</text>
+
+<rect x="282" y="720" width="250" height="120" rx="6" fill="none" stroke="#555"/>
+<text x="294" y="742" font-weight="bold">priority judge-check</text>
+<text x="294" y="762" font-size="11">human agreement ≥ 0.75, n ≥ 6</text>
+<text x="294" y="778" font-size="11">closed-field probe ≥ 0.90, copies with</text>
+<text x="294" y="794" font-size="11">priority, multi_select, role, label</text>
+<text x="294" y="810" font-size="11">repeat flips ≤ 0.10</text>
+<text x="294" y="830" font-size="11" fill="#b03a2e">must pass before any arm counts</text>
+
+<rect x="552" y="720" width="270" height="120" rx="6" fill="none" stroke="#555"/>
+<text x="564" y="742" font-weight="bold">GEPA (optimise.py)</text>
+<text x="564" y="762" font-size="11">one component: propose</text>
+<text x="564" y="778" font-size="11">feedback: parse error, rule note,</text>
+<text x="564" y="794" font-size="11">or judge notes, all to one prompt</text>
+<text x="564" y="810" font-size="11">reflection LM: Mercury (risk)</text>
+<text x="564" y="830" font-size="11" fill="#555">no BusyComponentSelector</text>
+
+<rect x="842" y="720" width="246" height="120" rx="6" fill="none" stroke="#555"/>
+<text x="854" y="742" font-weight="bold">arms, then the holdout duel</text>
+<text x="854" y="762" font-size="11">A: base, no demos</text>
+<text x="854" y="778" font-size="11">B: base + reference demos</text>
+<text x="854" y="794" font-size="11">C: GEPA from the better of A, B</text>
+<text x="854" y="812" font-size="11">twice each, paired per stop,</text>
+<text x="854" y="828" font-size="11">session-cluster bootstrap CI</text>
+
+<!-- Removed -->
+<rect x="12" y="858" width="1076" height="62" rx="6" fill="none" stroke="#b03a2e" stroke-dasharray="3,3"/>
+<text x="24" y="878" font-weight="bold" fill="#b03a2e">removed in slice 21</text>
+<text x="24" y="896" font-size="11">TriageLM, PickStep, 14 Fill predictors, WriteCard, WriteCombined, routing by status, done_outcome (code notify), check_steps,</text>
+<text x="24" y="912" font-size="11">check_fill_payload, to_prediction flattening on the scoring path, BusyComponentSelector, the chain programs in probes/programs/ (cannot load)</text>
+</g>
+
+<g stroke="#555" stroke-width="1.4" fill="none" marker-end="url(#a)">
+<line x1="262" y1="107" x2="280" y2="107"/>
+<line x1="586" y1="313" x2="604" y2="313"/>
+<line x1="721" y1="368" x2="721" y2="382"/>
+<path d="M 407 182 L 407 194 L 540 194 L 540 256"/>
+<path d="M 965 182 L 965 200 L 572 200 L 572 256"/>
+<path d="M 721 494 L 721 516 L 272 516 L 272 538"/>
+<path d="M 687 182 L 687 206 L 1082 206 L 1082 530 L 820 530 L 820 538"/>
+<line x1="532" y1="615" x2="550" y2="615"/>
+<path d="M 137 690 L 137 718"/>
+<path d="M 407 690 L 407 718"/>
+<path d="M 687 690 L 687 718"/>
+<path d="M 965 690 L 965 718"/>
+</g>
+<g stroke="#b03a2e" stroke-width="1.4" fill="none" marker-end="url(#r)">
+<path d="M 836 330 L 846 330 L 846 520 L 360 520 L 360 538"/>
+</g>
+</svg>
