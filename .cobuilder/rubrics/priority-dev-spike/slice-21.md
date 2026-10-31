@@ -2,7 +2,7 @@
 
 Feature: priority-dev-spike
 Epic: E6
-Slice goal: Triage no longer chooses a route. Every stop with a brief runs Pick. Pick may return no step. Each Fill call sees the triage facts and the steps filled before it. Saved programs still load and run.
+Slice goal: Triage no longer chooses a route. Every stop with a brief runs Pick. Pick may return no step. Each Fill call sees the triage facts and the steps filled before it. Notify and ask_human steps carry a priority. GEPA tunes the predictors that the references use. Saved programs still load and run.
 Test command: `uv run --project priority-dev pytest priority-dev/tests -q`
 
 ## Criteria
@@ -51,6 +51,23 @@ Test command: `uv run --project priority-dev pytest priority-dev/tests -q`
 **Scoring:**
 - 1.0 — Pick and Fill rows appear for a done or continuing stop.
 - 0.0 — no live evidence.
+
+### C6 — Notify and ask_human carry a priority [CRITICAL]
+**Must be true:** `Notify` and `AskHuman` have a required `priority` field with the values `P1`, `P2`, `P3` and no other. A Fill payload for either kind without it, or with another value, fails the gate as `invalid_output`. `to_prediction` and the judge input keep the field.
+**Evidence to check:**
+- Run the model and Fill tests for each value and for a missing or wrong value.
+**Scoring:**
+- 1.0 — the three values pass, a missing or wrong value abstains, and the field reaches the judge.
+- 0.5 — the field exists but is optional, or one kind lacks it.
+- 0.0 — no priority field.
+
+### C7 — GEPA tunes the predictors that the references use
+**Must be true:** the GEPA component list holds `triage`, `pick`, and one `fill[...]` per kind found in the train reference payloads. It is built from `payloads`, not from the step-kind labels, and it holds no `card` and no `combined`.
+**Evidence to check:**
+- Run the busy-predictor test on a made-up labels file whose payload kinds differ from its step-kind labels.
+**Scoring:**
+- 1.0 — the list matches the payload kinds exactly.
+- 0.0 — the list still follows the step-kind labels or holds `card`.
 
 ## Regression check
 - All tests that passed before this slice must still pass, except tests that pinned the removed done route or the 1-step minimum.
