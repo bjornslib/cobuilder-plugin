@@ -19,6 +19,7 @@ Test command: `uv run --project priority-dev pytest priority-dev/tests -q`
 
 ### C2 — Missing and unwanted payloads score 0 with named notes [CRITICAL]
 **Must be true:** a reference with steps and a candidate with none scores 0, and the note names the candidate's triage status. A reference `[]` and a candidate with steps scores 0, and the note names the candidate's step kinds. Both empty scores 1. Any abstain scores 0 with its reason named. None of these cases calls the judge. With no judge model reachable, a stop with both sides non-empty scores 0 with the stub note, and no legacy facts-and-steps score runs.
+**Amended 31 October 2026:** the engineer changed the contract in slice 21. The judge now sees every stop, and code only pins the score in these cases. Score "None of these cases calls the judge" against the code before slice 21, at commit `5bd53bc`. After slice 21, the slice 21 rubric C3 governs.
 **Evidence to check:**
 - Run the rule tests. Each case asserts the score, the note content, and that the stub judge was not called.
 - Grep `metric.py` for `components(` inside `score`.

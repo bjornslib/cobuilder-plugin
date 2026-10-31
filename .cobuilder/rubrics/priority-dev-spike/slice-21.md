@@ -8,7 +8,7 @@ Test command: `uv run --project priority-dev pytest priority-dev/tests -q`
 ## Criteria
 
 ### C1 — One predictor with the designed signature [CRITICAL]
-**Must be true:** `Interpreter.named_predictors()` yields exactly one predictor. Its signature has one input, `brief_text`, and the outputs `status` (six literals), `needs_human` (bool), `steps` (a list of at most 3, discriminated on `kind` over the 14 payload models), and `priority` (`P1`, `P2`, `P3`). No step model in the output schema holds `session_id`, `author`, `confidence`, or `evidence_quote`.
+**Must be true:** `Interpreter.named_predictors()` yields exactly one predictor. Its signature has one input, `brief_text`, and the outputs `status` (six literals), `needs_human` (bool), `steps` (a list of at most 3, discriminated on `kind` over the 13 payload models that remain after `set_priority_hint` goes), and `priority` (`P1`, `P2`, `P3`). No step model in the output schema holds `session_id`, `author`, `confidence`, or `evidence_quote`. No card output exists.
 **Evidence to check:**
 - Run the signature tests. Read `signatures.py` and the output JSON schema that the adapter renders.
 **Scoring:**
@@ -27,12 +27,12 @@ Test command: `uv run --project priority-dev pytest priority-dev/tests -q`
 - 0.0 — a fault passes, or a fault raises.
 
 ### C3 — One prediction object for eval and GEPA [CRITICAL]
-**Must be true:** `forward` returns a `dspy.Prediction` with `status`, `needs_human`, `priority`, `steps` (dicts with `session_id` and `author` set by code), and `abstain`. The runner and the GEPA metric score that object with no flattening step. The metric compares `{priority, steps}` with the reference built from the label fields `priority` and `payloads`. The slice 20 payload rules still hold.
+**Must be true:** `forward` returns a `dspy.Prediction` with `status`, `needs_human`, `priority`, `steps` (dicts with `session_id` and `author` set by code), and `abstain`. The runner and the GEPA metric score that object with no flattening step. The reference is built from the label fields `priority` and `payloads`. The judge is called for every stop. For an abstain it receives the raw reply and the error text. Code pins the score in four cases: an abstain 0, reference steps against no predicted steps 0, a `[]` reference against predicted steps 0, and both empty 1. In every other case the judge's clamped score is final. The feedback holds the pinned-case note, when one applies, followed by the judge's notes.
 **Evidence to check:**
 - Run the metric and runner tests with a stub model and a stub judge, and record the judge input.
 - Grep the scoring path for `to_prediction`.
 **Scoring:**
-- 1.0 — the same object reaches the metric on both paths, the judge sees `{priority, steps}` on both sides, and the rules hold.
+- 1.0 — the same object reaches the metric on both paths, the judge is called for every stop with `{priority, steps}` or the abstain on the predicted side, the four pins hold, and the feedback joins both notes.
 - 0.5 — one path still converts the object, or priority does not reach the judge.
 - 0.0 — the payload or the priority is lost on either path.
 

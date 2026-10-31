@@ -61,10 +61,10 @@
 <text x="38" y="376" font-family="ui-monospace, monospace" font-size="11">     needs_human: bool</text>
 <text x="38" y="394" font-family="ui-monospace, monospace" font-size="11">     steps: list[Step]   0 to 3, in run order</text>
 <text x="38" y="412" font-family="ui-monospace, monospace" font-size="11">     priority: Literal[P1, P2, P3]   for the whole payload</text>
-<text x="38" y="436" font-size="11">Step = one of 14 payload models, discriminated on kind:</text>
+<text x="38" y="436" font-size="11">Step = one of 13 payload models, discriminated on kind:</text>
 <text x="38" y="452" font-size="11">reply, continue, continue_until, approve_permission, deny_permission,</text>
 <text x="38" y="468" font-size="11">pick_option, approve_gate, send_feedback, interrupt, ask_human, snooze,</text>
-<text x="38" y="484" font-size="11">dismiss, notify (excerpt), set_priority_hint (open: remove?)</text>
+<text x="38" y="484" font-size="11">dismiss, notify (excerpt). P3 when no notify or ask_human step.</text>
 
 <rect x="606" y="258" width="230" height="110" rx="6" fill="none" stroke="#b03a2e"/>
 <text x="618" y="280" font-weight="bold" fill="#b03a2e">the only gate</text>
@@ -85,8 +85,8 @@
 <text x="868" y="302" font-size="11">session_id, author: code</text>
 <text x="868" y="320" font-size="11">confidence, evidence_quote:</text>
 <text x="868" y="336" font-size="11">dropped (quote penalty gone)</text>
-<text x="868" y="358" font-size="11">card: dropped, the ask_human</text>
-<text x="868" y="374" font-size="11">questions are the card (open)</text>
+<text x="868" y="358" font-size="11">card and set_priority_hint:</text>
+<text x="868" y="374" font-size="11">removed (engineer, 31 Oct)</text>
 <text x="868" y="396" font-size="11">answer_class, risk,</text>
 <text x="868" y="412" font-size="11">priority_hint: dropped,</text>
 <text x="868" y="428" font-size="11">priority replaces them</text>
@@ -96,12 +96,12 @@
 
 <!-- Row 3: score -->
 <rect x="12" y="540" width="520" height="150" rx="6" fill="none" stroke="#555"/>
-<text x="24" y="562" font-weight="bold">metric.score(example, prediction): rules first, no model</text>
-<text x="24" y="584" font-size="11">abstain → 0, the note names the reason (a parse error included)</text>
-<text x="24" y="602" font-size="11">reference has steps, prediction has none → 0, the note names the status</text>
-<text x="24" y="620" font-size="11">reference is [ ], prediction has steps → 0, the note names each kind</text>
-<text x="24" y="638" font-size="11">both [ ] → 1, no judge call</text>
-<text x="24" y="662" font-size="11" fill="#555">no reference → the stop is excluded and counted, never scored</text>
+<text x="24" y="562" font-weight="bold">metric.score(example, prediction): the judge sees every stop</text>
+<text x="24" y="584" font-size="11">code pins the score in four cases; the judge still writes the notes:</text>
+<text x="24" y="602" font-size="11">abstain → 0 (the judge gets the raw reply and the error text)</text>
+<text x="24" y="620" font-size="11">reference has steps, prediction none → 0; reference [ ], prediction steps → 0</text>
+<text x="24" y="638" font-size="11">both [ ] → 1; every other case: the judge's score is final</text>
+<text x="24" y="662" font-size="11" fill="#555">feedback = the pinned-case note, then the judge's notes</text>
 <text x="24" y="678" font-size="11" fill="#555">the same Prediction object on the eval path and the GEPA path</text>
 
 <rect x="552" y="540" width="536" height="150" rx="6" fill="none" stroke="#555"/>
@@ -127,7 +127,7 @@
 <text x="294" y="778" font-size="11">closed-field probe ≥ 0.90, copies with</text>
 <text x="294" y="794" font-size="11">priority, multi_select, role, label</text>
 <text x="294" y="810" font-size="11">repeat flips ≤ 0.10</text>
-<text x="294" y="830" font-size="11" fill="#b03a2e">must pass before any arm counts</text>
+<text x="294" y="830" font-size="11" fill="#b03a2e">decides whether an arm result counts</text>
 
 <rect x="552" y="720" width="270" height="120" rx="6" fill="none" stroke="#555"/>
 <text x="564" y="742" font-weight="bold">GEPA (optimise.py)</text>
@@ -139,17 +139,17 @@
 
 <rect x="842" y="720" width="246" height="120" rx="6" fill="none" stroke="#555"/>
 <text x="854" y="742" font-weight="bold">arms, then the holdout duel</text>
-<text x="854" y="762" font-size="11">A: base, no demos</text>
-<text x="854" y="778" font-size="11">B: base + reference demos</text>
-<text x="854" y="794" font-size="11">C: GEPA from the better of A, B</text>
-<text x="854" y="812" font-size="11">twice each, paired per stop,</text>
-<text x="854" y="828" font-size="11">session-cluster bootstrap CI</text>
+<text x="854" y="762" font-size="11">A base, B base + 4 demos: twice</text>
+<text x="854" y="778" font-size="11">each on the same 63 train stops</text>
+<text x="854" y="794" font-size="11">C: GEPA from the better, 63 stops</text>
+<text x="854" y="812" font-size="11">duel on 30 holdout stops, twice,</text>
+<text x="854" y="828" font-size="11">paired, 6-session cluster CI</text>
 
 <!-- Removed -->
 <rect x="12" y="858" width="1076" height="62" rx="6" fill="none" stroke="#b03a2e" stroke-dasharray="3,3"/>
 <text x="24" y="878" font-weight="bold" fill="#b03a2e">removed in slice 21</text>
 <text x="24" y="896" font-size="11">TriageLM, PickStep, 14 Fill predictors, WriteCard, WriteCombined, routing by status, done_outcome (code notify), check_steps,</text>
-<text x="24" y="912" font-size="11">check_fill_payload, to_prediction flattening on the scoring path, BusyComponentSelector, the chain programs in probes/programs/ (cannot load)</text>
+<text x="24" y="912" font-size="11">check_fill_payload, to_prediction on the scoring path, BusyComponentSelector, set_priority_hint, the card. probes/programs/ stays as records.</text>
 </g>
 
 <g stroke="#555" stroke-width="1.4" fill="none" marker-end="url(#a)">
