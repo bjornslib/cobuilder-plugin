@@ -10,7 +10,7 @@ from fixtures_support import require
 
 def test_judge_default_lm_resolves_with_a_stub_key(monkeypatch):
     config = require("priority.config")
-    monkeypatch.setattr(config, "load_key", lambda: "sk-test-stub-key")
+    monkeypatch.setenv("NVIDIA_API_KEY", "sk-test-stub-key")
     api = require("priority.evaluation.judge")
     lm = api._default_lm()
-    assert lm.model == "openai/mercury-3"
+    assert lm.model == "nvidia_nim/mistralai/mistral-large-4-1t-a52b"

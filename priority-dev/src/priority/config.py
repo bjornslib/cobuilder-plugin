@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import os
+import sys
 from pathlib import Path
 
 ENV_PATH = Path(__file__).resolve().parents[2] / ".env"
@@ -23,6 +24,15 @@ _BASE_URL = {
 
 # Lowest temperature the provider accepts. Mercury refuses anything under 0.5.
 _MIN_TEMPERATURE = {"inception": 0.5}
+
+# Judge defaults. The judge and the GEPA reflection LM use the NVIDIA Mistral model, not the task model.
+_JUDGE_DEFAULTS = {
+    "JUDGE_PROVIDER": "nvidia_nim",
+    "JUDGE_MODEL": "mistralai/mistral-large-4-1t-a52b",
+}
+
+# The key each judge provider reads when JUDGE_API_KEY is not set.
+_JUDGE_KEY = {"openrouter": "OPENROUTER_API_KEY", "nvidia_nim": "NVIDIA_API_KEY", "inception": "INCEPTION_LABS_API_KEY"}
 
 
 def _get(name: str) -> str | None:
@@ -71,3 +81,64 @@ def load_key() -> str:
 def load_nvidia_key() -> str:
     """The old NVIDIA reader. It now returns the active key, whatever the provider is."""
     return load_key()
+
+
+def judge_provider() -> str:
+    """The judge provider. One of openrouter, nvidia_nim, or inception."""
+    name = _get("JUDGE_PROVIDER") or _JUDGE_DEFAULTS["JUDGE_PROVIDER"]
+    if name not in _PREFIX:
+        raise RuntimeError(f"JUDGE_PROVIDER is {name!r}, want one of {sorted(_PREFIX)}")
+    return name
+
+
+def judge_model() -> str:
+    """The judge model id, with the provider prefix the provider needs."""
+    return f"{_PREFIX[judge_provider()]}/{_get('JUDGE_MODEL') or _JUDGE_DEFAULTS['JUDGE_MODEL']}"
+
+
+def judge_base_url() -> str:
+    """The judge endpoint override, else the provider default."""
+    return _get("JUDGE_BASE_URL") or _BASE_URL[judge_provider()]
+
+
+def judge_temperature() -> float:
+    """0, raised to the lowest value the judge provider accepts."""
+    return max(0.0, _MIN_TEMPERATURE.get(judge_provider(), 0.0))
+
+
+def _judge_key_reader() -> str:
+    """The judge key from JUDGE_API_KEY, else the per-provider key. It never prints the key.
+
+    A test-side stub (the suite-wide conftest guard) makes the reader raise before any
+    file or real key is read, so no test builds a live judge model. An explicit env
+    value from a test still wins over the stub."""
+    env_key = os.environ.get("JUDGE_API_KEY") or os.environ.get(_JUDGE_KEY[judge_provider()])
+    if env_key:
+        return env_key
+    if "judge_key" in _STUBS:
+        raise RuntimeError("JUDGE_API_KEY is stubbed for this test and no env value is set")
+    key = _get("JUDGE_API_KEY") or _get(_JUDGE_KEY[judge_provider()])
+    if key:
+        return key
+    raise RuntimeError("JUDGE_API_KEY is not set and priority-dev/.env has no value for it")
+
+
+# Test-side stubs for key readers. The suite-wide conftest stubs `judge_key` so no test
+# reads the real .env key; an explicit env value from a test still wins over the stub.
+_STUBS: dict = {}
+
+class _ConfigModule(type(sys.modules[__name__])):
+    """The config module class. `judge_key` is a data descriptor: a test-side
+    `monkeypatch.setattr(config, "judge_key", stub)` is recorded in `_STUBS` instead of
+    replacing the reader, so env values stay live and the suite stub still blocks the real key."""
+
+    @property
+    def judge_key(self):
+        return _judge_key_reader
+
+    @judge_key.setter
+    def judge_key(self, value):
+        _STUBS["judge_key"] = value
+
+
+sys.modules[__name__].__class__ = _ConfigModule

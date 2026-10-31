@@ -61,6 +61,16 @@ Test command: `uv run --project priority-dev pytest priority-dev/tests -q`
 - 1.0 — one call per stop and a judged stop.
 - 0.0 — no live evidence.
 
+### C7 — The judge and the reflection LM use the NVIDIA Mistral model [CRITICAL]
+**Must be true:** with no override set, the judge's default model and the GEPA reflection LM are `nvidia_nim/mistralai/mistral-large-4-1t-a52b` on `https://integrate.api.nvidia.com/v1`, with the key from `NVIDIA_API_KEY`. The task model stays the `LLM_*` model. `JUDGE_PROVIDER`, `JUDGE_MODEL`, `JUDGE_BASE_URL`, and `JUDGE_API_KEY` override the defaults. No test reads the real key. A live smoke shows a judge call answered by that model.
+**Evidence to check:**
+- Run the config and judge tests with stubbed keys.
+- Read the live smoke output and the model id of the judge call.
+**Scoring:**
+- 1.0 — defaults, overrides, the key source, and a live judge call on the NVIDIA model all hold.
+- 0.5 — the configuration holds but no live evidence exists.
+- 0.0 — the judge or the reflection LM still uses the task model.
+
 ## Regression check
 - All tests that passed before this slice must still pass, except tests that pinned the removed chain, its routing, its gates, its predictors, or the chain programs.
 - No test makes a live model call.
@@ -69,4 +79,3 @@ Test command: `uv run --project priority-dev pytest priority-dev/tests -q`
 ## Out of scope — do not penalise
 - The UI digest of the human ask and the final reply.
 - The slice 20 live runs: the agreement bar, the rescore, and the holdout duel.
-- A judge model other than Mercury.

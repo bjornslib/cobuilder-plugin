@@ -6,12 +6,12 @@ with the code-set fields already removed. For an abstain, the predicted object
 holds the abstain with the raw reply and the error text. The judge returns
 the final score in 0..1 with one note per part. The judge grades only
 the fields that the reference states. Closed fields compare exactly inside
-the rubric. Open fields compare by meaning. The default model is the
-interpreter LM (Inception, with retries like the optimise path), so a real
-run works without extra wiring. An explicit model or the configured dspy
-model still wins, so the tests keep their stub seam. A missing model scores 0.
-`USAGE` counts each judge model call and its tokens, and `usage_line` reports
-the totals. The price per token is not known, so the meter holds tokens only.
+the rubric. Open fields compare by meaning. The default model is the NVIDIA
+Mistral judge (see `judge_lm`), so a real run works without extra wiring.
+An explicit model or the configured dspy model still wins, so the tests keep
+their stub seam. A missing model scores 0. `USAGE` counts each judge model
+call and its tokens, and `usage_line` reports the totals. The price per token
+is not known, so the meter holds tokens only.
 """
 from __future__ import annotations
 
@@ -79,11 +79,18 @@ def _meter(lm: dspy.LM, before: int) -> None:
         USAGE[name] += int(usage.get(name) or 0)
 
 
-def _default_lm() -> dspy.LM:
-    """The interpreter LM for the judge, with retries like the optimise path."""
-    from priority.interpreter.module import interpreter_lm
+def judge_lm(retries: int = 3) -> dspy.LM:
+    """The judge model. The default is the NVIDIA Mistral model, not the task model, so the judge does not prefer its own family."""
+    from priority import config
 
-    return interpreter_lm(retries=3)
+    return dspy.LM(config.judge_model(), api_key=config.judge_key(), api_base=config.judge_base_url(),
+                   temperature=config.judge_temperature(), max_tokens=JUDGE_MAX_TOKENS, timeout=120,
+                   num_retries=retries, cache=False)
+
+
+def _default_lm() -> dspy.LM:
+    """The judge LM, with retries like the optimise path."""
+    return judge_lm(retries=3)
 
 
 def judge(brief_text: object, predicted_payloads: object,

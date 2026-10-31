@@ -132,12 +132,12 @@ def _teleprompter_for(optimiser: str) -> object | None:
 
 
 def _reflection_lm() -> object | None:
-    """The interpreter model for GEPA reflection, or None when the key is stubbed out."""
+    """The judge model for GEPA reflection, or None when the key is stubbed out."""
     try:
-        from priority.interpreter.module import interpreter_lm
-        return interpreter_lm(retries=3)
-    except AssertionError:
-        # The made-up-world tests block the real key this way. Their stub teleprompter needs no model.
+        from priority.evaluation.judge import judge_lm
+        return judge_lm(retries=3)
+    except (AssertionError, RuntimeError):
+        # The made-up-world tests stub the judge key this way. Their stub teleprompter needs no model.
         return None
 
 
