@@ -1,8 +1,10 @@
-"""The judge model grades the raw payload against the reference payload.
+"""The judge model grades the predicted payload object against the reference payload object.
 
-The metric calls `judge` with the brief text plus the predicted step list
-plus the reference step list, with the code-set fields already removed. It
-returns the final score in 0..1 with one note per part. The judge grades only
+The metric calls `judge` with the brief text plus the predicted object plus
+the reference object. Each object holds a `priority` and a list of `steps`,
+with the code-set fields already removed. For an abstain, the predicted object
+holds the abstain with the raw reply and the error text. The judge returns
+the final score in 0..1 with one note per part. The judge grades only
 the fields that the reference states. Closed fields compare exactly inside
 the rubric. Open fields compare by meaning. The default model is the
 interpreter LM (Inception, with retries like the optimise path), so a real
@@ -25,20 +27,27 @@ class JudgePayloads(dspy.Signature):
     and the match or mismatch."""
 
     brief_text: str = dspy.InputField(desc="The stop brief text")
-    predicted_payloads: str = dspy.InputField(desc="The raw predicted payloads as JSON")
-    expected_payloads: str = dspy.InputField(desc="The expected payloads as JSON")
+    predicted_payloads: str = dspy.InputField(
+        desc="The predicted payload object as JSON: priority and steps, or an abstain with the raw reply and the error")
+    expected_payloads: str = dspy.InputField(desc="The reference payload object as JSON: priority and steps")
     rubric: str = dspy.InputField(desc="The grading rubric")
     score: float = dspy.OutputField(desc="The final score from 0 to 1")
     notes: list[str] = dspy.OutputField(desc="One note per part")
 
 
-RUBRIC = ("Grade the predicted payload against the reference payload. Both are "
-          "lists of steps. Grade only the fields that the reference states, and "
-          "ignore extra fields in the prediction. The order of questions does not "
-          "count. Compare closed fields exactly: kind, role, multi_select, "
-          "free_text, and option labels must match exactly for full credit. Judge "
-          "open text by meaning: free text that asks the same thing in other words "
-          "still counts. Return one note per part, each note one short sentence.")
+RUBRIC = ("Grade the predicted payload against the reference payload. Each is an "
+          "object with a priority (P1, P2, or P3) and a list of steps. Grade only "
+          "the fields that the reference states, and ignore extra fields in the "
+          "prediction. The order of questions does not count. Compare closed fields "
+          "exactly: priority, kind, role, multi_select, free_text, option labels, "
+          "until_event, and scope must match exactly for full credit. A wrong "
+          "priority loses credit even when the steps match. Judge open text by "
+          "meaning: free text that asks the same thing in other words still counts. "
+          "When the prediction is an abstain, it holds the raw reply of the model "
+          "and the validation error in place of a payload. Then say in your notes "
+          "what the model must change so that its reply parses and validates, and "
+          "how its meaning differs from the reference. Return one note per part, "
+          "each note one short sentence.")
 
 # The judge writes one note per part, so the task cap of 3000 tokens cut its
 # reply on a two-question payload. A cut reply does not parse.

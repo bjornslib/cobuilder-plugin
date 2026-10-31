@@ -164,3 +164,14 @@ def test_optimise_missing_teleprompter_skips_with_message(monkeypatch, tmp_path)
     assert "skip" in printed.lower(), (
         f"a missing teleprompter must skip with a clear message: {printed}"
     )
+
+
+def test_gepa_has_no_component_selector_and_compiles_the_one_component(monkeypatch, tmp_path):
+    """Slice 21: GEPA tunes one component, `propose`, with no selector."""
+    require_teleprompter("gepa")
+    code, printed, _, calls, _, _, _ = run_optimise(monkeypatch, tmp_path, "gepa")
+    assert code == 0, f"optimise --optimiser gepa failed: {printed}"
+    [run] = calls["gepa"]
+    assert "component_selector" not in run["settings"], "GEPA was built with a component selector"
+    student = run["inputs"][0]["args"][0]
+    assert [name for name, _ in student.named_predictors()] == ["propose"]

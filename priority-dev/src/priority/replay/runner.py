@@ -37,14 +37,14 @@ def pooled(function, items: list, size: int) -> list:
 
 
 def result_line(adapter: str, session: str, real: bool, outcome) -> dict:
-    """One line of results.jsonl for an Interpretation or for the Abstain of a brief."""
-    abstain = outcome if isinstance(outcome, Abstain) else outcome.abstained
-    advice = None if isinstance(outcome, Abstain) else outcome.advice
-    proposal = advice.proposal if advice else None
-    return {"adapter": adapter, "session": session, "real": real,
-            "abstain_reason": abstain.reason if abstain else None,
-            "abstain_detail": (abstain.detail or abstain.reason) if abstain else None,
-            "steps": len(proposal.steps) if proposal else 0}
+    """One line of results.jsonl for a Prediction or for the Abstain of a brief."""
+    if isinstance(outcome, Abstain):
+        reason, detail, steps = outcome.reason, outcome.detail, 0
+    else:
+        abstain = outcome.abstain or {}
+        reason, detail, steps = abstain.get("reason"), abstain.get("detail"), len(outcome.steps)
+    return {"adapter": adapter, "session": session, "real": real, "abstain_reason": reason,
+            "abstain_detail": (detail or reason) if reason else None, "steps": steps}
 
 
 def digest_all(briefs: dict[Path, StopBrief], model, log_dir: Path, size: int) -> set[str]:
@@ -62,7 +62,8 @@ def digest_all(briefs: dict[Path, StopBrief], model, log_dir: Path, size: int) -
 def interpret_all(adapter: str, briefs: dict[Path, StopBrief], model, log_dir: Path, size: int) -> list:
     def one(item: tuple[Path, StopBrief]):
         path, brief = item
-        return interpreter.Interpreter(model, log_dir=log_dir / adapter, session_id=path.stem, adapter=adapter)(brief)
+        return interpreter.Interpreter(model, log_dir=log_dir / adapter, session_id=path.stem,
+                                       adapter=adapter)(brief_text=brief.for_model())
     return pooled(one, list(briefs.items()), size)
 
 
@@ -90,7 +91,7 @@ def run(root: Path, out: Path, log_dir: Path, adapters: tuple[str, ...], size: i
     measured = Measured(
         sessions=len(paths), adapters=adapters, concurrency=size, results=results,
         rows={**{name: read_rows(log_dir / name) for name in adapters}, "digest": read_rows(log_dir / "digest")},
-        texts=[brief.for_model() for brief in briefs.values()], drills=drilled, conditions=conditions, stored=stored)
+        drills=drilled, conditions=conditions, stored=stored)
     (out / "results.jsonl").write_text("".join(json.dumps(line) + "\n" for line in results))
     (out / "report.md").write_text(report.build(measured))
     log.info("replayed %d sessions into %s", len(paths), out)

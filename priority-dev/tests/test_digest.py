@@ -24,7 +24,7 @@ from digest_support import (DIGEST, DIGEST_MODEL, FailingLM, ONE_SHRINK, THREE_S
                             digest_api, digest_reply, dspy, dummy, expect_brief, interpreter_api, log_reasons,
                             make_brief, make_digest, no_live_call, over_budget, read_calls, recent,  # noqa: F401
                             rendered_inputs, run_digest, short_reply, shrunk_entries, simple, stages)
-from interpret_support import BLOCKED, QUOTE_1, interpret, script
+from interpret_support import interpret, propose, step
 
 WAITING = FIXTURES / "waiting-question.jsonl"
 
@@ -211,7 +211,7 @@ def test_previous_is_the_third_parameter_of_build_brief():
 
 def test_the_interpreter_reads_previous_in_its_calls(tmp_path):
     brief = expect_brief(build_with(WAITING, previous=make_digest()))
-    interpret(dummy(script(BLOCKED, [("reply", QUOTE_1)])), brief, log_dir=tmp_path)
+    interpret(dummy([propose([step("reply")])]), brief, log_dir=tmp_path)
     inputs = [c["rendered_input"] for c in read_calls(tmp_path)]
     assert inputs and all(DIGEST["ran"] in text for text in inputs)
 

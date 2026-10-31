@@ -1,11 +1,11 @@
-"""Slice 20 RED: payloads reach the metric, and stops with no reference drop out.
+"""Slice 20: stops with no reference drop out, and the judge usage line ends each report.
 
-The contract. `runner.to_prediction(interpretation)` returns a `payloads`
-key: the dumped proposal steps, or `[]` with no advice. `runner.run` and the
-optimise example builder skip each stop whose label has no `payloads` key and
-print `excluded: N stops (no reference payload)`. A label with `payloads: []`
-stays. `eval` and `optimise` print the judge usage line at the end. Every
-world here is made up, and the interpreter and the judge are stubs.
+The contract. `runner.run` and the optimise example builder skip each stop
+whose label has no `payloads` key and print `excluded: N stops (no reference
+payload)`. A label with `payloads: []` stays. `eval` and `optimise` print the
+judge usage line at the end. Every world here is made up, and the program
+and the judge are stubs. Since slice 21 the runner scores the program's
+Prediction directly, so `to_prediction` and its tests are gone.
 """
 from __future__ import annotations
 
@@ -16,37 +16,12 @@ import re
 
 from eval_support import StubInterpreter, stub_predictions_for, write_eval_world
 from fixtures_support import STOPS_PER_SESSION, stop_key
-from judge_ref_support import JudgeRecorder, install_judge, made_interp, made_steps, require
+from judge_ref_support import JudgeRecorder, install_judge, require
 from optimise_support import run_optimise
 
 SCORE_STOP = re.compile(r"^score stop session=(\S+) stop=(\d{3}) overall=\d\.\d{3} "
                         r"payload=\d\.\d{3} gate=\S+ ambiguous=(?:yes|no)$")
 USAGE = re.compile(r"^judge calls: \d+ prompt_tokens: \d+ completion_tokens: \d+$")
-
-
-# ---- Item 4: to_prediction carries the payloads --------------------------------
-
-
-def test_to_prediction_carries_the_dumped_proposal_steps():
-    runner = require("priority.evaluation.runner")
-    steps = made_steps()
-    prediction = runner.to_prediction(made_interp(steps))
-    assert prediction.get("payloads") == [step.model_dump() for step in steps], \
-        f"to_prediction dropped the payloads: {prediction.get('payloads')!r}"
-
-
-def test_to_prediction_with_no_advice_carries_an_empty_payload_list():
-    runner = require("priority.evaluation.runner")
-    for interp in (made_interp(status="done"), made_interp(abstain="no_agent_reply")):
-        prediction = runner.to_prediction(interp)
-        assert prediction.get("payloads", "missing") == [], \
-            f"a stop with no advice carries {prediction.get('payloads', 'missing')!r}"
-
-
-def test_to_prediction_passes_a_dict_through():
-    runner = require("priority.evaluation.runner")
-    flat = {"status": "done", "steps": ["notify"], "payloads": [{"kind": "notify"}]}
-    assert runner.to_prediction(flat) is flat
 
 
 # ---- Item 5: stops with no reference payload are excluded ----------------------

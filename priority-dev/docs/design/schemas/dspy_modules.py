@@ -5,7 +5,9 @@
 """Design sketch: the DSPy modules of the first spikes. No Jev call.
 
 `uv run dspy_modules.py` checks the flow with a dummy model and prints the prompt size
-of each signature. It makes no network call. Section numbers refer to ../dspy-modules.md.
+of each signature. It makes no network call. This sketch shows the old chain of Triage,
+Pick, Fill, and Card. Since slice 21 the code makes one ProposeStop call instead, as
+probes/program-flow-v2.svg and ../dspy-modules.md show.
 """
 from __future__ import annotations
 

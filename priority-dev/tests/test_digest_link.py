@@ -83,14 +83,15 @@ def two_stops(tmp_path, name: str = "two-stops.jsonl"):
     return t.write(tmp_path / name)
 
 
-def triage_inputs(log_dir) -> list[str]:
-    return [c["rendered_input"] for c in read_calls(log_dir) if c["stage"] == "triage"]
+def interpreter_inputs(log_dir) -> list[str]:
+    """The rendered inputs of the interpreter calls. Since slice 21 the interpreter makes one call."""
+    return [c["rendered_input"] for c in read_calls(log_dir) if c["stage"] != "digest"]
 
 
 def assert_interpreted(out: str) -> dict:
     data = json.loads(out)
-    assert data.get("abstained") is None, f"the interpretation abstained: {data.get('abstained')!r}"
-    assert data["facts"]["status"] == "done"
+    assert data.get("abstain") is None and data.get("status") == "done", \
+        f"the interpret command printed no done Prediction: {data!r}"
     return data
 
 
@@ -166,7 +167,7 @@ def test_the_model_receives_the_previous_run_block(monkeypatch, capsys, tmp_path
     code, out = run_cli(monkeypatch, capsys, "interpret", dummy([DONE]), WAITING, "--log-dir", str(tmp_path))
     assert code == 0
     assert_interpreted(out)
-    sent = triage_inputs(tmp_path)[0]
+    sent = interpreter_inputs(tmp_path)[0]
     assert PREVIOUS in sent
     assert DIGEST["ran"] in sent and DIGEST["result"] in sent
 
@@ -182,7 +183,7 @@ def test_a_digest_of_another_session_is_never_used(monkeypatch, capsys, tmp_path
     assert code == 0
     assert_interpreted(out)
     assert briefs[0].previous is None
-    assert PREVIOUS not in triage_inputs(tmp_path / "log")[0]
+    assert PREVIOUS not in interpreter_inputs(tmp_path / "log")[0]
 
 
 # ---- 4. The interpret command with no usable digest ---------------------------
@@ -193,7 +194,7 @@ def test_no_stored_digest_means_no_previous_run_block(monkeypatch, capsys, tmp_p
     assert code == 0
     assert_interpreted(out)
     assert briefs[0].previous is None
-    assert PREVIOUS not in triage_inputs(tmp_path)[0]
+    assert PREVIOUS not in interpreter_inputs(tmp_path)[0]
 
 
 def corrupt_json(path):
@@ -232,7 +233,7 @@ def test_an_unusable_stored_digest_means_no_previous_and_a_logged_reason(monkeyp
     assert code == 0
     assert_interpreted(out)
     assert briefs[0].previous is None
-    assert PREVIOUS not in triage_inputs(tmp_path)[0]
+    assert PREVIOUS not in interpreter_inputs(tmp_path)[0]
     assert "digest" in log_reasons(caplog).lower(), "the CLI did not log why it dropped the stored digest"
 
 
@@ -254,7 +255,7 @@ def test_digest_stop_1_then_interpret_stop_2_carries_the_digest(monkeypatch, cap
     assert code == 0
     assert_interpreted(out)
     assert briefs[0].previous == stored
-    sent = triage_inputs(log_dir)[0]
+    sent = interpreter_inputs(log_dir)[0]
     assert PREVIOUS in sent
     assert stored.ran in sent and stored.result in sent
     assert all(text in sent for text in (*stored.open_items, *stored.decisions))
@@ -279,4 +280,4 @@ def test_a_digest_model_failure_stores_nothing_and_the_next_interpret_still_runs
     assert code == 0
     assert_interpreted(out)
     assert briefs[0].previous is None
-    assert PREVIOUS not in triage_inputs(log_dir)[0]
+    assert PREVIOUS not in interpreter_inputs(log_dir)[0]

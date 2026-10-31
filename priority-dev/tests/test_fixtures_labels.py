@@ -76,3 +76,21 @@ def test_loader_rejects_steps_over_the_three_step_limit(tmp_path):
     message = str(excinfo.value)
     assert SESSION_IDS[2] in message
     assert stop_key(5) in message
+
+
+def test_loader_keeps_the_payload_priority(tmp_path):
+    labels = make_labels()
+    labels["sessions"][SESSION_IDS[4]]["stops"][stop_key(3)]["priority"] = "P2"
+    stops = load_labels_of(labels, tmp_path)
+    assert stops[SESSION_IDS[4]][stop_key(3)].get("priority") == "P2"
+
+
+@pytest.mark.parametrize("value", ["P4", "p1", "now", 1])
+def test_loader_rejects_a_priority_outside_p1_to_p3(tmp_path, value):
+    labels = make_labels()
+    labels["sessions"][SESSION_IDS[5]]["stops"][stop_key(2)]["priority"] = value
+    with pytest.raises(ValueError) as excinfo:
+        load_labels_of(labels, tmp_path)
+    message = str(excinfo.value)
+    assert SESSION_IDS[5] in message
+    assert stop_key(2) in message

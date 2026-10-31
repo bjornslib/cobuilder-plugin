@@ -1,10 +1,10 @@
-"""Slice 7, the replay report (RED role). Every test uses stub models and makes no live call.
+"""The replay report (slice 7, moved to the one propose call in slice 21). Every test uses stub models.
 
 The contract is in the docstring of `replay_support.py`. The scripted world is `PLANS`: ten sessions with
 known outcomes (alpha to india, and zulu, whose brief is an Abstain). The main run replays it once, with 5
 sessions in flight, and the tests read the report against the stored call rows.
 1. Files, and the run
-2. The measures of each adapter: valid-output rate, quote-found rate, kinds, steps, abstain reasons
+2. The measures of each adapter: valid-output rate, steps, abstain reasons
 3. The stages: characters, seconds, and cost
 4. The digest model
 5. The event rate: 5 sessions at the same time, and the rate-limit count
@@ -19,9 +19,8 @@ import pytest
 from digest_support import ONE_SHRINK, over_budget
 from interpret_support import dspy, no_live_call  # noqa: F401
 from probe_support import DIGEST_MODEL, INTERPRETER_MODEL
-from replay_support import (CALLS_PER_STAGE, OUTCOMES, PLANS, STAGES, Plan, StubModel, brief_texts, bullet, counts,
-                            is_rate_limit, kinds_picked, quote_a, quote_counts, rate, replay, sections, split,
-                            stage_figures, table, write_world)
+from replay_support import (CALLS_PER_ADAPTER, OUTCOMES, PLANS, Plan, StubModel, bullet, counts, is_rate_limit,
+                            quote_a, rate, replay, sections, split, stage_figures, table, write_world)
 
 ADAPTERS = ("json", "chat")
 
@@ -71,18 +70,18 @@ def test_the_run_section_counts_the_transcripts_and_states_the_cost_method(repor
         assert price in method
 
 
-def test_each_stage_row_names_the_model_that_ran_it(run):
+def test_each_call_row_names_the_model_that_ran_it(run):
     assert {r["model_id"] for name in ADAPTERS for r in run.rows(name)} == {INTERPRETER_MODEL}
     assert {r["model_id"] for r in run.rows("digest")} == {DIGEST_MODEL}
-    assert {r["stage"] for name in ADAPTERS for r in run.rows(name)} == set(STAGES)
+    assert len({r["stage"] for name in ADAPTERS for r in run.rows(name)}) == 1, "the interpreter has more than one call"
     assert {r["stage"] for r in run.rows("digest")} == {"digest"}
 
 
 @pytest.mark.parametrize("name", ADAPTERS)
-def test_each_adapter_makes_the_scripted_calls(run, name):
+def test_each_adapter_makes_one_call_for_each_stop_brief(run, name):
     rows = run.rows(name)
     assert {r.get("adapter") for r in rows} == {name}
-    assert Counter(r["stage"] for r in rows) == CALLS_PER_STAGE
+    assert len(rows) == CALLS_PER_ADAPTER
 
 
 def test_the_stub_saw_each_adapter_for_its_own_rows(run):
@@ -122,21 +121,7 @@ def test_the_valid_output_rate_matches_the_rows(run, report, name):
     rows = run.rows(name)
     share, count, total = rate(bullet(report[f"Adapter: {name}"], "valid-output rate"))
     assert (count, total) == (sum(1 for r in rows if r["valid"]), len(rows))
-    assert 0 < count < total  # the drills made some calls invalid
-
-
-@pytest.mark.parametrize("name", ADAPTERS)
-def test_the_quote_found_rate_matches_the_pick_rows(run, report, name):
-    found, total = quote_counts(run.rows(name), brief_texts(run.root))
-    _, count, shown = rate(bullet(report[f"Adapter: {name}"], "quote-found rate"))
-    assert (count, shown) == (found, total) == (6, 7)  # the empty quote of foxtrot is the one miss
-
-
-@pytest.mark.parametrize("name", ADAPTERS)
-def test_the_kinds_picked_match_the_pick_rows(run, report, name):
-    lines = split(report[f"Adapter: {name}"], "### ")["Kinds picked"]
-    assert counts(lines) == dict(kinds_picked(run.rows(name)))
-    assert counts(lines) == {"reply": 4, "send_feedback": 2, "approve_gate": 1}
+    assert 0 < count < total  # the faulty sessions made some calls invalid
 
 
 @pytest.mark.parametrize("name", ADAPTERS)
@@ -152,22 +137,23 @@ def test_the_abstain_reasons_are_counted(run, report, name):
     lines = split(report[f"Adapter: {name}"], "### ")["Abstain reasons"]
     from_results = Counter(r["abstain_reason"] for r in run.results() if r["adapter"] == name and r["abstain_reason"])
     assert counts(lines) == dict(from_results)
-    assert counts(lines) == {"model_error": 3, "invalid_output": 1, "quote_not_in_brief": 1, "no_agent_reply": 1}
+    assert counts(lines) == {"model_error": 3, "invalid_output": 2, "no_agent_reply": 1}
 
 
 # ---- 3. the stages -----------------------------------------------------------
 
 @pytest.mark.parametrize("name", ADAPTERS)
 def test_the_stage_table_matches_the_rows(run, report, name):
+    rows = run.rows(name)
     stages = table(split(report[f"Adapter: {name}"], "### ")["Stages"])
-    assert list(stages) == list(STAGES)
-    for stage in STAGES:
-        figures, cells = stage_figures(run.rows(name), stage, "interpreter"), stages[stage]
+    assert {r["stage"] for r in rows} <= set(stages), f"the table lacks a stage of the rows: {list(stages)}"
+    for stage, cells in stages.items():
+        figures = stage_figures(rows, stage, "interpreter")
         assert int(cells["calls"]) == figures["calls"]
-        assert int(cells["chars sent"]) == figures["chars"] > 0
+        assert int(cells["chars sent"]) == figures["chars"]
         assert float(cells["seconds"]) == pytest.approx(figures["seconds"], abs=0.001)
         assert float(cells["cost USD"]) == pytest.approx(figures["cost"], abs=0.000001)
-        assert figures["cost"] > 0
+    assert sum(int(cells["calls"]) for cells in stages.values()) == len(rows) == CALLS_PER_ADAPTER
 
 
 @pytest.mark.parametrize("name", ADAPTERS)
@@ -228,7 +214,7 @@ def test_the_rate_limit_errors_of_the_event_rate_are_counted(run, report, name):
     rows = run.rows(name)
     shown = int(bullet(report[f"Adapter: {name}"], "rate-limit errors"))
     assert shown == sum(map(is_rate_limit, rows)) == 2  # delta and india got a 429
-    assert all(r["valid"] is False and r["stage"] == "pick" for r in rows if is_rate_limit(r))
+    assert all(r["valid"] is False for r in rows if is_rate_limit(r))
 
 
 # ---- no silence --------------------------------------------------------------

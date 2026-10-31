@@ -25,7 +25,10 @@ CONFIRMED_BY = "made-up-reviewer"
 CONFIRMED_ON = "2026-10-26"
 
 LABEL_FIELDS = ("status", "needs_human", "answer_class", "risk", "priority_hint",
-                "steps", "ambiguous", "why", "confirmed_by", "confirmed_on")
+                "steps", "ambiguous", "why", "confirmed_by", "confirmed_on", "priority")
+
+# The payload priority of each template stop: P1 disturbs now, P2 shows in the inbox, P3 waits for the digest.
+PRIORITY_OF_STOP = {1: "P1", 2: "P3", 3: "P3", 4: "P1", 5: "P2"}
 
 
 def require(module: str):
@@ -91,6 +94,7 @@ def make_label(stop_number: int, session_index: int = 0, **overrides) -> dict:
         label["why"] = "The grey drawer holds no item that needs the human, so the run ends with no step."
     label["confirmed_by"] = CONFIRMED_BY
     label["confirmed_on"] = CONFIRMED_ON
+    label["priority"] = PRIORITY_OF_STOP[stop_number]
     label.update(overrides)
     return label
 

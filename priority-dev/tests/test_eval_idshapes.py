@@ -32,9 +32,7 @@ def test_full_manifest_ids_match_short_prefix_labels_keys(monkeypatch, capsys, t
     labels_path.write_text(json.dumps(labels) + "\n")
     for fid in full_ids:
         shutil.copy(FIXTURES / "waiting-question.jsonl", tmp_path / f"{fid}.jsonl")
-    predictions = [make_prediction(labels["sessions"][fid[:8]]["stops"]["001"], quotes=[],
-                                   payloads=[])
-                   for fid in full_ids]
+    predictions = [make_prediction(labels["sessions"][fid[:8]]["stops"]["001"]) for fid in full_ids]
     monkeypatch.setattr(config, "load_key",
                         lambda *a, **k: (_ for _ in ()).throw(
                             AssertionError("a test reached for the real key")))

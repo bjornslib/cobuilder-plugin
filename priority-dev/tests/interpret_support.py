@@ -1,41 +1,20 @@
-"""Helpers for the slice 5 interpreter tests (RED role). The tests never make a live model call.
+"""Helpers for the interpreter tests: one typed call (slice 21, RED role). No test makes a live model call.
 
-The contract that these tests pin (the sketches `docs/design/schemas/interpreter_schemas.py` and
-`dspy_modules.py` hold the types):
+The contract that these helpers serve (design: `probes/program-flow-v2.svg`):
 
-- `priority.interpreter` exports `Interpreter`, `ACTION_KINDS`, and `interpreter_lm`.
-  `ACTION_KINDS` is the tuple of the 13 action kinds. `interpreter_lm()` builds the real model from
-  `priority.config.load_key()`, and only the CLI calls it.
-- `Interpreter(lm=None, *, allowed_kinds=ACTION_KINDS, log_dir=None)` is a `dspy.Module`.
-  `forward(brief)` takes the `StopBrief` of slice 4 and returns an Interpretation with the attributes
-  `facts`, `advice`, and `abstained`. `abstained` is None unless the run abstains, and then it has
-  `reason` and `detail`, and `advice` is None. `advice` has `question` (a Question card or None) and
-  `proposal`, and `proposal.steps` is a tuple of one to three actions. Each action has `kind`,
-  `author`, `evidence_quote`, `confidence`, and the fields of its kind.
-- The calls run in this order: Triage, Pick, one Fill for each step in step order, and Card. Triage
-  alone ends a run whose status is `done` with no unsure field. Card runs when `needs_human` is true.
-- The DummyLM replies use these output field names. Triage: `status`, `needs_human`, `answer_class`,
-  `risk`, `priority_hint`, `unsure`. Pick: `steps`, a JSON list of objects with `kind`,
-  `evidence_quote`, and `confidence`. Fill: `payload`, the JSON of the fields that the kind adds to
-  the shared ones. Card: `card`, the JSON of a Question.
-- A fault in a step gives one Abstain whose `reason` is `quote_not_in_brief` (the quote is empty)
-  or `kind_not_allowed`. A quote that is only not in the brief stays in the proposal, and the
-  metric ignores the quote text. The text "step N" (N from 1) is in the `detail`. A model call
-  that raises gives the reason `model_error`. A reply that does not parse gives the reason
-  `invalid_output`. Both write a log record at level INFO or above that holds the reason and the
-  error text. No exception escapes.
-- `log_dir/calls.jsonl` holds one JSON object for each model call, with the keys `stage` (triage,
-  pick, fill, or card), `model_id`, `prompt_hash` (the SHA-256 of `rendered_input`), `rendered_input`,
-  and `raw_reply`. A call that raised also has the key `error`.
-- `priority interpret <transcript> [--stop N] [--log-dir DIR]` builds the brief, makes the model with
-  `priority.interpreter.interpreter_lm()` (called through the module attribute), runs the interpreter,
-  and prints one JSON object with the keys `facts`, `advice`, and `abstained`. It exits 0 for an
-  Interpretation and for an Abstain. A brief that is an Abstain never reaches the model.
+- `priority.interpreter.signatures.ProposeStop` takes `brief_text` and returns `status`, `needs_human`,
+  `steps` (0 to 3 steps, discriminated on `kind` over the payload models of 13 action kinds), and
+  `priority` (P1, P2, or P3). No step schema holds a code-set field.
+- `Interpreter(lm=None, *, log_dir=None, session_id="", adapter="chat")` is a `dspy.Module` with one
+  predictor, `propose`. `forward(brief_text=...)` makes one model call and returns a `dspy.Prediction`
+  with `status`, `needs_human`, `priority`, `steps` (dicts, where code sets `session_id` and `author`),
+  and `abstain` (None, or a dict with `reason`, `detail`, and `raw`).
+- The DummyLM replies use the output names of ProposeStop. `steps` is the JSON text of the step list.
 """
 from __future__ import annotations
 
+import itertools
 import json
-import re
 from pathlib import Path
 
 import pytest
@@ -50,20 +29,33 @@ except ImportError:  # the autouse fixture below fails each test with a clear me
     dspy = DummyLM = None
 
 TRANSCRIPT = FIXTURES / "waiting-question.jsonl"
+SESSION_ID = "made-up-session"
 
-# Exact words from the brief of waiting-question.jsonl. The module test checks that each one is in it.
-QUOTE_1 = "Should I retry three times with a fixed delay"
-QUOTE_2 = "or use exponential backoff"
-QUOTE_3 = "Reply with fixed or backoff"
-RUN_QUOTE = "I will read the helper first"
-NOT_IN_BRIEF = "words that never appear in the brief"
-
-ALL_KINDS = ("reply", "continue", "continue_until", "approve_permission", "deny_permission", "pick_option",
-             "approve_gate", "send_feedback", "interrupt", "ask_human", "snooze", "dismiss", "set_priority_hint",
-             "notify")
+KINDS = ("reply", "continue", "continue_until", "approve_permission", "deny_permission", "pick_option",
+         "approve_gate", "send_feedback", "interrupt", "ask_human", "snooze", "dismiss", "notify")
+CODE_FIELDS = ("session_id", "author", "confidence", "evidence_quote", "prompt_id")
+STATUSES = ("done", "waiting_answer", "waiting_permission", "blocked", "failed", "continuing")
 
 CARD = {"ask": "Retry with a fixed delay or with backoff?",
         "options": [{"label": "fixed"}, {"label": "backoff"}], "agent_recommendation": "fixed"}
+
+# The smallest valid payload of each kind, with no code-set field.
+PAYLOADS = {
+    "reply": {"text": "fixed"},
+    "continue": {},
+    "continue_until": {"goal": "Finish the retry loop.", "proof": {"kind": "agent_shows", "show": "the tests pass"},
+                       "max_turns": 5, "max_minutes": 30},
+    "approve_permission": {"scope": "once"},
+    "deny_permission": {"reason": "Too risky."},
+    "pick_option": {"index": 1},
+    "approve_gate": {"gate": "design", "notes": ""},
+    "send_feedback": {"notes": "Use backoff."},
+    "interrupt": {},
+    "ask_human": {"detail": {"role": "decide", "questions": [CARD]}, "why_escalated": "A human owns the cost."},
+    "snooze": {"until_event": "turn_end"},
+    "dismiss": {"reason": "done"},
+    "notify": {"excerpt": "The fix is done."},
+}
 
 
 def interpreter_api():
@@ -71,61 +63,37 @@ def interpreter_api():
 
 
 def make_brief():
-    brief = build(TRANSCRIPT)
-    text = brief.for_model()
-    for quote in (QUOTE_1, QUOTE_2, QUOTE_3, RUN_QUOTE):
-        assert quote in text, f"the fixture brief lacks the quote {quote!r}"
-    return brief
+    return build(TRANSCRIPT)
+
+
+def step(kind: str, **changes) -> dict:
+    """One step dict as the model writes it: the kind and its payload fields."""
+    return {"kind": kind, **json.loads(json.dumps(PAYLOADS.get(kind, {}))), **changes}
 
 
 # ---- DummyLM replies ---------------------------------------------------------
 
-def triage(status="waiting_answer", needs_human=True, answer_class="decide", unsure=()) -> dict:
-    return {"status": status, "needs_human": "true" if needs_human else "false", "answer_class": answer_class,
-            "risk": "low", "priority_hint": "soon", "unsure": json.dumps(list(unsure))}
+def propose(steps=(), *, status: str = "waiting_answer", needs_human: bool = True, priority: str = "P2",
+            **raw) -> dict:
+    """One ProposeStop reply. A keyword in `raw` replaces the text of that field as it is."""
+    reply = {"status": status, "needs_human": "true" if needs_human else "false",
+             "steps": steps if isinstance(steps, str) else json.dumps(list(steps)), "priority": priority}
+    return reply | raw
 
 
-DONE = triage(status="done", needs_human=False, answer_class="none")
-BLOCKED = triage(status="blocked", needs_human=False, answer_class="approve_continue")
-
-
-def pick(*steps: tuple) -> dict:
-    """Each step is (kind, quote) or (kind, quote, confidence)."""
-    return {"steps": json.dumps([{"kind": s[0], "evidence_quote": s[1], "confidence": s[2] if len(s) > 2 else 0.8}
-                                 for s in steps])}
-
-
-def fill(**payload) -> dict:
-    return {"payload": json.dumps(payload)}
-
-
-def card(question: dict = CARD) -> dict:
-    return {"card": json.dumps(question)}
-
-
-PAYLOADS = {
-    "reply": {"text": "fixed"},
-    "pick_option": {"index": 1},
-    "approve_permission": {"scope": "once"},
-    "approve_gate": {"gate": "design", "notes": ""},
-    "send_feedback": {"notes": "Use backoff."},
-    "deny_permission": {"reason": "Too risky."},
-    "ask_human": {"detail": {"role": "decide", "questions": [CARD]}, "why_escalated": "A human owns the cost."},
-}
-
-
-def fills_for(kinds) -> list[dict]:
-    return [fill(**PAYLOADS[k]) for k in kinds]
-
-
-def script(status: dict, steps: list[tuple], *, with_card: bool = False, extra_fills=()) -> list[dict]:
-    """The replies of a full run: Triage, Pick, one Fill for each step, and Card when asked."""
-    replies = [status, pick(*steps), *fills_for([s[0] for s in steps]), *fills_for(extra_fills)]
-    return replies + [card()] if with_card else replies
+DONE = propose([], status="done", needs_human=False, priority="P3")
 
 
 def dummy(replies: list[dict]) -> DummyLM:
     return DummyLM(replies)
+
+
+class Always(DummyLM or object):
+    """A model that gives the same reply to every call."""
+
+    def __init__(self, reply: dict):
+        super().__init__([])
+        self.answers = itertools.repeat(reply)
 
 
 class FailingLM(DummyLM or object):
@@ -149,26 +117,20 @@ class RateLimited(RuntimeError):
 # ---- running -----------------------------------------------------------------
 
 def interpret(lm, brief=None, **kwargs):
-    api = interpreter_api()
-    return api.Interpreter(lm=lm, **kwargs)(brief if brief is not None else make_brief())
+    """Run the Interpreter on the brief text of one stop. Return what forward returns."""
+    text = (brief if brief is not None else make_brief()).for_model()
+    return interpreter_api().Interpreter(lm=lm, **kwargs)(brief_text=text)
+
+
+def predicted(lm, brief=None, **kwargs):
+    """Run the Interpreter, and fail on an assertion when forward returns no dspy.Prediction."""
+    out = interpret(lm, brief, **kwargs)
+    assert isinstance(out, dspy.Prediction), f"forward returned {type(out).__name__}, not a dspy.Prediction"
+    return out
 
 
 def stages(log_dir: Path) -> list[str]:
     return [c["stage"] for c in read_calls(log_dir)]
-
-
-def fill_kinds(lm: DummyLM) -> list[str]:
-    """The kind input of each Fill call, in call order, read from what the model received."""
-    found = []
-    for entry in lm.history:
-        match = re.search(r"\[\[ ## kind ## \]\]\n(\w+)", entry["messages"][-1]["content"])
-        if match:
-            found.append(match.group(1))
-    return found
-
-
-def step_names_in(abstain) -> set[int]:
-    return {int(n) for n in re.findall(r"\bstep (\d)\b", f"{abstain.reason} {abstain.detail}".lower())}
 
 
 @pytest.fixture(autouse=True)

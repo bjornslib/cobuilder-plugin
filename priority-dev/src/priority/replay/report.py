@@ -24,14 +24,11 @@ def run_section(measured: Measured) -> list[str]:
 def adapter_section(measured: Measured, name: str) -> list[str]:
     rows = measured.rows[name]
     mine = [line for line in measured.results if line["adapter"] == name]
-    found, total = figures.quote_found(rows, measured.texts)
     reasons = Counter(line["abstain_reason"] for line in mine if line["abstain_reason"])
     steps = Counter(line["steps"] for line in mine)
     by_steps = Counter({f"{n} step{'s' if n > 1 else ''}": steps[n] for n in (1, 2, 3)})
     return ["", f"## Adapter: {name}", "", f"- valid-output rate: {figures.valid_rate(rows)}",
-            f"- quote-found rate: {figures.share(found, total)}",
-            f"- rate-limit errors: {figures.rate_limit_errors(rows)}",
-            *_counts("Abstain reasons", reasons), *_counts("Kinds picked", figures.kinds_picked(rows)),
+            f"- rate-limit errors: {figures.rate_limit_errors(rows)}", *_counts("Abstain reasons", reasons),
             *_counts("Proposals by step count", by_steps), "", "### Stages",
             *figures.stage_table(rows, figures.INTERPRETER_STAGES, "interpreter")]
 

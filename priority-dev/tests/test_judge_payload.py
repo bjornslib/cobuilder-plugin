@@ -1,13 +1,12 @@
-"""Slice 19 RED: Decide holds the questions list and the judge scores the payload.
+"""Slice 19: Decide holds the questions list, and the judge module grades a payload.
 
 The contract: Decide carries `questions: tuple[Question, ...]` with at
-least one item and no empty default, and a multi-question payload parses
-and flows through pick, fill, and card. Readers use the list, never a
-single `.question`. The judge module takes the brief text plus the raw
-predicted payloads plus the expected payloads and returns the final score
-in 0..1 with one note per part. The metric only clamps that score and the
-feedback wraps it as a dspy Prediction. No test makes a model call: the
-judge tests run on a DummyLM, and the metric tests stub the judge.
+least one item and no empty default. The judge module takes the brief text
+plus the raw predicted payload plus the expected payload and returns the
+final score in 0..1 with one note per part. The eval report keeps one score
+line for each stop, with the payload score. No test makes a model call: the
+judge tests run on a DummyLM, and the eval test stubs the judge and the
+program. Since slice 21 the metric tests are in test_propose_metric.py.
 """
 from __future__ import annotations
 
@@ -16,22 +15,14 @@ import io
 
 import pytest
 
-from eval_support import BRIEF_TEXT, FACT_FIELDS, make_example, make_prediction, require, score_of
-from eval_support import stub_predictions_for, write_eval_world
-from fixtures_support import make_label
-from interpret_support import (CARD, QUOTE_1, DummyLM, card, dspy, dummy, fill, interpret,
-                               no_live_call, pick, stages, triage)  # noqa: F401
-from judge_ref_support import stripped
+from eval_support import StubInterpreter, require, stub_predictions_for, write_eval_world
+from interpret_support import CARD, DummyLM, dspy, no_live_call  # noqa: F401
 
-
+BRIEF_TEXT = "The blue widget trial ended in the north shed. Only the human can pick the paint colour."
 Q2 = {"ask": "Who pays for the extra run?",
       "options": [{"label": "team budget"}],
       "agent_recommendation": "team budget"}
-
-EXPECTED_PAYLOADS = {"ask_human": {"questions": ["Pick fixed or backoff?",
-                                                 "Who pays for the extra run?"]}}
-MATCHED_PAYLOADS = {"ask_human": {"questions": ["Pick fixed or backoff?",
-                                                "Who pays for the extra run?"]}}
+JUDGE_NOTES = ["decide: the questions match the label."]
 
 
 def questions_field():
@@ -61,43 +52,6 @@ def fixed_model(replies):
         yield language
     finally:
         dspy.settings.configure(lm=previous)
-
-
-def payload_pair(pred_payloads=MATCHED_PAYLOADS):
-    """One flat-dict metric input carrying payloads. The metric keeps dict support."""
-    example = make_example(make_label(1)) | {"brief_text": BRIEF_TEXT,
-                                             "expected_payloads": EXPECTED_PAYLOADS}
-    prediction = make_prediction(make_label(1)) | {"payloads": pred_payloads}
-    return example, prediction
-
-
-def made_facts():
-    """Facts for a quiet continuing stop, in model units."""
-    models = require("priority.interpreter.models")
-    signatures = require("priority.interpreter.signatures")
-    return models.Facts(status="continuing", needs_human=False, answer_class="none",
-                        risk=signatures.RISK["low"], priority_hint=signatures.HINT["can_wait"],
-                        confidence={name: 0.9 for name in FACT_FIELDS})
-
-
-def interp_pair():
-    """A real Interpretation with step payloads plus its metric example.
-
-    The judge must receive the proposal steps as produced, never a flattened
-    kinds list. The flat-dict payload_pair above covers dict inputs only.
-    """
-    models = require("priority.interpreter.models")
-    steps = [models.Reply(session_id="made-up-session", author="interpreter",
-                          evidence_quote=QUOTE_1, confidence=0.9, text="Use backoff."),
-             models.Dismiss(session_id="made-up-session", author="interpreter",
-                            evidence_quote=QUOTE_1, confidence=0.8, reason="done")]
-    proposal = models.Proposal(proposal_id="p-made-up", brief_id="b-made-up", steps=tuple(steps))
-    interp = models.Interpretation(brief_id="b-made-up", facts=made_facts(),
-                                   advice=models.Advice(proposal=proposal))
-    expected = [step.model_dump() for step in steps]
-    example = make_example(make_label(2)) | {"brief_text": BRIEF_TEXT,
-                                             "expected_payloads": expected}
-    return example, interp, steps
 
 
 def recording_stub(calls, score, notes):
@@ -137,50 +91,12 @@ def test_multi_question_payload_parses_into_a_tuple():
     assert [item.ask for item in decided.questions] == [CARD["ask"], Q2["ask"]]
 
 
-# ---- The multi-question payload flows through pick, fill, and card ----------
-
-
-def test_multi_question_payload_flows_through_pick_fill_and_card(tmp_path):
-    replies = [triage(), pick(("ask_human", QUOTE_1)),
-               fill(detail={"role": "decide", "questions": [CARD, Q2]},
-                    why_escalated="A human owns the cost."),
-               card()]
-    out = interpret(dummy(replies), log_dir=tmp_path)
-    assert out.abstained is None, f"the gate abstained a two-question payload: {out.abstained}"
-    (step,) = out.advice.proposal.steps
-    assert [item.ask for item in step.detail.questions] == [CARD["ask"], Q2["ask"]]
-    assert "card" in stages(tmp_path), "the two-question payload never reached card"
-
-
-# ---- Readers use the list ----------------------------------------------------
-
-
-def test_to_prediction_uses_the_questions_list():
-    from interpret_support import PAYLOADS
-    replies = [triage(), pick(("ask_human", QUOTE_1)),
-               fill(**PAYLOADS["ask_human"]), card()]
-    out = interpret(dummy(replies))
-    assert out.abstained is None, f"the valid ask_human flow abstained: {out.abstained}"
-    runner = require("priority.evaluation.runner")
-    prediction = runner.to_prediction(out)
-    got = prediction.get("questions")
-    assert got is not None and len(got) == 1, \
-        f"to_prediction exposes no questions list: {prediction}"
-    asks = [item["ask"] if isinstance(item, dict) else item.ask for item in got]
-    assert asks == [CARD["ask"]], f"the questions list lost the card ask: {got}"
-    assert "question" not in prediction and "card" not in prediction, \
-        f"to_prediction still exposes a single .question: {prediction}"
-
-
 # ---- The judge module ---------------------------------------------------------
 
 
 def test_judge_module_exposes_a_judge_callable():
     api = judge_api()
     assert callable(getattr(api, "judge", None)), "judge.judge is not callable"
-
-
-JUDGE_NOTES = ["decide: the questions match the label."]
 
 
 def test_judge_returns_a_final_score_with_one_note_per_part():
@@ -221,112 +137,17 @@ def test_judge_rubric_compares_closed_fields_exactly():
     assert "exact" in blob.lower(), "the judge rubric never asks for an exact closed-field compare"
 
 
-# ---- The metric only clamps and wraps -----------------------------------------
-
-
-def test_fixed_judge_score_flows_through_as_the_final_score(monkeypatch):
-    api = judge_api()
-    calls = []
-    monkeypatch.setattr(api, "judge", recording_stub(calls, 0.75, JUDGE_NOTES))
-    value, feedback = score_of(*payload_pair())
-    assert value == pytest.approx(0.75), f"the metric moved the judge score to {value}"
-    assert "the questions match" in feedback, f"the judge note is missing: {feedback}"
-
-
-def test_interpretation_step_payloads_flow_through_as_the_final_score(monkeypatch):
-    api = judge_api()
-    calls = []
-    monkeypatch.setattr(api, "judge", recording_stub(calls, 0.75, JUDGE_NOTES))
-    example, interp, steps = interp_pair()
-    value, feedback = score_of(example, interp)
-    assert value == pytest.approx(0.75), f"the metric moved the judge score to {value}"
-    assert "the questions match" in feedback, f"the judge note is missing: {feedback}"
-    assert calls and calls[0]["predicted"] == stripped([step.model_dump() for step in steps]), \
-        "the judge never saw the proposal steps, less the code-set fields"
-
-
-def test_metric_clamps_out_of_range_judge_scores(monkeypatch):
-    api = judge_api()
-    example, interp, _ = interp_pair()
-    calls = []
-    monkeypatch.setattr(api, "judge", recording_stub(calls, 1.5, JUDGE_NOTES))
-    high, _ = score_of(example, interp)
-    assert high == pytest.approx(1.0), f"a judge score of 1.5 was not clamped: {high}"
-    monkeypatch.setattr(api, "judge", recording_stub(calls, -0.5, JUDGE_NOTES))
-    low, _ = score_of(example, interp)
-    assert low == pytest.approx(0.0), f"a judge score of -0.5 was not clamped: {low}"
-
-def test_metric_forwards_raw_payloads_never_flattened(monkeypatch):
-    api = judge_api()
-    calls = []
-    monkeypatch.setattr(api, "judge", recording_stub(calls, 0.75, JUDGE_NOTES))
-    example, interp, steps = interp_pair()
-    score_of(example, interp)
-    assert calls, "the metric never called the judge"
-    assert calls[0]["predicted"] == stripped([step.model_dump() for step in steps]), \
-        f"the judge saw flattened payloads: {calls[0]['predicted']}"
-    assert calls[0]["expected"] == stripped(example["expected_payloads"]), \
-        "the judge never saw the expected payloads"
-    assert calls[0]["brief_text"] == BRIEF_TEXT, "the judge never saw the brief text"
-
-
-def test_gate_abstain_scores_zero_without_calling_the_judge(monkeypatch):
-    api = judge_api()
-    models = require("priority.interpreter.models")
-    abstained = models.Interpretation(
-        brief_id="b-made-up", facts=made_facts(),
-        abstained=models.Abstain(reason="kind_not_allowed",
-                                 detail="step 1: the kind launch_missile is not allowed"))
-    calls = []
-    monkeypatch.setattr(api, "judge", recording_stub(calls, 0.0, JUDGE_NOTES))
-    example = make_example(make_label(2)) | {"brief_text": BRIEF_TEXT,
-                                             "expected_payloads": [{"kind": "continue"}]}
-    value, feedback = score_of(example, abstained)
-    assert value == pytest.approx(0.0), f"a gate fault scored {value}, want 0.00"
-    assert "disallowed" in feedback.lower(), f"feedback names no kind check: {feedback}"
-    assert calls == [], "a gate abstain reached the judge"
-
-
-def test_gepa_feedback_wraps_the_judge_score_as_a_prediction(monkeypatch):
-    api = judge_api()
-    monkeypatch.setattr(api, "judge", recording_stub([], 0.75, JUDGE_NOTES))
-    optimise = require("priority.optimise")
-    example, interp, _ = interp_pair()
-    feedback = optimise.gepa_feedback(example, interp)
-    assert isinstance(feedback, dspy.Prediction), "gepa_feedback returned no dspy Prediction"
-    assert feedback.score == pytest.approx(0.75), \
-        f"gepa_feedback moved the judge score to {feedback.score}"
-    assert "the questions match" in feedback.feedback, \
-        f"the wrapped feedback lost the judge notes: {feedback.feedback}"
-
-
-def test_named_predictor_keeps_the_program_score_with_field_notes(monkeypatch):
-    api = judge_api()
-    monkeypatch.setattr(api, "judge", recording_stub([], 0.75, JUDGE_NOTES))
-    example, interp, _ = interp_pair()
-    program_value, _ = score_of(example, interp)
-    value, feedback = score_of(example, interp, None, "fill['reply']", None)
-    assert value == pytest.approx(program_value), \
-        f"naming a predictor moved the score from {program_value} to {value}"
-    assert feedback.startswith("predictor fill['reply']:"), \
-        f"the feedback does not name the predictor: {feedback}"
-    assert "the questions match" in feedback, \
-        f"the predictor feedback lost the judge field notes: {feedback}"
-
-
 # ---- Per-stop lines carry the payload score ------------------------------------
 
 
 def run_eval_with_stub(monkeypatch, tmp_path, split_name):
-    """Run `priority eval` in process with a stub interpreter. Return exit code and output."""
+    """Run `priority eval` in process with a stub program. Return exit code and output."""
     interpreter = require("priority.interpreter")
     config = require("priority.config")
     manifest_path, labels_path, real_dir, parts = write_eval_world(tmp_path)
     monkeypatch.setattr(config, "load_key",
                         lambda *args, **kwargs: (_ for _ in ()).throw(
                             AssertionError("a test reached for the real key")))
-
-    from eval_support import StubInterpreter
     monkeypatch.setattr(interpreter, "Interpreter",
                         lambda *args, **kwargs: StubInterpreter(
                             stub_predictions_for(manifest_path, labels_path)))
@@ -342,19 +163,15 @@ def run_eval_with_stub(monkeypatch, tmp_path, split_name):
     return code, out.getvalue(), parts
 
 
-def test_eval_per_stop_lines_carry_facts_steps_validity_and_payload(monkeypatch, tmp_path):
+def test_eval_per_stop_lines_carry_the_payload_score(monkeypatch, tmp_path):
     api = judge_api()
-    notes = ["facts: all facts match.", "steps: the kinds match.",
-             "validity: the output parses.", "payload: the questions match."]
-    monkeypatch.setattr(api, "judge", recording_stub([], 0.8, notes))
+    monkeypatch.setattr(api, "judge", recording_stub([], 0.8, ["payload: the questions match."]))
     code, printed, parts = run_eval_with_stub(monkeypatch, tmp_path, "train")
     assert code == 0, f"eval failed: {printed[-500:]}"
     stop_lines = [line for line in printed.splitlines() if line.startswith("score stop ")]
     assert stop_lines, "the report prints no per-stop score lines"
-    assert all("payload" in line for line in stop_lines), \
+    assert all("payload=" in line for line in stop_lines), \
         "per-stop lines carry no payload score"
-    for token in ("facts", "steps", "validity", "payload"):
-        assert token in printed.lower(), f"the report never names {token}"
     session_lines = [line for line in printed.splitlines() if line.startswith("session ")]
     assert session_lines, "the report lost its per-session aggregation lines"
     assert all("overall" in line for line in session_lines), \

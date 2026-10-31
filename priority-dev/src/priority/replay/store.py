@@ -33,7 +33,6 @@ class Measured:
     concurrency: int
     results: list[dict]
     rows: dict[str, list[dict]]  # the call rows by folder: each adapter, and digest
-    texts: list[str]  # the text of each stop brief that went to the interpreter
     drills: dict[str, str]  # the reason of each drill, by drill name
     conditions: list[str]  # the abort_if list of the goal file
     stored: set[str] = field(default_factory=set)  # the sessions that have a stored digest

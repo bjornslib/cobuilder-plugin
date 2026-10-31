@@ -1,33 +1,20 @@
-"""The typed output of the interpreter: facts, question card, the 14 actions, and the Interpretation.
+"""The typed steps of the interpreter: the question, the 13 step payloads, and the call Abstain.
 
-The types follow docs/design/schemas/interpreter_schemas.py, sections 2 to 5.
+Each step model holds only the fields that the model writes. Code adds `session_id` and `author` to each
+step after the call. The design is probes/program-flow-v2.svg.
 """
 from __future__ import annotations
 
-import hashlib
 from typing import Annotated, Literal, Union, get_args
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class Strict(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
 
-def digest(*parts: str) -> str:
-    return hashlib.sha256("\x1f".join(parts).encode()).hexdigest()[:16]
-
-
-# ---- Facts and the question card ---------------------------------------------
-
-class Facts(Strict):
-    status: str
-    needs_human: bool
-    answer_class: str
-    risk: float
-    priority_hint: float
-    confidence: dict[str, float]  # one entry for each field above
-
+# ---- The question ------------------------------------------------------------
 
 class Option(Strict):
     label: str = Field(max_length=120)
@@ -50,22 +37,14 @@ class Question(Strict):
     helps: tuple[Help, ...] = Field(default=(), max_length=3)
 
 
-# ---- Actions -----------------------------------------------------------------
+# ---- The steps ---------------------------------------------------------------
 
-class ActionBase(Strict):
-    session_id: str
-    prompt_id: str | None = None
-    author: Literal["interpreter", "human", "rule"] = "interpreter"
-    evidence_quote: str = ""  # an exact substring of the stop brief, or the action is ask_human
-    confidence: float = Field(ge=0, le=1, default=0)
-
-
-class Reply(ActionBase):
+class Reply(Strict):
     kind: Literal["reply"] = "reply"
     text: str = Field(max_length=2000)
 
 
-class Continue(ActionBase):
+class Continue(Strict):
     kind: Literal["continue"] = "continue"
 
 
@@ -76,7 +55,7 @@ class Proof(Strict):
     show: str = ""
 
 
-class ContinueUntil(ActionBase):
+class ContinueUntil(Strict):
     kind: Literal["continue_until"] = "continue_until"
     goal: str = Field(max_length=500)
     proof: Proof
@@ -84,34 +63,34 @@ class ContinueUntil(ActionBase):
     max_minutes: int = Field(ge=1, le=480)
 
 
-class ApprovePermission(ActionBase):
+class ApprovePermission(Strict):
     kind: Literal["approve_permission"] = "approve_permission"
     scope: Literal["once", "session"] = "once"
 
 
-class DenyPermission(ActionBase):
+class DenyPermission(Strict):
     kind: Literal["deny_permission"] = "deny_permission"
     reason: str = ""
 
 
-class PickOption(ActionBase):
+class PickOption(Strict):
     kind: Literal["pick_option"] = "pick_option"
     index: int = Field(ge=0)
 
 
-class ApproveGate(ActionBase):
+class ApproveGate(Strict):
     kind: Literal["approve_gate"] = "approve_gate"
     gate: str
     notes: str = ""
 
 
-class SendFeedback(ActionBase):
+class SendFeedback(Strict):
     kind: Literal["send_feedback"] = "send_feedback"
     gate: str | None = None
     notes: str = Field(max_length=2000)
 
 
-class Interrupt(ActionBase):
+class Interrupt(Strict):
     kind: Literal["interrupt"] = "interrupt"
 
 
@@ -135,78 +114,38 @@ class Review(Strict):
     check_items: tuple[str, ...] = ()
 
 
-class AskHuman(ActionBase):
+class AskHuman(Strict):
     kind: Literal["ask_human"] = "ask_human"
     detail: Annotated[Union[Decide, Do, Review], Field(discriminator="role")]
     why_escalated: str = ""
 
 
-class Snooze(ActionBase):
+class Snooze(Strict):
     kind: Literal["snooze"] = "snooze"
     until: str | None = None
     until_event: Literal["session_idle", "turn_end", "none"] = "none"
 
 
-class Dismiss(ActionBase):
+class Dismiss(Strict):
     kind: Literal["dismiss"] = "dismiss"
     reason: Literal["done", "stale", "duplicate", "fyi_read"]
 
 
-class Notify(ActionBase):
-    """A finished run becomes a notice. Code sets the excerpt from the final reply."""
+class Notify(Strict):
+    """A finished run becomes a notice. The model takes the excerpt from the final reply."""
     kind: Literal["notify"] = "notify"
     excerpt: str = Field(max_length=600)
 
 
-class SetPriorityHint(ActionBase):
-    kind: Literal["set_priority_hint"] = "set_priority_hint"
-    hint: float = Field(ge=0, le=1)
-
-
-Action = Annotated[
+Step = Annotated[
     Union[Reply, Continue, ContinueUntil, ApprovePermission, DenyPermission, PickOption,
-          ApproveGate, SendFeedback, Interrupt, AskHuman, Snooze, Dismiss, SetPriorityHint, Notify],
+          ApproveGate, SendFeedback, Interrupt, AskHuman, Snooze, Dismiss, Notify],
     Field(discriminator="kind"),
 ]
-ACTION_CLASS = {c.model_fields["kind"].default: c for c in get_args(get_args(Action)[0])}
-ACTION_KINDS = tuple(ACTION_CLASS)
-SESSION_EFFECT = {"reply", "continue", "continue_until", "approve_permission", "deny_permission",
-                  "pick_option", "approve_gate", "send_feedback", "interrupt"}
-
-
-# ---- Output ------------------------------------------------------------------
-
-class Proposal(Strict):
-    """One to three steps. The policy decides each step on its own, in order."""
-    proposal_id: str
-    brief_id: str
-    steps: tuple[Action, ...] = Field(min_length=1, max_length=3)
-    rationale: str = Field(default="", max_length=300)
-
-    @model_validator(mode="after")
-    def check_steps(self) -> "Proposal":
-        if len({a.session_id for a in self.steps if a.kind in SESSION_EFFECT}) > 1:
-            raise ValueError("session steps must target one session")
-        gates = [a.gate for a in self.steps if a.kind == "approve_gate"]
-        if any(a.kind == "send_feedback" and a.gate in gates for a in self.steps):
-            raise ValueError("a gate cannot be approved and returned in one proposal")
-        return self
-
-
-class Advice(Strict):
-    question: Question | None = None
-    proposal: Proposal
+ACTION_KINDS = tuple(c.model_fields["kind"].default for c in get_args(get_args(Step)[0]))
 
 
 class Abstain(Strict):
-    """The interpreter proposes nothing. The detail names the step that failed a check."""
-    reason: Literal["quote_not_in_brief", "kind_not_allowed", "invalid_output", "model_error",
-                    "no_agent_reply", "brief_too_large"]
+    """A Digest or Shrink call, or the brief of the digest command, gave no result. The detail names the fault."""
+    reason: Literal["invalid_output", "model_error", "no_agent_reply", "brief_too_large"]
     detail: str = ""
-
-
-class Interpretation(Strict):
-    brief_id: str
-    facts: Facts | None = None
-    advice: Advice | None = None
-    abstained: Abstain | None = None

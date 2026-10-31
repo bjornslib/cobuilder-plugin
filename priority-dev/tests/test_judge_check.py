@@ -1,22 +1,29 @@
-"""Slice 20 RED: `priority judge-check` measures the judge against three bars.
+"""`priority judge-check` measures the judge against three bars, on payload objects.
 
-The contract. `priority judge-check --pairs PATH --labels PATH --real-dir DIR
-[--repeats 2]` scores each side of each pair with `metric.score` against the
-stop's reference, `--repeats` times, on the brief built from the transcript.
-It prints the human agreement, the closed-field probe, and the repeat flips,
-then the judge usage line, then `agreement bar: pass` or `agreement bar: fail`.
-A fail exits 1. Each pair names stop 1 as an integer. The judge is a stub
-and every file is made up, so no test makes a model call.
+The contract (slice 21). `priority judge-check --pairs PATH --labels PATH
+--real-dir DIR [--repeats 2]` scores each side of each pair with
+`metric.score` against the stop's reference `{"priority", "steps"}`,
+`--repeats` times, on the brief built from the transcript. Each pair side is
+a payload object `{"priority", "steps"}`. The closed-field probe makes
+code-made copies of each reference with one closed field changed, and one of
+them changes only the priority. It prints the human agreement, the
+closed-field probe, and the repeat flips, then the judge usage line, then
+`agreement bar: pass` or `agreement bar: fail`. A fail exits 1. The judge is
+a stub and every file is made up, so no test makes a model call.
 """
 from __future__ import annotations
 
 import re
 
-from judge_check_support import (LABEL, MULTI, PROBE_REFERENCES, ROLE, TRANSCRIPT, GradingJudge,
-                                 agreeing, diff_paths, pair, run_check)
-from judge_ref_support import as_json, require, stripped
+from judge_check_support import (LABEL, MULTI, PAIR_PRIORITY, PAIR_STEPS, PRIORITY, PROBE_PRIORITY,
+                                 PROBE_REFERENCES, ROLE, TRANSCRIPT, GradingJudge, agreeing, diff_paths, pair,
+                                 run_check)
+from judge_ref_support import as_json, require
 
 USAGE = re.compile(r"^judge calls: \d+ prompt_tokens: \d+ completion_tokens: \d+$")
+PROBE = re.compile(r"^closed-field probe: (\d+)/(\d+) = (\d\.\d\d) \(bar 0\.90\)$")
+# Probe reference 0 has option labels, so it gets four copies. Reference 1 has none, so it gets three.
+LEAST_COPIES = 7
 
 
 def line_index(lines: list, text: str) -> int:
@@ -25,11 +32,20 @@ def line_index(lines: list, text: str) -> int:
     return lines.index(text)
 
 
+def probe_line(lines: list) -> tuple[int, int, int]:
+    """The index, the lower count, and the copy count of the probe line."""
+    found = [(index, PROBE.match(line)) for index, line in enumerate(lines) if PROBE.match(line)]
+    assert len(found) == 1, f"the report has no single closed-field probe line: {lines}"
+    index, match = found[0]
+    return index, int(match.group(1)), int(match.group(2))
+
+
 def test_passing_run_prints_three_bars_then_usage_then_pass(monkeypatch, tmp_path):
     code, printed = run_check(monkeypatch, tmp_path, agreeing(6), GradingJudge())
     lines = printed.splitlines()
     agreement = line_index(lines, "human agreement: 6/6 = 1.00 (bar 0.75, min 6 pairs)")
-    probe = line_index(lines, "closed-field probe: 5/5 = 1.00 (bar 0.90)")
+    probe, lower, copies = probe_line(lines)
+    assert lower == copies >= LEAST_COPIES, f"the probe counted {lower}/{copies}, want all of at least {LEAST_COPIES}"
     flips = line_index(lines, "repeat flips: 0/6 = 0.00 (bar 0.10)")
     verdict = line_index(lines, "agreement bar: pass")
     usage = [index for index, line in enumerate(lines) if USAGE.match(line)]
@@ -38,19 +54,19 @@ def test_passing_run_prints_three_bars_then_usage_then_pass(monkeypatch, tmp_pat
     assert code == 0, f"a passing run exited {code}"
 
 
-def test_each_side_is_judged_twice_by_default_on_the_built_brief(monkeypatch, tmp_path):
+def test_each_payload_side_is_judged_twice_against_the_reference_object(monkeypatch, tmp_path):
     judge = GradingJudge()
     pairs = agreeing(6)
     run_check(monkeypatch, tmp_path, pairs, judge)
     brief = require("priority.brief").build_brief(TRANSCRIPT, stop=1).for_model()
+    reference = {"priority": PAIR_PRIORITY, "steps": PAIR_STEPS}
     for entry in pairs:
         for side in ("a", "b"):
             calls = [call for call in judge.calls if as_json(call["predicted"]) == as_json(entry[side])]
             assert len(calls) == 2, f"pair {entry['session']} side {side} was judged {len(calls)} times"
             assert all(call["brief_text"] == brief for call in calls), "a pair was judged on another brief"
-            assert all(call["expected"] == stripped([{"kind": "reply", "text":
-                       "The reference answer for the made-up stop."}]) for call in calls), \
-                "a pair was judged against another reference"
+            assert all(call["expected"] == reference for call in calls), \
+                f"a pair was judged against {calls[0]['expected']}, not {reference}"
 
 
 def test_repeats_flag_sets_the_judge_count_per_side(monkeypatch, tmp_path):
@@ -90,17 +106,27 @@ def test_a_tie_is_no_match_and_an_unpicked_pair_is_not_counted(monkeypatch, tmp_
 def test_a_judge_blind_to_closed_fields_fails_the_probe(monkeypatch, tmp_path):
     code, printed = run_check(monkeypatch, tmp_path, agreeing(6), GradingJudge(probe_blind=True))
     lines = printed.splitlines()
-    line_index(lines, "closed-field probe: 0/5 = 0.00 (bar 0.90)")
+    _, lower, copies = probe_line(lines)
+    assert lower == 0 and copies >= LEAST_COPIES, f"a blind judge passed {lower}/{copies} probe copies"
     line_index(lines, "agreement bar: fail")
     assert code == 1, f"a run under the probe bar exited {code}"
+
+
+def test_a_judge_blind_to_the_priority_fails_the_probe(monkeypatch, tmp_path):
+    code, printed = run_check(monkeypatch, tmp_path, agreeing(6), GradingJudge(priority_blind=True))
+    lines = printed.splitlines()
+    _, lower, copies = probe_line(lines)
+    assert lower / copies < 0.90, f"the probe did not count the priority copies: {lower}/{copies}"
+    line_index(lines, "agreement bar: fail")
+    assert code == 1, f"a run with a priority-blind judge exited {code}"
 
 
 def test_probe_copies_change_exactly_one_closed_field(monkeypatch, tmp_path):
     judge = GradingJudge()
     run_check(monkeypatch, tmp_path, agreeing(6), judge)
-    wanted = {0: {MULTI, ROLE, LABEL}, 1: {MULTI, ROLE}}
+    wanted = {0: {MULTI, ROLE, LABEL, PRIORITY}, 1: {MULTI, ROLE, PRIORITY}}
     for index, reference in enumerate(PROBE_REFERENCES):
-        expected = stripped([reference])
+        expected = {"priority": PROBE_PRIORITY, "steps": [reference]}
         copies = [call["predicted"] for call in judge.calls
                   if call["expected"] == expected and call["predicted"] != expected]
         changed = [diff_paths(copy, expected) for copy in copies]

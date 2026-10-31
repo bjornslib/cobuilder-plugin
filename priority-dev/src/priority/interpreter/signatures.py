@@ -1,104 +1,48 @@
-"""The DSPy signatures of Triage, Pick, Fill, and Card, and the values that Triage maps to numbers."""
+"""The one DSPy signature of the interpreter, ProposeStop. Its docstring is the instruction that GEPA rewrites."""
 from __future__ import annotations
 
-from typing import Literal
+from typing import Annotated, Literal
 
 import dspy
-from pydantic import BaseModel, Field, create_model, field_validator
+from pydantic import Field, RootModel
 
-from priority.interpreter.models import ACTION_CLASS, ACTION_KINDS, ActionBase, Question, Strict
+from priority.interpreter.models import Step
 
-RISK = {"low": 0.15, "medium": 0.5, "high": 0.85}
-HINT = {"can_wait": 0.15, "soon": 0.5, "now": 0.85}
-ANSWER_DUE = {"waiting_answer", "waiting_permission", "blocked", "failed"}
+MAX_STEPS = 3
 
 
-class TriageLM(dspy.Signature):
-    """Read the end of a run of a coding agent. Report the state of the session.
+class Steps(RootModel[list[Step]]):
+    """0 to 3 steps, in run order. The limit is part of the type, because dspy validates the field
+    annotation only and moves a `Field(max_length=...)` of a signature field into metadata."""
+    root: Annotated[list[Step], Field(max_length=MAX_STEPS)]
 
-    status is one of done, waiting_answer, waiting_permission, blocked, failed, continuing. answer_class is one of none, approve_continue, pick_default, provide_fact, decide, external_action. risk is one of low, medium, high. priority_hint is one of can_wait, soon, now. Output uses exactly the declared fields."""
 
-    brief_text: str = dspy.InputField()
+class ProposeStop(dspy.Signature):
+    """You are the orchestrator of coding sessions. A coding agent stopped, and the stop brief shows its run.
+    The brief ends with the final reply of the agent. Report the state of the session.
+    Then propose the steps that the system runs for this stop, and give one priority for the whole proposal.
+
+    Use 0 to 3 steps, in the order to run them. Use only facts from the stop brief. Each step has one kind:
+    - reply: send a text to the agent.
+    - continue: tell the agent to go on.
+    - continue_until: let the agent go on until a goal holds, with a proof and turn and minute limits.
+    - approve_permission or deny_permission: answer a permission request of the agent.
+    - pick_option: choose one option that the agent gave, by its index from 0.
+    - approve_gate: approve a gate. send_feedback: return a gate or the work with notes.
+    - interrupt: stop the agent.
+    - ask_human: send the stop to the human. Put all questions of the stop in one ask_human step.
+      The role decide holds the questions, do holds the tasks of the human, and review names the artifact.
+    - snooze: wait until a time or an event.
+    - dismiss: close the stop with a reason.
+    - notify: tell the human that the run finished, with an excerpt of the final reply.
+
+    The priority tells the system when to show the proposal to the human.
+    P1 disturbs the human now with an alert. P2 shows the proposal in the inbox now.
+    P3 puts the proposal in the next digest. Use P3 when no step is notify or ask_human."""
+
+    brief_text: str = dspy.InputField(desc="The stop brief. It ends with the final reply of the agent")
     status: Literal["done", "waiting_answer", "waiting_permission", "blocked", "failed", "continuing"] = \
         dspy.OutputField(desc="What the session does now")
     needs_human: bool = dspy.OutputField(desc="True only when no rule or agent can give the answer")
-    answer_class: Literal["none", "approve_continue", "pick_default", "provide_fact", "decide",
-                          "external_action"] = dspy.OutputField(desc="The kind of answer that is due")
-    risk: Literal["low", "medium", "high"] = dspy.OutputField(desc="The cost of a wrong answer")
-    priority_hint: Literal["can_wait", "soon", "now"] = dspy.OutputField(desc="How soon the human should look")
-    unsure: list[str] = dspy.OutputField(
-        desc="Names of the fields above that you are unsure about, or an empty list")
-
-
-FACT_FIELDS = tuple(n for n in TriageLM.output_fields if n != "unsure")
-
-
-class PickedStep(BaseModel):
-    kind: str = Field(description="The kind of this step")
-    evidence_quote: str = Field(default="", description="Exact words from the stop brief. Empty for a human task")
-    confidence: float = Field(default=0.0, description="0 to 1")
-
-    @field_validator("kind")
-    @classmethod
-    def known_kind(cls, value: str) -> str:
-        if value not in ACTION_KINDS:
-            raise ValueError(f"{value!r} is not an action kind")
-        return value
-
-
-class PickStep(dspy.Signature):
-    """Choose the next steps for a waiting coding session, one to three, in the order to do them.
-    Quote the words of the stop brief that support each step.
-
-    Choose the kind of each step from allowed_kinds only. Each step has exactly the fields kind, evidence_quote, confidence. Output uses exactly the declared fields."""
-    brief_text: str = dspy.InputField()
-    facts: str = dspy.InputField(desc="The facts from the triage step, as JSON")
-    allowed_kinds: list[str] = dspy.InputField(desc="Choose the kind of each step from these kinds only")
-    steps: list[PickedStep] = dspy.OutputField(desc="One to three steps, in order")
-
-
-class Fill(dspy.Signature):
-    """Write the fields of one action for a waiting coding session. Use only facts in the stop brief.
-
-    Write only the payload fields of the action schema for the given kind. Output uses exactly the declared fields."""
-    brief_text: str = dspy.InputField()
-    kind: str = dspy.InputField(desc="The kind of action to write")
-    evidence_quote: str = dspy.InputField(desc="The words of the stop brief that this step answers")
-    payload: Strict = dspy.OutputField()  # the type is replaced for each kind
-
-
-class WriteCard(dspy.Signature):
-    """Write the question card that a busy human reads. Be short. Give options only if the agent gave them.
-
-    The card has exactly the fields ask, options, multi_select, free_text, agent_recommendation, helps. Each help has kind one of copy_command, open_file, open_url, explain, plus label and value. Output uses exactly the declared fields."""
-    brief_text: str = dspy.InputField()
-    card: Question = dspy.OutputField()
-
-
-class CombinedAction(BaseModel):
-    """One step of the one-call variant. The kind stays plain so the code check names the step."""
-    kind: str = Field(description="The kind of this step")
-    evidence_quote: str = Field(default="", description="Exact words from the stop brief. Empty for a human task")
-    confidence: float = Field(default=0.0, description="0 to 1")
-    payload: dict = Field(default_factory=dict, description="The fields of the action")
-
-
-class WriteCombined(dspy.Signature):
-    """Write the steps, their payloads, and the question card in one call.
-
-    Choose the kind of each step from allowed_kinds only. Each action has exactly the fields kind, evidence_quote, confidence, payload. The card is null when no card is due. Output uses exactly the declared fields."""
-    brief_text: str = dspy.InputField()
-    facts: str = dspy.InputField(desc="The facts from the triage step, as JSON")
-    allowed_kinds: list[str] = dspy.InputField(desc="Choose the kind of each step from these kinds only")
-    actions: list[CombinedAction] = dspy.OutputField(desc="One to three steps with payloads, in order")
-    card: Question | None = dspy.OutputField(desc="The question card, or null when no card is due")
-
-
-def payload_model(cls: type[ActionBase]) -> type[Strict]:
-    """The fields of an action that the model writes. Code sets the session, author, quote, and confidence."""
-    skip = set(ActionBase.model_fields) | {"kind"}
-    fields = {n: (f.annotation, f) for n, f in cls.model_fields.items() if n not in skip}
-    return create_model(cls.__name__ + "Payload", __base__=Strict, **fields)
-
-
-FILL = {k: Fill.with_updated_fields("payload", type_=payload_model(c)) for k, c in ACTION_CLASS.items()}
+    steps: Steps = dspy.OutputField(desc="0 to 3 steps, in the order to run them")
+    priority: Literal["P1", "P2", "P3"] = dspy.OutputField(desc="One priority for the whole proposal")

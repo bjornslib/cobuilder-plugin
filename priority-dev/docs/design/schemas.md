@@ -2,6 +2,8 @@
 
 Status: design, round 10. The code sketch is `schemas/interpreter_schemas.py`. It runs with `uv run`. It checks every example, one hash rule, and one plan rule. It is not the code layout.
 
+Slice 21 note: the code no longer has the two stages of section 1, the question card, or `set_priority_hint`. One typed call, `ProposeStop`, returns the status, `needs_human`, 0 to 3 steps, and one priority from P1 to P3. The design is `probes/program-flow-v2.svg`, and `dspy-modules.md` describes it. The action payloads in section 4 still hold, with `notify` and without `set_priority_hint`.
+
 The first spikes do not use Jev (section 1). The sketch still shows the Jev types, so a later swap is cheap. The sketch uses `dspy[typesafe]==3.4.1`. `Choice`, `Noul`, and `Score` import from `dspy.experimental`. `Score[...]` must be the field type itself. Each decision field needs `desc=` in its `OutputField`. No call to Jev or to the advisor has run yet. The one-day test makes the first call.
 
 ## 1. The two stages of the interpreter

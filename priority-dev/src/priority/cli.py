@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import logging
 import sys
 from pathlib import Path
@@ -10,19 +11,24 @@ from priority.brief import StopBrief, build_brief
 from priority.digest_store import load_digest, save_digest
 from priority.replay import options
 
+PREDICTION_FIELDS = ("status", "needs_human", "priority", "steps", "abstain")
+
 
 def interpret(transcript: Path, stop: int | None, log_dir: Path | None) -> int:
-    """Build the brief, run the interpreter, and print one JSON object. An Abstain also exits with 0."""
+    """Build the brief, run the interpreter, and print the Prediction fields as one JSON object.
+
+    An Abstain also exits with 0."""
     from priority import interpreter  # a lazy import: only this command needs dspy and the key
 
     brief = build_brief(transcript, stop=stop, previous=load_digest(log_dir, transcript.stem))
     if isinstance(brief, StopBrief):
         result = interpreter.Interpreter(interpreter.interpreter_lm(), log_dir=log_dir,
-                                         session_id=transcript.stem)(brief)
+                                         session_id=transcript.stem)(brief_text=brief.for_model())
+        fields = {name: result[name] for name in PREDICTION_FIELDS}
     else:
-        result = interpreter.Interpretation(brief_id="", abstained=interpreter.Abstain(
-            reason=brief.reason, detail=brief.detail))
-    print(result.model_dump_json(indent=2))
+        abstain = {"reason": brief.reason, "detail": brief.detail, "raw": ""}
+        fields = {"status": None, "needs_human": None, "priority": None, "steps": [], "abstain": abstain}
+    print(json.dumps(fields, indent=2))
     return 0
 
 
@@ -53,12 +59,11 @@ def eval_split(args: argparse.Namespace) -> int:
     """Score one split of the labelled set against the interpreter."""
     from priority.evaluation import runner  # a lazy import: only this command needs dspy and the key
 
-    return runner.run(args.manifest, args.labels, args.real_dir, args.split, args.log_dir, args.variant,
-                      program=args.program)
+    return runner.run(args.manifest, args.labels, args.real_dir, args.split, args.log_dir, program=args.program)
 
 
 def optimise_run(args: argparse.Namespace) -> int:
-    """Compile the chain interpreter with one optimiser, on train sessions only."""
+    """Compile the interpreter with one optimiser, or give it labelled demos, on train sessions only."""
     from priority import optimise  # a lazy import: only this command needs dspy
 
     return optimise.run(args.manifest, args.labels, args.real_dir,
@@ -123,8 +128,6 @@ def main(argv: list[str] | None = None) -> int:
     check_parser.add_argument("--real-dir", type=Path, default=Path("fixtures/real"),
                               help="Folder with the real sessions, must be Git-ignored")
     eval_parser = subparsers.add_parser("eval", help="Score one split of the labelled set")
-    eval_parser.add_argument("--variant", default="chain", choices=("chain", "combined"),
-                             help="The interpreter variant to score (default: chain)")
     eval_parser.add_argument("--split", default="train", choices=("train", "holdout"),
                              help="The split to score (default: train)")
     eval_parser.add_argument("--manifest", type=Path, default=Path("fixtures/set-manifest.json"),
@@ -136,10 +139,10 @@ def main(argv: list[str] | None = None) -> int:
     eval_parser.add_argument("--log-dir", type=Path, default=Path("reports/logs"),
                              help="Folder for the stored call rows (default: reports/logs)")
     eval_parser.add_argument("--program", type=Path, default=None,
-                             help="A saved compiled program to load before scoring")
-    optimise_parser = subparsers.add_parser("optimise", help="Compile the chain interpreter on the train sessions")
-    optimise_parser.add_argument("--optimiser", default="gepa", choices=("gepa", "miprov2", "bootstrap"),
-                                 help="The optimiser to compile with (default: gepa)")
+                             help="A saved program to load before scoring. Its demo stops are not scored")
+    optimise_parser = subparsers.add_parser("optimise", help="Compile the interpreter on the train sessions")
+    optimise_parser.add_argument("--optimiser", default="gepa", choices=("gepa", "miprov2", "bootstrap", "labeled"),
+                                 help="The optimiser to compile with, or labeled for picked demos (default: gepa)")
     optimise_parser.add_argument("--budget", type=int, default=5,
                                  help="The optimiser candidate budget (default: 5)")
     optimise_parser.add_argument("--seed", type=int, default=7,

@@ -1,4 +1,4 @@
-"""Helpers for the slice 16 RED tests: the metric and the eval command.
+"""Helpers for the eval command tests.
 
 Everything here is made up. The brief sentences, the labels, and the
 predictions below are synthetic filler. No test makes a model call and no
@@ -13,32 +13,12 @@ import sys
 from pathlib import Path
 from types import SimpleNamespace
 
-from fixtures_support import (SESSION_IDS, make_label, make_labels,
-                              make_manifest, require, stop_key)
+from fixtures_support import (SESSION_IDS, make_labels, make_manifest,  # noqa: F401 (re-exported)
+                              require, stop_key)
 from probe_support import FIXTURES, PRIORITY_DEV  # noqa: F401 (re-exported)
 
 if str(PRIORITY_DEV / "src") not in sys.path:
     sys.path.insert(0, str(PRIORITY_DEV / "src"))
-
-# The metric contract: facts 0.5 (each of the five fields 0.10),
-# step kinds 0.4 (first step 0.2, whole ordered list 0.2),
-# validity 0.1 (no Abstain from a model fault). Quotes are not scored.
-FACT_FIELDS = ("status", "needs_human", "answer_class", "risk", "priority_hint")
-FACTS_WEIGHT = 0.5
-EACH_FACT_SHARE = 0.10
-FIRST_STEP_SHARE = 0.2
-STEP_LIST_SHARE = 0.2
-VALIDITY_SHARE = 0.1
-
-BRIEF_TEXT = ("The blue widget trial ended in the north shed. "
-              "The tally sheet lists four green valves. "
-              "Only the human can pick the paint colour.")
-QUOTE_IN_BRIEF = "four green valves"
-QUOTE_NOT_IN_BRIEF = "words that never appear in the brief"
-
-WRONG_FACTS = {"status": "done", "needs_human": False,
-               "answer_class": "none", "risk": "high",
-               "priority_hint": "never"}
 
 
 def metric_api():
@@ -46,40 +26,22 @@ def metric_api():
     return require("priority.evaluation.metric")
 
 
-def flatten_steps(steps: list) -> list[str]:
-    """Take the first accepted kind at each label position."""
-    return [entry[0] if isinstance(entry, list) else entry for entry in steps]
+class StubPrediction(dict):
+    """A made-up program output. It reads by key and by attribute, as a dspy Prediction does."""
+
+    def __getattr__(self, name):
+        try:
+            return self[name]
+        except KeyError:
+            raise AttributeError(name) from None
 
 
-def make_example(label: dict, brief_text: str = BRIEF_TEXT) -> dict:
-    """One metric example: the five fact fields, the label steps, and the brief text."""
-    return {field: label[field] for field in FACT_FIELDS} | {
-        "steps": label["steps"],
-        "ambiguous": label["ambiguous"],
-        "brief_text": brief_text,
-    }
-
-
-def make_prediction(label: dict, quotes=(QUOTE_IN_BRIEF,), abstain=None,
-                    **overrides) -> dict:
-    """One metric prediction that matches the label, unless an override changes it."""
-    prediction = {field: label[field] for field in FACT_FIELDS} | {
-        "steps": flatten_steps(label["steps"]),
-        "quotes": list(quotes),
-        "abstain": abstain,
-    }
+def make_prediction(label: dict, **overrides) -> StubPrediction:
+    """One program output with the label status and priority and no step, unless an override changes it."""
+    prediction = StubPrediction(status=label["status"], needs_human=label["needs_human"],
+                                priority=label.get("priority", "P3"), steps=[], abstain=None)
     prediction.update(overrides)
     return prediction
-
-
-def as_namespace(mapping: dict) -> SimpleNamespace:
-    """The same inputs as an attribute-style object, for the duck-typing pin."""
-    return SimpleNamespace(**mapping)
-
-
-def score_of(example: dict, prediction: dict, *gepa_args):
-    """Run the metric. Extra args go through the five-argument GEPA call."""
-    return metric_api().score(example, prediction, *gepa_args)
 
 
 def with_payloads(labels: dict, payloads: list) -> dict:
@@ -115,23 +77,31 @@ def write_eval_world(tmp_path: Path, payloads: list | None = None):
 
 
 class StubInterpreter:
-    """Stand in for the chain interpreter. It returns one perfect prediction
-    per call, drawn from the labels in manifest order, with no model call."""
+    """Stand in for the interpreter program. It returns one prepared output
+    per call, in order, with no model call. It loads a saved program file
+    as the real program does, and it holds the demos of that file."""
 
     def __init__(self, predictions) -> None:
         self._predictions = itertools.cycle(predictions)
+        self.propose = SimpleNamespace(demos=[])
 
-    def __call__(self, brief):
+    def __call__(self, *args, **kwargs):
         return next(self._predictions)
 
+    def named_predictors(self):
+        return [("propose", self.propose)]
 
-def stub_predictions_for(manifest_path: Path, labels_path: Path) -> list[dict]:
-    """One perfect prediction per manifest stop, in manifest order, with no payload."""
+    def load(self, path) -> None:
+        state = json.loads(Path(path).read_text())
+        self.propose.demos = list((state.get("propose") or {}).get("demos") or [])
+
+
+def stub_predictions_for(manifest_path: Path, labels_path: Path) -> list[StubPrediction]:
+    """One program output per manifest stop, in manifest order, with no step."""
     manifest = json.loads(manifest_path.read_text())
     labels = json.loads(labels_path.read_text())["sessions"]
     out = []
     for entry in manifest:
         for number in entry["stops"]:
-            label = labels[entry["session"]]["stops"][stop_key(number)]
-            out.append(make_prediction(label, quotes=[], payloads=[]))
+            out.append(make_prediction(labels[entry["session"]]["stops"][stop_key(number)]))
     return out

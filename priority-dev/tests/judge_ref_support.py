@@ -1,4 +1,4 @@
-"""Helpers for the slice 20 RED tests: reference payloads and judge validation.
+"""Helpers for the judge and metric tests: the payload object `{"priority", "steps"}`.
 
 Every step, label, brief, and judge reply here is made up. The tests stub
 `priority.evaluation.judge.judge`, which the metric resolves at call time,
@@ -8,14 +8,15 @@ from __future__ import annotations
 
 import json
 
-from eval_support import BRIEF_TEXT, FACT_FIELDS, make_example, make_prediction  # noqa: F401
-from fixtures_support import make_label, require
+from fixtures_support import require
 
-CODE_FIELDS = ("session_id", "author", "confidence", "evidence_quote")
-CODE = {"session_id": "made-up-session", "author": "interpreter",
-        "confidence": 0.9, "evidence_quote": "four green valves"}
+BRIEF_TEXT = ("The blue widget trial ended in the north shed. "
+              "The tally sheet lists four green valves. "
+              "Only the human can pick the paint colour.")
+CODE_FIELDS = ("session_id", "author", "confidence", "evidence_quote", "prompt_id")
+CODE = {"session_id": "made-up-session", "author": "interpreter", "confidence": 0.9,
+        "evidence_quote": "four green valves", "prompt_id": "made-up-prompt"}
 STUB_NOTE = "judge stub: no judge model reached, scored 0"
-MISSING = object()
 
 
 def reply_step(text: str = "Use the blue paint.", **extra) -> dict:
@@ -37,44 +38,6 @@ def stripped(steps: list) -> list:
     return [{key: value for key, value in step.items() if key not in CODE_FIELDS} for step in steps]
 
 
-def ref_example(reference: object, label_number: int = 1) -> dict:
-    """One metric example for a made-up stop with the given reference payloads."""
-    return make_example(make_label(label_number)) | {"expected_payloads": reference}
-
-
-def candidate(payloads: object = MISSING, label_number: int = 1, **overrides) -> dict:
-    """One flat prediction dict; `payloads` stays absent unless given."""
-    prediction = make_prediction(make_label(label_number), **overrides)
-    if payloads is not MISSING:
-        prediction["payloads"] = payloads
-    return prediction
-
-
-def made_steps() -> list:
-    """Two real model steps with every code-set field filled."""
-    models = require("priority.interpreter.models")
-    return [models.Reply(text="Use the blue paint.", **CODE),
-            models.Dismiss(reason="done", **CODE)]
-
-
-def made_interp(steps: list | None = None, status: str = "continuing",
-                abstain: str | None = None) -> object:
-    """A real Interpretation: with steps, with no advice, or abstained."""
-    models = require("priority.interpreter.models")
-    signatures = require("priority.interpreter.signatures")
-    facts = models.Facts(status=status, needs_human=False, answer_class="none",
-                         risk=signatures.RISK["low"], priority_hint=signatures.HINT["can_wait"],
-                         confidence={name: 0.9 for name in FACT_FIELDS})
-    if abstain is not None:
-        return models.Interpretation(brief_id="b-made-up", facts=facts, abstained=models.Abstain(
-            reason=abstain, detail="made-up detail"))
-    if steps is None:
-        return models.Interpretation(brief_id="b-made-up", facts=facts)
-    proposal = models.Proposal(proposal_id="p-made-up", brief_id="b-made-up", steps=tuple(steps))
-    return models.Interpretation(brief_id="b-made-up", facts=facts,
-                                 advice=models.Advice(proposal=proposal))
-
-
 class JudgeRecorder:
     """A stub judge that records each call and returns a fixed score."""
 
@@ -93,11 +56,6 @@ def install_judge(monkeypatch, judge) -> object:
     return judge
 
 
-def score_of(example, prediction, *gepa_args):
-    """Run the metric. Extra args go through the five-argument GEPA call."""
-    return require("priority.evaluation.metric").score(example, prediction, *gepa_args)
-
-
 def as_json(value: object) -> str:
-    """A stable JSON text for one payload list, used as a dict key."""
+    """A stable JSON text for one payload, used as a dict key."""
     return json.dumps(value, sort_keys=True)

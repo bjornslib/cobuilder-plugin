@@ -1,14 +1,16 @@
 """The judge agreement bar: `priority judge-check`.
 
 The pairs file is a JSON list. Each pair names a `session`, a `stop` (an int
-or a zero-padded string such as "008"), two payload lists `a` and `b`, and
-the human pick `human` ("a", "b", or null). The command scores each side with
-`metric.score` against the stop's reference payload, `repeats` times, on the
-brief built from the transcript. Three bars, fixed before the run: the judge
-direction matches the human on at least 75% of the picked pairs, with at
-least 6 picked pairs. The judge scores a code-made copy of each reference,
-with one closed field changed, lower than the reference at least 90% of the
-time. The judge direction flips between repeats on at most 10% of the pairs.
+or a zero-padded string such as "008"), two payload objects `a` and `b`, each
+with a `priority` and a list of `steps`, and the human pick `human` ("a", "b",
+or null). The command scores each side with `metric.score` against the stop's
+reference `{"priority", "steps"}`, `repeats` times, on the brief built from the
+transcript. Three bars, fixed before the run: the judge direction matches the
+human on at least 75% of the picked pairs, with at least 6 picked pairs. The
+judge scores a code-made copy of each reference, with one closed field changed
+(the priority, multi_select, the role, or one option label), lower than the
+reference at least 90% of the time. The judge direction flips between repeats
+on at most 10% of the pairs.
 """
 from __future__ import annotations
 
@@ -27,6 +29,8 @@ AGREEMENT_BAR = 0.75
 MIN_PAIRS = 6
 PROBE_BAR = 0.90
 FLIP_BAR = 0.10
+# The probe copy of a reference with a changed priority takes the next priority.
+OTHER_PRIORITY = {"P1": "P2", "P2": "P3", "P3": "P1"}
 
 
 def _transcript(real_dir: Path, session_id: str) -> Path:
@@ -36,20 +40,25 @@ def _transcript(real_dir: Path, session_id: str) -> Path:
     return exact if exact.exists() or len(matches) != 1 else matches[0]
 
 
-def _example(real_dir: Path, session_id: str, number: int, reference: object) -> dict:
-    """The metric example of one stop: the built brief text and the reference payload."""
+def _example(real_dir: Path, session_id: str, number: int, label: dict) -> dict:
+    """The metric example of one stop: the built brief text and the reference of the label."""
     brief = build_brief(_transcript(real_dir, session_id), stop=number)
     text = brief.for_model() if isinstance(brief, StopBrief) else ""
-    return {"brief_text": text, "expected_payloads": reference}
+    return {"brief_text": text, "priority": label.get("priority"), "expected_payloads": label["payloads"]}
 
 
-def _reference(labels_by_session: dict, session_id: str, number: int) -> object:
-    """The reference payload of one stop. A missing label or reference raises."""
+def _label(labels_by_session: dict, session_id: str, number: int) -> dict:
+    """The label of one stop. A missing label or reference raises."""
     key = match_session_key(labels_by_session, session_id)
     label = labels_by_session.get(key, {}).get(stop_key(number)) if key is not None else None
     if label is None or "payloads" not in label:
         raise ValueError(f"session {session_id} stop {stop_key(number)} has no reference payload")
-    return label["payloads"]
+    return label
+
+
+def _side(payload: dict) -> dict:
+    """One payload object as a prediction that did not abstain."""
+    return {"priority": payload.get("priority"), "steps": payload.get("steps"), "abstain": None}
 
 
 def _direction(a: float, b: float) -> str | None:
@@ -61,8 +70,8 @@ def _direction(a: float, b: float) -> str | None:
 
 def _judge_pair(example: dict, entry: dict, repeats: int) -> tuple[str | None, bool]:
     """The judge direction over all repeats, and whether it flips between repeats."""
-    a = [score(example, {"payloads": entry["a"]})[0] for _ in range(repeats)]
-    b = [score(example, {"payloads": entry["b"]})[0] for _ in range(repeats)]
+    a = [score(example, _side(entry["a"]))[0] for _ in range(repeats)]
+    b = [score(example, _side(entry["b"]))[0] for _ in range(repeats)]
     flipped = len({_direction(x, y) for x, y in zip(a, b)}) > 1
     return _direction(sum(a), sum(b)), flipped
 
@@ -92,9 +101,10 @@ def _rename_label(detail: dict) -> bool:
     return True
 
 
-def probe_copies(reference: list) -> list[list]:
-    """Code-made copies of one reference, each with one closed field changed."""
-    index = next((i for i, step in enumerate(reference)
+def probe_copies(reference: dict) -> list[dict]:
+    """Code-made copies of one reference object with an ask_human step, each with one closed field changed."""
+    steps = reference["steps"]
+    index = next((i for i, step in enumerate(steps)
                   if isinstance(step, dict) and step.get("kind") == "ask_human"
                   and isinstance(step.get("detail"), dict)), None)
     if index is None:
@@ -102,8 +112,10 @@ def probe_copies(reference: list) -> list[list]:
     copies = []
     for change in (_flip_multi, _swap_role, _rename_label):
         changed = copy.deepcopy(reference)
-        if change(changed[index]["detail"]):
+        if change(changed["steps"][index]["detail"]):
             copies.append(changed)
+    if reference["priority"] in OTHER_PRIORITY:
+        copies.append({**copy.deepcopy(reference), "priority": OTHER_PRIORITY[reference["priority"]]})
     return copies
 
 
@@ -112,14 +124,14 @@ def _probe(labels_by_session: dict, real_dir: Path) -> tuple[int, int]:
     lower = total = 0
     for session_id, stops in labels_by_session.items():
         for key, label in stops.items():
-            reference = as_steps(label.get("payloads"))
+            reference = {"priority": label.get("priority"), "steps": as_steps(label.get("payloads"))}
             copies = probe_copies(reference)
             if not copies:
                 continue
-            example = _example(real_dir, session_id, int(key), reference)
-            base = score(example, {"payloads": reference})[0]
+            example = _example(real_dir, session_id, int(key), label)
+            base = score(example, _side(reference))[0]
             total += len(copies)
-            lower += sum(1 for changed in copies if score(example, {"payloads": changed})[0] < base)
+            lower += sum(1 for changed in copies if score(example, _side(changed))[0] < base)
     return lower, total
 
 
@@ -128,9 +140,8 @@ def _pairs(pairs: list, labels_by_session: dict, real_dir: Path, repeats: int) -
     matched = picked = flipped = 0
     for entry in pairs:
         number = int(entry["stop"])
-        reference = _reference(labels_by_session, entry["session"], number)
-        direction, flip = _judge_pair(_example(real_dir, entry["session"], number, reference),
-                                      entry, repeats)
+        label = _label(labels_by_session, entry["session"], number)
+        direction, flip = _judge_pair(_example(real_dir, entry["session"], number, label), entry, repeats)
         flipped += flip
         if entry.get("human") in ("a", "b"):
             picked += 1

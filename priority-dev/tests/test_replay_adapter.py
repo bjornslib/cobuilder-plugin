@@ -1,4 +1,4 @@
-"""Slice 7, the adapter option of the Interpreter and the new keys of each call row (RED role).
+"""The adapter option of the Interpreter and the keys of each call row (slice 7, one call since slice 21).
 
 The contract is in the docstring of `replay_support.py`. The tests here use DummyLM and never make a live call.
 1. The adapter option: the default stays ChatAdapter with the fallback off, `json` runs JSONAdapter
@@ -12,15 +12,15 @@ import time
 import pytest
 
 from digest_support import digest_reply, run_digest
-from interpret_support import (BLOCKED, QUOTE_1, FailingLM, RateLimited, dspy, dummy, interpret, interpreter_api,
-                               no_live_call, read_calls, script)  # noqa: F401
+from interpret_support import (FailingLM, RateLimited, dspy, dummy, interpret, interpreter_api, no_live_call,  # noqa: F401
+                               propose, read_calls, step)
 
 try:
     from dspy.utils import DummyLM
 except ImportError:
     DummyLM = object
 
-REPLIES = script(BLOCKED, [("reply", QUOTE_1)])
+REPLIES = [propose([step("reply")])]
 
 
 class SpyLM(DummyLM):
@@ -48,6 +48,16 @@ def with_adapter(lm, adapter, **kwargs):
     return interpret(lm, adapter=adapter, **kwargs)
 
 
+def dummy_json(replies):
+    return DummyLM(replies, adapter=dspy.JSONAdapter())
+
+
+def reason_of(out):
+    """The abstain reason of a forward result, or an assertion failure when it is no Prediction."""
+    assert isinstance(out, dspy.Prediction), f"forward returned {type(out).__name__}, not a dspy.Prediction"
+    return (out.abstain or {}).get("reason")
+
+
 # ---- 1. the adapter option ---------------------------------------------------
 
 def test_the_adapter_option_defaults_to_chat():
@@ -59,45 +69,33 @@ def test_the_adapter_option_defaults_to_chat():
 
 def test_the_default_run_uses_chat_adapter_with_the_fallback_off():
     lm = SpyLM(REPLIES)
-    result = interpret(lm)
-    assert result.abstained is None
-    assert lm.adapters, "the model was not called"
-    for adapter in lm.adapters:
-        assert type(adapter) is dspy.ChatAdapter
-        assert adapter.use_json_adapter_fallback is False
+    assert reason_of(interpret(lm)) is None
+    assert len(lm.adapters) == 1
+    assert type(lm.adapters[0]) is dspy.ChatAdapter
+    assert lm.adapters[0].use_json_adapter_fallback is False
 
 
 def test_chat_by_name_is_the_same_as_the_default():
     lm = SpyLM(REPLIES)
-    result = with_adapter(lm, "chat")
-    assert result.abstained is None
+    assert reason_of(with_adapter(lm, "chat")) is None
     assert all(type(a) is dspy.ChatAdapter and a.use_json_adapter_fallback is False for a in lm.adapters)
 
 
-def test_json_runs_the_json_adapter_for_every_call():
+def test_json_runs_the_json_adapter_for_the_one_call():
     lm = SpyLM(REPLIES, adapter=dspy.JSONAdapter())
     result = with_adapter(lm, "json")
-    assert result.abstained is None, result.abstained
-    assert len(result.advice.proposal.steps) == 1
-    assert len(lm.adapters) == len(REPLIES) == 3
-    assert all(type(a) is dspy.JSONAdapter for a in lm.adapters)
+    assert reason_of(result) is None, result.abstain
+    assert len(result.steps) == 1
+    assert len(lm.adapters) == 1 and type(lm.adapters[0]) is dspy.JSONAdapter
 
 
 def test_json_reads_json_replies_only():
     """Chat-format replies do not parse as JSON, so the run is an Abstain. This shows that the adapter really changed."""
-    result = with_adapter(dummy(REPLIES), "json")
-    assert result.abstained is not None
-    assert result.abstained.reason == "invalid_output"
+    assert reason_of(with_adapter(dummy(REPLIES), "json")) == "invalid_output"
 
 
 def test_chat_does_not_read_json_replies():
-    result = with_adapter(dummy_json(REPLIES), "chat")
-    assert result.abstained is not None
-    assert result.abstained.reason == "invalid_output"
-
-
-def dummy_json(replies):
-    return DummyLM(replies, adapter=dspy.JSONAdapter())
+    assert reason_of(with_adapter(dummy_json(REPLIES), "chat")) == "invalid_output"
 
 
 @pytest.mark.parametrize("name", ["xml", "JSON", "", None])
@@ -111,15 +109,12 @@ def test_an_unknown_adapter_raises_a_value_error_that_names_it(name):
 
 # ---- 2. the keys of a call row -----------------------------------------------
 
-def test_each_row_has_the_adapter_the_seconds_and_valid(tmp_path):
-    result = interpret(dummy(REPLIES), log_dir=tmp_path)
-    assert result.abstained is None
-    rows = read_calls(tmp_path)
-    assert [r["stage"] for r in rows] == ["triage", "pick", "fill"]
-    for row in rows:
-        assert row.get("adapter") == "chat", row
-        assert isinstance(row.get("seconds"), float) and 0 <= row["seconds"] < 5, row
-        assert row.get("valid") is True, row
+def test_the_row_has_the_adapter_the_seconds_and_valid(tmp_path):
+    assert reason_of(interpret(dummy(REPLIES), log_dir=tmp_path)) is None
+    [row] = read_calls(tmp_path)
+    assert row.get("adapter") == "chat", row
+    assert isinstance(row.get("seconds"), float) and 0 <= row["seconds"] < 5, row
+    assert row.get("valid") is True, row
 
 
 def test_rows_name_the_json_adapter(tmp_path):
@@ -129,35 +124,28 @@ def test_rows_name_the_json_adapter(tmp_path):
 
 def test_seconds_is_the_time_of_the_call(tmp_path):
     interpret(SleepyLM(REPLIES), log_dir=tmp_path)
-    rows = read_calls(tmp_path)
-    assert len(rows) == 3
-    for row in rows:
-        assert 0.05 <= row.get("seconds", -1) < 2, row
+    [row] = read_calls(tmp_path)
+    assert 0.05 <= row.get("seconds", -1) < 2, row
 
 
 def test_a_reply_that_does_not_parse_is_not_valid(tmp_path):
-    bad = [REPLIES[0], {"steps": "this is not JSON"}]
-    result = interpret(dummy(bad), log_dir=tmp_path)
-    assert result.abstained.reason == "invalid_output"
-    rows = read_calls(tmp_path)
-    assert [(r["stage"], r.get("valid")) for r in rows] == [("triage", True), ("pick", False)]
+    assert reason_of(interpret(dummy([propose(steps="this is not JSON")]), log_dir=tmp_path)) == "invalid_output"
+    assert [r.get("valid") for r in read_calls(tmp_path)] == [False]
+
+
+def test_a_reply_that_fails_validation_is_not_valid(tmp_path):
+    assert reason_of(interpret(dummy([propose([{"kind": "launch_missile"}])]), log_dir=tmp_path)) == "invalid_output"
+    assert [r.get("valid") for r in read_calls(tmp_path)] == [False]
 
 
 def test_a_call_that_raised_is_not_valid(tmp_path):
-    lm = FailingLM(REPLIES, RateLimited("429 Too Many Requests"), fail_at=2)
-    result = interpret(lm, log_dir=tmp_path)
-    assert result.abstained.reason == "model_error"
-    rows = read_calls(tmp_path)
-    assert [(r["stage"], r.get("valid")) for r in rows] == [("triage", True), ("pick", False)]
-    assert "429" in rows[1]["error"]
-    assert isinstance(rows[1].get("seconds"), float)
-    assert rows[1].get("adapter") == "chat"
-
-
-def test_a_reply_that_parses_but_fails_a_code_check_is_valid(tmp_path):
-    result = interpret(dummy(script(BLOCKED, [("reply", "")])[:2]), log_dir=tmp_path)
-    assert result.abstained.reason == "quote_not_in_brief"
-    assert [(r["stage"], r.get("valid")) for r in read_calls(tmp_path)] == [("triage", True), ("pick", True)]
+    lm = FailingLM(REPLIES, RateLimited("429 Too Many Requests"), fail_at=1)
+    assert reason_of(interpret(lm, log_dir=tmp_path)) == "model_error"
+    [row] = read_calls(tmp_path)
+    assert row.get("valid") is False
+    assert "429" in row["error"]
+    assert isinstance(row.get("seconds"), float)
+    assert row.get("adapter") == "chat"
 
 
 def test_the_digest_row_has_the_new_keys(tmp_path):

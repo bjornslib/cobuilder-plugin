@@ -1,9 +1,10 @@
-"""Helpers for the slice 20 RED tests of `priority judge-check`.
+"""Helpers for the tests of `priority judge-check`, on payload objects.
 
 The world is made up: a pairs file, a confirmed labels file with reference
-payloads, and one copied made-up transcript per session. Each pair names
-stop 1, the only stop of the made-up transcript that builds a StopBrief.
-The grading judge is a stub, so no helper makes a model call.
+payloads and a priority on each stop, and one copied made-up transcript per
+session. Each pair names stop 1, the only stop of the made-up transcript that
+builds a StopBrief. Each side of a pair is a payload object `{"priority",
+"steps"}`. The grading judge is a stub, so no helper makes a model call.
 """
 from __future__ import annotations
 
@@ -18,18 +19,21 @@ from judge_ref_support import ask_step, as_json, install_judge
 from probe_support import FIXTURES
 
 TRANSCRIPT = FIXTURES / "waiting-question.jsonl"
-PAIR_REFERENCE = [{"kind": "reply", "text": "The reference answer for the made-up stop."}]
+PAIR_STEPS = [{"kind": "reply", "text": "The reference answer for the made-up stop."}]
+PAIR_PRIORITY = "P3"
 PROBE_REFERENCES = (ask_step(options=True), ask_step(options=False))
-MULTI = (0, "detail", "questions", 0, "multi_select")
-ROLE = (0, "detail", "role")
-LABEL = (0, "detail", "questions", 0, "options", 0, "label")
+PROBE_PRIORITY = "P1"
+MULTI = ("steps", 0, "detail", "questions", 0, "multi_select")
+ROLE = ("steps", 0, "detail", "role")
+LABEL = ("steps", 0, "detail", "questions", 0, "options", 0, "label")
+PRIORITY = ("priority",)
 
 
 def pair(index: int, a: float | str, b: float | str, human: str | None) -> dict:
     """One made-up pair. A float side is a graded reply. "flaky" flips each call."""
     def side(name, grade):
         text = "flaky" if grade == "flaky" else f"grade {grade} pair-{index}-{name}"
-        return [{"kind": "reply", "text": text}]
+        return {"priority": "P2", "steps": [{"kind": "reply", "text": text}]}
     return {"session": f"judge-check-pair-{index:02d}", "stop": 1,
             "a": side("a", a), "b": side("b", b), "human": human}
 
@@ -40,35 +44,48 @@ def agreeing(count: int, start: int = 0) -> list:
             for i in range(count)]
 
 
+def first_text(payload) -> str:
+    """The text of the first step of a payload object, or "" for any other shape."""
+    steps = payload.get("steps") if isinstance(payload, dict) else None
+    first = steps[0] if isinstance(steps, list) and steps else {}
+    return str(first.get("text", "")) if isinstance(first, dict) else ""
+
+
 class GradingJudge:
     """A stub judge. A graded reply scores its grade. A flaky reply scores 0.9,
     then 0.1. Any other payload scores 1.0 against itself and 0.4 against a
-    different reference, or 1.0 always when the judge is probe-blind."""
+    different reference. A probe-blind judge scores 1.0 always, and a
+    priority-blind judge does not see a change of the priority alone."""
 
-    def __init__(self, probe_blind: bool = False):
-        self.probe_blind, self.calls, self.seen = probe_blind, [], Counter()
+    def __init__(self, probe_blind: bool = False, priority_blind: bool = False):
+        self.probe_blind, self.priority_blind = probe_blind, priority_blind
+        self.calls, self.seen = [], Counter()
 
     def __call__(self, brief_text, predicted, expected):
         self.calls.append({"brief_text": brief_text, "predicted": predicted, "expected": expected})
         key = as_json(predicted)
         self.seen[key] += 1
-        first = predicted[0] if isinstance(predicted, list) and predicted else {}
-        text = str(first.get("text", "")) if isinstance(first, dict) else ""
+        text = first_text(predicted)
         if text.startswith("grade "):
             return (float(text.split()[1]), ["graded reply"])
         if text == "flaky":
             return (0.9 if self.seen[key] % 2 == 1 else 0.1, ["flaky reply"])
-        if self.probe_blind or predicted == expected:
+        if self.probe_blind or predicted == expected or (self.priority_blind and steps_match(predicted, expected)):
             return (1.0, ["the payload matches the reference"])
         return (0.4, ["a closed field differs"])
 
 
+def steps_match(predicted, expected) -> bool:
+    return isinstance(predicted, dict) and isinstance(expected, dict) and predicted.get("steps") == expected.get("steps")
+
+
 def write_world(tmp_path, pairs: list) -> tuple:
     """Write the pairs file, the labels file, and the transcripts. Return the paths."""
-    sessions = {entry["session"]: {"stops": {"001": make_label(2, payloads=PAIR_REFERENCE)}}
+    sessions = {entry["session"]: {"stops": {"001": make_label(2, payloads=PAIR_STEPS, priority=PAIR_PRIORITY)}}
                 for entry in pairs}
     for index, reference in enumerate(PROBE_REFERENCES):
-        sessions[f"judge-check-probe-{index:02d}"] = {"stops": {"001": make_label(1, payloads=[reference])}}
+        sessions[f"judge-check-probe-{index:02d}"] = {
+            "stops": {"001": make_label(1, payloads=[reference], priority=PROBE_PRIORITY)}}
     real_dir = tmp_path / "real"
     real_dir.mkdir(exist_ok=True)
     for session_id in sessions:
@@ -82,11 +99,7 @@ def write_world(tmp_path, pairs: list) -> tuple:
 
 
 def run_check(monkeypatch, tmp_path, pairs: list, judge: GradingJudge, extra=()) -> tuple:
-    """Run `priority judge-check` in process. Return the exit code and the printed text.
-
-    Before GREEN, argparse rejects the unknown subcommand with SystemExit, so
-    the code stays None and the caller fails on its assertion.
-    """
+    """Run `priority judge-check` in process. Return the exit code and the printed text."""
     install_judge(monkeypatch, judge)
     pairs_path, labels_path, real_dir = write_world(tmp_path, pairs)
     from priority.cli import main

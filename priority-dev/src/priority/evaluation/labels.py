@@ -3,8 +3,9 @@
 Each stop label holds the fields the engineer confirmed: the fact fields,
 the ordered steps (0 to 3 kinds, where a list at one position accepts any
 one of those kinds), and the confirmation stamp. A label may also hold the
-reference payload `payloads`, which the loader keeps. An unconfirmed stop never
-counts, so a missing stamp is an error, not a default.
+reference payload `payloads` and its `priority` (P1, P2, or P3), which the
+loader keeps. An unconfirmed stop never counts, so a missing stamp is an
+error, not a default.
 """
 from __future__ import annotations
 
@@ -15,15 +16,17 @@ LABEL_FIELDS = ("status", "needs_human", "answer_class", "risk",
                 "priority_hint", "steps", "ambiguous", "why",
                 "confirmed_by", "confirmed_on")
 
-# The step kinds a label may name. This mirrors ACTION_KINDS in
-# priority/interpreter/models.py and stays local so that loading labels
-# needs no model dependency.
+# The step kinds a label may name: ACTION_KINDS in
+# priority/interpreter/models.py, plus set_priority_hint, which labels
+# confirmed before slice 21 may name. The list stays local so that loading
+# labels needs no model dependency.
 STEP_KINDS = ("reply", "continue", "continue_until", "approve_permission",
               "deny_permission", "pick_option", "approve_gate",
               "send_feedback", "interrupt", "ask_human", "snooze",
               "dismiss", "set_priority_hint", "notify")
 
 MAX_STEPS = 3
+PRIORITIES = ("P1", "P2", "P3")
 
 
 def _fail(session_id: str, key: str, reason: str) -> ValueError:
@@ -54,7 +57,7 @@ def _check_steps(steps: object, session_id: str, key: str) -> None:
 
 def _check_label(session_id: str, key: str, label: object) -> dict:
     """Validate one stop label and return it with exactly the label fields,
-    plus the reference payload `payloads` when the label holds one."""
+    plus the reference payload `payloads` and its `priority` when the label holds them."""
     if not isinstance(label, dict):
         raise _fail(session_id, key, f"label must be an object, got {label!r}")
     for field in LABEL_FIELDS:
@@ -62,8 +65,11 @@ def _check_label(session_id: str, key: str, label: object) -> dict:
             raise _fail(session_id, key, f"missing {field}")
     _check_steps(label["steps"], session_id, key)
     kept = {field: label[field] for field in LABEL_FIELDS}
-    if "payloads" in label:
-        kept["payloads"] = label["payloads"]
+    for field in ("payloads", "priority"):
+        if field in label:
+            kept[field] = label[field]
+    if "priority" in kept and kept["priority"] not in PRIORITIES:
+        raise _fail(session_id, key, f"priority must be one of {', '.join(PRIORITIES)}, got {kept['priority']!r}")
     return kept
 
 

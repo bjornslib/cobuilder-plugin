@@ -1,16 +1,18 @@
-"""Slice 7, the failure drills of the replay (RED role). Every test uses stub models and makes no live call.
+"""The failure drills of the replay (slice 7, moved to the one propose call in slice 21). Stub models only.
 
-The contract is in the docstring of `replay_support.py`. A 429, malformed JSON, an empty quote, and a
-timeout each end as an Abstain with a logged reason. No exception escapes, and nothing is silent.
+The contract is in the docstring of `replay_support.py`. A 429, malformed output, an unknown kind, and a
+timeout each end as an Abstain with a logged reason. No exception escapes, and nothing is silent. The drills
+give only the reasons that the interpreter still has: `model_error` and `invalid_output`.
 1. The drills that the replay runs on its own, and what they leave in the report, the rows, and the log
-2. The same four faults from the model of the replay: each one is an Abstain, and the rest of the run goes on
+2. The same faults from the model of the replay: each one is an Abstain, and the rest of the run goes on
 """
 from __future__ import annotations
 
 import pytest
 
 from interpret_support import no_live_call  # noqa: F401
-from replay_support import DRILLS, OUTCOMES, Plan, StubModel, bullet, counts, replay, sections, split, write_world
+from replay_support import (DRILLS, INTERPRETER_REASONS, OUTCOMES, Plan, StubModel, bullet, counts, replay,
+                            sections, split, write_world)
 
 ONE = {"alpha": Plan()}
 
@@ -34,6 +36,12 @@ def test_the_report_names_the_reason_of_each_drill(drilled):
     assert {name: bullet(lines, name) for name in DRILLS} == DRILLS
 
 
+def test_every_drill_ends_with_a_reason_that_the_interpreter_still_gives(drilled):
+    lines = sections(drilled.report)["Failure drills"]
+    reasons = {line.split(":", 1)[1].strip() for line in lines if line.startswith("- ") and ":" in line}
+    assert reasons and reasons <= INTERPRETER_REASONS, f"a drill gave {reasons - INTERPRETER_REASONS}"
+
+
 def test_the_drills_are_not_counted_with_the_run(drilled):
     report = sections(drilled.report)
     for name in ("json", "chat"):
@@ -43,20 +51,19 @@ def test_the_drills_are_not_counted_with_the_run(drilled):
 
 
 def test_the_drills_use_their_own_models_and_leave_rows_of_their_own(drilled):
-    assert len(drilled.interp.seen) == 8  # alpha: four stages for each of the two adapters, and no drill
+    assert len(drilled.interp.seen) == 2  # alpha: one call for each of the two adapters, and no drill
     assert len(drilled.digest.seen) == 1
     rows = drilled.rows("drills")
     errors = [r["error"] for r in rows if "error" in r]
     assert any("429" in e for e in errors), "no row of the 429 drill"
     assert any("TimeoutError" in e for e in errors), "no row of the timeout drill"
     assert any(r["valid"] is False and "error" not in r for r in rows), "no row of a reply that does not parse"
-    assert any(r["stage"] == "pick" and r["valid"] is True for r in rows), "no row of the empty quote drill"
     assert all(isinstance(r["seconds"], float) and r["adapter"] == "chat" for r in rows)
 
 
 def test_each_drill_logs_its_reason(drilled):
     text = [r.getMessage() for r in drilled.logs.records]
-    for reason, least in (("model_error", 2), ("invalid_output", 1), ("quote_not_in_brief", 1)):
+    for reason, least in (("model_error", 2), ("invalid_output", 1)):
         assert sum(reason in t for t in text) >= least, f"{reason} was logged fewer than {least} times"
     assert any("429" in t for t in text) and any("TimeoutError" in t for t in text)
 
@@ -64,7 +71,7 @@ def test_each_drill_logs_its_reason(drilled):
 # ---- 2. the faults from the model of the replay ------------------------------
 
 FAULTS = {"429": ("model_error", "429"), "timeout": ("model_error", "TimeoutError"),
-          "malformed": ("invalid_output", "pick"), "empty_quote": ("quote_not_in_brief", "empty")}
+          "malformed": ("invalid_output", "steps"), "unknown_kind": ("invalid_output", "launch_missile")}
 
 
 @pytest.mark.parametrize("fault", FAULTS)
