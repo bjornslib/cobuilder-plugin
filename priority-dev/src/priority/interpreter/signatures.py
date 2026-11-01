@@ -36,6 +36,12 @@ class ProposeStop(dspy.Signature):
     - dismiss: close the stop with a reason.
     - notify: tell the human that the run finished, with an excerpt of the final reply.
 
+    Field placement and length: `why_escalated` belongs on the ask_human step, next to `kind` and
+    `detail`, never inside `detail`. `role` belongs on `detail` only, never inside a question.
+    `ask` holds at most 300 characters, and each option `label` holds at most 120 characters.
+    Trim or rephrase instead of exceeding a cap.
+
+
     The priority tells the system when to show the proposal to the human.
     P1 disturbs the human now with an alert. P2 shows the proposal in the inbox now.
     P3 puts the proposal in the next digest. Use P3 when no step is notify or ask_human."""
