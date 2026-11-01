@@ -40,6 +40,12 @@ class ProposeStop(dspy.Signature):
     `detail`, never inside `detail`. `role` belongs on `detail` only, never inside a question.
     `ask` holds at most 300 characters, and each option `label` holds at most 120 characters.
     Trim or rephrase instead of exceeding a cap.
+    Example of one ask_human step, with the exact field placement:
+    {"kind": "ask_human", "why_escalated": "The agent asks which program to build next.",
+     "detail": {"role": "decide", "questions": [{"ask": "Which program?", "options": [{"label": "A"}],
+     "multi_select": false, "free_text": true, "agent_recommendation": null, "helps": []}]}}
+    Note the order and nesting: `why_escalated` sits on the step, after `detail` closes; `role` sits on
+    `detail`, before `questions`; a question never holds `role` or `why_escalated`.
 
 
     The priority tells the system when to show the proposal to the human.
