@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import logging
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from priority.brief import StopBrief, build_brief
@@ -21,6 +22,8 @@ from priority.evaluation.judge import reset_usage, usage_line
 from priority.evaluation.labels import load_labels, match_session_key
 from priority.evaluation.metric import score
 from priority.evaluation.split import split
+
+MAX_THREADS = 6  # the most stops that one eval scores in flight at once
 
 log = logging.getLogger("priority.eval")
 
@@ -92,11 +95,13 @@ def _stops(entries: list, labels_by_session: dict, wanted: set):
 
 
 def _score_split(model: object, entries: list, labels_by_session: dict, wanted: set,
-                 real_dir: Path) -> tuple[list, int, int]:
+                 real_dir: Path, threads: int = 1) -> tuple[list, int, int]:
     """Score each stop of the wanted sessions. Return the rows, the count of stops excluded for no
-    reference payload, and the count excluded as a demo of the program. A missing label raises."""
+    reference payload, and the count excluded as a demo of the program. A missing label raises.
+    With threads > 1 the stops are scored in a thread pool, and the rows come back in manifest order."""
     rows, excluded, demos = [], 0, 0
     briefs = demo_briefs(model)
+    work = []
     for session_id, key, number, label in _stops(entries, labels_by_session, wanted):
         if "payloads" not in label:
             excluded += 1
@@ -105,7 +110,14 @@ def _score_split(model: object, entries: list, labels_by_session: dict, wanted: 
         if isinstance(brief, StopBrief) and brief.for_model() in briefs:
             demos += 1
             continue
-        rows.append({"session": session_id, "stop": key} | _score_stop(model, brief, label))
+        work.append((session_id, key, brief, label))
+    if threads > 1:
+        with ThreadPoolExecutor(max_workers=min(threads, MAX_THREADS)) as pool:
+            scored = list(pool.map(lambda item: _score_stop(model, item[2], item[3]), work))
+    else:
+        scored = [_score_stop(model, brief, label) for _, _, brief, label in work]
+    rows = [{"session": session_id, "stop": key} | row
+            for (session_id, key, _, _), row in zip(work, scored)]
     return rows, excluded, demos
 
 
@@ -119,8 +131,13 @@ def _load(manifest: Path, labels: Path) -> tuple[list, dict]:
 
 
 def run(manifest: Path, labels: Path, real_dir: Path, split_name: str,
-        log_dir: Path | str | None = None, program: Path | str | None = None) -> int:
-    """Score one split of the fixture set and print the report. Return exit code."""
+        log_dir: Path | str | None = None, program: Path | str | None = None,
+        threads: int | None = None) -> int:
+    """Score one split of the fixture set and print the report. Return exit code.
+    threads=None keeps the serial loop; threads > 1 scores the stops in a thread pool of at most
+    MAX_THREADS workers, and the rows still come back in manifest order."""
+    workers = 1 if threads is None else max(1, min(int(threads), MAX_THREADS))
+    print(f"threads: {workers}")
     try:
         entries, labels_by_session = _load(manifest, labels)
         parts = split([entry["session"] for entry in entries])
@@ -132,7 +149,8 @@ def run(manifest: Path, labels: Path, real_dir: Path, split_name: str,
         if program is not None:
             print(f"program: {program}")
         reset_usage()
-        rows, excluded, demos = _score_split(model, entries, labels_by_session, set(parts[split_name]), real_dir)
+        rows, excluded, demos = _score_split(model, entries, labels_by_session, set(parts[split_name]),
+                                              real_dir, workers)
     except ValueError as exc:
         print(f"eval failed: {exc}")
         return 1

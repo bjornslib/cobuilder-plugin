@@ -16,6 +16,7 @@ is not known, so the meter holds tokens only.
 from __future__ import annotations
 
 import json
+import threading
 
 import dspy
 
@@ -54,12 +55,14 @@ RUBRIC = ("Grade the predicted payload against the reference payload. Each is an
 JUDGE_MAX_TOKENS = 8000
 
 USAGE = {"calls": 0, "prompt_tokens": 0, "completion_tokens": 0}
+_USAGE_LOCK = threading.Lock()  # eval scores stops from worker threads, so the totals need a lock
 
 
 def reset_usage() -> None:
     """Set the judge call and token counts back to zero."""
-    for name in USAGE:
-        USAGE[name] = 0
+    with _USAGE_LOCK:
+        for name in USAGE:
+            USAGE[name] = 0
 
 
 def usage_line() -> str:
@@ -70,13 +73,14 @@ def usage_line() -> str:
 
 def _meter(lm: dspy.LM, before: int) -> None:
     """Add one call, and the tokens of the history entry that this call added."""
-    USAGE["calls"] += 1
-    history = getattr(lm, "history", None) or []
-    if len(history) <= before:
-        return
-    usage = history[-1].get("usage") or {}
-    for name in ("prompt_tokens", "completion_tokens"):
-        USAGE[name] += int(usage.get(name) or 0)
+    with _USAGE_LOCK:
+        USAGE["calls"] += 1
+        history = getattr(lm, "history", None) or []
+        if len(history) <= before:
+            return
+        usage = history[-1].get("usage") or {}
+        for name in ("prompt_tokens", "completion_tokens"):
+            USAGE[name] += int(usage.get(name) or 0)
 
 
 def judge_lm(retries: int = 3) -> dspy.LM:

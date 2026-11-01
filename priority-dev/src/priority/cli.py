@@ -59,7 +59,11 @@ def eval_split(args: argparse.Namespace) -> int:
     """Score one split of the labelled set against the interpreter."""
     from priority.evaluation import runner  # a lazy import: only this command needs dspy and the key
 
-    return runner.run(args.manifest, args.labels, args.real_dir, args.split, args.log_dir, program=args.program)
+    threads = getattr(args, "threads", None)
+    if threads is not None:
+        threads = max(1, min(int(threads), runner.MAX_THREADS))
+    return runner.run(args.manifest, args.labels, args.real_dir, args.split, args.log_dir,
+                      program=args.program, threads=threads)
 
 
 def optimise_run(args: argparse.Namespace) -> int:
@@ -140,6 +144,8 @@ def main(argv: list[str] | None = None) -> int:
                              help="Folder for the stored call rows (default: reports/logs)")
     eval_parser.add_argument("--program", type=Path, default=None,
                              help="A saved program to load before scoring. Its demo stops are not scored")
+    eval_parser.add_argument("--threads", type=int, default=None,
+                             help="Stops scored in flight at once, clamped to 1..6 (default: 1)")
     optimise_parser = subparsers.add_parser("optimise", help="Compile the interpreter on the train sessions")
     optimise_parser.add_argument("--optimiser", default="gepa", choices=("gepa", "miprov2", "bootstrap", "labeled"),
                                  help="The optimiser to compile with, or labeled for picked demos (default: gepa)")
