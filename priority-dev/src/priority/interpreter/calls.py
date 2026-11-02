@@ -43,9 +43,11 @@ class CallRecorder(BaseCallback):
     A row waits until `commit(valid)`, because the caller knows only after the call whether the reply parsed.
     """
 
-    def __init__(self, log_dir: Path | str | None, adapter: str = "chat"):
+    def __init__(self, log_dir: Path | str | None, adapter: str = "chat", session_id: str = "", stop: str = ""):
         self.path = Path(log_dir) / "calls.jsonl" if log_dir is not None else None
         self.adapter = adapter
+        self.session_id = session_id or ""
+        self.stop = stop or ""
         self.stage = ""
         self._open: dict[str, tuple[str, str, str, float]] = {}
         self._pending: list[dict[str, Any]] = []
@@ -55,7 +57,8 @@ class CallRecorder(BaseCallback):
 
     def on_lm_end(self, call_id, outputs, exception=None):
         stage, model, rendered, started = self._open.pop(call_id)
-        record = {"stage": stage, "model_id": model, "prompt_hash": hashlib.sha256(rendered.encode()).hexdigest(),
+        record = {"session_id": self.session_id, "stop": self.stop, "stage": stage, "model_id": model,
+                  "prompt_hash": hashlib.sha256(rendered.encode()).hexdigest(),
                   "rendered_input": rendered, "raw_reply": raw_reply(outputs), "adapter": self.adapter,
                   "seconds": time.perf_counter() - started}
         if exception is not None:

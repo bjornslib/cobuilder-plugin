@@ -58,18 +58,21 @@ def _is_ambiguous(label: dict) -> bool:
     return bool(value)
 
 
-def _predict(model: object, brief: object) -> tuple[object, str]:
-    """The Prediction of one stop and its brief text. A brief Abstain becomes an abstained prediction."""
+def _predict(model: object, brief: object, session_id: str = "", stop: str = "") -> tuple[object, str]:
+    """The Prediction of one stop and its brief text. A brief Abstain becomes an abstained prediction.
+
+    The identity goes to the call, not to the model, because worker threads share one model.
+    """
     if isinstance(brief, StopBrief):
         text = brief.for_model()
-        return model(brief_text=text), text
+        return model(brief_text=text, session_id=session_id, stop=stop), text
     abstain = {"reason": brief.reason, "detail": brief.detail, "raw": ""}
     return {"status": None, "needs_human": None, "priority": None, "steps": [], "abstain": abstain}, ""
 
 
-def _score_stop(model: object, brief: object, label: dict) -> dict:
+def _score_stop(model: object, brief: object, label: dict, session_id: str = "", stop: str = "") -> dict:
     """Run the program on one stop and score it. Return the row."""
-    prediction, brief_text = _predict(model, brief)
+    prediction, brief_text = _predict(model, brief, session_id, stop)
     example = {"brief_text": brief_text, "priority": label.get("priority"), "expected_payloads": label["payloads"]}
     value, feedback = score(example, prediction)
     abstain = prediction.get("abstain") if isinstance(prediction, dict) else prediction.abstain
@@ -113,9 +116,9 @@ def _score_split(model: object, entries: list, labels_by_session: dict, wanted: 
         work.append((session_id, key, brief, label))
     if threads > 1:
         with ThreadPoolExecutor(max_workers=min(threads, MAX_THREADS)) as pool:
-            scored = list(pool.map(lambda item: _score_stop(model, item[2], item[3]), work))
+            scored = list(pool.map(lambda item: _score_stop(model, item[2], item[3], item[0], item[1]), work))
     else:
-        scored = [_score_stop(model, brief, label) for _, _, brief, label in work]
+        scored = [_score_stop(model, brief, label, session_id, key) for session_id, key, brief, label in work]
     rows = [{"session": session_id, "stop": key} | row
             for (session_id, key, _, _), row in zip(work, scored)]
     return rows, excluded, demos

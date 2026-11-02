@@ -36,16 +36,23 @@ def _abstain(reason: str, error: Exception, raw: str = "") -> dict:
 
 class Interpreter(dspy.Module):
     def __init__(self, lm: dspy.LM | None = None, *, log_dir: Path | str | None = None, session_id: str = "",
-                 adapter: str = "chat"):
+                 adapter: str = "chat", stop: str = ""):
         super().__init__()
         if adapter not in ADAPTERS:
             raise ValueError(f"unknown adapter {adapter!r}: use one of {', '.join(map(repr, ADAPTERS))}")
         self.lm, self.log_dir, self.session_id, self.adapter_name = lm, log_dir, session_id, adapter
+        self.stop = stop
         self.propose = dspy.Predict(ProposeStop)
 
-    def forward(self, brief_text: str) -> dspy.Prediction:
-        """One model call. A reply that does not parse or validate gives invalid_output, any other error model_error."""
-        recorder = CallRecorder(self.log_dir, self.adapter_name)
+    def forward(self, brief_text: str, *, session_id: str | None = None, stop: str | None = None) -> dspy.Prediction:
+        """One model call. A reply that does not parse or validate gives invalid_output, any other error model_error.
+
+        `session_id` and `stop` name this call and override the constructor values. They are per call, because
+        threads share one Interpreter.
+        """
+        session_id = self.session_id if session_id is None else session_id
+        stop = self.stop if stop is None else stop
+        recorder = CallRecorder(self.log_dir, self.adapter_name, session_id, stop)
         recorder.stage = STAGE
         abstain = None
         try:
@@ -62,7 +69,7 @@ class Interpreter(dspy.Module):
             recorder.commit(abstain is None)
         if abstain is not None:
             return self._abstained(brief_text, abstain)
-        steps = [step.model_dump(mode="json") | {"session_id": self.session_id, "author": "interpreter"}
+        steps = [step.model_dump(mode="json") | {"session_id": session_id, "author": "interpreter"}
                  for step in reply.steps.root]
         return dspy.Prediction(status=reply.status, needs_human=reply.needs_human, priority=reply.priority,
                                steps=steps, abstain=None)
