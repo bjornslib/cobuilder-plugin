@@ -38,6 +38,7 @@ import time
 import pytest
 
 from eval_support import StubInterpreter, make_prediction, write_eval_world
+from test_eval_judge_errors import write_world
 from fixtures_support import make_label, require
 from interpret_support import DummyLM, dspy, interpret, make_brief, propose, read_calls, step
 from judge_ref_support import install_judge, reply_step
@@ -474,7 +475,7 @@ class AlternatingModelErrors(StubInterpreter):
 
 def run_cli(monkeypatch, tmp_path, program):
     install_judge(monkeypatch, lambda *a: (GOOD_SCORE, ["payload: the made-up parts match."]))
-    manifest, labels, real_dir, _ = write_eval_world(tmp_path, payloads=[reply_step()])
+    manifest, labels, real_dir, _ = write_world(tmp_path, stops=1)
     monkeypatch.setattr(require("priority.interpreter"), "Interpreter", lambda *a, **k: program)
     from priority.cli import main
 

@@ -8,12 +8,14 @@ from __future__ import annotations
 
 import contextlib
 import io
+import itertools
 
 import pytest
 
 from eval_support import write_eval_world
 from fixtures_support import require
-from interpret_support import no_live_call  # noqa: F401
+from interpret_support import DummyLM, no_live_call, propose, step  # noqa: F401
+from judge_ref_support import install_judge
 from optimise_support import BUDGET, SEED, block_live_calls, run_optimise
 from propose_support import field, propose_of
 
@@ -81,6 +83,10 @@ def test_seed_program_demos_survive_a_bootstrap_reset(monkeypatch, tmp_path):
     monkeypatch.setattr(dspy, "BootstrapFewShot", factory, raising=False)
     monkeypatch.chdir(tmp_path)
     seed = write_seed_program(tmp_path / "seed.json")
+    reply = propose([step("reply")], status="waiting_answer")
+    lm = DummyLM(itertools.cycle([reply]))
+    monkeypatch.setattr(require("priority.interpreter"), "interpreter_lm", lambda retries=0: lm)
+    install_judge(monkeypatch, lambda *a: (0.8, ["payload: the made-up parts match."]))
     from priority.cli import main
 
     argv = ["optimise", "--optimiser", "bootstrap",
