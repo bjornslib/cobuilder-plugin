@@ -78,7 +78,8 @@ def _score_stop(model: object, brief: object, label: dict, session_id: str = "",
     abstain = prediction.get("abstain") if isinstance(prediction, dict) else prediction.abstain
     gate = abstain.get("reason") if isinstance(abstain, dict) else "pass"
     return {**diagnostics(label, prediction), "overall": value, "ambiguous": _is_ambiguous(label),
-            "payload": value, "gate": gate, "feedback": feedback, "judge_error": judge_error}
+            "payload": value, "gate": gate, "feedback": feedback, "judge_error": judge_error,
+            "model_error": gate == "model_error"}
 
 
 def _stops(entries: list, labels_by_session: dict, wanted: set):

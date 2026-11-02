@@ -62,8 +62,8 @@ def digest_all(briefs: dict[Path, StopBrief], model, log_dir: Path, size: int) -
 def interpret_all(adapter: str, briefs: dict[Path, StopBrief], model, log_dir: Path, size: int) -> list:
     def one(item: tuple[Path, StopBrief]):
         path, brief = item
-        return interpreter.Interpreter(model, log_dir=log_dir / adapter, session_id=path.stem,
-                                       adapter=adapter)(brief_text=brief.for_model())
+        return interpreter.Interpreter(model, log_dir=log_dir / adapter, session_id=path.stem, adapter=adapter,
+                                       waits=())(brief_text=brief.for_model())  # the replay counts each fault
     return pooled(one, list(briefs.items()), size)
 
 

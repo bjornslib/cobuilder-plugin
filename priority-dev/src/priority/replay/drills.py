@@ -41,7 +41,8 @@ def run_drills(session: str, brief: StopBrief, log_dir: Path) -> dict[str, str]:
     """Run each drill on the brief. Returns the Abstain reason of each drill. An end with no Abstain says so."""
     found = {}
     for name, model in drills().items():
-        result = Interpreter(model, log_dir=log_dir / FOLDER, session_id=session)(brief_text=brief.for_model())
+        result = Interpreter(model, log_dir=log_dir / FOLDER, session_id=session, waits=())(
+            brief_text=brief.for_model())
         abstain = result.abstain
         found[name] = abstain["reason"] if abstain else "no abstain"
         if abstain:

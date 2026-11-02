@@ -6,13 +6,14 @@ reply and the error text in place of a payload, and it explains what the model m
 score of an abstain at 0 (`payload_rules.pinned`). In every other case, an empty payload included, the
 clamped judge score is final, and a judge stub note scores 0. The feedback holds the abstain note, when one
 applies, and then the judge notes. A failed judge call is a judge error in every case but an abstain.
-The eval path and the GEPA path score the same Prediction object.
+The eval path and the GEPA path score the same Prediction object. A `model_error` abstain is no score on the
+GEPA path: `score` raises ModelFailure for it, so that no optimiser trains on a false 0.
 """
 from __future__ import annotations
 
 import time
 
-from priority.evaluation.payload_rules import get_field, pinned, predicted_object, reference_object
+from priority.evaluation.payload_rules import abstain_of, get_field, pinned, predicted_object, reference_object
 
 JUDGE_ERROR_MARK = "judge error:"  # the note that `judge.judge` returns when its call fails
 MAX_TRIES = 3  # judge calls for one stop, the first call included
@@ -23,6 +24,11 @@ sleep = time.sleep  # read at call time, so a test can replace it
 class JudgeFailure(BaseException):
     """The judge call failed on every try. It is not an Exception, because dspy turns an Exception from a
     metric into a score of 0, and the optimiser would train on it."""
+
+
+class ModelFailure(BaseException):
+    """The model call failed for a stop, with a `model_error` abstain. It is not an Exception, for the reason
+    that JudgeFailure is not one."""
 
 
 def _clamp(value: float) -> float:
@@ -63,7 +69,11 @@ def _stop_name(example: object) -> str:
 def score(example: object, prediction: object, trace: object = None,
           pred_name: object = None, pred_trace: object = None) -> tuple[float, str]:
     """Score one stop from 0 to 1 with feedback. A failed judge call is retried, and when every try fails
-    this raises JudgeFailure. The GEPA arguments do not change the result."""
+    this raises JudgeFailure. A `model_error` abstain raises ModelFailure, with no judge call. The GEPA
+    arguments do not change the result."""
+    abstain = abstain_of(prediction)
+    if abstain is not None and abstain.get("reason") == "model_error":
+        raise ModelFailure(f"the model call failed for {_stop_name(example)}: {abstain.get('detail')}")
     for attempt in range(MAX_TRIES):
         value, feedback, judge_error = score_checked(example, prediction)
         if not judge_error:

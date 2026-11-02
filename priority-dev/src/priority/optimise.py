@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from priority.evaluation.demos import as_demo, demo_briefs, drop_demo_stops, pick_demos
-from priority.evaluation.metric import JudgeFailure
+from priority.evaluation.metric import JudgeFailure, ModelFailure
 from priority.gepa_proposer import guided_instruction_proposer
 from priority.optimise_report import append_report, write_eval_rows
 from priority.trainset import assert_train_only, build_trainset, split_gepa_valset
@@ -192,8 +192,8 @@ def _finish(compiled: object, settings: Settings, examples: list, parts: dict, s
     print(f"report: {REPORT_RELATIVE}")
 
 
-def _judge_stop(failure: JudgeFailure) -> int:
-    """Print the stop message for a judge that never worked, and return the exit code."""
+def _failure_stop(failure: BaseException) -> int:
+    """Print the stop message for a judge or a model that never worked, and return the exit code."""
     print(f"optimise failed: {failure}. The run stopped and saved nothing.")
     return 1
 
@@ -222,8 +222,8 @@ def run(manifest: Path, labels: Path, real_dir: Path,
     examples = drop_demo_stops(examples, demo_briefs(student))
     try:
         compiled = _compile(cls, settings, student, examples, parts["train"])
-    except JudgeFailure as exc:
-        return _judge_stop(exc)
+    except (JudgeFailure, ModelFailure) as exc:
+        return _failure_stop(exc)
     except Exception as exc:  # noqa: BLE001 (any compile fault ends the run with a message)
         print(f"optimise failed: {optimiser} compile failed: {exc}")
         return 1
@@ -231,7 +231,7 @@ def run(manifest: Path, labels: Path, real_dir: Path,
     stem = (optimiser if tag is None else f"{optimiser}-{tag}") + ("-seeded" if seed_program is not None else "")
     try:
         _finish(compiled, settings, examples, parts, stem)
-    except JudgeFailure as exc:
-        return _judge_stop(exc)
+    except (JudgeFailure, ModelFailure) as exc:
+        return _failure_stop(exc)
     print(usage_line())
     return 0

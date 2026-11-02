@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
+from time import sleep
 
 import dspy
 from dspy.utils.exceptions import AdapterParseError
@@ -19,6 +20,7 @@ from priority.interpreter.signatures import ProposeStop
 INTERPRETER_MODEL = config.model()
 MAX_TOKENS = 3000  # a reasoning model spends tokens on its reasoning first, so a low cap cuts the reply
 STAGE = "propose"
+WAITS = (5, 15, 45)  # seconds between the 4 tries of a rate-limited call
 log = logging.getLogger("priority.interpreter")
 # The fallback of ChatAdapter would make a second model call after a parse fault. A run makes one.
 ADAPTERS = {"chat": lambda: dspy.ChatAdapter(use_json_adapter_fallback=False), "json": dspy.JSONAdapter}
@@ -34,18 +36,24 @@ def _abstain(reason: str, error: Exception, raw: str = "") -> dict:
     return {"reason": reason, "detail": f"{type(error).__name__}: {error}", "raw": raw}
 
 
+def _is_rate_limit(error: Exception) -> bool:
+    return (type(error).__name__.endswith("RateLimitError") or "Rate limit reached" in str(error)
+            or getattr(error, "status_code", None) == 429)
+
+
 class Interpreter(dspy.Module):
     def __init__(self, lm: dspy.LM | None = None, *, log_dir: Path | str | None = None, session_id: str = "",
-                 adapter: str = "chat", stop: str = ""):
+                 adapter: str = "chat", stop: str = "", waits: tuple[float, ...] = WAITS):
         super().__init__()
         if adapter not in ADAPTERS:
             raise ValueError(f"unknown adapter {adapter!r}: use one of {', '.join(map(repr, ADAPTERS))}")
         self.lm, self.log_dir, self.session_id, self.adapter_name = lm, log_dir, session_id, adapter
-        self.stop = stop
+        self.stop, self.waits = stop, tuple(waits)
         self.propose = dspy.Predict(ProposeStop)
 
     def forward(self, brief_text: str, *, session_id: str | None = None, stop: str | None = None) -> dspy.Prediction:
         """One model call. A reply that does not parse or validate gives invalid_output, any other error model_error.
+        A rate-limit error gets one more try after each wait in `waits`, 4 tries by default (see WAITS).
 
         `session_id` and `stop` name this call and override the constructor values. They are per call, because
         threads share one Interpreter.
@@ -54,25 +62,32 @@ class Interpreter(dspy.Module):
         stop = self.stop if stop is None else stop
         recorder = CallRecorder(self.log_dir, self.adapter_name, session_id, stop)
         recorder.stage = STAGE
-        abstain = None
-        try:
-            with dspy.context(lm=self.lm or dspy.settings.lm, adapter=ADAPTERS[self.adapter_name](),
-                              callbacks=[recorder]):
-                reply = self.propose(brief_text=brief_text)
-        except AdapterParseError as error:
-            abstain = _abstain("invalid_output", error, error.lm_response or "")
-        except ValidationError as error:
-            abstain = _abstain("invalid_output", error)
-        except Exception as error:  # noqa: BLE001  (a model call may raise anything, and none may escape)
-            abstain = _abstain("model_error", error)
-        finally:
-            recorder.commit(abstain is None)
+        reply, abstain = self._try_calls(brief_text, recorder)
+        recorder.commit(abstain is None)
         if abstain is not None:
             return self._abstained(brief_text, abstain)
         steps = [step.model_dump(mode="json") | {"session_id": session_id, "author": "interpreter"}
                  for step in reply.steps.root]
         return dspy.Prediction(status=reply.status, needs_human=reply.needs_human, priority=reply.priority,
                                steps=steps, abstain=None)
+
+    def _try_calls(self, brief_text: str, recorder: CallRecorder) -> tuple[dspy.Prediction | None, dict | None]:
+        """Call the model, and call it again after each wait in `self.waits` for a rate-limit error.
+        Return `(reply, abstain)`."""
+        for attempt in range(len(self.waits) + 1):
+            try:
+                with dspy.context(lm=self.lm or dspy.settings.lm, adapter=ADAPTERS[self.adapter_name](),
+                                  callbacks=[recorder]):
+                    return self.propose(brief_text=brief_text), None
+            except AdapterParseError as error:
+                return None, _abstain("invalid_output", error, error.lm_response or "")
+            except ValidationError as error:
+                return None, _abstain("invalid_output", error)
+            except Exception as error:  # noqa: BLE001  (a model call may raise anything, and none may escape)
+                if not _is_rate_limit(error) or attempt == len(self.waits):
+                    return None, _abstain("model_error", error)
+                sleep(self.waits[attempt])
+        raise AssertionError("unreachable: the last try always returns")
 
     def _abstained(self, brief_text: str, abstain: dict) -> dspy.Prediction:
         """Log the abstain, and put it in the dspy trace, so that GEPA reflects on a failed call too."""
