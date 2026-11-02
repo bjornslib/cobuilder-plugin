@@ -51,9 +51,9 @@ RUBRIC = ("Grade the predicted payload against the reference payload. Each is an
           "how its meaning differs from the reference. Return one note per part, "
           "each note one short sentence.")
 
-# The judge writes one note per part, so the task cap of 3000 tokens cut its
-# reply on a two-question payload. A cut reply does not parse.
-JUDGE_MAX_TOKENS = 8000
+# The judge writes one note per part. A cap of 3000 tokens cut its reply on a two-question payload, and 8000 cut
+# two replies in one judge-check run. A cut reply does not parse. Mercury 3 allows 131072 output tokens.
+JUDGE_MAX_TOKENS = 16000
 
 
 # The version of the rules that turn a judge reply into a score. Change it when code pins a case again or
