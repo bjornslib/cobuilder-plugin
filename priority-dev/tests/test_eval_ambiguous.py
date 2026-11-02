@@ -15,6 +15,7 @@ import shutil
 
 from eval_support import StubInterpreter, make_prediction
 from fixtures_support import make_label, require
+from judge_ref_support import install_judge
 from probe_support import FIXTURES
 
 
@@ -30,8 +31,8 @@ def test_excluding_ambiguous_drops_the_ambiguous_stop(monkeypatch, tmp_path):
         fid[:8]: {"stops": {"001": make_label(1, confirmed_by="engineer",
                                               confirmed_on="2026-10-26", payloads=[])}}
         for fid in full_ids}}
-    # The target stop is the outlier: it abstains, so it scores 0 while the
-    # rest score 1, and it is the only ambiguous one. It must sit in the
+    # The target stop is the outlier: it abstains, so code pins it to 0 while the
+    # judge scores the rest 1, and it is the only ambiguous one. It must sit in the
     # train split, so compute the split first.
     wanted_first = sorted(set(split(full_ids)["train"]))[0]
     labels["sessions"][wanted_first[:8]]["stops"]["001"]["ambiguous"] = True
@@ -54,6 +55,8 @@ def test_excluding_ambiguous_drops_the_ambiguous_stop(monkeypatch, tmp_path):
                 "reason": "invalid_output", "detail": "made-up fault", "raw": "made-up reply"}))
         else:
             predictions.append(make_prediction(label))
+    # Code no longer pins two empty lists to 1: the judge scores every stop that did not abstain.
+    install_judge(monkeypatch, lambda brief_text, predicted, expected: (1.0, ["payload: the made-up parts match."]))
     monkeypatch.setattr(config, "load_key",
                         lambda *_a, **_k: (_ for _ in ()).throw(
                             AssertionError("a test reached for the real key")))

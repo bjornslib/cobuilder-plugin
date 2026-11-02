@@ -56,9 +56,14 @@ RUBRIC = ("Grade the predicted payload against the reference payload. Each is an
 JUDGE_MAX_TOKENS = 8000
 
 
+# The version of the rules that turn a judge reply into a score. Change it when code pins a case again or
+# stops, so that a checkpoint row of the old rules is not reused.
+SCORING = "unpinned-v1"
+
+
 def judge_identity() -> dict:
     """What one judge run depends on: the model, the endpoint, the temperature,
-    the token cap, and the rubric. It never reads a key.
+    the token cap, the rubric, and the scoring version. It never reads a key.
 
     A checkpoint row of a run with another identity must not be reused, so
     `judge-check` stores this dict in each row and compares it on load. The
@@ -67,7 +72,7 @@ def judge_identity() -> dict:
 
     return {"model": config.judge_model(), "base_url": config.judge_base_url(),
             "temperature": config.judge_temperature(), "max_tokens": JUDGE_MAX_TOKENS,
-            "rubric": hashlib.sha256(RUBRIC.encode()).hexdigest()}
+            "rubric": hashlib.sha256(RUBRIC.encode()).hexdigest(), "scoring": SCORING}
 
 USAGE = {"calls": 0, "prompt_tokens": 0, "completion_tokens": 0}
 _USAGE_LOCK = threading.Lock()  # eval scores stops from worker threads, so the totals need a lock

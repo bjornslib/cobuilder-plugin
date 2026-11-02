@@ -1,4 +1,4 @@
-"""Slice 21 RED: the judge sees every stop, and code pins the score in four cases.
+"""Slice 21 RED: the judge sees every stop. Code pins the score of an abstain only.
 
 The contract. `metric.score(example, prediction, trace=None, pred_name=None,
 pred_trace=None) -> (float, str)`. The reference is `{"priority":
@@ -6,10 +6,11 @@ example.priority, "steps": example.expected_payloads}`, and an example with no
 `expected_payloads` raises ValueError. The judge gets the brief text, the
 predicted payload object `{"priority", "steps"}` with the code-set fields
 removed (or `{"abstain": {reason, detail, raw}}`), and the reference, exactly
-once for each stop. Code pins four scores whatever the judge returns: an
-abstain 0, a missing payload 0, an unwanted payload 0, and both empty 1. In
-every other case the clamped judge score is final. The feedback holds the
-pinned-case note first, then the judge notes. The judge is a stub here.
+once for each stop. Code pins one score whatever the judge returns: an
+abstain scores 0. In every other case the clamped judge score is final, also
+for a missing payload, an unwanted payload, and two empty payloads. The
+feedback holds the abstain note first, then the judge notes. The judge is a
+stub here. `test_metric_unpinned.py` holds the rest of the unpinned contract.
 """
 from __future__ import annotations
 
@@ -71,7 +72,7 @@ def test_an_example_with_no_reference_raises(monkeypatch):
                                                     prediction([reply_step()]))
 
 
-# ---- The four pinned cases --------------------------------------------------------
+# ---- The one pinned case: an abstain ----------------------------------------------
 
 ABSTAIN = {"reason": "invalid_output", "detail": "steps: the kind launch_missile is not known",
            "raw": "[[ ## steps ## ]]\n[{\"kind\": \"launch_missile\"}]"}
@@ -87,28 +88,29 @@ def test_an_abstain_scores_zero_and_the_judge_sees_the_abstain(monkeypatch, refe
     assert feedback.index("invalid_output") < feedback.index(NOTE), "the judge note comes before the abstain note"
 
 
-def test_a_missing_payload_scores_zero_and_names_the_predicted_status(monkeypatch):
-    value, feedback, calls = score(monkeypatch, 0.9, example([ask_step()]), prediction([], status="continuing"))
-    assert value == pytest.approx(0.0)
+# ---- The cases that code no longer pins: the judge score is final -------------------
+
+
+def test_a_missing_payload_gets_the_judge_score_and_the_judge_notes(monkeypatch):
+    value, feedback, calls = score(monkeypatch, 0.4, example([ask_step()]), prediction([], status="continuing"))
+    assert value == pytest.approx(0.4), "a reference with steps against no steps did not get the judge score"
     assert len(calls) == 1, "a missing payload never reached the judge"
-    assert "continuing" in feedback and NOTE in feedback
-    assert feedback.index("continuing") < feedback.index(NOTE)
+    assert feedback == NOTE, f"the feedback is not the judge notes alone: {feedback!r}"
 
 
-def test_an_unwanted_payload_scores_zero_and_names_each_kind(monkeypatch):
+def test_an_unwanted_payload_gets_the_judge_score_and_the_judge_notes(monkeypatch):
     steps = [reply_step(), {"kind": "snooze", "until_event": "turn_end"}]
     value, feedback, calls = score(monkeypatch, 0.9, example([]), prediction(steps))
-    assert value == pytest.approx(0.0)
+    assert value == pytest.approx(0.9), "a reference [] against steps did not get the judge score"
     assert len(calls) == 1, "an unwanted payload never reached the judge"
-    assert "reply" in feedback and "snooze" in feedback and NOTE in feedback
-    assert max(feedback.index("reply"), feedback.index("snooze")) < feedback.index(NOTE)
+    assert feedback == NOTE, f"the feedback is not the judge notes alone: {feedback!r}"
 
 
-def test_both_empty_scores_one_whatever_the_judge_says(monkeypatch):
+def test_both_empty_gets_the_judge_score_and_the_judge_notes(monkeypatch):
     value, feedback, calls = score(monkeypatch, 0.2, example([]), prediction([]))
-    assert value == pytest.approx(1.0)
+    assert value == pytest.approx(0.2), "two empty lists did not get the judge score"
     assert len(calls) == 1, "two empty payloads never reached the judge"
-    assert NOTE in feedback
+    assert feedback == NOTE, f"the feedback is not the judge notes alone: {feedback!r}"
 
 
 # ---- The GEPA path -----------------------------------------------------------------

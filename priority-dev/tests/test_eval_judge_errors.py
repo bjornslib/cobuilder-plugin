@@ -5,13 +5,14 @@ Today that 0 looks like a real 0, so it drags every mean down. This slice marks 
 out of the means.
 
 1. `runner._score_stop` rows gain a boolean `judge_error`. It is True when the judge call failed (the
-   feedback holds `judge error:`) and no pinned rule fixed the value. It is False otherwise.
+   feedback holds `judge error:`) and the stop is not an abstain. It is False otherwise.
 2. `eval_report.print_report` prints one line `judge errors: N` before the overall lines, always, also for 0.
    Rows with `judge_error` stay out of every mean and count: session means and stop counts, the fact lines,
    the steps line, and the overall lines. The per-stop `score stop` lines still show them, marked
    `judge_error`. When every row is a judge error, the overall lines print `n/a (0 stops)`.
-3. A stop pinned by a code rule (an abstain, a missing step, a spurious step, two empty lists) is not a
-   judge error, even when the judge also failed on it.
+3. A stop with no abstain is always scored by the judge: a missing step, a spurious step, and two empty
+   lists are no longer pinned, so a failed judge call on them is a judge error. Only an abstain is pinned
+   to 0, and it is not a judge error, even when the judge also failed on it.
 4. The eval exit code stays 0 when some stops had judge errors.
 
 Every judge, program, and world here is a stub, so no test makes a live model call.
@@ -23,6 +24,8 @@ import io
 import re
 import threading
 from pathlib import Path
+
+import pytest
 
 from brief_support import Transcript, build
 from eval_support import StubInterpreter, make_prediction
@@ -130,28 +133,26 @@ def test_an_abstain_pinned_to_zero_is_not_a_judge_error_when_the_judge_failed(mo
     assert row.get("judge_error") is False, "an abstain pinned the 0, but the row is marked judge_error"
 
 
-def test_missing_steps_pinned_to_zero_is_not_a_judge_error_when_the_judge_failed(monkeypatch, tmp_path):
+@pytest.mark.parametrize("reference,steps", [([reply_step()], []), ([], [reply_step()]), ([], [])],
+                         ids=["missing steps", "spurious step", "two empty lists"])
+def test_a_failed_judge_call_on_a_formerly_pinned_case_is_a_judge_error(monkeypatch, tmp_path, reference, steps):
     install_judge(monkeypatch, FailingJudge())
-    label = label_with([reply_step()])
-    row = row_of(tmp_path, make_prediction(label, steps=[]), label)
-    assert row["overall"] == 0.0 and "payload: missing" in row["feedback"], f"no pinned rule fired: {row}"
-    assert row.get("judge_error") is False, "the missing-steps rule pinned the 0, but the row is marked judge_error"
+    label = label_with(reference)
+    row = row_of(tmp_path, make_prediction(label, steps=steps), label)
+    assert row["overall"] == 0.0 and "judge error:" in row["feedback"], f"the judge note did not reach the row: {row}"
+    assert row.get("judge_error") is True, "code no longer pins this case, so the failed judge call is a judge error"
 
 
-def test_a_spurious_step_pinned_to_zero_is_not_a_judge_error_when_the_judge_failed(monkeypatch, tmp_path):
-    install_judge(monkeypatch, FailingJudge())
-    label = label_with([])
-    row = row_of(tmp_path, make_prediction(label, steps=[reply_step()]), label)
-    assert row["overall"] == 0.0 and "none is due" in row["feedback"], f"no pinned rule fired: {row}"
-    assert row.get("judge_error") is False, "the spurious-step rule pinned the 0, but the row is marked judge_error"
-
-
-def test_two_empty_lists_pinned_to_one_is_not_a_judge_error_when_the_judge_failed(monkeypatch, tmp_path):
-    install_judge(monkeypatch, FailingJudge())
-    label = label_with([])
-    row = row_of(tmp_path, make_prediction(label, steps=[]), label)
-    assert row["overall"] == 1.0, f"the empty-lists rule did not pin 1: {row}"
-    assert row.get("judge_error") is False, "the empty-lists rule pinned the score, but the row is marked judge_error"
+@pytest.mark.parametrize("reference,steps", [([reply_step()], []), ([], [reply_step()]), ([], [])],
+                         ids=["missing steps", "spurious step", "two empty lists"])
+def test_a_working_judge_scores_a_formerly_pinned_case_and_it_is_no_judge_error(monkeypatch, tmp_path, reference,
+                                                                                steps):
+    install_judge(monkeypatch, lambda brief_text, predicted, expected: (0.4, ["payload: the made-up parts differ."]))
+    label = label_with(reference)
+    row = row_of(tmp_path, make_prediction(label, steps=steps), label)
+    assert row["overall"] == 0.4 and row["payload"] == 0.4, f"the row does not hold the judge score: {row}"
+    assert row.get("judge_error") is False
+    assert row["feedback"] == "payload: the made-up parts differ.", f"the feedback is not the judge notes: {row}"
 
 
 # ---- Item 2: the report ---------------------------------------------------------

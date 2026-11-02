@@ -3,8 +3,9 @@
 The judge sees every stop, once. It gets the brief text, the predicted payload object, and the reference
 object `{"priority", "steps"}` (see `payload_rules`). For an abstain, the judge gets the abstain with the raw
 reply and the error text in place of a payload, and it explains what the model must change. Code pins the
-score in four cases (`payload_rules.pinned`). In every other case the clamped judge score is final, and a
-judge stub note scores 0. The feedback holds the pinned-case note, when one applies, and then the judge notes.
+score of an abstain at 0 (`payload_rules.pinned`). In every other case, an empty payload included, the
+clamped judge score is final, and a judge stub note scores 0. The feedback holds the abstain note, when one
+applies, and then the judge notes. A failed judge call is a judge error in every case but an abstain.
 The eval path and the GEPA path score the same Prediction object.
 """
 from __future__ import annotations
@@ -45,11 +46,11 @@ def _judged(example: object, predicted: dict, reference: dict) -> tuple[float, s
 
 
 def score_checked(example: object, prediction: object) -> tuple[float, str, bool]:
-    """Score one stop. Return the value, the feedback, and whether the judge call failed with no rule pinned."""
+    """Score one stop. Return the value, the feedback, and whether the judge call failed on a stop that is not an abstain."""
     reference = reference_object(example)
     predicted = predicted_object(prediction)
     value, notes = _judged(example, predicted, reference)
-    rule = pinned(prediction, predicted, reference)
+    rule = pinned(predicted)
     if rule is None:
         return (value, notes, JUDGE_ERROR_MARK in notes)
     return (rule[0], f"{rule[1]} {notes}".strip(), False)

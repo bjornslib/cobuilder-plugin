@@ -12,6 +12,8 @@ The contract, on top of `test_judge_check_progress.py`:
    part, and every unit is judged again.
 4. A row without a `judge` field (an old checkpoint) is ignored with the same
    warning.
+5. The identity holds a `scoring` version string. A row without it, or with another one, was scored under
+   other rules (the old code pins). It is ignored with a warning that names `scoring`.
 
 The judge is a stub and every file is made up, so no test makes a model call
 and no test reads a key.
@@ -25,7 +27,7 @@ from judge_check_progress_support import (ALL_CALLS, PAIRS, read_rows, report, r
                                           write_rows)
 from judge_check_support import GradingJudge
 
-IDENTITY_PARTS = ("model", "base_url", "temperature", "max_tokens", "rubric")
+IDENTITY_PARTS = ("model", "base_url", "temperature", "max_tokens", "rubric", "scoring")
 
 
 def checkpoint_args(tmp_path) -> tuple:
@@ -121,3 +123,38 @@ def test_a_row_without_an_identity_is_ignored_with_a_warning(monkeypatch, tmp_pa
     names = warnings(result)
     assert any("no judge identity" in line for line in names), \
         f"a row without an identity must warn about it: {names}"
+
+
+def test_the_identity_holds_one_fixed_scoring_version():
+    from priority.evaluation import judge as judge_module
+
+    first, second = judge_module.judge_identity(), judge_module.judge_identity()
+    assert isinstance(first.get("scoring"), str) and first["scoring"], f"the identity has no scoring version: {first}"
+    assert first["scoring"] == second["scoring"], "the scoring version must be a fixed string, not a clock or a count"
+    assert "key" not in first["scoring"].lower()
+
+
+def test_a_row_made_under_the_old_pins_is_ignored_with_a_warning_that_names_scoring(monkeypatch, tmp_path):
+    fill_checkpoint(monkeypatch, tmp_path)
+    rows = read_rows(tmp_path / "checkpoint.jsonl")
+    for row in rows:
+        row["judge"].pop("scoring", None)  # an old row has every other identity part, and no scoring part
+    write_rows(tmp_path / "checkpoint.jsonl", rows)
+    judge = GradingJudge()
+    result = run_cli(monkeypatch, tmp_path, PAIRS, judge, extra=checkpoint_args(tmp_path))
+    assert len(judge.calls) == ALL_CALLS, "a row made under the old pins must be judged again"
+    names = warnings(result)
+    assert any("scoring" in line for line in names), f"the warning must name scoring: {names}"
+    assert not any("no judge identity" in line for line in names), f"the old row did hold an identity: {names}"
+
+
+def test_a_row_made_under_another_scoring_version_is_ignored_with_a_warning(monkeypatch, tmp_path):
+    fill_checkpoint(monkeypatch, tmp_path)
+    rows = read_rows(tmp_path / "checkpoint.jsonl")
+    for row in rows:
+        row["judge"]["scoring"] = "pinned-v0"
+    write_rows(tmp_path / "checkpoint.jsonl", rows)
+    judge = GradingJudge()
+    result = run_cli(monkeypatch, tmp_path, PAIRS, judge, extra=checkpoint_args(tmp_path))
+    assert len(judge.calls) == ALL_CALLS, "a row of another scoring version must be judged again"
+    assert any("scoring" in line for line in warnings(result)), f"the warning must name scoring: {warnings(result)}"
