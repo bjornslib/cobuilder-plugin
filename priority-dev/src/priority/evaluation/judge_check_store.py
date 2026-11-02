@@ -1,10 +1,14 @@
 """The checkpoint file of `priority judge-check`: one JSONL row for each finished unit of judge work.
 
 A unit is one pair (all its calls) or one probe copy. A pair row is
-`{"session", "stop", "fingerprint", "a": [scores], "b": [scores]}`. A probe row
-is `{"session", "stop", "changed", "fingerprint", "base", "copy"}`. The
-fingerprint is a hash of the payload content, so a row of other content does
-not match. A row that no unit of the run asks for is ignored with a warning.
+`{"session", "stop", "fingerprint", "judge", "a": [scores], "b": [scores]}`. A
+probe row is `{"session", "stop", "changed", "fingerprint", "judge", "base",
+"copy"}`. The fingerprint is a hash of the payload content and the repeats, so
+a row of other content does not match. The `judge` field holds the judge
+identity of the run that wrote the row, so a row of another judge (another
+model, rubric, token cap, or temperature) does not match either. A row that no
+unit of the run asks for, or that another judge wrote, is ignored with a
+warning.
 """
 from __future__ import annotations
 
@@ -34,11 +38,29 @@ def _row_key(row: dict) -> tuple:
     return pair_key(row["session"], row["stop"], row["fingerprint"])
 
 
-class Checkpoint:
-    """The stored rows of one run. With no path, it stores nothing and finds nothing."""
+def _same_judge(row: dict, identity: dict) -> bool:
+    """Whether a stored row was judged by the judge of this run."""
+    return row.get("judge") == identity
 
-    def __init__(self, path: Path | None):
+
+def _judge_change(stored: object, identity: dict) -> str:
+    """The part of the judge that differs between a stored row and this run."""
+    if not isinstance(stored, dict):
+        return "no judge identity"
+    parts = sorted(name for name in set(stored) | set(identity) if stored.get(name) != identity.get(name))
+    return ", ".join(parts) or "no judge identity"
+
+
+class Checkpoint:
+    """The stored rows of one run. With no path, it stores nothing and finds nothing.
+
+    `identity` is the judge identity of this run. A stored row whose `judge`
+    field is missing or differs is ignored at load, with a warning that names
+    the part of the judge that changed."""
+
+    def __init__(self, path: Path | None, identity: dict | None = None):
         self.path, self.rows, self.used = path, {}, set()
+        self.identity = identity if identity is not None else {}
         if path is None or not Path(path).exists():
             return
         for number, line in enumerate(Path(path).read_text().splitlines(), 1):
@@ -46,6 +68,10 @@ class Checkpoint:
                 continue
             try:
                 row = json.loads(line)
+                if identity is not None and not _same_judge(row, identity):
+                    print(f"warning: checkpoint line {number} was judged by another judge "
+                          f"({_judge_change(row.get('judge'), identity)}), so it is ignored")
+                    continue
                 self.rows[_row_key(row)] = row
             except (ValueError, KeyError, TypeError):
                 print(f"warning: checkpoint line {number} is not a row, so it is ignored")

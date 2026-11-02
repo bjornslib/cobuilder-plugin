@@ -15,6 +15,7 @@ is not known, so the meter holds tokens only.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import threading
 
@@ -53,6 +54,20 @@ RUBRIC = ("Grade the predicted payload against the reference payload. Each is an
 # The judge writes one note per part, so the task cap of 3000 tokens cut its
 # reply on a two-question payload. A cut reply does not parse.
 JUDGE_MAX_TOKENS = 8000
+
+
+def judge_identity() -> dict:
+    """What one judge run depends on: the model, the endpoint, the temperature,
+    the token cap, and the rubric. It never reads a key.
+
+    A checkpoint row of a run with another identity must not be reused, so
+    `judge-check` stores this dict in each row and compares it on load. The
+    rubric enters as a SHA-256 digest, so the row stays short."""
+    from priority import config
+
+    return {"model": config.judge_model(), "base_url": config.judge_base_url(),
+            "temperature": config.judge_temperature(), "max_tokens": JUDGE_MAX_TOKENS,
+            "rubric": hashlib.sha256(RUBRIC.encode()).hexdigest()}
 
 USAGE = {"calls": 0, "prompt_tokens": 0, "completion_tokens": 0}
 _USAGE_LOCK = threading.Lock()  # eval scores stops from worker threads, so the totals need a lock

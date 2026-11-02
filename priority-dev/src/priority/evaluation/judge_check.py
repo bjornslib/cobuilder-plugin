@@ -24,7 +24,7 @@ from pathlib import Path
 
 from priority.brief import StopBrief, build_brief
 from priority.evaluation.check import stop_key
-from priority.evaluation.judge import reset_usage, usage_line
+from priority.evaluation.judge import judge_identity, reset_usage, usage_line
 from priority.evaluation.judge_check_store import Checkpoint, fingerprint, pair_key, probe_key
 from priority.evaluation.judge_probe import probe_copies
 from priority.evaluation.labels import load_labels, match_session_key
@@ -87,11 +87,12 @@ def _verdict(a: list, b: list) -> tuple[str | None, bool]:
     return _direction(sum(a), sum(b)), flipped
 
 
-def _pair_row(example: dict, entry: dict, repeats: int, where: str, digest: str) -> dict:
+def _pair_row(example: dict, entry: dict, repeats: int, where: str, digest: str, identity: dict) -> dict:
     """Judge both sides of one pair, every repeat. Return the checkpoint row."""
     scores = {side: [_timed(example, entry[side], f"pair {where} side {side} repeat {n}/{repeats}")
                      for n in range(1, repeats + 1)] for side in ("a", "b")}
-    return {"session": entry["session"], "stop": int(entry["stop"]), "fingerprint": digest, **scores}
+    return {"session": entry["session"], "stop": int(entry["stop"]), "fingerprint": digest,
+            "judge": identity, **scores}
 
 
 def _probe_reference(session_id: str, key: str, label: dict, real_dir: Path, store: Checkpoint) -> tuple[int, int]:
@@ -107,7 +108,8 @@ def _probe_reference(session_id: str, key: str, label: dict, real_dir: Path, sto
             example = example or _example(real_dir, session_id, int(key), label)
             base = _timed(example, reference, f"{where} base") if base is None else base
             rows[name] = {"session": session_id, "stop": int(key), "changed": name,
-                          "fingerprint": fingerprint([reference, changed]), "base": base,
+                          "fingerprint": fingerprint([reference, changed]), "judge": store.identity,
+                          "base": base,
                           "copy": _timed(example, changed, f"{where} copy {name}")}
             store.add(rows[name])
         lower += rows[name]["copy"] < rows[name]["base"]
@@ -135,7 +137,7 @@ def _pairs(pairs: list, labels_by_session: dict, real_dir: Path, repeats: int,
         row = store.get(pair_key(entry["session"], number, digest))
         if row is None:
             example = _example(real_dir, entry["session"], number, label)
-            row = _pair_row(example, entry, repeats, f"{index}/{len(pairs)}", digest)
+            row = _pair_row(example, entry, repeats, f"{index}/{len(pairs)}", digest, store.identity)
             store.add(row)
         direction, flip = _verdict(row["a"], row["b"])
         flipped += flip
@@ -168,7 +170,7 @@ def run(pairs_path: Path, labels: Path, real_dir: Path, repeats: int = 2, checkp
     try:
         pairs = json.loads(Path(pairs_path).read_text())
         labels_by_session = load_labels(labels)
-        store = Checkpoint(checkpoint)
+        store = Checkpoint(checkpoint, judge_identity())
         matched, picked, flipped = _pairs(pairs, labels_by_session, real_dir, repeats, store)
         probe = _probe(labels_by_session, real_dir, store)
     except (OSError, ValueError, KeyError, TypeError) as exc:
