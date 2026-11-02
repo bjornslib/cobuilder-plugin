@@ -85,7 +85,7 @@ def judge_check(args: argparse.Namespace) -> int:
     from priority.evaluation.metric import JudgeFailure
 
     try:
-        return check.run(args.pairs, args.labels, args.real_dir, args.repeats)
+        return check.run(args.pairs, args.labels, args.real_dir, args.repeats, args.checkpoint)
     except JudgeFailure as failure:
         print(f"judge-check failed: {failure}. The check stopped.")
         return 1
@@ -183,6 +183,8 @@ def main(argv: list[str] | None = None) -> int:
                                     help="Folder with the real sessions, must be Git-ignored")
     judge_check_parser.add_argument("--repeats", type=int, default=2,
                                     help="Judge calls per side of each pair (default: 2)")
+    judge_check_parser.add_argument("--checkpoint", type=Path, default=None,
+                                    help="JSONL file that keeps each finished pair and probe copy, and resumes from it")
 
     args = parser.parse_args(argv)
     if args.command == "brief":

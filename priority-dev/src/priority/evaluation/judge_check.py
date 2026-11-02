@@ -11,16 +11,22 @@ judge scores a code-made copy of each reference, with one closed field changed
 (the priority, multi_select, the role, or one option label), lower than the
 reference at least 90% of the time. The judge direction flips between repeats
 on at most 10% of the pairs.
+
+Each judge call prints one flushed progress line with the seconds it took. With
+a checkpoint file, each finished pair and probe copy is appended as one row, and
+a run that starts again judges only the units that have no row.
 """
 from __future__ import annotations
 
-import copy
 import json
+import time
 from pathlib import Path
 
 from priority.brief import StopBrief, build_brief
 from priority.evaluation.check import stop_key
 from priority.evaluation.judge import reset_usage, usage_line
+from priority.evaluation.judge_check_store import Checkpoint, fingerprint, pair_key, probe_key
+from priority.evaluation.judge_probe import probe_copies
 from priority.evaluation.labels import load_labels, match_session_key
 from priority.evaluation.metric import score
 from priority.evaluation.payload_rules import as_steps
@@ -29,8 +35,7 @@ AGREEMENT_BAR = 0.75
 MIN_PAIRS = 6
 PROBE_BAR = 0.90
 FLIP_BAR = 0.10
-# The probe copy of a reference with a changed priority takes the next priority.
-OTHER_PRIORITY = {"P1": "P2", "P2": "P3", "P3": "P1"}
+clock = time.monotonic  # read at call time, so a test can set it
 
 
 def _transcript(real_dir: Path, session_id: str) -> Path:
@@ -68,80 +73,71 @@ def _direction(a: float, b: float) -> str | None:
     return "a" if a > b else "b"
 
 
-def _judge_pair(example: dict, entry: dict, repeats: int) -> tuple[str | None, bool]:
+def _timed(example: dict, payload: dict, label: str) -> float:
+    """One judge call. Print its progress line, flushed, with the seconds it took. Return the score."""
+    start = clock()
+    value = score(example, _side(payload))[0]
+    print(f"{label} done {clock() - start:.1f}s", flush=True)
+    return value
+
+
+def _verdict(a: list, b: list) -> tuple[str | None, bool]:
     """The judge direction over all repeats, and whether it flips between repeats."""
-    a = [score(example, _side(entry["a"]))[0] for _ in range(repeats)]
-    b = [score(example, _side(entry["b"]))[0] for _ in range(repeats)]
     flipped = len({_direction(x, y) for x, y in zip(a, b)}) > 1
     return _direction(sum(a), sum(b)), flipped
 
 
-def _flip_multi(detail: dict) -> bool:
-    """Flip multi_select on the first question. Return whether a field changed."""
-    questions = detail.get("questions") or []
-    if not questions or not isinstance(questions[0], dict):
-        return False
-    questions[0]["multi_select"] = not questions[0].get("multi_select", False)
-    return True
+def _pair_row(example: dict, entry: dict, repeats: int, where: str, digest: str) -> dict:
+    """Judge both sides of one pair, every repeat. Return the checkpoint row."""
+    scores = {side: [_timed(example, entry[side], f"pair {where} side {side} repeat {n}/{repeats}")
+                     for n in range(1, repeats + 1)] for side in ("a", "b")}
+    return {"session": entry["session"], "stop": int(entry["stop"]), "fingerprint": digest, **scores}
 
 
-def _swap_role(detail: dict) -> bool:
-    """Swap the ask_human role. Return whether a field changed."""
-    detail["role"] = "review" if detail.get("role") == "decide" else "decide"
-    return True
+def _probe_reference(session_id: str, key: str, label: dict, real_dir: Path, store: Checkpoint) -> tuple[int, int]:
+    """How many copies of one reference score lower than it, and how many copies there are."""
+    reference = {"priority": label.get("priority"), "steps": as_steps(label.get("payloads"))}
+    copies = probe_copies(reference)
+    rows = {name: store.get(probe_key(session_id, key, name, fingerprint([reference, changed])))
+            for name, changed in copies}
+    base = next((row["base"] for row in rows.values() if row), None)
+    example, where, lower = None, f"probe {session_id} stop {key}", 0
+    for name, changed in copies:
+        if rows[name] is None:
+            example = example or _example(real_dir, session_id, int(key), label)
+            base = _timed(example, reference, f"{where} base") if base is None else base
+            rows[name] = {"session": session_id, "stop": int(key), "changed": name,
+                          "fingerprint": fingerprint([reference, changed]), "base": base,
+                          "copy": _timed(example, changed, f"{where} copy {name}")}
+            store.add(rows[name])
+        lower += rows[name]["copy"] < rows[name]["base"]
+    return lower, len(copies)
 
 
-def _rename_label(detail: dict) -> bool:
-    """Rename the first option label of the first question. Return whether a field changed."""
-    questions = detail.get("questions") or []
-    options = questions[0].get("options") if questions and isinstance(questions[0], dict) else None
-    if not options or not isinstance(options[0], dict) or "label" not in options[0]:
-        return False
-    options[0]["label"] = f"not {options[0]['label']}"
-    return True
-
-
-def probe_copies(reference: dict) -> list[dict]:
-    """Code-made copies of one reference object with an ask_human step, each with one closed field changed."""
-    steps = reference["steps"]
-    index = next((i for i, step in enumerate(steps)
-                  if isinstance(step, dict) and step.get("kind") == "ask_human"
-                  and isinstance(step.get("detail"), dict)), None)
-    if index is None:
-        return []
-    copies = []
-    for change in (_flip_multi, _swap_role, _rename_label):
-        changed = copy.deepcopy(reference)
-        if change(changed["steps"][index]["detail"]):
-            copies.append(changed)
-    if reference["priority"] in OTHER_PRIORITY:
-        copies.append({**copy.deepcopy(reference), "priority": OTHER_PRIORITY[reference["priority"]]})
-    return copies
-
-
-def _probe(labels_by_session: dict, real_dir: Path) -> tuple[int, int]:
+def _probe(labels_by_session: dict, real_dir: Path, store: Checkpoint) -> tuple[int, int]:
     """How many probe copies score lower than their reference, and how many copies ran."""
     lower = total = 0
     for session_id, stops in labels_by_session.items():
         for key, label in stops.items():
-            reference = {"priority": label.get("priority"), "steps": as_steps(label.get("payloads"))}
-            copies = probe_copies(reference)
-            if not copies:
-                continue
-            example = _example(real_dir, session_id, int(key), label)
-            base = score(example, _side(reference))[0]
-            total += len(copies)
-            lower += sum(1 for changed in copies if score(example, _side(changed))[0] < base)
+            found, count = _probe_reference(session_id, key, label, real_dir, store)
+            lower, total = lower + found, total + count
     return lower, total
 
 
-def _pairs(pairs: list, labels_by_session: dict, real_dir: Path, repeats: int) -> tuple[int, int, int]:
+def _pairs(pairs: list, labels_by_session: dict, real_dir: Path, repeats: int,
+           store: Checkpoint) -> tuple[int, int, int]:
     """Judge each pair. Return the human matches, the picked pairs, and the flipped pairs."""
     matched = picked = flipped = 0
-    for entry in pairs:
+    for index, entry in enumerate(pairs, 1):
         number = int(entry["stop"])
         label = _label(labels_by_session, entry["session"], number)
-        direction, flip = _judge_pair(_example(real_dir, entry["session"], number, label), entry, repeats)
+        digest = fingerprint({"a": entry["a"], "b": entry["b"], "repeats": repeats})
+        row = store.get(pair_key(entry["session"], number, digest))
+        if row is None:
+            example = _example(real_dir, entry["session"], number, label)
+            row = _pair_row(example, entry, repeats, f"{index}/{len(pairs)}", digest)
+            store.add(row)
+        direction, flip = _verdict(row["a"], row["b"])
         flipped += flip
         if entry.get("human") in ("a", "b"):
             picked += 1
@@ -166,17 +162,19 @@ def _report(agreement: tuple[int, int], probe: tuple[int, int], flips: tuple[int
             and probe[1] > 0 and probe_ratio >= PROBE_BAR and flip_ratio <= FLIP_BAR)
 
 
-def run(pairs_path: Path, labels: Path, real_dir: Path, repeats: int = 2) -> int:
+def run(pairs_path: Path, labels: Path, real_dir: Path, repeats: int = 2, checkpoint: Path | None = None) -> int:
     """Measure the judge against the three bars and print the verdict. Return exit code."""
     reset_usage()
     try:
         pairs = json.loads(Path(pairs_path).read_text())
         labels_by_session = load_labels(labels)
-        matched, picked, flipped = _pairs(pairs, labels_by_session, real_dir, repeats)
-        probe = _probe(labels_by_session, real_dir)
+        store = Checkpoint(checkpoint)
+        matched, picked, flipped = _pairs(pairs, labels_by_session, real_dir, repeats, store)
+        probe = _probe(labels_by_session, real_dir, store)
     except (OSError, ValueError, KeyError, TypeError) as exc:
         print(f"judge-check failed: {exc}")
         return 1
+    store.warn_unused()
     passed = _report((matched, picked), probe, (flipped, len(pairs)))
     print(f"agreement bar: {'pass' if passed else 'fail'}")
     return 0 if passed else 1
