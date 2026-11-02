@@ -7,10 +7,10 @@ or null). The command scores each side with `metric.score` against the stop's
 reference `{"priority", "steps"}`, `repeats` times, on the brief built from the
 transcript. Three bars, fixed before the run: the judge direction matches the
 human on at least 75% of the picked pairs, with at least 6 picked pairs. The
-judge scores a code-made copy of each reference, with one closed field changed
-(the priority, multi_select, the role, or one option label), lower than the
-reference at least 90% of the time. The judge direction flips between repeats
-on at most 10% of the pairs.
+judge scores a code-made copy of each reference of a pair stop, with one closed field changed
+(the priority, the until_event, a step kind, a dropped step, an inserted step, multi_select, the
+role, or one option label), lower than the reference at least 90% of the time. The judge
+direction flips between repeats on at most 10% of the pairs.
 
 Each judge call prints one flushed progress line with the seconds it took. With
 a checkpoint file, each finished pair and probe copy is appended as one row, and
@@ -73,12 +73,12 @@ def _direction(a: float, b: float) -> str | None:
     return "a" if a > b else "b"
 
 
-def _timed(example: dict, payload: dict, label: str) -> float:
-    """One judge call. Print its progress line, flushed, with the seconds it took. Return the score."""
+def _timed(example: dict, payload: dict, label: str) -> tuple[float, str]:
+    """One judge call. Print its progress line, flushed, with the seconds it took. Return the score and the feedback."""
     start = clock()
-    value = score(example, _side(payload))[0]
+    value, feedback = score(example, _side(payload))
     print(f"{label} done {clock() - start:.1f}s", flush=True)
-    return value
+    return value, feedback
 
 
 def _verdict(a: list, b: list) -> tuple[str | None, bool]:
@@ -88,11 +88,12 @@ def _verdict(a: list, b: list) -> tuple[str | None, bool]:
 
 
 def _pair_row(example: dict, entry: dict, repeats: int, where: str, digest: str, identity: dict) -> dict:
-    """Judge both sides of one pair, every repeat. Return the checkpoint row."""
-    scores = {side: [_timed(example, entry[side], f"pair {where} side {side} repeat {n}/{repeats}")
-                     for n in range(1, repeats + 1)] for side in ("a", "b")}
+    """Judge both sides of one pair, every repeat. Return the checkpoint row, with the notes in the order of the scores."""
+    calls = {side: [_timed(example, entry[side], f"pair {where} side {side} repeat {n}/{repeats}")
+                    for n in range(1, repeats + 1)] for side in ("a", "b")}
     return {"session": entry["session"], "stop": int(entry["stop"]), "fingerprint": digest,
-            "judge": identity, **scores}
+            "judge": identity, **{side: [call[0] for call in calls[side]] for side in calls},
+            "notes": {side: [call[1] for call in calls[side]] for side in calls}}
 
 
 def _probe_reference(session_id: str, key: str, label: dict, real_dir: Path, store: Checkpoint) -> tuple[int, int]:
@@ -101,28 +102,32 @@ def _probe_reference(session_id: str, key: str, label: dict, real_dir: Path, sto
     copies = probe_copies(reference)
     rows = {name: store.get(probe_key(session_id, key, name, fingerprint([reference, changed])))
             for name, changed in copies}
-    base = next((row["base"] for row in rows.values() if row), None)
+    stored = next((row for row in rows.values() if row), None)
+    base = (stored["base"], stored.get("base_notes")) if stored else None
     example, where, lower = None, f"probe {session_id} stop {key}", 0
     for name, changed in copies:
         if rows[name] is None:
             example = example or _example(real_dir, session_id, int(key), label)
             base = _timed(example, reference, f"{where} base") if base is None else base
+            copy = _timed(example, changed, f"{where} copy {name}")
             rows[name] = {"session": session_id, "stop": int(key), "changed": name,
                           "fingerprint": fingerprint([reference, changed]), "judge": store.identity,
-                          "base": base,
-                          "copy": _timed(example, changed, f"{where} copy {name}")}
+                          "base": base[0], "copy": copy[0], "base_notes": base[1], "copy_notes": copy[1]}
             store.add(rows[name])
         lower += rows[name]["copy"] < rows[name]["base"]
     return lower, len(copies)
 
 
-def _probe(labels_by_session: dict, real_dir: Path, store: Checkpoint) -> tuple[int, int]:
-    """How many probe copies score lower than their reference, and how many copies ran."""
+def _probe(pairs: list, labels_by_session: dict, real_dir: Path, store: Checkpoint) -> tuple[int, int]:
+    """How many probe copies score lower than their reference, and how many copies ran.
+
+    The probe covers the stops of the pairs, one reference for each stop.
+    """
     lower = total = 0
-    for session_id, stops in labels_by_session.items():
-        for key, label in stops.items():
-            found, count = _probe_reference(session_id, key, label, real_dir, store)
-            lower, total = lower + found, total + count
+    for session_id, number in dict.fromkeys((entry["session"], int(entry["stop"])) for entry in pairs):
+        label = _label(labels_by_session, session_id, number)
+        found, count = _probe_reference(session_id, stop_key(number), label, real_dir, store)
+        lower, total = lower + found, total + count
     return lower, total
 
 
@@ -172,7 +177,7 @@ def run(pairs_path: Path, labels: Path, real_dir: Path, repeats: int = 2, checkp
         labels_by_session = load_labels(labels)
         store = Checkpoint(checkpoint, judge_identity())
         matched, picked, flipped = _pairs(pairs, labels_by_session, real_dir, repeats, store)
-        probe = _probe(labels_by_session, real_dir, store)
+        probe = _probe(pairs, labels_by_session, real_dir, store)
     except (OSError, ValueError, KeyError, TypeError) as exc:
         print(f"judge-check failed: {exc}")
         return 1

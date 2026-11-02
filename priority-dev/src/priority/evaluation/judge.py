@@ -70,9 +70,13 @@ def judge_identity() -> dict:
     rubric enters as a SHA-256 digest, so the row stays short."""
     from priority import config
 
-    return {"model": config.judge_model(), "base_url": config.judge_base_url(),
-            "temperature": config.judge_temperature(), "max_tokens": JUDGE_MAX_TOKENS,
-            "rubric": hashlib.sha256(RUBRIC.encode()).hexdigest(), "scoring": SCORING}
+    identity = {"model": config.judge_model(), "base_url": config.judge_base_url(),
+                "temperature": config.judge_temperature(), "max_tokens": JUDGE_MAX_TOKENS,
+                "rubric": hashlib.sha256(RUBRIC.encode()).hexdigest(), "scoring": SCORING}
+    effort = config.judge_reasoning_effort()
+    if effort is not None:  # unset keeps the old identity, so old checkpoint rows stay valid
+        identity["reasoning_effort"] = effort
+    return identity
 
 USAGE = {"calls": 0, "prompt_tokens": 0, "completion_tokens": 0}
 _USAGE_LOCK = threading.Lock()  # eval scores stops from worker threads, so the totals need a lock
@@ -107,9 +111,13 @@ def judge_lm(retries: int = 3) -> dspy.LM:
     """The judge model. The default is the NVIDIA Mistral model, not the task model, so the judge does not prefer its own family."""
     from priority import config
 
+    extra = {}
+    effort = config.judge_reasoning_effort()
+    if effort is not None:  # unset passes nothing, so the call stays as it was
+        extra["reasoning_effort"] = effort
     return dspy.LM(config.judge_model(), api_key=config.judge_key(), api_base=config.judge_base_url(),
                    temperature=config.judge_temperature(), max_tokens=JUDGE_MAX_TOKENS, timeout=120,
-                   num_retries=retries, cache=False)
+                   num_retries=retries, cache=False, **extra)
 
 
 def _default_lm() -> dspy.LM:

@@ -1,10 +1,13 @@
 """The checkpoint file of `priority judge-check`: one JSONL row for each finished unit of judge work.
 
 A unit is one pair (all its calls) or one probe copy. A pair row is
-`{"session", "stop", "fingerprint", "judge", "a": [scores], "b": [scores]}`. A
-probe row is `{"session", "stop", "changed", "fingerprint", "judge", "base",
-"copy"}`. The fingerprint is a hash of the payload content and the repeats, so
-a row of other content does not match. The `judge` field holds the judge
+`{"session", "stop", "fingerprint", "judge", "a": [scores], "b": [scores],
+"notes": {"a": [feedback], "b": [feedback]}}`. A probe row is `{"session",
+"stop", "changed", "fingerprint", "judge", "base", "copy", "base_notes",
+"copy_notes"}`. The notes hold the judge feedback text, in the order of the
+scores. A row with no notes still loads. The fingerprint is a hash of the
+payload content and the repeats, so a row of other content does not match. The
+`judge` field holds the judge
 identity of the run that wrote the row, so a row of another judge (another
 model, rubric, token cap, or temperature) does not match either. A row that no
 unit of the run asks for, or that another judge wrote, is ignored with a

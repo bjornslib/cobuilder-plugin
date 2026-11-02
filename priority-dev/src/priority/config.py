@@ -106,6 +106,11 @@ def judge_temperature() -> float:
     return max(0.0, _MIN_TEMPERATURE.get(judge_provider(), 0.0))
 
 
+def judge_reasoning_effort() -> str | None:
+    """The judge `reasoning_effort` from JUDGE_REASONING_EFFORT, else None. The provider checks the value."""
+    return (_get("JUDGE_REASONING_EFFORT") or "").strip() or None
+
+
 def _judge_key_reader() -> str:
     """The judge key from JUDGE_API_KEY, else the per-provider key. It never prints the key.
 
