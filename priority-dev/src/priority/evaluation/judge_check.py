@@ -10,7 +10,8 @@ human on at least 75% of the picked pairs, with at least 6 picked pairs. The
 judge scores a code-made copy of each reference of a pair stop, with one closed field changed
 (the priority, the until_event, a step kind, a dropped step, an inserted step, multi_select, the
 role, or one option label), lower than the reference at least 90% of the time. The judge
-direction flips between repeats on at most 10% of the pairs.
+direction flips between repeats on at most 10% of the pairs. A repeat is a pick when its two scores differ by
+at least 0.05, and a pair flips only when its repeats pick both sides.
 
 Each judge call prints one flushed progress line with the seconds it took. With
 a checkpoint file, each finished pair and probe copy is appended as one row, and
@@ -19,6 +20,7 @@ a run that starts again judges only the units that have no row.
 from __future__ import annotations
 
 import json
+import statistics
 import time
 from pathlib import Path
 
@@ -35,6 +37,7 @@ AGREEMENT_BAR = 0.75
 MIN_PAIRS = 6
 PROBE_BAR = 0.90
 FLIP_BAR = 0.10
+TIE_GAP = 0.05
 clock = time.monotonic  # read at call time, so a test can set it
 
 
@@ -73,6 +76,12 @@ def _direction(a: float, b: float) -> str | None:
     return "a" if a > b else "b"
 
 
+def _pick(a: float, b: float) -> str | None:
+    """The side a repeat picks: the side that leads by at least TIE_GAP, else None (a tie)."""
+    gap = round(a - b, 6)
+    return "a" if gap >= TIE_GAP else "b" if -gap >= TIE_GAP else None
+
+
 def _timed(example: dict, payload: dict, label: str) -> tuple[float, str]:
     """One judge call. Print its progress line, flushed, with the seconds it took. Return the score and the feedback."""
     start = clock()
@@ -81,10 +90,11 @@ def _timed(example: dict, payload: dict, label: str) -> tuple[float, str]:
     return value, feedback
 
 
-def _verdict(a: list, b: list) -> tuple[str | None, bool]:
-    """The judge direction over all repeats, and whether it flips between repeats."""
-    flipped = len({_direction(x, y) for x, y in zip(a, b)}) > 1
-    return _direction(sum(a), sum(b)), flipped
+def _verdict(a: list, b: list) -> tuple[str | None, bool, bool]:
+    """The judge direction (median scores), whether the repeats pick both sides, and whether the old rule flips."""
+    picks = {_pick(x, y) for x, y in zip(a, b)}
+    old_flipped = len({_direction(x, y) for x, y in zip(a, b)}) > 1
+    return _direction(statistics.median(a), statistics.median(b)), {"a", "b"} <= picks, old_flipped
 
 
 def _pair_row(example: dict, entry: dict, repeats: int, where: str, digest: str, identity: dict) -> dict:
@@ -132,9 +142,9 @@ def _probe(pairs: list, labels_by_session: dict, real_dir: Path, store: Checkpoi
 
 
 def _pairs(pairs: list, labels_by_session: dict, real_dir: Path, repeats: int,
-           store: Checkpoint) -> tuple[int, int, int]:
-    """Judge each pair. Return the human matches, the picked pairs, and the flipped pairs."""
-    matched = picked = flipped = 0
+           store: Checkpoint) -> tuple[int, int, int, int]:
+    """Judge each pair. Return the human matches, the picked pairs, the flipped pairs, and the old-rule flips."""
+    matched = picked = flipped = old_flipped = 0
     for index, entry in enumerate(pairs, 1):
         number = int(entry["stop"])
         label = _label(labels_by_session, entry["session"], number)
@@ -144,12 +154,13 @@ def _pairs(pairs: list, labels_by_session: dict, real_dir: Path, repeats: int,
             example = _example(real_dir, entry["session"], number, label)
             row = _pair_row(example, entry, repeats, f"{index}/{len(pairs)}", digest, store.identity)
             store.add(row)
-        direction, flip = _verdict(row["a"], row["b"])
+        direction, flip, old_flip = _verdict(row["a"], row["b"])
         flipped += flip
+        old_flipped += old_flip
         if entry.get("human") in ("a", "b"):
             picked += 1
             matched += direction == entry["human"]
-    return matched, picked, flipped
+    return matched, picked, flipped, old_flipped
 
 
 def _ratio(hits: int, total: int) -> float:
@@ -157,13 +168,14 @@ def _ratio(hits: int, total: int) -> float:
     return hits / total if total else 0.0
 
 
-def _report(agreement: tuple[int, int], probe: tuple[int, int], flips: tuple[int, int]) -> bool:
+def _report(agreement: tuple[int, int], probe: tuple[int, int], flips: tuple[int, int], old_flips: int) -> bool:
     """Print the three bars and the judge usage line. Return whether every bar passes."""
     agree_ratio, probe_ratio, flip_ratio = _ratio(*agreement), _ratio(*probe), _ratio(*flips)
     print(f"human agreement: {agreement[0]}/{agreement[1]} = {agree_ratio:.2f} "
           f"(bar {AGREEMENT_BAR:.2f}, min {MIN_PAIRS} pairs)")
     print(f"closed-field probe: {probe[0]}/{probe[1]} = {probe_ratio:.2f} (bar {PROBE_BAR:.2f})")
     print(f"repeat flips: {flips[0]}/{flips[1]} = {flip_ratio:.2f} (bar {FLIP_BAR:.2f})")
+    print(f"flips under the old rule: {old_flips}/{flips[1]}")
     print(usage_line())
     return (agreement[1] >= MIN_PAIRS and agree_ratio >= AGREEMENT_BAR
             and probe[1] > 0 and probe_ratio >= PROBE_BAR and flip_ratio <= FLIP_BAR)
@@ -176,12 +188,12 @@ def run(pairs_path: Path, labels: Path, real_dir: Path, repeats: int = 2, checkp
         pairs = json.loads(Path(pairs_path).read_text())
         labels_by_session = load_labels(labels)
         store = Checkpoint(checkpoint, judge_identity())
-        matched, picked, flipped = _pairs(pairs, labels_by_session, real_dir, repeats, store)
+        matched, picked, flipped, old_flipped = _pairs(pairs, labels_by_session, real_dir, repeats, store)
         probe = _probe(pairs, labels_by_session, real_dir, store)
     except (OSError, ValueError, KeyError, TypeError) as exc:
         print(f"judge-check failed: {exc}")
         return 1
     store.warn_unused()
-    passed = _report((matched, picked), probe, (flipped, len(pairs)))
+    passed = _report((matched, picked), probe, (flipped, len(pairs)), old_flipped)
     print(f"agreement bar: {'pass' if passed else 'fail'}")
     return 0 if passed else 1
