@@ -20,7 +20,7 @@ from priority.evaluation.demos import demo_briefs
 from priority.evaluation.eval_report import diagnostics, print_calls, print_report
 from priority.evaluation.judge import reset_usage, usage_line
 from priority.evaluation.labels import load_labels, match_session_key
-from priority.evaluation.metric import score
+from priority.evaluation.metric import score_checked
 from priority.evaluation.split import split
 
 MAX_THREADS = 6  # the most stops that one eval scores in flight at once
@@ -74,11 +74,11 @@ def _score_stop(model: object, brief: object, label: dict, session_id: str = "",
     """Run the program on one stop and score it. Return the row."""
     prediction, brief_text = _predict(model, brief, session_id, stop)
     example = {"brief_text": brief_text, "priority": label.get("priority"), "expected_payloads": label["payloads"]}
-    value, feedback = score(example, prediction)
+    value, feedback, judge_error = score_checked(example, prediction)
     abstain = prediction.get("abstain") if isinstance(prediction, dict) else prediction.abstain
     gate = abstain.get("reason") if isinstance(abstain, dict) else "pass"
     return {**diagnostics(label, prediction), "overall": value, "ambiguous": _is_ambiguous(label),
-            "payload": value, "gate": gate, "feedback": feedback}
+            "payload": value, "gate": gate, "feedback": feedback, "judge_error": judge_error}
 
 
 def _stops(entries: list, labels_by_session: dict, wanted: set):

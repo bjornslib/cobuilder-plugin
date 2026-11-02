@@ -11,6 +11,8 @@ from __future__ import annotations
 
 from priority.evaluation.payload_rules import get_field, pinned, predicted_object, reference_object
 
+JUDGE_ERROR_MARK = "judge error:"  # the note that `judge.judge` returns when its call fails
+
 
 def _clamp(value: float) -> float:
     """One score forced into 0..1."""
@@ -32,13 +34,19 @@ def _judged(example: object, predicted: dict, reference: dict) -> tuple[float, s
     return (_clamp(raw), text)
 
 
-def score(example: object, prediction: object, trace: object = None,
-          pred_name: object = None, pred_trace: object = None) -> tuple[float, str]:
-    """Score one stop from 0 to 1 with feedback. The GEPA arguments do not change the result."""
+def score_checked(example: object, prediction: object) -> tuple[float, str, bool]:
+    """Score one stop. Return the value, the feedback, and whether the judge call failed with no rule pinned."""
     reference = reference_object(example)
     predicted = predicted_object(prediction)
     value, notes = _judged(example, predicted, reference)
     rule = pinned(prediction, predicted, reference)
     if rule is None:
-        return (value, notes)
-    return (rule[0], f"{rule[1]} {notes}".strip())
+        return (value, notes, JUDGE_ERROR_MARK in notes)
+    return (rule[0], f"{rule[1]} {notes}".strip(), False)
+
+
+def score(example: object, prediction: object, trace: object = None,
+          pred_name: object = None, pred_trace: object = None) -> tuple[float, str]:
+    """Score one stop from 0 to 1 with feedback. The GEPA arguments do not change the result."""
+    value, feedback, _ = score_checked(example, prediction)
+    return (value, feedback)
