@@ -25,8 +25,8 @@ The contract these tests set:
    failure and the stop of the run, returns 1, and writes no program and no report.
 3. The eval path is unchanged: `score_checked` makes one judge call, and it returns the `judge_error` flag.
 
-A stop whose score a code rule pins is not a judge failure (see `payload_rules.pinned`), so it never stops
-the run. Every judge, program, and model here is a stub. No test makes a live model call.
+An abstain scores 0 by a code rule (see `payload_rules.pinned`), so a failed judge call on it is not a judge
+failure and never stops the run. Every judge, program, and model here is a stub. No test makes a live model call.
 """
 from __future__ import annotations
 
