@@ -76,3 +76,5 @@ priority-dev/probes/programs/
 # Local blind-review page; holds real transcript text, never commit.
 .lavish/judge-blind-pairs.html
 .lavish/reference-review*.html
+.lavish/blind-pairs-v2.html
+.lavish/blind-pairs-v3.html

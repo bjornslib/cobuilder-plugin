@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from priority.evaluation.demos import as_demo, demo_briefs, drop_demo_stops, pick_demos
+from priority.evaluation.metric import JudgeFailure
 from priority.gepa_proposer import guided_instruction_proposer
 from priority.optimise_report import append_report, write_eval_rows
 from priority.trainset import assert_train_only, build_trainset, split_gepa_valset
@@ -173,21 +174,28 @@ def _compile(cls: object, settings: Settings, student: object, examples: list, t
 
 
 def _finish(compiled: object, settings: Settings, examples: list, parts: dict, stem: str) -> None:
-    """Save the program, append the report, write the rescore rows, and print the summary."""
+    """Rescore the train stops, then save the program, append the report, write the rows, and print the summary.
+    The rescore runs first, so a judge that never works leaves no program, report, or rows file."""
     name = f"{stem}-budget{settings.budget}-seed{settings.seed}"
-    program = save_program(compiled, PROGRAM_DIR / f"{name}.json")
-    append_report(REPORT_RELATIVE, settings.optimiser, settings.budget, settings.seed, parts, program,
-                  settings.minibatch, settings.threads, settings.val_sessions)
     try:
         rows = write_eval_rows(compiled, examples, PROGRAM_DIR / f"{name}-rows.jsonl")
     except Exception:  # noqa: BLE001 (a stub teleprompter has no callable program; rows stay unwritten)
         rows = []
+    program = save_program(compiled, PROGRAM_DIR / f"{name}.json")
+    append_report(REPORT_RELATIVE, settings.optimiser, settings.budget, settings.seed, parts, program,
+                  settings.minibatch, settings.threads, settings.val_sessions)
     if rows:
         print(f"train overall {sum(row['score'] for row in rows) / len(rows):.6f} ({len(rows)} stops)")
     print(f"optimise {settings.optimiser}: compiled on {len(examples)} train stops, "
           f"held out {len(parts['holdout'])} sessions")
     print(f"program: {program}")
     print(f"report: {REPORT_RELATIVE}")
+
+
+def _judge_stop(failure: JudgeFailure) -> int:
+    """Print the stop message for a judge that never worked, and return the exit code."""
+    print(f"optimise failed: {failure}. The run stopped and saved nothing.")
+    return 1
 
 
 def run(manifest: Path, labels: Path, real_dir: Path,
@@ -214,11 +222,16 @@ def run(manifest: Path, labels: Path, real_dir: Path,
     examples = drop_demo_stops(examples, demo_briefs(student))
     try:
         compiled = _compile(cls, settings, student, examples, parts["train"])
+    except JudgeFailure as exc:
+        return _judge_stop(exc)
     except Exception as exc:  # noqa: BLE001 (any compile fault ends the run with a message)
         print(f"optimise failed: {optimiser} compile failed: {exc}")
         return 1
     _restore_seed_demos(compiled, seed_demos)
     stem = (optimiser if tag is None else f"{optimiser}-{tag}") + ("-seeded" if seed_program is not None else "")
-    _finish(compiled, settings, examples, parts, stem)
+    try:
+        _finish(compiled, settings, examples, parts, stem)
+    except JudgeFailure as exc:
+        return _judge_stop(exc)
     print(usage_line())
     return 0

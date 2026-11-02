@@ -82,8 +82,13 @@ def optimise_run(args: argparse.Namespace) -> int:
 def judge_check(args: argparse.Namespace) -> int:
     """Measure the judge against the human picks, the closed-field probe, and repeat flips."""
     from priority.evaluation import judge_check as check  # a lazy import: only this command needs dspy
+    from priority.evaluation.metric import JudgeFailure
 
-    return check.run(args.pairs, args.labels, args.real_dir, args.repeats)
+    try:
+        return check.run(args.pairs, args.labels, args.real_dir, args.repeats)
+    except JudgeFailure as failure:
+        print(f"judge-check failed: {failure}. The check stopped.")
+        return 1
 
 
 def replay(args: argparse.Namespace) -> int:

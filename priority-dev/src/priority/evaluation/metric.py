@@ -9,9 +9,19 @@ The eval path and the GEPA path score the same Prediction object.
 """
 from __future__ import annotations
 
+import time
+
 from priority.evaluation.payload_rules import get_field, pinned, predicted_object, reference_object
 
 JUDGE_ERROR_MARK = "judge error:"  # the note that `judge.judge` returns when its call fails
+MAX_TRIES = 3  # judge calls for one stop, the first call included
+FIRST_WAIT = 1.0  # seconds before the second try; each next wait doubles
+sleep = time.sleep  # read at call time, so a test can replace it
+
+
+class JudgeFailure(BaseException):
+    """The judge call failed on every try. It is not an Exception, because dspy turns an Exception from a
+    metric into a score of 0, and the optimiser would train on it."""
 
 
 def _clamp(value: float) -> float:
@@ -45,8 +55,18 @@ def score_checked(example: object, prediction: object) -> tuple[float, str, bool
     return (rule[0], f"{rule[1]} {notes}".strip(), False)
 
 
+def _stop_name(example: object) -> str:
+    return f"session {get_field(example, 'session_id', '?')} stop {get_field(example, 'stop', '?')}"
+
+
 def score(example: object, prediction: object, trace: object = None,
           pred_name: object = None, pred_trace: object = None) -> tuple[float, str]:
-    """Score one stop from 0 to 1 with feedback. The GEPA arguments do not change the result."""
-    value, feedback, _ = score_checked(example, prediction)
-    return (value, feedback)
+    """Score one stop from 0 to 1 with feedback. A failed judge call is retried, and when every try fails
+    this raises JudgeFailure. The GEPA arguments do not change the result."""
+    for attempt in range(MAX_TRIES):
+        value, feedback, judge_error = score_checked(example, prediction)
+        if not judge_error:
+            return (value, feedback)
+        if attempt + 1 < MAX_TRIES:
+            sleep(FIRST_WAIT * 2 ** attempt)
+    raise JudgeFailure(f"the judge call failed {MAX_TRIES} times for {_stop_name(example)}")
