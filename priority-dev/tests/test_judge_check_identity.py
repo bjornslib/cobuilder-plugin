@@ -158,3 +158,44 @@ def test_a_row_made_under_another_scoring_version_is_ignored_with_a_warning(monk
     result = run_cli(monkeypatch, tmp_path, PAIRS, judge, extra=checkpoint_args(tmp_path))
     assert len(judge.calls) == ALL_CALLS, "a row of another scoring version must be judged again"
     assert any("scoring" in line for line in warnings(result)), f"the warning must name scoring: {warnings(result)}"
+
+
+def set_effort(monkeypatch, effort) -> None:
+    """Make the judge reasoning effort of the config one value, or None for unset."""
+    from priority import config
+
+    monkeypatch.setattr(config, "judge_reasoning_effort", lambda: effort)
+
+
+def test_the_identity_holds_reasoning_effort_only_when_it_is_set(monkeypatch):
+    from priority.evaluation import judge as judge_module
+
+    set_effort(monkeypatch, None)
+    assert "reasoning_effort" not in judge_module.judge_identity(), "an unset effort must keep the old identity"
+    set_effort(monkeypatch, "high")
+    assert judge_module.judge_identity()["reasoning_effort"] == "high"
+
+
+def test_each_row_of_a_run_with_an_effort_holds_it_in_the_identity(monkeypatch, tmp_path):
+    set_effort(monkeypatch, "high")
+    identity = identity_of(fill_checkpoint(monkeypatch, tmp_path))
+    assert sorted(identity) == sorted((*IDENTITY_PARTS, "reasoning_effort")), identity
+    assert identity["reasoning_effort"] == "high"
+
+
+def test_a_row_of_a_run_with_no_effort_is_reused_by_a_run_with_no_effort(monkeypatch, tmp_path):
+    set_effort(monkeypatch, None)
+    fill_checkpoint(monkeypatch, tmp_path)
+    judge = GradingJudge()
+    result = run_cli(monkeypatch, tmp_path, PAIRS, judge, extra=checkpoint_args(tmp_path))
+    assert judge.calls == [] and warnings(result) == [], (len(judge.calls), warnings(result))
+
+
+def test_a_changed_reasoning_effort_makes_the_run_judge_everything_again(monkeypatch, tmp_path):
+    set_effort(monkeypatch, None)
+    fill_checkpoint(monkeypatch, tmp_path)
+    set_effort(monkeypatch, "high")
+    judge = GradingJudge()
+    result = run_cli(monkeypatch, tmp_path, PAIRS, judge, extra=checkpoint_args(tmp_path))
+    assert len(judge.calls) == ALL_CALLS, "a set effort must judge everything again"
+    assert any("reasoning_effort" in line for line in warnings(result)), warnings(result)

@@ -31,7 +31,7 @@ from judge_check_progress_support import (ALL_CALLS, PAIR_CALLS, PAIR_LINE, PAIR
 from judge_check_support import GradingJudge, pair
 
 BASE_REPORT = ["human agreement: 5/6 = 0.83 (bar 0.75, min 6 pairs)",
-               "closed-field probe: 7/7 = 1.00 (bar 0.90)",
+               "closed-field probe: 12/12 = 1.00 (bar 0.90)",
                "repeat flips: 0/6 = 0.00 (bar 0.10)",
                "agreement bar: pass"]
 
@@ -61,7 +61,7 @@ def test_each_probe_call_prints_one_line_with_the_seconds(monkeypatch, tmp_path)
     result = run_cli(monkeypatch, tmp_path, PAIRS, judge, clock=clock)
     lines = [line for line in progress(result.text) if line.startswith("probe")]
     assert len(judge.calls) == ALL_CALLS, f"the run made {len(judge.calls)} judge calls, not {ALL_CALLS}"
-    assert len(lines) == ALL_CALLS - PAIR_CALLS, f"9 probe calls but {len(lines)} probe lines: {lines}"
+    assert len(lines) == ALL_CALLS - PAIR_CALLS, f"18 probe calls but {len(lines)} probe lines: {lines}"
     for number, line in zip(range(PAIR_CALLS + 1, ALL_CALLS + 1), lines):
         match = PROBE_LINE.match(line)
         assert match, f"probe line for call {number} does not match 'probe ... done T.Ts': {line!r}"
@@ -81,15 +81,16 @@ def test_each_progress_line_is_flushed_before_the_next_call(monkeypatch, tmp_pat
 def test_the_checkpoint_option_is_accepted_and_the_file_is_written(monkeypatch, tmp_path):
     result = run_cli(monkeypatch, tmp_path, PAIRS, GradingJudge(), extra=checkpoint_args(tmp_path))
     assert result.code == 0, f"--checkpoint did not run: exit {result.code}, stderr {result.err!r}"
-    assert len(read_rows(tmp_path / "checkpoint.jsonl")) == 13, "6 pair rows and 7 probe rows must be written"
+    assert len(read_rows(tmp_path / "checkpoint.jsonl")) == 18, "6 pair rows and 12 probe rows must be written"
 
 
 def test_a_row_is_appended_once_all_its_calls_finish_and_at_once(monkeypatch, tmp_path):
     path, counts = tmp_path / "checkpoint.jsonl", {}
     judge = SpyJudge(spy=lambda number: counts.__setitem__(number, len(read_rows(path))))
     run_cli(monkeypatch, tmp_path, PAIRS, judge, extra=checkpoint_args(tmp_path))
-    # Calls 1-4 are pair 1, call 25 is the base call of probe reference 0, and calls 26-29 are its copies.
-    expected = {1: 0, 4: 0, 5: 1, 8: 1, 9: 2, 24: 5, 25: 6, 26: 6, 27: 7, 29: 9, 30: 10, 31: 10, 32: 11, 33: 12}
+    # Calls 1-4 are pair 1. Calls 25-27 are the base call and the two copies of the probe stop of pair 1, then
+    # each other probe stop makes three calls. The row of a copy is written after its call.
+    expected = {1: 0, 4: 0, 5: 1, 8: 1, 9: 2, 24: 5, 25: 6, 26: 6, 27: 7, 28: 8, 29: 8, 30: 9, 41: 16, 42: 17}
     assert {number: counts.get(number) for number in expected} == expected, \
         f"rows on disk at the start of each call: {counts}"
 
@@ -107,20 +108,20 @@ def test_pair_rows_hold_session_stop_and_the_scores_of_each_repeat(monkeypatch, 
 def test_probe_rows_hold_one_copy_with_the_changed_field_and_both_scores(monkeypatch, tmp_path):
     run_cli(monkeypatch, tmp_path, PAIRS, GradingJudge(), extra=checkpoint_args(tmp_path))
     rows = [row for row in read_rows(tmp_path / "checkpoint.jsonl") if "changed" in row]
-    assert len(rows) == 7, f"7 probe copy rows expected, got {len(rows)}"
-    for session, count in (("judge-check-probe-00", 4), ("judge-check-probe-01", 3)):
-        own = [row for row in rows if row.get("session") == session]
-        assert len(own) == count, f"{session} must have {count} copy rows, got {len(own)}"
-        assert len({str(row["changed"]) for row in own}) == count, f"each copy of {session} changes one other field"
+    assert len(rows) == 12, f"12 probe copy rows expected, got {len(rows)}"
+    for index in range(6):
+        own = [row for row in rows if row.get("session") == f"judge-check-pair-{index:02d}"]
+        assert sorted(str(row["changed"]) for row in own) == ["kind_swap", "priority"], \
+            f"pair stop {index} must have one copy row for the priority and one for the kind: {own}"
         assert all(int(row["stop"]) == 1 and row.get("base") == 1.0 and row.get("copy") == 0.4 for row in own), own
 
 
 def test_a_killed_pair_run_resumes_the_pairs_it_did_not_finish(monkeypatch, tmp_path):
-    check_resume(monkeypatch, tmp_path, kill_at=7, rows_kept=1, calls_left=29, pairs_left={1, 2, 3, 4, 5})
+    check_resume(monkeypatch, tmp_path, kill_at=7, rows_kept=1, calls_left=38, pairs_left={1, 2, 3, 4, 5})
 
 
 def test_a_killed_probe_run_resumes_only_the_copies_it_did_not_finish(monkeypatch, tmp_path):
-    check_resume(monkeypatch, tmp_path, kill_at=28, rows_kept=8, calls_left=6, pairs_left=set())
+    check_resume(monkeypatch, tmp_path, kill_at=27, rows_kept=7, calls_left=16, pairs_left=set())
 
 
 def check_resume(monkeypatch, tmp_path, kill_at, rows_kept, calls_left, pairs_left):
@@ -138,7 +139,7 @@ def check_resume(monkeypatch, tmp_path, kill_at, rows_kept, calls_left, pairs_le
     assert len(progress(result.text)) == calls_left, "a resumed run prints one line for each call it makes"
     assert report(result.text) == report(plain.text) == BASE_REPORT, report(result.text)
     assert result.code == plain.code == 0
-    assert len(read_rows(path)) == 13, "the resumed run must append only the missing rows"
+    assert len(read_rows(path)) == 18, "the resumed run must append only the missing rows"
 
 
 def test_a_complete_checkpoint_makes_no_judge_call(monkeypatch, tmp_path):
@@ -147,7 +148,7 @@ def test_a_complete_checkpoint_makes_no_judge_call(monkeypatch, tmp_path):
     second = run_cli(monkeypatch, tmp_path, PAIRS, judge, extra=checkpoint_args(tmp_path))
     assert judge.calls == [], f"a complete checkpoint still made {len(judge.calls)} judge calls"
     assert report(second.text) == report(first.text) == BASE_REPORT
-    assert len(read_rows(tmp_path / "checkpoint.jsonl")) == 13, "a skipped unit must not be written again"
+    assert len(read_rows(tmp_path / "checkpoint.jsonl")) == 18, "a skipped unit must not be written again"
     assert warnings(second) == [], f"a checkpoint of this pairs file must not warn: {warnings(second)}"
 
 
@@ -155,15 +156,16 @@ def test_stored_scores_enter_the_bars_as_if_computed(monkeypatch, tmp_path):
     path = tmp_path / "checkpoint.jsonl"
     run_cli(monkeypatch, tmp_path, PAIRS, GradingJudge(), extra=checkpoint_args(tmp_path))
     rows = read_rows(path)
-    assert len(rows) == 13, f"the first run must write 13 rows, wrote {len(rows)}"
-    rows[0]["a"], rows[0]["b"] = [0.9, 0.1], [0.2, 0.2]  # repeat 2 flips: the sum still prefers a
-    next(row for row in rows if "changed" in row)["copy"] = 1.0  # one copy no longer scores lower
+    assert len(rows) == 18, f"the first run must write 18 rows, wrote {len(rows)}"
+    rows[0]["a"], rows[0]["b"] = [0.9, 0.1], [0.2, 0.2]  # repeat 2 flips: the median still prefers a
+    for row in [row for row in rows if "changed" in row][:2]:  # two copies no longer score lower
+        row["copy"] = 1.0
     write_rows(path, rows)
     judge = GradingJudge()
     result = run_cli(monkeypatch, tmp_path, PAIRS, judge, extra=checkpoint_args(tmp_path))
     assert judge.calls == [], "every unit is stored, so no judge call is needed"
     assert report(result.text) == ["human agreement: 5/6 = 0.83 (bar 0.75, min 6 pairs)",
-                                   "closed-field probe: 6/7 = 0.86 (bar 0.90)",
+                                   "closed-field probe: 10/12 = 0.83 (bar 0.90)",
                                    "repeat flips: 1/6 = 0.17 (bar 0.10)",
                                    "agreement bar: fail"], report(result.text)
 

@@ -3,8 +3,12 @@
 The world is made up: a pairs file, a confirmed labels file with reference
 payloads and a priority on each stop, and one copied made-up transcript per
 session. Each pair names stop 1, the only stop of the made-up transcript that
-builds a StopBrief. Each side of a pair is a payload object `{"priority",
-"steps"}`. The grading judge is a stub, so no helper makes a model call.
+"steps"}. The probe covers the stops of the pairs, so the reference of a
+pair stop is also the reference of its probe copies. By default that
+reference is one reply step with the priority P3, which gets two copies (the
+priority and the step kind). A test that needs another reference passes
+`references`: a map from the pair session to its `(priority, steps)`. The
+grading judge is a stub, so no helper makes a model call.
 """
 from __future__ import annotations
 
@@ -21,8 +25,10 @@ from probe_support import FIXTURES
 TRANSCRIPT = FIXTURES / "waiting-question.jsonl"
 PAIR_STEPS = [{"kind": "reply", "text": "The reference answer for the made-up stop."}]
 PAIR_PRIORITY = "P3"
-PROBE_REFERENCES = (ask_step(options=True), ask_step(options=False))
 PROBE_PRIORITY = "P1"
+# Pair 0 gets an ask_human reference with option labels (four copies), pair 1 one without (three copies).
+PROBE_REFERENCES = {"judge-check-pair-00": (PROBE_PRIORITY, [ask_step(options=True)]),
+                    "judge-check-pair-01": (PROBE_PRIORITY, [ask_step(options=False)])}
 MULTI = ("steps", 0, "detail", "questions", 0, "multi_select")
 ROLE = ("steps", 0, "detail", "role")
 LABEL = ("steps", 0, "detail", "questions", 0, "options", 0, "label")
@@ -79,13 +85,16 @@ def steps_match(predicted, expected) -> bool:
     return isinstance(predicted, dict) and isinstance(expected, dict) and predicted.get("steps") == expected.get("steps")
 
 
-def write_world(tmp_path, pairs: list) -> tuple:
-    """Write the pairs file, the labels file, and the transcripts. Return the paths."""
-    sessions = {entry["session"]: {"stops": {"001": make_label(2, payloads=PAIR_STEPS, priority=PAIR_PRIORITY)}}
-                for entry in pairs}
-    for index, reference in enumerate(PROBE_REFERENCES):
-        sessions[f"judge-check-probe-{index:02d}"] = {
-            "stops": {"001": make_label(1, payloads=[reference], priority=PROBE_PRIORITY)}}
+def write_world(tmp_path, pairs: list, references: dict | None = None) -> tuple:
+    """Write the pairs file, the labels file, and the transcripts. Return the paths.
+
+    `references` maps a pair session to the `(priority, steps)` of its reference. Other sessions get the default one.
+    """
+    references = references or {}
+    sessions = {}
+    for entry in pairs:
+        priority, steps = references.get(entry["session"], (PAIR_PRIORITY, PAIR_STEPS))
+        sessions[entry["session"]] = {"stops": {"001": make_label(2, payloads=steps, priority=priority)}}
     real_dir = tmp_path / "real"
     real_dir.mkdir(exist_ok=True)
     for session_id in sessions:
@@ -98,10 +107,10 @@ def write_world(tmp_path, pairs: list) -> tuple:
     return pairs_path, labels_path, real_dir
 
 
-def run_check(monkeypatch, tmp_path, pairs: list, judge: GradingJudge, extra=()) -> tuple:
+def run_check(monkeypatch, tmp_path, pairs: list, judge: GradingJudge, extra=(), references=None) -> tuple:
     """Run `priority judge-check` in process. Return the exit code and the printed text."""
     install_judge(monkeypatch, judge)
-    pairs_path, labels_path, real_dir = write_world(tmp_path, pairs)
+    pairs_path, labels_path, real_dir = write_world(tmp_path, pairs, references)
     from priority.cli import main
 
     code, out = None, io.StringIO()

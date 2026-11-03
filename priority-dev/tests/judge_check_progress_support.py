@@ -1,10 +1,11 @@
 """Helpers for the progress, checkpoint, and resume tests of `priority judge-check`.
 
 The world is the one of `judge_check_support`: six pairs (five that the judge
-scores as the human picked, and one tie), plus two probe references that give
-four and three copies. With `--repeats 2` the full run makes 33 judge calls:
-24 for the pairs, then 5 for probe reference 0 (one base call and four copies)
-and 4 for probe reference 1. The clock is injected as the module attribute
+scores as the human picked, and one tie). The probe covers the six pair stops.
+Each stop has a plain reply reference, so it gets two copies (the priority
+and the step kind). With `--repeats 2` the full run makes 42 judge calls:
+24 for the pairs, then 3 for each of the six probe stops (one base call and
+two copies). The clock is injected as the module attribute
 `priority.evaluation.judge_check.clock`, a function with no argument that
 returns seconds. The spy judge moves the fake clock, so a call of known length
 takes a known time, and the tests do not depend on how often the code reads it.
@@ -26,7 +27,7 @@ PAIR_LINE = re.compile(r"^pair (\d+)/(\d+) side ([ab]) repeat (\d+)/(\d+) done (
 PROBE_LINE = re.compile(r"^probe .* done (\d+\.\d)s$")
 BARS = ("human agreement:", "closed-field probe:", "repeat flips:", "agreement bar:")
 PAIRS = agreeing(5) + [pair(5, 0.5, 0.5, "a")]
-PAIR_CALLS, ALL_CALLS = 24, 33
+PAIR_CALLS, ALL_CALLS = 24, 42
 
 
 def call_seconds(number: int) -> float:

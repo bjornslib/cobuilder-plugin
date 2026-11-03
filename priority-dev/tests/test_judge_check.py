@@ -15,15 +15,14 @@ from __future__ import annotations
 
 import re
 
-from judge_check_support import (LABEL, MULTI, PAIR_PRIORITY, PAIR_STEPS, PRIORITY, PROBE_PRIORITY,
-                                 PROBE_REFERENCES, ROLE, TRANSCRIPT, GradingJudge, agreeing, diff_paths, pair,
-                                 run_check)
+from judge_check_support import (LABEL, MULTI, PAIR_PRIORITY, PAIR_STEPS, PRIORITY, PROBE_REFERENCES, ROLE,
+                                 TRANSCRIPT, GradingJudge, agreeing, diff_paths, first_text, pair, run_check)
 from judge_ref_support import as_json, require
 
 USAGE = re.compile(r"^judge calls: \d+ prompt_tokens: \d+ completion_tokens: \d+$")
 PROBE = re.compile(r"^closed-field probe: (\d+)/(\d+) = (\d\.\d\d) \(bar 0\.90\)$")
-# Probe reference 0 has option labels, so it gets four copies. Reference 1 has none, so it gets three.
-LEAST_COPIES = 7
+# The probe covers the 6 pair stops. A plain reply reference gets two copies (the priority and the step kind).
+LEAST_COPIES = 12
 
 
 def line_index(lines: list, text: str) -> int:
@@ -123,19 +122,21 @@ def test_a_judge_blind_to_the_priority_fails_the_probe(monkeypatch, tmp_path):
 
 def test_probe_copies_change_exactly_one_closed_field(monkeypatch, tmp_path):
     judge = GradingJudge()
-    run_check(monkeypatch, tmp_path, agreeing(6), judge)
-    wanted = {0: {MULTI, ROLE, LABEL, PRIORITY}, 1: {MULTI, ROLE, PRIORITY}}
-    for index, reference in enumerate(PROBE_REFERENCES):
-        expected = {"priority": PROBE_PRIORITY, "steps": [reference]}
+    run_check(monkeypatch, tmp_path, agreeing(6), judge, references=PROBE_REFERENCES)
+    wanted = {"judge-check-pair-00": {MULTI, ROLE, LABEL, PRIORITY}, "judge-check-pair-01": {MULTI, ROLE, PRIORITY}}
+    for session, (priority, steps) in PROBE_REFERENCES.items():
+        expected = {"priority": priority, "steps": steps}
+        # A pair side is judged against the same reference, so the grade text tells a pair call from a copy.
         copies = [call["predicted"] for call in judge.calls
-                  if call["expected"] == expected and call["predicted"] != expected]
+                  if call["expected"] == expected and call["predicted"] != expected
+                  and not first_text(call["predicted"]).startswith("grade ")]
         changed = [diff_paths(copy, expected) for copy in copies]
-        assert changed, f"probe reference {index} was never judged against a changed copy"
+        assert changed, f"probe reference {session} was never judged against a changed copy"
         assert all(len(paths) == 1 for paths in changed), f"a probe copy changed more than one field: {changed}"
-        assert set().union(*changed) == wanted[index], \
-            f"probe reference {index} changed {set().union(*changed)}, want {wanted[index]}"
+        assert set().union(*changed) == wanted[session], \
+            f"probe reference {session} changed {set().union(*changed)}, want {wanted[session]}"
         assert any(call["expected"] == expected and call["predicted"] == expected
-                   for call in judge.calls), f"probe reference {index} was never judged against itself"
+                   for call in judge.calls), f"probe reference {session} was never judged against itself"
 
 
 def test_a_judge_that_flips_between_repeats_fails(monkeypatch, tmp_path):
