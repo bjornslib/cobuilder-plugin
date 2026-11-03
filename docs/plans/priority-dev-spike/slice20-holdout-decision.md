@@ -124,6 +124,25 @@ Plan as built: scarce repositories split at the repository level (story-writer 2
 
 The sign agrees in every repository. No single repository has enough sessions to stand alone. Each arm had 1 bad reply. The base score is lower than on holdout 1 (0.369 against 0.478). The cause is not known. The result can change when the engineer confirms the drafts.
 
+## Data rules from the engineer (4 November 2026) and the rebuild
+
+1. Keep only chats between the agent and the engineer. Drop a stop that holds a `shutdown_request`, a message with a `teammate_id`, a `<task-notification>`, or a compaction summary ("This session is being continued...") as its human turn.
+2. The `agent_recommendation` of every `ask_human` question is never null. If the agent stated none, the drafter picks the best option label.
+
+Holdout 2 rebuilt on these rules: 18 sessions and 26 stops (agencheck 13 sessions and 13 stops, story-writer 2 sessions and 7 stops, pre-employment 3 sessions and 6 stops). 13 `ask_human`, 8 `notify`, 3 `snooze`, 2 `continue`, 2 `continue_until`. Priority: 13 P2 and 13 P3. The 36-stop run above used the earlier set, where 13 stops were compaction summaries or machine messages. It is superseded, and a rerun on the 26 stops waits for the engineer's confirmation.
+
+Check of the other data against the rules:
+
+| Data | Stops or sessions | With a marker or compaction summary | Null recommendations |
+|---|---|---|---|
+| First 97 stops, train part | 67 stops | 9 stops (8 in the human turn) | 7 questions in the 97, listed below |
+| First 97 stops, holdout 1 | 30 stops | 10 stops (9 in the human turn) | |
+| New training pool (49 sessions, not copied) | 49 sessions | 23 sessions have no clean stop | not drafted yet |
+
+- Null recommendations in the first 97: 36752881/027, 438c1bee/008, 7ba9f3e6/004, 7ba9f3e6/014, b61517c7/001, b61517c7/006, b61517c7/008.
+- Holdout 1 without its 10 marker stops: A 0.527, C 0.664, C minus A +0.138 (CI -0.030 to +0.261, 20 stops, 6 sessions). The gain is the same as with all 30 stops (+0.137).
+- The new training pool gives 30 stops under the plan rules after the filter, or at most 82 clean stops in total if one session may give several stops (agencheck 65, pre-employment 14, story-writer 3).
+
 ## Decision
 
 Which new data do we label first, and how much? Recommended: label holdout 2 first (79 stops from 23 sessions), run arms A and C on it with no training, then decide about the 188 training stops. The alternatives are all 267 stops, or a lower cap of 3 stops per session. The second holdout run of A and C on the first holdout waits.

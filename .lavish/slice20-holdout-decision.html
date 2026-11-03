@@ -80,8 +80,8 @@ li{margin:4px 0}
 
 <section>
   <div class="card answer">
-    <p><strong>Holdout 2 (21 sessions, 36 stops, 3 repositories) points the same way as holdout 1:</strong> arm C beats arm A by <strong>+0.129</strong>, 95% interval <span class="mono">+0.011 to +0.261</span>. C is ahead in all three repositories.</p>
-    <p><strong>This result is provisional.</strong> The 36 references are drafts that you have not confirmed. Confirm or correct them in <span class="mono">~/Downloads/holdout2-reference-review.html</span>, and I rerun if any reference changes.</p>
+    <p><strong>Holdout 2 was rebuilt on 4 November, on your rules.</strong> It now keeps only chats between the agent and you: no <span class="mono">shutdown_request</span>, no <span class="mono">teammate_id</span> message, no <span class="mono">&lt;task-notification&gt;</span>, and no compaction summary. Every <span class="mono">agent_recommendation</span> is filled. The set is <strong>26 stops from 18 sessions</strong> (agencheck 13, story-writer 7, pre-employment 6).</p>
+    <p><strong>The first holdout 2 run (+0.129, 36 stops) is superseded.</strong> It used the earlier set, where 13 stops were not chats. I rerun A and C on the 26 stops after you confirm the drafts. Review page: <span class="mono">~/Downloads/holdout2-reference-review.html</span>.</p>
   </div>
 </section>
 
@@ -206,7 +206,7 @@ li{margin:4px 0}
   <p class="note" style="margin:10px 0 0">C scored 0.615 on the holdout and 0.563 on the train stops that it trained on. A pure overfit would show the reverse. One run is noisy, so I read this as evidence against memorising, not as proof.</p>
 </section>
 
-<h2>3b. Holdout 2, first run <small>36 stops, 21 sessions, 3 repositories, against unconfirmed drafts</small></h2>
+<h2>3b. Holdout 2, first run <small>earlier 36-stop set, superseded; rerun pending on the rebuilt 26 stops</small></h2>
 <section class="card">
   <div class="scroll">
   <svg viewBox="0 0 760 230" role="img" aria-label="Holdout 2 per repository">
