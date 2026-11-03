@@ -145,15 +145,19 @@ def run(manifest: Path, labels: Path, real_dir: Path, split_name: str,
     try:
         entries, labels_by_session = _load(manifest, labels)
         parts = split([entry["session"] for entry in entries])
-        if split_name not in parts:
-            raise ValueError(f"unknown split {split_name!r}: use one of train, holdout")
+        if split_name == "all":
+            wanted = {session for name in parts for session in parts[name]}
+        else:
+            if split_name not in parts:
+                raise ValueError(f"unknown split {split_name!r}: use one of train, holdout, all")
+            wanted = set(parts[split_name])
         calls_path = Path(log_dir) / "calls.jsonl" if log_dir is not None else None
         start = len(calls_path.read_text().splitlines()) if calls_path is not None and calls_path.exists() else 0
         model = _make_interpreter(log_dir, program)
         if program is not None:
             print(f"program: {program}")
         reset_usage()
-        rows, excluded, demos = _score_split(model, entries, labels_by_session, set(parts[split_name]),
+        rows, excluded, demos = _score_split(model, entries, labels_by_session, wanted,
                                               real_dir, workers)
     except ValueError as exc:
         print(f"eval failed: {exc}")
@@ -163,7 +167,7 @@ def run(manifest: Path, labels: Path, real_dir: Path, split_name: str,
     if not rows:
         print(f"eval failed: split {split_name} holds no stops")
         return 1
-    print_report(split_name, set(parts[split_name]), rows)
+    print_report(split_name, wanted, rows)
     print_calls(calls_path, start)
     print(usage_line())
     return 0

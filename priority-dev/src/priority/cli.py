@@ -137,7 +137,7 @@ def main(argv: list[str] | None = None) -> int:
     check_parser.add_argument("--real-dir", type=Path, default=Path("fixtures/real"),
                               help="Folder with the real sessions, must be Git-ignored")
     eval_parser = subparsers.add_parser("eval", help="Score one split of the labelled set")
-    eval_parser.add_argument("--split", default="train", choices=("train", "holdout"),
+    eval_parser.add_argument("--split", default="train", choices=("train", "holdout", "all"),
                              help="The split to score (default: train)")
     eval_parser.add_argument("--manifest", type=Path, default=Path("fixtures/set-manifest.json"),
                              help="Manifest with session ids and stop numbers")
