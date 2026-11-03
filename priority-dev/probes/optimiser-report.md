@@ -113,3 +113,77 @@ The artifact is the base chain. GEPA tuned instructions and bootstrap added demo
 - spread over repeats: read each gain against the slice 16 baseline spread (probes/eval-baseline.md); a gain smaller than that spread is not a result
 - cost: optimiser budget 10; model-call count is not metered by this command
 - program: probes/programs/gepa-seeded-budget10-seed7.json (load it with `priority eval --program`)
+
+## labeled (budget 5, seed 7)
+
+- settings: labelled demos: up to 4 train stops picked by pick_demos, no model call; seed unused
+- train sessions (14): 1b3b2a95-562c-43cd-af92-b711a4c45f38, 36752881-735f-42c3-9c8b-50aa4ea3d829, 438c1bee-bcc0-4c64-a53f-a5aa6323514f, 44a2c88e-baaf-4dac-85d2-1512f19a862d, 46ffdc01-3599-48af-99d5-56994fe1d1b6, 4e30e1cc-f5f6-4077-8f6b-541e9939a532, 5d2114e3-e7c4-41bd-8ed3-46446c37711a, 73eb1c54-f241-4495-a7cc-bc35cf1e7c23, 7b7b1107-c6c2-4fc3-b665-0316f8c24d70, 7ba9f3e6-f833-4232-b414-400803a73115, 99a61cfd-ceb8-4fd9-bab2-d1b82b958f4c, a03fc399-8633-4967-bc20-cdfc5b73e466, b61517c7-cce8-44fd-a8f8-2c6c18152858, da522ac2-ef34-4915-be26-50aa7ecc3892
+- held-out sessions (6): 173ae36f-0371-42ea-8519-ed26b52a5389, 71a58b52-8c51-44ba-9222-9f64360b8751, 7f26f5b0-d0c6-4a24-9f54-9e43e1f3fc90, 7f58085f-7121-4ec1-a263-ec8a6fe7c321, a2f34209-85df-49db-a40d-f015a3da5348, e924e1e7-394f-4599-9a47-9360cc6b1f19
+- held-out score before: n/a in this run (no holdout scoring without model calls)
+- held-out score after: n/a in this run (score the saved program with `priority eval --split holdout --program probes/programs/labeled-armB-budget5-seed7.json`)
+- spread over repeats: read each gain against the slice 16 baseline spread (probes/eval-baseline.md); a gain smaller than that spread is not a result
+- cost: optimiser budget 5; model-call count is not metered by this command
+- program: probes/programs/labeled-armB-budget5-seed7.json (load it with `priority eval --program`)
+
+## gepa (budget 5, seed 7)
+
+- settings: candidates: 5 (max_full_evals); reflection model: openai/mercury-3 (same as the interpreter); reflection minibatch size: 3; threads (num_threads): 2; valset sessions: 3; one component (propose), no component selector; schema-guarded instruction proposer; format failures as feedback; seed 7
+- train sessions (14): 1b3b2a95-562c-43cd-af92-b711a4c45f38, 36752881-735f-42c3-9c8b-50aa4ea3d829, 438c1bee-bcc0-4c64-a53f-a5aa6323514f, 44a2c88e-baaf-4dac-85d2-1512f19a862d, 46ffdc01-3599-48af-99d5-56994fe1d1b6, 4e30e1cc-f5f6-4077-8f6b-541e9939a532, 5d2114e3-e7c4-41bd-8ed3-46446c37711a, 73eb1c54-f241-4495-a7cc-bc35cf1e7c23, 7b7b1107-c6c2-4fc3-b665-0316f8c24d70, 7ba9f3e6-f833-4232-b414-400803a73115, 99a61cfd-ceb8-4fd9-bab2-d1b82b958f4c, a03fc399-8633-4967-bc20-cdfc5b73e466, b61517c7-cce8-44fd-a8f8-2c6c18152858, da522ac2-ef34-4915-be26-50aa7ecc3892
+- held-out sessions (6): 173ae36f-0371-42ea-8519-ed26b52a5389, 71a58b52-8c51-44ba-9222-9f64360b8751, 7f26f5b0-d0c6-4a24-9f54-9e43e1f3fc90, 7f58085f-7121-4ec1-a263-ec8a6fe7c321, a2f34209-85df-49db-a40d-f015a3da5348, e924e1e7-394f-4599-9a47-9360cc6b1f19
+- held-out score before: n/a in this run (no holdout scoring without model calls)
+- held-out score after: n/a in this run (score the saved program with `priority eval --split holdout --program probes/programs/gepa-armC-budget5-seed7.json`)
+- spread over repeats: read each gain against the slice 16 baseline spread (probes/eval-baseline.md); a gain smaller than that spread is not a result
+- cost: optimiser budget 5; model-call count is not metered by this command
+- program: probes/programs/gepa-armC-budget5-seed7.json (load it with `priority eval --program`)
+
+## Slice 20: payload judge, arms A, B and C, and the holdout (3 November 2026)
+
+Rule: if the agreement bar of the judge fails, no arm result counts. The bar passed at the line, so the results below count with the caveats that follow.
+
+### The judge
+
+- Judge and GEPA reflection model: Mercury 3 (`inception`), reasoning effort `high`, token cap 16000, three repeats and the median score. The NVIDIA Mistral judge hung on single calls (a call waited 15 minutes), so it was dropped.
+- The scores of the cases with no steps, and the cases with steps against an empty reference, go to the judge. Code pins only an abstain, at 0 (scoring version `unpinned-v1`).
+- Bar run on the 8 graded pairs, probe on the 8 pair stops:
+
+| Bar | Result | Required | Outcome |
+|---|---|---|---|
+| Agreement with the engineer | 6 of 8 (0.75); 5 of 7 without pair 4 | 0.75 or more | pass at the line |
+| Closed-field probe | 28 of 28 | 0.90 or more | pass |
+| Repeat flips | 0 of 8 (old rule: 2 of 8) | 0.10 or less | pass |
+
+- Pair 4 matches by setup: its reference is now the step of the side that the engineer picked. Pair 2 is a near tie. Pairs 1 and 3 differ in every run.
+
+### Train runs, 63 stops (14 sessions, the 4 demo stops left out), one run per arm
+
+| Arm | Mean | `invalid_output` | Judge errors | Model errors | Judge calls | Prompt tokens | Completion tokens |
+|---|---|---|---|---|---|---|---|
+| A, base | 0.475 | 2 | 0 | 0 | 63 | 446,671 | 238,704 |
+| B, base and 4 demos | 0.420 | 15 | 0 | 0 | 63 | 459,756 | 279,736 |
+| C, GEPA from A | 0.563 (tuned on these stops, not evidence) | | | | 450 (all of GEPA) | 3,534,312 | 1,805,425 |
+
+- B minus A, paired per stop: -0.055, 95% session-cluster CI -0.139 to +0.039 over 14 sessions. It includes 0.
+- Arm B had 2 rate-limit retries that recovered.
+- GEPA: budget 5, seed 7, 3 validation sessions, minibatch 3, 2 threads. The instruction that it wrote names option labels of one train stop and a CoBuilder paragraph that stops mid-sentence.
+
+### Holdout, first run, 30 stops (6 sessions)
+
+| | Arm A | Arm C | C minus A |
+|---|---|---|---|
+| Mean | 0.478 | 0.615 | +0.137 (95% CI +0.035 to +0.237) |
+| `invalid_output` | 3 | 5 | |
+| Judge calls, prompt and completion tokens | 30, 107,748 and 125,686 | 30, 109,687 and 123,311 | |
+
+- C wins 19 stops, A wins 6, 5 are equal. 5 of 6 sessions favour C.
+- Stops with a CoBuilder, `bundle.json` or plugin command mention (21): +0.157 (+0.028 to +0.245). Stops with no mention (9, 4 sessions): +0.091 (-0.192 to +0.321), not separable from 0.
+- C scored higher on the holdout (0.615) than on its train stops (0.563). This argues against memorising. One run is noisy.
+
+### Caveats
+
+- One holdout run per arm. A second run is planned. The holdout is not used for tuning.
+- Earlier numbers are void: the first four runs of arm A and three of arm B scored 45 of 63 stops, joined the log rows to the wrong stops, and counted judge errors as zeros. Earlier eval-path numbers measured facts only. No number from them is used here.
+- Four judge replies in the bar run and some in the holdout run hit the token cap. How those calls scored is not known. The 15 `invalid_output` replies of arm B and the 5 of arm C were not read.
+- The reflection model of GEPA is the task model (Mercury 3).
+- Four `notify` excerpts in the references are drafts: 36752881/053, 44a2c88e/008, 46ffdc01/001, 46ffdc01/009. The last one is a demo stop of arm B.
+- Reference 44a2c88e/006 changed from `[]` to a `continue_until` step on 2 November 2026.
+- 20 tests of the old probe fail and are not yet updated.
