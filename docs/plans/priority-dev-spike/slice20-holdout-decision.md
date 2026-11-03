@@ -143,6 +143,13 @@ Check of the other data against the rules:
 - Holdout 1 without its 10 marker stops: A 0.527, C 0.664, C minus A +0.138 (CI -0.030 to +0.261, 20 stops, 6 sessions). The gain is the same as with all 30 stops (+0.137).
 - The new training pool gives 30 stops under the plan rules after the filter, or at most 82 clean stops in total if one session may give several stops (agencheck 65, pre-employment 14, story-writer 3).
 
+## Changes of 4 November (second review)
+
+- Removed from holdout 2: 92fdcd1d/003 and the whole sub-agent session 085bfb07 (their first message is a `teammate-message` from the team lead), and f33925f0/018 (replaced by f33925f0/008). Replacement stops: 58059c5f and cc53f817 were swapped for 43e055c1/002 and b8272515/005, because the first two start from a launch prompt. The prefect worktree had no other clean session, so the replacements come from other agencheck workstreams.
+- Redrafted: 3b3d87e3/001 (snooze `until_event` changed). Holdout 2 stays at 26 stops from 18 sessions (agencheck 13, story-writer 7, pre-employment 6).
+- First 97 references: seven null recommendations are filled. Backup: `/tmp/labels-confirmed.before-nullfix.json`. The train scores and judge pairs 2, 3 and 10 used the old references and are not recomputed.
+- Open: five holdout 2 stops start from a launch prompt (7438c281/001, 396b87e9/001, 3b3d87e3/001, 391d47b9/001, e5d71545/001). The engineer reviewed them. They stay unless the engineer says otherwise.
+
 ## Decision
 
 Which new data do we label first, and how much? Recommended: label holdout 2 first (79 stops from 23 sessions), run arms A and C on it with no training, then decide about the 188 training stops. The alternatives are all 267 stops, or a lower cap of 3 stops per session. The second holdout run of A and C on the first holdout waits.
