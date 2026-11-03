@@ -182,6 +182,7 @@ Rule: if the agreement bar of the judge fails, no arm result counts. The bar pas
 
 - One holdout run per arm. A second run is planned. The holdout is not used for tuning.
 - Earlier numbers are void: the first four runs of arm A and three of arm B scored 45 of 63 stops, joined the log rows to the wrong stops, and counted judge errors as zeros. Earlier eval-path numbers measured facts only. No number from them is used here.
+- 7 holdout stops gave an empty or cut task reply at a token cap of 3000 (3 on arm A, 4 on arm C). A rerun at 6000 is a diagnosis only. If the cap costs score, it is raised for both arms and all 30 holdout stops run again.
 - Four judge replies in the bar run and some in the holdout run hit the token cap. How those calls scored is not known. The 15 `invalid_output` replies of arm B and the 5 of arm C were not read.
 - The reflection model of GEPA is the task model (Mercury 3).
 - Four `notify` excerpts in the references are drafts: 36752881/053, 44a2c88e/008, 46ffdc01/001, 46ffdc01/009. The last one is a demo stop of arm B.

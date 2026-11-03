@@ -236,13 +236,48 @@ li{margin:4px 0}
 </section>
 <section class="card" style="margin-top:14px">
   <ul style="margin:0 0 0 18px">
-    <li><strong>The cost is your confirmation time.</strong> 267 stops is 2.7 times the current set of 97, and the first 97 needed drafts and redrafts.</li>
+    <li><strong>"Label" means: generate the reference payload.</strong> For each stop I draft the payload (0 to 3 steps and a priority) from the stop brief only, never from a model output. You correct and confirm each draft. The first 97 stops needed drafts and redrafts, because my first drafts used too few kinds of step.</li>
+    <li><strong>The cost is drafting and your confirmation time.</strong> 267 stops is 2.7 times the current set of 97.</li>
     <li><strong>Holdout 2 mixes products.</strong> 65 of its 79 stops are agencheck. Only 14 stops come from story-writer and pre-employment, so a result on "other projects" will have a wide interval.</li>
     <li><strong>I read no content.</strong> I do not know how personal the data is. The sessions go only into the gitignored <span class="mono">fixtures/real/</span> folder.</li>
   </ul>
 </section>
 
-<h2>5. Can the judge be trusted? <small>Mercury 3, effort high, 3 repeats, median</small></h2>
+<h2>5. Why label holdout 2 first <small>the rationale for my recommendation</small></h2>
+<section class="grid2">
+  <div class="card">
+    <svg viewBox="0 0 440 210" role="img" aria-label="Order of work">
+      <g font-size="12.5">
+        <rect x="0" y="10" width="190" height="52" rx="8" fill="var(--accent)"/>
+        <text x="95" y="31" text-anchor="middle" style="fill:var(--accent-ink)" font-weight="600">1. Draft 79 references</text>
+        <text x="95" y="49" text-anchor="middle" style="fill:var(--accent-ink)" font-size="11.5">holdout 2, you confirm</text>
+        <rect x="250" y="10" width="190" height="52" rx="8" fill="var(--soft)" stroke="var(--line)"/>
+        <text x="345" y="31" text-anchor="middle" font-weight="600">2. Run A and C</text>
+        <text x="345" y="49" text-anchor="middle" class="m" font-size="11.5">no training, same programs</text>
+        <rect x="250" y="120" width="190" height="52" rx="8" fill="var(--soft)" stroke="var(--line)"/>
+        <text x="345" y="141" text-anchor="middle" font-weight="600">3. Decide on the 188</text>
+        <text x="345" y="159" text-anchor="middle" class="m" font-size="11.5">train stops, with the result</text>
+      </g>
+      <g stroke="var(--ink)" stroke-width="1.6" fill="none" color="var(--ink)">
+        <path d="M190,36 L248,36" marker-end="url(#ar)"/><path d="M345,64 L345,118" marker-end="url(#ar)"/>
+      </g>
+      <text x="0" y="110" font-size="12" class="m">The 79 stops are 30% of the work.</text>
+      <text x="0" y="128" font-size="12" class="m">The result tells us if the other 70%</text>
+      <text x="0" y="146" font-size="12" class="m">is needed, and from which projects.</text>
+    </svg>
+  </div>
+  <div class="card">
+    <ul style="margin-top:0">
+      <li><strong>It answers the open question fastest.</strong> The holdout showed a gain on CoBuilder work only. A and C need no new training for this test, so the only work is the references and two runs.</li>
+      <li><strong>It spends effort where the answer changes the plan.</strong> If C holds up on other projects, training data is less urgent. If it fails, we know that more varied training data is the fix.</li>
+      <li><strong>It keeps a clean before-and-after.</strong> We score the current C, which trained on CoBuilder only, on other projects. If we trained on the new data first, we could not tell what C gained.</li>
+      <li><strong>It keeps the test fair.</strong> The confirmed references of holdout 2 never go into a prompt, a demo or GEPA.</li>
+    </ul>
+    <p class="note" style="margin:6px 0 0">Limit: 65 of the 79 stops are agencheck, a different codebase but probably a similar kind of work. Only 14 stops come from story-writer and the pre-employment project. So this tests "another project", and tests "another kind of project" only weakly.</p>
+  </div>
+</section>
+
+<h2>6. Can the judge be trusted? <small>Mercury 3, effort high, 3 repeats, median</small></h2>
 <section class="card scroll">
   <table>
     <tr><th>Bar</th><th>Result</th><th>Required</th><th>Outcome</th></tr>
@@ -253,12 +288,13 @@ li{margin:4px 0}
   <p class="note" style="margin:10px 0 0">The four clear pairs match. The pass rests on pair 4 (its reference is now the side you picked) and on pair 2 (a near tie). Without pair 4: 5 of 7 = 0.71.</p>
 </section>
 
-<h2>6. Open points and doubts <small>nothing hidden</small></h2>
+<h2>7. Open points and doubts <small>nothing hidden</small></h2>
 <section class="card doubts">
   <ul>
     <li><strong>One holdout run per arm.</strong> The second run is not done. The interval will change with it.</li>
     <li><strong>Judge pass is fragile.</strong> 6 of 8 needs pairs 4 and 2. Pairs 1 and 3 differ in every run.</li>
     <li><strong>Arm C looks partly tuned to single stops.</strong> Its instruction names two option labels from one training stop (one of them in no brief), and has a CoBuilder paragraph that stops mid-sentence. The holdout result argues against pure overfit, but I did not trace where GEPA took these.</li>
+    <li><strong>The task token cap (3000) may cut replies.</strong> 7 holdout stops gave an empty or cut reply (3 on A, 4 on C), and the logs show "truncated" warnings. A rerun of those 7 at a cap of 6000 is a diagnosis only. Its scores do not enter the C minus A figure. If the cap costs score, it is raised for both arms and all 30 stops run again. The second holdout run can serve for that.</li>
     <li><strong>C has more bad replies on the holdout</strong> (5 of 30, against 3 for A). Arm B has 15 of 63 on train, A has 2. I did not read the replies.</li>
     <li><strong>GEPA's reflection model is Mercury 3</strong>, the model that it improves. Before it was another model.</li>
     <li><strong>Cut judge replies.</strong> Some replies hit the token cap in the bar run and in the holdout run. I do not know how those calls scored.</li>
@@ -271,9 +307,9 @@ li{margin:4px 0}
 
 <section class="decision">
   <h2>Decision</h2>
-  <p class="q">Which new data do we label first, and how much?</p>
+  <p class="q">Which new data do we label first, and how much? ("Label" = I draft the reference payloads, you confirm them.)</p>
   <div class="opts">
-    <div class="opt rec"><b>Label holdout 2 first: 79 stops from 23 sessions (recommended)</b><span>Run arms A and C on it with no training. It answers the "other projects" question quickly. Then decide about the 188 training stops, knowing the result.</span></div>
+    <div class="opt rec"><b>Label holdout 2 first: 79 stops from 23 sessions (recommended)</b><span>I draft 79 references from the briefs only, and you confirm them. Then A and C run on it with no training. It answers the "other projects" question first. Then we decide about the 188 training stops, with the result in hand. The reasons are in part 5.</span></div>
     <div class="opt"><b>Label everything: 267 stops</b><span>Holdout 2 and training together. The most data, and 2.7 times the current confirmation work.</span></div>
     <div class="opt"><b>Lower the cap to 3 stops per session first</b><span>Fewer stops to confirm, and a wider spread of sessions. Say the cap.</span></div>
   </div>

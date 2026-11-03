@@ -95,6 +95,21 @@ The live Claude folder holds no transcripts for these projects. The backup `~/.c
 
 Proposed split, by the same stable hash as the first split, per source: train 51 sessions and 188 stops, holdout 2 with 23 sessions and 79 stops. Only 14 holdout stops come from story-writer (11) and the pre-employment project (3). The sessions go only into the gitignored `fixtures/real/` folder.
 
+## Why label holdout 2 first
+
+"Label" means: generate the reference payload for a stop. The drafter writes each payload from the stop brief only. The engineer corrects and confirms each draft.
+
+1. It answers the open question fastest. The holdout showed a gain on CoBuilder work only. Arms A and C need no new training for this test.
+2. It spends the effort where the answer changes the plan. The 79 stops are 30% of the work. The result shows whether the 188 training stops are needed, and from which projects.
+3. It keeps a clean before-and-after. The current arm C trained on CoBuilder only. Scoring it on other projects first shows what the later training adds.
+4. It keeps the test fair. The confirmed references of holdout 2 never go into a prompt, a demo or GEPA.
+
+Limit: 65 of the 79 stops are agencheck. Only 14 stops come from story-writer and the pre-employment project.
+
+## Rule for the token cap
+
+7 holdout stops gave an empty or cut reply (3 on arm A, 4 on arm C) at a cap of 3000 tokens. A rerun of those 7 at 6000 is a diagnosis only, and its scores do not enter the C minus A figure. If the cap costs score, it is raised for both arms and all 30 holdout stops run again. The second holdout run can serve as that rerun.
+
 ## Decision
 
 Which new data do we label first, and how much? Recommended: label holdout 2 first (79 stops from 23 sessions), run arms A and C on it with no training, then decide about the 188 training stops. The alternatives are all 267 stops, or a lower cap of 3 stops per session. The second holdout run of A and C on the first holdout waits.
