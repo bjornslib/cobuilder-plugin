@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Slice 20: run the holdout duel?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f4efe6; --panel:#fffdf8; --ink:#1f1b16; --muted:#6b6257; --line:#d9cfbf;
+  --accent:#b4451f; --accent-ink:#ffffff; --good:#2f7a4d; --warn:#a86b00; --bad:#b3261e;
+  --a:#3b6ea5; --b:#8a6bb0; --c:#c2571a; --soft:#efe6d6;
+  --serif:"Fraunces", Georgia, serif; --sans:"IBM Plex Sans", system-ui, sans-serif; --mono:"IBM Plex Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#16130f; --panel:#201c17; --ink:#f1e9dc; --muted:#a59a8a; --line:#3a332b;
+    --accent:#e0794a; --accent-ink:#1a120c; --good:#5fbf86; --warn:#e0a63a; --bad:#ef7a72;
+    --a:#7fb0e4; --b:#b99ae0; --c:#f08a4b; --soft:#2b251e;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#16130f; --panel:#201c17; --ink:#f1e9dc; --muted:#a59a8a; --line:#3a332b;
+  --accent:#e0794a; --accent-ink:#1a120c; --good:#5fbf86; --warn:#e0a63a; --bad:#ef7a72;
+  --a:#7fb0e4; --b:#b99ae0; --c:#f08a4b; --soft:#2b251e;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.55 var(--sans);overflow-x:hidden}
+.wrap{max-width:1040px;margin:0 auto;padding:28px 20px 80px}
+header{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;border-bottom:2px solid var(--ink);padding-bottom:14px;margin-bottom:22px}
+h1{font:700 30px/1.15 var(--serif);margin:0 0 6px}
+.sub{color:var(--muted);font-size:13px;font-family:var(--mono)}
+button.theme{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:6px 10px;font:500 12px var(--mono);cursor:pointer}
+h2{font:700 20px/1.2 var(--serif);margin:34px 0 10px}
+h2 small{font:400 12px var(--mono);color:var(--muted);margin-left:8px}
+section{margin-bottom:8px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px 18px}
+.answer{border-left:6px solid var(--accent)}
+.answer p{margin:4px 0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:760px){.grid2{grid-template-columns:1fr}}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:500 11.5px var(--mono);text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.tag{display:inline-block;font:500 11.5px var(--mono);padding:2px 7px;border-radius:99px;border:1px solid var(--line);background:var(--soft)}
+.pass{color:var(--good);border-color:var(--good)} .fail{color:var(--bad);border-color:var(--bad)} .warnt{color:var(--warn);border-color:var(--warn)}
+svg{max-width:100%;height:auto;display:block}
+svg text{font-family:var(--sans);fill:var(--ink)}
+svg .m{fill:var(--muted)}
+.mono{font-family:var(--mono)}
+ul{margin:6px 0 6px 18px;padding:0}
+li{margin:4px 0}
+.doubts li strong{color:var(--warn)}
+.decision{background:var(--ink);color:var(--bg);border-radius:12px;padding:24px 26px;margin-top:38px}
+.decision h2{color:var(--bg);margin-top:0}
+.decision .q{font:700 24px/1.25 var(--serif);margin:0 0 16px}
+.opts{display:grid;gap:10px}
+.opt{border:1px solid color-mix(in srgb,var(--bg) 35%,transparent);border-radius:8px;padding:11px 14px}
+.opt.rec{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.opt b{display:block;font-size:15.5px}
+.opt span{font-size:13px;opacity:.92}
+.note{color:var(--muted);font-size:13px}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin-top:6px}
+.sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div>
+    <h1>Slice 20: run the holdout duel?</h1>
+    <div class="sub">priority-dev-spike &middot; 3 November 2026 &middot; record: docs/plans/priority-dev-spike/slice20-holdout-decision.md</div>
+  </div>
+  <button class="theme" id="tg" type="button">theme</button>
+</header>
+
+<section>
+  <div class="card answer">
+    <p><strong>Your question:</strong> do I run the GEPA-optimised program on arms A and C?</p>
+    <p><strong>Not quite.</strong> The GEPA program runs in <strong>arm C only</strong>. Arm A is the <em>base</em> program: no demos and no GEPA. The duel compares them, one against the other, on stops that neither has seen.</p>
+  </div>
+</section>
+
+<h2>1. What the three arms are</h2>
+<section class="card">
+  <div class="scroll">
+  <svg viewBox="0 0 980 230" role="img" aria-label="Pipeline and arms">
+    <defs><marker id="ar" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="currentColor"/></marker></defs>
+    <g stroke="var(--line)" stroke-width="1.5" fill="var(--soft)">
+      <rect x="10" y="20" width="150" height="60" rx="8"/>
+      <rect x="215" y="20" width="200" height="60" rx="8"/>
+      <rect x="470" y="20" width="160" height="60" rx="8"/>
+      <rect x="685" y="20" width="140" height="60" rx="8"/>
+      <rect x="870" y="20" width="100" height="60" rx="8"/>
+    </g>
+    <g text-anchor="middle" font-size="13">
+      <text x="85" y="46" font-weight="600">Stop brief</text><text class="m" x="85" y="64" font-size="11.5">from a real session</text>
+      <text x="315" y="46" font-weight="600">ProposeStop</text><text class="m" x="315" y="64" font-size="11.5">Mercury 3, one typed call</text>
+      <text x="550" y="46" font-weight="600">Payload</text><text class="m" x="550" y="64" font-size="11.5">0 to 3 steps + priority</text>
+      <text x="755" y="46" font-weight="600">Judge</text><text class="m" x="755" y="64" font-size="11.5">Mercury 3, effort high</text>
+      <text x="920" y="46" font-weight="600">Score</text><text class="m" x="920" y="64" font-size="11.5">0 to 1</text>
+    </g>
+    <g stroke="var(--ink)" stroke-width="1.6" color="var(--ink)" fill="none">
+      <path d="M160,50 L213,50" marker-end="url(#ar)"/><path d="M415,50 L468,50"  marker-end="url(#ar)"/>
+      <path d="M630,50 L683,50" marker-end="url(#ar)"/><path d="M825,50 L868,50" marker-end="url(#ar)"/>
+    </g>
+    <text class="m" x="755" y="104" text-anchor="middle" font-size="11.5">compares with the reference payload you confirmed</text>
+    <g font-size="12.5">
+      <rect x="215" y="128" width="200" height="22" rx="4" fill="var(--a)"/>
+      <text x="315" y="143" text-anchor="middle" style="fill:#fff" font-weight="600">Arm A: base instruction</text>
+      <rect x="215" y="156" width="200" height="22" rx="4" fill="var(--b)"/>
+      <text x="315" y="171" text-anchor="middle" style="fill:#fff" font-weight="600">Arm B: base + 4 demos</text>
+      <rect x="215" y="184" width="200" height="22" rx="4" fill="var(--c)"/>
+      <text x="315" y="199" text-anchor="middle" style="fill:#fff" font-weight="600">Arm C: GEPA instruction</text>
+    </g>
+    <g stroke="var(--line)" stroke-width="1.5" fill="none"><path d="M315,128 L315,84" stroke-dasharray="4 3"/></g>
+    <text class="m" x="430" y="143" font-size="11.5">no change to the prompt</text>
+    <text class="m" x="430" y="171" font-size="11.5">demos added to the prompt</text>
+    <text class="m" x="430" y="199" font-size="11.5">prompt rewritten by GEPA, seeded from A</text>
+  </svg>
+  </div>
+  <p class="note" style="margin:8px 0 0">The arms differ only in the prompt. The model, the judge, the references and the stops are the same.</p>
+</section>
+
+<h2>2. What we measured so far <small>63 train stops, one run per arm</small></h2>
+<section class="grid2">
+  <div class="card">
+    <svg viewBox="0 0 440 250" role="img" aria-label="Train means">
+      <g stroke="var(--line)"><line x1="50" y1="210" x2="420" y2="210"/><line x1="50" y1="165" x2="420" y2="165" stroke-dasharray="3 4"/><line x1="50" y1="120" x2="420" y2="120" stroke-dasharray="3 4"/><line x1="50" y1="75" x2="420" y2="75" stroke-dasharray="3 4"/><line x1="50" y1="30" x2="420" y2="30" stroke-dasharray="3 4"/></g>
+      <g class="m" font-size="11" text-anchor="end"><text x="44" y="214" class="m">0</text><text x="44" y="169" class="m">0.25</text><text x="44" y="124" class="m">0.5</text><text x="44" y="79" class="m">0.75</text><text x="44" y="34" class="m">1</text></g>
+      <rect x="85" y="103.8" width="70" height="106.2" fill="var(--a)" rx="3"/>
+      <rect x="205" y="115.5" width="70" height="94.5" fill="var(--b)" rx="3"/>
+      <rect x="325" y="83.3" width="70" height="126.7" fill="var(--c)" rx="3" opacity=".55"/>
+      <g font-size="14" font-weight="600" text-anchor="middle"><text x="120" y="96">0.475</text><text x="240" y="108">0.420</text><text x="360" y="76">0.563</text></g>
+      <g font-size="12.5" text-anchor="middle"><text x="120" y="230">A</text><text x="240" y="230">B</text><text x="360" y="230">C</text></g>
+      <text class="m" x="360" y="246" font-size="10.5" text-anchor="middle">tuned on these stops</text>
+    </svg>
+    <p class="note" style="margin:6px 0 0">C is faded: GEPA trained on these stops, so 0.563 shows nothing yet.</p>
+  </div>
+  <div class="card scroll">
+    <table>
+      <tr><th>Arm</th><th>Mean</th><th>Bad replies</th></tr>
+      <tr><td>A base</td><td class="mono">0.475</td><td class="mono">2 of 63</td></tr>
+      <tr><td>B demos</td><td class="mono">0.420</td><td class="mono">15 of 63</td></tr>
+      <tr><td>C GEPA</td><td class="mono">0.563</td><td class="mono">not counted</td></tr>
+    </table>
+    <p style="margin:10px 0 4px"><strong>A against B</strong>, paired per stop: B &minus; A = <span class="mono">&minus;0.055</span>, 95% interval <span class="mono">&minus;0.139 to +0.039</span> over 14 sessions. It includes 0, so the data do not separate A and B.</p>
+    <p class="note" style="margin:4px 0 0">"Bad replies" means the model reply did not parse or validate (<span class="mono">invalid_output</span>). Each one scores 0.</p>
+  </div>
+</section>
+
+<h2>3. Why the holdout duel <small>the rationale</small></h2>
+<section class="grid2">
+  <div class="card">
+    <svg viewBox="0 0 440 200" role="img" aria-label="Split">
+      <text x="0" y="16" font-size="12" class="m">20 sessions, 97 stops with a reference</text>
+      <rect x="0" y="26" width="300" height="46" rx="6" fill="var(--soft)" stroke="var(--line)"/>
+      <rect x="306" y="26" width="134" height="46" rx="6" fill="var(--accent)"/>
+      <g font-size="13" text-anchor="middle"><text x="150" y="46" font-weight="600">Train: 14 sessions</text><text x="150" y="62" class="m" font-size="11.5">63 stops + 4 demo stops</text><text x="373" y="46" font-weight="600" style="fill:var(--accent-ink)">Holdout: 6</text><text x="373" y="62" font-size="11.5" style="fill:var(--accent-ink)">30 stops, untouched</text></g>
+      <g font-size="12">
+        <text x="0" y="104">GEPA, the demos and every prompt edit saw the train part.</text>
+        <text x="0" y="124">Nothing has seen the holdout. That is its only value.</text>
+        <text x="0" y="144" font-weight="600">The holdout works once. After one look,</text>
+        <text x="0" y="162" font-weight="600">C can no longer be tuned against it.</text>
+      </g>
+    </svg>
+  </div>
+  <div class="card">
+    <p style="margin-top:0"><strong>The reason in one line:</strong> C's train score is biased, and the holdout is the only unbiased test of C.</p>
+    <p><strong>The rule, fixed before the run</strong></p>
+    <ul>
+      <li>C counts as better only if the interval of <span class="mono">C &minus; A</span> sits above 0.</li>
+      <li>An interval that includes 0 is reported as "no evidence".</li>
+      <li>A mean gain below 0 with the interval below 0 means GEPA overfitted.</li>
+    </ul>
+    <p class="note" style="margin-bottom:0">Method: A and C run twice each on the 30 stops. The scores pair per stop. The bootstrap resamples the 6 sessions, not the stops, because stops in one session are not independent.</p>
+  </div>
+</section>
+
+<h2>4. What the duel cannot show</h2>
+<section class="grid2">
+  <div class="card">
+    <svg viewBox="0 0 440 150" role="img" aria-label="Mention share">
+      <text x="0" y="14" font-size="12" class="m">Stops that mention CoBuilder, bundle.json or a plugin command</text>
+      <text x="0" y="48" font-size="12.5">Train</text>
+      <rect x="62" y="34" width="360" height="20" rx="4" fill="var(--soft)" stroke="var(--line)"/>
+      <rect x="62" y="34" width="270" height="20" rx="4" fill="var(--a)"/>
+      <text x="338" y="49" font-size="12" class="mono">47 of 63 (75%)</text>
+      <text x="0" y="88" font-size="12.5">Holdout</text>
+      <rect x="62" y="74" width="360" height="20" rx="4" fill="var(--soft)" stroke="var(--line)"/>
+      <rect x="62" y="74" width="252" height="20" rx="4" fill="var(--accent)"/>
+      <text x="320" y="89" font-size="12" class="mono">21 of 30 (70%)</text>
+      <text x="0" y="128" font-size="12" class="m">Both parts come from the same pool: your own CoBuilder work.</text>
+    </svg>
+  </div>
+  <div class="card">
+    <ul style="margin-top:0">
+      <li>The holdout looks like the train part. Arm C's "Known context" paragraph about the CoBuilder plugin can help there for that reason.</li>
+      <li>A win then shows a gain <strong>on your CoBuilder work</strong>. It does not show a gain on other projects.</li>
+      <li>I will add a second line for the 9 holdout stops with no mention. The sample is small, so its interval will be wide.</li>
+      <li>6 sessions give a wide interval overall. I expect about &plusmn;0.15 [inference from the train interval].</li>
+    </ul>
+  </div>
+</section>
+
+<h2>5. Can the judge be trusted? <small>the bar, Mercury 3, effort high, 3 repeats, median</small></h2>
+<section class="card scroll">
+  <table>
+    <tr><th>Bar</th><th>Result</th><th>Required</th><th>Outcome</th></tr>
+    <tr><td>Agreement with your picks, 8 pairs</td><td class="mono">6 of 8 = 0.75</td><td class="mono">0.75 or more</td><td><span class="tag pass">pass, at the line</span></td></tr>
+    <tr><td>Closed-field probe, 28 copies</td><td class="mono">28 of 28</td><td class="mono">0.90 or more</td><td><span class="tag pass">pass</span></td></tr>
+    <tr><td>Repeat flips</td><td class="mono">0 of 8 (old rule 2 of 8)</td><td class="mono">0.10 or less</td><td><span class="tag pass">pass</span></td></tr>
+  </table>
+  <svg viewBox="0 0 700 78" style="margin-top:12px" role="img" aria-label="Pairs">
+    <text x="0" y="14" font-size="12" class="m">The 8 pairs: does the judge pick the side you picked?</text>
+    <g font-size="11.5" text-anchor="middle">
+      <rect x="0"   y="26" width="78" height="34" rx="5" fill="var(--bad)"/><text x="39"  y="47" style="fill:#fff">1 tie</text>
+      <rect x="86"  y="26" width="78" height="34" rx="5" fill="var(--warn)"/><text x="125" y="47" style="fill:#fff">2 near tie</text>
+      <rect x="172" y="26" width="78" height="34" rx="5" fill="var(--bad)"/><text x="211" y="47" style="fill:#fff">3 differs</text>
+      <rect x="258" y="26" width="78" height="34" rx="5" fill="var(--warn)"/><text x="297" y="47" style="fill:#fff">4 by setup</text>
+      <rect x="344" y="26" width="78" height="34" rx="5" fill="var(--good)"/><text x="383" y="47" style="fill:#fff">5 match</text>
+      <rect x="430" y="26" width="78" height="34" rx="5" fill="var(--good)"/><text x="469" y="47" style="fill:#fff">7 match</text>
+      <rect x="516" y="26" width="78" height="34" rx="5" fill="var(--good)"/><text x="555" y="47" style="fill:#fff">9 match</text>
+      <rect x="602" y="26" width="78" height="34" rx="5" fill="var(--good)"/><text x="641" y="47" style="fill:#fff">10 match</text>
+    </g>
+  </svg>
+  <div class="legend"><span><i class="sw" style="background:var(--good)"></i>clear match</span><span><i class="sw" style="background:var(--warn)"></i>counted, but weak</span><span><i class="sw" style="background:var(--bad)"></i>judge disagrees</span></div>
+  <p class="note" style="margin:10px 0 0">The four clear pairs match. The pass rests on pair 4 (its reference is now the side you picked) and on pair 2 (a coin toss). Without pair 4 the figure is 5 of 7 = 0.71.</p>
+</section>
+
+<h2>6. Open points and doubts <small>nothing hidden</small></h2>
+<section class="card doubts">
+  <ul>
+    <li><strong>Judge pass is fragile.</strong> 6 of 8 needs pair 4 and pair 2. Pairs 1 and 3 differ in every run. Eight pairs is a small sample.</li>
+    <li><strong>Arm C looks partly overfitted.</strong> Its instruction names two option labels from one training stop (one of them in no brief), and has a CoBuilder paragraph that stops mid-sentence. I did not trace where GEPA took these.</li>
+    <li><strong>Arm B has 15 bad replies, arm A has 2.</strong> I did not read the replies. The cause is unknown.</li>
+    <li><strong>One run per arm.</strong> I have not measured how much one run moves on this setup.</li>
+    <li><strong>GEPA's reflection model is Mercury 3</strong>, the model that it improves. Before it was another model.</li>
+    <li><strong>Cut judge replies.</strong> Four replies in a bar run, and two in an earlier run, hit the token cap. I do not know how those calls scored.</li>
+    <li><strong>Four notify excerpts are drafts:</strong> 36752881/053, 44a2c88e/008, 46ffdc01/001, 46ffdc01/009. The last one is a demo stop of arm B.</li>
+    <li><strong>Reference changed on your direction:</strong> 44a2c88e/006 went from <span class="mono">[]</span> to the <span class="mono">continue_until</span> step. A backup is in /tmp.</li>
+    <li><strong>Tests:</strong> 20 tests of the old probe fail on purpose and wait for an update. The suite has 640 passing.</li>
+    <li><strong>Void history:</strong> the first four A runs and three B runs scored 45 of 63 stops, with a wrong stop join and judge errors as zeros. No number from them is used.</li>
+  </ul>
+</section>
+
+<section class="decision">
+  <h2>Decision</h2>
+  <p class="q">Run the holdout duel now: arm A and arm C, twice each, on the 30 holdout stops?</p>
+  <div class="opts">
+    <div class="opt rec"><b>Yes, run the duel (recommended)</b><span>About 25 minutes and about 130 judge calls. It uses the holdout once and gives the unbiased gain of C over A, with the second line for the 9 stops with no mention.</span></div>
+    <div class="opt"><b>First rerun A and B on the train stops</b><span>About 10 to 20 minutes. It shows how much one run moves. The holdout stays untouched. Then the duel.</span></div>
+    <div class="opt"><b>No: fix an open point first</b><span>Name the point (for example the judge pairs, or the cut at the end of C's instruction). Nothing runs until you say.</span></div>
+  </div>
+  <p class="note" style="color:inherit;opacity:.75;margin:14px 0 0">With no answer, I do not touch the holdout.</p>
+</section>
+
+</div>
+<script>
+(function(){
+  var r=document.documentElement,b=document.getElementById('tg');
+  function cur(){var t=r.getAttribute('data-theme');if(t)return t;return matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}
+  b.textContent=cur()==='dark'?'light':'dark';
+  b.addEventListener('click',function(){var n=cur()==='dark'?'light':'dark';r.setAttribute('data-theme',n);b.textContent=n==='dark'?'light':'dark'});
+})();
+</script>
+</body>
+</html>
