@@ -110,6 +110,20 @@ Limit: 65 of the 79 stops are agencheck. Only 14 stops come from story-writer an
 
 7 holdout stops gave an empty or cut reply (3 on arm A, 4 on arm C) at a cap of 3000 tokens. A rerun of those 7 at 6000 is a diagnosis only, and its scores do not enter the C minus A figure. If the cap costs score, it is raised for both arms and all 30 holdout stops run again. The second holdout run can serve as that rerun.
 
+## Holdout 2, first run (3 November 2026), against unconfirmed drafts
+
+Plan as built: scarce repositories split at the repository level (story-writer 2 of 7 sessions, pre-employment 3 of 9), agencheck per workstream (30%, at least 1 where a workstream has 3 sessions or more). Holdout 2 holds 21 sessions and 36 stops. Agencheck gives 1 stop per session (16 stops). Story-writer and pre-employment give up to 5 stops per session (8 and 12 stops). The 53 training sessions are not copied yet (about 61 stops later). The 36 references are drafts: a drafter wrote each from the stop brief only. The engineer has not confirmed them.
+
+| Subset | Stops | Sessions | Arm A | Arm C | C minus A | 95% CI | C wins / A wins / equal |
+|---|---|---|---|---|---|---|---|
+| All | 36 | 21 | 0.369 | 0.498 | +0.129 | +0.011 to +0.261 | 16 / 7 / 13 |
+| agencheck | 16 | 16 | 0.415 | 0.549 | +0.135 | -0.059 to +0.352 | 6 / 4 / 6 |
+| story-writer | 8 | 2 | 0.519 | 0.638 | +0.120 | too few sessions | 5 / 2 / 1 |
+| PreEmployment PoC | 12 | 3 | 0.208 | 0.336 | +0.128 | 0.000 to +0.267 | 5 / 1 / 6 |
+| Other repositories pooled | 20 | 5 | 0.333 | 0.457 | +0.125 | -0.002 to +0.304 | 10 / 3 / 7 |
+
+The sign agrees in every repository. No single repository has enough sessions to stand alone. Each arm had 1 bad reply. The base score is lower than on holdout 1 (0.369 against 0.478). The cause is not known. The result can change when the engineer confirms the drafts.
+
 ## Decision
 
 Which new data do we label first, and how much? Recommended: label holdout 2 first (79 stops from 23 sessions), run arms A and C on it with no training, then decide about the 188 training stops. The alternatives are all 267 stops, or a lower cap of 3 stops per session. The second holdout run of A and C on the first holdout waits.

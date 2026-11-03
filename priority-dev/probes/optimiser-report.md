@@ -178,6 +178,18 @@ Rule: if the agreement bar of the judge fails, no arm result counts. The bar pas
 - Stops with a CoBuilder, `bundle.json` or plugin command mention (21): +0.157 (+0.028 to +0.245). Stops with no mention (9, 4 sessions): +0.091 (-0.192 to +0.321), not separable from 0.
 - C scored higher on the holdout (0.615) than on its train stops (0.563). This argues against memorising. One run is noisy.
 
+### Holdout 2, first run, 36 stops, 21 sessions, 3 repositories (unconfirmed drafts)
+
+| Subset | Stops | Sessions | Arm A | Arm C | C minus A | 95% CI |
+|---|---|---|---|---|---|---|
+| All | 36 | 21 | 0.369 | 0.498 | +0.129 | +0.011 to +0.261 |
+| agencheck | 16 | 16 | 0.415 | 0.549 | +0.135 | -0.059 to +0.352 |
+| story-writer | 8 | 2 | 0.519 | 0.638 | +0.120 | too few sessions |
+| PreEmployment PoC | 12 | 3 | 0.208 | 0.336 | +0.128 | 0.000 to +0.267 |
+
+- Judge calls: 36 per arm. Arm A used 391,389 prompt and 62,936 completion tokens. Arm C used 389,435 and 75,485. No judge or model errors. 1 bad reply for each arm.
+- The 36 references are drafts written from the stop briefs only. The engineer has not confirmed them.
+
 ### Caveats
 
 - One holdout run per arm. A second run is planned. The holdout is not used for tuning.

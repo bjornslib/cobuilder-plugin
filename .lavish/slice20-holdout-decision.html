@@ -80,8 +80,8 @@ li{margin:4px 0}
 
 <section>
   <div class="card answer">
-    <p><strong>Result of the first holdout run:</strong> the GEPA program (arm C) beats the base program (arm A) by <strong>+0.137</strong>. The 95% interval is <span class="mono">+0.035 to +0.237</span>, and it sits above 0, so the rule fixed before the run says C is better.</p>
-    <p><strong>Limits:</strong> one run per arm, 6 sessions, a judge that passed its bar at the line, and CoBuilder work only. The gain on stops with no CoBuilder mention cannot be separated from 0. New data from other projects is the way to test that.</p>
+    <p><strong>Holdout 2 (21 sessions, 36 stops, 3 repositories) points the same way as holdout 1:</strong> arm C beats arm A by <strong>+0.129</strong>, 95% interval <span class="mono">+0.011 to +0.261</span>. C is ahead in all three repositories.</p>
+    <p><strong>This result is provisional.</strong> The 36 references are drafts that you have not confirmed. Confirm or correct them in <span class="mono">~/Downloads/holdout2-reference-review.html</span>, and I rerun if any reference changes.</p>
   </div>
 </section>
 
@@ -206,7 +206,37 @@ li{margin:4px 0}
   <p class="note" style="margin:10px 0 0">C scored 0.615 on the holdout and 0.563 on the train stops that it trained on. A pure overfit would show the reverse. One run is noisy, so I read this as evidence against memorising, not as proof.</p>
 </section>
 
-<h2>4. New training data <small>found in the backup, structure only, nothing copied yet</small></h2>
+<h2>3b. Holdout 2, first run <small>36 stops, 21 sessions, 3 repositories, against unconfirmed drafts</small></h2>
+<section class="card">
+  <div class="scroll">
+  <svg viewBox="0 0 760 230" role="img" aria-label="Holdout 2 per repository">
+    <g stroke="var(--line)"><line x1="190" y1="190" x2="740" y2="190"/><line x1="190" y1="10" x2="190" y2="190"/></g>
+    <g font-size="11" class="m" text-anchor="middle"><text x="190" y="206" class="m">0</text><text x="327.5" y="206" class="m">0.25</text><text x="465" y="206" class="m">0.5</text><text x="602.5" y="206" class="m">0.75</text><text x="740" y="206" class="m">1</text></g>
+    <g font-size="12.5">
+      <text x="0" y="36">All 36 stops</text><rect x="190" y="14" width="203" height="14" fill="var(--a)" rx="2"/><rect x="190" y="30" width="274" height="14" fill="var(--c)" rx="2"/>
+      <text x="472" y="42" class="mono">A 0.369 &middot; C 0.498</text>
+      <text x="0" y="86">agencheck (16 sessions)</text><rect x="190" y="64" width="228" height="14" fill="var(--a)" rx="2"/><rect x="190" y="80" width="302" height="14" fill="var(--c)" rx="2"/>
+      <text x="500" y="92" class="mono">A 0.415 &middot; C 0.549</text>
+      <text x="0" y="136">story-writer (2 sessions)</text><rect x="190" y="114" width="285" height="14" fill="var(--a)" rx="2"/><rect x="190" y="130" width="351" height="14" fill="var(--c)" rx="2"/>
+      <text x="549" y="142" class="mono">A 0.519 &middot; C 0.638</text>
+      <text x="0" y="186">pre-employment (3 sessions)</text><rect x="190" y="164" width="114" height="14" fill="var(--a)" rx="2"/><rect x="190" y="180" width="185" height="14" fill="var(--c)" rx="2"/>
+      <text x="383" y="188" class="mono">A 0.208 &middot; C 0.336</text>
+    </g>
+    <g font-size="11.5"><rect x="560" y="20" width="10" height="10" fill="var(--a)"/><text x="576" y="29">A base</text><rect x="640" y="20" width="10" height="10" fill="var(--c)"/><text x="656" y="29">C GEPA</text></g>
+  </svg>
+  </div>
+  <table>
+    <tr><th>Subset</th><th>Stops</th><th>Sessions</th><th>C minus A</th><th>95% CI</th><th>C wins / A wins / equal</th><th>Reading</th></tr>
+    <tr><td>All</td><td class="mono">36</td><td class="mono">21</td><td class="mono">+0.129</td><td class="mono">+0.011 to +0.261</td><td class="mono">16 / 7 / 13</td><td><span class="tag pass">above 0</span></td></tr>
+    <tr><td>agencheck</td><td class="mono">16</td><td class="mono">16</td><td class="mono">+0.135</td><td class="mono">&minus;0.059 to +0.352</td><td class="mono">6 / 4 / 6</td><td><span class="tag warnt">cannot tell</span></td></tr>
+    <tr><td>story-writer</td><td class="mono">8</td><td class="mono">2</td><td class="mono">+0.120</td><td class="mono">too few sessions</td><td class="mono">5 / 2 / 1</td><td><span class="tag warnt">cannot tell</span></td></tr>
+    <tr><td>PreEmployment PoC</td><td class="mono">12</td><td class="mono">3</td><td class="mono">+0.128</td><td class="mono">0.000 to +0.267</td><td class="mono">5 / 1 / 6</td><td><span class="tag warnt">cannot tell</span></td></tr>
+    <tr><td>Other repositories pooled</td><td class="mono">20</td><td class="mono">5</td><td class="mono">+0.125</td><td class="mono">&minus;0.002 to +0.304</td><td class="mono">10 / 3 / 7</td><td><span class="tag warnt">cannot tell</span></td></tr>
+  </table>
+  <p class="note" style="margin:10px 0 0">The sign agrees in every repository, but no single repository has enough sessions to stand alone. Per session in the other repositories: story-writer +0.42 and &minus;0.06, pre-employment +0.20, +0.27 and 0.00. The base score is lower here than on holdout 1 (A 0.369 against 0.478), so these repositories are harder, or the drafts are stricter. I do not know which. Bad replies: 1 for each arm.</p>
+</section>
+
+<h2>4. New training data <small>the 21 holdout 2 transcripts are copied; the training sessions are not</small></h2>
 <section class="grid2">
   <div class="card scroll">
     <table>
@@ -219,18 +249,18 @@ li{margin:4px 0}
     <p class="note" style="margin:10px 0 0">The live Claude folder has no transcripts for these projects. The backup at <span class="mono">~/.claude-backup</span> holds them. 36 near-duplicate worktree copies were dropped.</p>
   </div>
   <div class="card">
-    <p style="margin:0 0 6px"><strong>Split, by the same stable hash as before, per source</strong></p>
+    <p style="margin:0 0 6px"><strong>Split, as built: scarce repositories at repository level, agencheck per workstream</strong></p>
     <svg viewBox="0 0 400 150" role="img" aria-label="New data split">
       <g font-size="12">
-        <text x="0" y="26">Train</text><text x="0" y="40" font-size="10.5" class="m">51 sessions</text>
-        <rect x="70" y="14" width="188" height="22" rx="4" fill="var(--a)"/>
-        <text x="266" y="30" class="mono" font-size="11.5">188 stops</text>
-        <text x="0" y="70">Holdout 2</text><text x="0" y="84" font-size="10.5" class="m">23 sessions</text>
-        <rect x="70" y="58" width="79" height="22" rx="4" fill="var(--accent)"/>
-        <text x="157" y="74" class="mono" font-size="11.5">79 stops</text>
+        <text x="0" y="26">Train</text><text x="0" y="40" font-size="10.5" class="m">53 sessions</text>
+        <rect x="70" y="14" width="152" height="22" rx="4" fill="var(--a)"/>
+        <text x="230" y="30" class="mono" font-size="11.5">61 stops</text>
+        <text x="0" y="70">Holdout 2</text><text x="0" y="84" font-size="10.5" class="m">21 sessions</text>
+        <rect x="70" y="58" width="90" height="22" rx="4" fill="var(--accent)"/>
+        <text x="168" y="74" class="mono" font-size="11.5">36 stops</text>
       </g>
-      <text x="0" y="112" font-size="12" class="m">Other projects in holdout 2: story-writer 3 sessions (11 stops),</text>
-      <text x="0" y="130" font-size="12" class="m">pre-employment 3 sessions (3 stops). Only 14 stops.</text>
+      <text x="0" y="112" font-size="12" class="m">Other repositories in holdout 2: story-writer 2 sessions (8 stops),</text>
+      <text x="0" y="130" font-size="12" class="m">pre-employment 3 sessions (12 stops): 20 of 36 stops.</text>
     </svg>
   </div>
 </section>
@@ -238,7 +268,7 @@ li{margin:4px 0}
   <ul style="margin:0 0 0 18px">
     <li><strong>"Label" means: generate the reference payload.</strong> For each stop I draft the payload (0 to 3 steps and a priority) from the stop brief only, never from a model output. You correct and confirm each draft. The first 97 stops needed drafts and redrafts, because my first drafts used too few kinds of step.</li>
     <li><strong>The cost is drafting and your confirmation time.</strong> 267 stops is 2.7 times the current set of 97.</li>
-    <li><strong>Holdout 2 mixes products.</strong> 65 of its 79 stops are agencheck. Only 14 stops come from story-writer and pre-employment, so a result on "other projects" will have a wide interval.</li>
+    <li><strong>Holdout 2 is built to spread.</strong> 16 of its 36 stops are agencheck (one stop per session, 16 sessions). 20 stops come from story-writer (2 sessions) and pre-employment (3 sessions), so each repository on its own has few sessions.</li>
     <li><strong>I read no content.</strong> I do not know how personal the data is. The sessions go only into the gitignored <span class="mono">fixtures/real/</span> folder.</li>
   </ul>
 </section>
@@ -249,21 +279,21 @@ li{margin:4px 0}
     <svg viewBox="0 0 440 210" role="img" aria-label="Order of work">
       <g font-size="12.5">
         <rect x="0" y="10" width="190" height="52" rx="8" fill="var(--accent)"/>
-        <text x="95" y="31" text-anchor="middle" style="fill:var(--accent-ink)" font-weight="600">1. Draft 79 references</text>
+        <text x="95" y="31" text-anchor="middle" style="fill:var(--accent-ink)" font-weight="600">1. Draft 36 references</text>
         <text x="95" y="49" text-anchor="middle" style="fill:var(--accent-ink)" font-size="11.5">holdout 2, you confirm</text>
         <rect x="250" y="10" width="190" height="52" rx="8" fill="var(--soft)" stroke="var(--line)"/>
         <text x="345" y="31" text-anchor="middle" font-weight="600">2. Run A and C</text>
         <text x="345" y="49" text-anchor="middle" class="m" font-size="11.5">no training, same programs</text>
         <rect x="250" y="120" width="190" height="52" rx="8" fill="var(--soft)" stroke="var(--line)"/>
-        <text x="345" y="141" text-anchor="middle" font-weight="600">3. Decide on the 188</text>
+        <text x="345" y="141" text-anchor="middle" font-weight="600">3. Decide on the 61</text>
         <text x="345" y="159" text-anchor="middle" class="m" font-size="11.5">train stops, with the result</text>
       </g>
       <g stroke="var(--ink)" stroke-width="1.6" fill="none" color="var(--ink)">
         <path d="M190,36 L248,36" marker-end="url(#ar)"/><path d="M345,64 L345,118" marker-end="url(#ar)"/>
       </g>
-      <text x="0" y="110" font-size="12" class="m">The 79 stops are 30% of the work.</text>
+      <text x="0" y="110" font-size="12" class="m">The 36 stops are 37% of the work.</text>
       <text x="0" y="128" font-size="12" class="m">The result tells us if the other 70%</text>
-      <text x="0" y="146" font-size="12" class="m">is needed, and from which projects.</text>
+      <text x="0" y="146" font-size="12" class="m">is needed, and from which repositories.</text>
     </svg>
   </div>
   <div class="card">
@@ -273,7 +303,7 @@ li{margin:4px 0}
       <li><strong>It keeps a clean before-and-after.</strong> We score the current C, which trained on CoBuilder only, on other projects. If we trained on the new data first, we could not tell what C gained.</li>
       <li><strong>It keeps the test fair.</strong> The confirmed references of holdout 2 never go into a prompt, a demo or GEPA.</li>
     </ul>
-    <p class="note" style="margin:6px 0 0">Limit: 65 of the 79 stops are agencheck, a different codebase but probably a similar kind of work. Only 14 stops come from story-writer and the pre-employment project. So this tests "another project", and tests "another kind of project" only weakly.</p>
+    <p class="note" style="margin:6px 0 0">Limit: agencheck is a different codebase but probably a similar kind of work. Story-writer has 2 and the pre-employment project has 3 holdout sessions, so each of them on its own gives little. The three together, 5 sessions, give a first view.</p>
   </div>
 </section>
 
@@ -291,6 +321,7 @@ li{margin:4px 0}
 <h2>7. Open points and doubts <small>nothing hidden</small></h2>
 <section class="card doubts">
   <ul>
+    <li><strong>Holdout 2 uses unconfirmed drafts.</strong> A drafter wrote each reference from the brief only. Some briefs have an empty final reply, so those notify excerpts are grounded in the run text. The result can change after you confirm.</li>
     <li><strong>One holdout run per arm.</strong> The second run is not done. The interval will change with it.</li>
     <li><strong>Judge pass is fragile.</strong> 6 of 8 needs pairs 4 and 2. Pairs 1 and 3 differ in every run.</li>
     <li><strong>Arm C looks partly tuned to single stops.</strong> Its instruction names two option labels from one training stop (one of them in no brief), and has a CoBuilder paragraph that stops mid-sentence. The holdout result argues against pure overfit, but I did not trace where GEPA took these.</li>
@@ -307,13 +338,13 @@ li{margin:4px 0}
 
 <section class="decision">
   <h2>Decision</h2>
-  <p class="q">Which new data do we label first, and how much? ("Label" = I draft the reference payloads, you confirm them.)</p>
+  <p class="q">Confirm the 36 draft references, and what comes next?</p>
   <div class="opts">
-    <div class="opt rec"><b>Label holdout 2 first: 79 stops from 23 sessions (recommended)</b><span>I draft 79 references from the briefs only, and you confirm them. Then A and C run on it with no training. It answers the "other projects" question first. Then we decide about the 188 training stops, with the result in hand. The reasons are in part 5.</span></div>
-    <div class="opt"><b>Label everything: 267 stops</b><span>Holdout 2 and training together. The most data, and 2.7 times the current confirmation work.</span></div>
-    <div class="opt"><b>Lower the cap to 3 stops per session first</b><span>Fewer stops to confirm, and a wider spread of sessions. Say the cap.</span></div>
+    <div class="opt rec"><b>Confirm or correct the 36 drafts now (recommended)</b><span>Open <span class="mono">~/Downloads/holdout2-reference-review.html</span> and reply "confirm all", or "confirm all except" with the numbers and a short instruction. I rerun A and C if any reference changes, and report per repository.</span></div>
+    <div class="opt"><b>Then draft the 53 training sessions (about 61 stops)</b><span>Only after the holdout 2 result is confirmed. It uses the same drafting process.</span></div>
+    <div class="opt"><b>Or first: the 7-stop token cap diagnosis, and the second holdout 1 run</b><span>The cap may have cut 7 replies on holdout 1. The diagnosis is about 2 minutes. If the cap costs score, it is raised for both arms and holdout 1 runs again.</span></div>
   </div>
-  <p class="note" style="color:inherit;opacity:.75;margin:14px 0 0">Not decided and waiting: the second holdout run of A and C. With no answer, I copy and label nothing.</p>
+  <p class="note" style="color:inherit;opacity:.75;margin:14px 0 0">With no answer, I change no reference and make no further live call.</p>
 </section>
 
 </div>
