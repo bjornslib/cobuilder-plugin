@@ -62,6 +62,39 @@ The judge is Mercury 3 with reasoning effort `high`, three repeats and the media
 | Run A and B on the train stops again first | about 10 to 20 minutes | about 130 | Shows how much one run moves. Uses no holdout. |
 | Do neither, and fix open points first | not set | none | Delays the result. Useful if the judge pass is not enough for you. |
 
+## Holdout, first run (3 November 2026)
+
+Arm A and arm C ran once each on the 30 holdout stops (6 sessions), with 0 judge errors and 0 model errors.
+
+| | Arm A | Arm C | C minus A |
+|---|---|---|---|
+| Mean | 0.478 | 0.615 | +0.137 |
+| 95% session-cluster CI | | | +0.035 to +0.237 |
+| Stops won | 6 | 19 | 5 equal |
+| `invalid_output` stops | 3 | 5 | |
+
+Under the rule fixed before the run, C counts as better than A on this first look. The lower end of the interval is close to 0.
+
+| Subset | Stops | Sessions | C minus A | 95% CI |
+|---|---|---|---|---|
+| Mentions CoBuilder, `bundle.json` or a plugin command | 21 | 6 | +0.157 | +0.028 to +0.245 |
+| No such mention | 9 | 4 | +0.091 | -0.192 to +0.321 |
+
+Per session, C minus A: +0.35, +0.18, +0.17, +0.14, +0.05, -0.07. Arm C scored 0.615 on the holdout and 0.563 on the train stops that it trained on. A pure overfit would show the reverse. One run is noisy, so this is evidence against memorising, not proof. The gain on stops with no CoBuilder mention cannot be separated from 0.
+
+## New training data (found, nothing copied)
+
+The live Claude folder holds no transcripts for these projects. The backup `~/.claude-backup/projects` holds them. Structure only was read.
+
+| Source | Rule | Sessions | Stops (cap of 5 per session) |
+|---|---|---|---|
+| agencheck | 3 stops or more | 58 | 228 |
+| story-writer | 1 stop or more | 7 | 17 |
+| DSPY_PreEmploymentDirectory_PoC | 1 stop or more | 9 | 22 |
+| Total | exact duplicates removed (36) | 74 | 267 |
+
+Proposed split, by the same stable hash as the first split, per source: train 51 sessions and 188 stops, holdout 2 with 23 sessions and 79 stops. Only 14 holdout stops come from story-writer (11) and the pre-employment project (3). The sessions go only into the gitignored `fixtures/real/` folder.
+
 ## Decision
 
-Run the holdout duel now, with arm A and arm C, twice each, on the 30 holdout stops?
+Which new data do we label first, and how much? Recommended: label holdout 2 first (79 stops from 23 sessions), run arms A and C on it with no training, then decide about the 188 training stops. The alternatives are all 267 stops, or a lower cap of 3 stops per session. The second holdout run of A and C on the first holdout waits.
