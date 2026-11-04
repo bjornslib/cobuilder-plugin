@@ -18,6 +18,25 @@ def _rank(session_id: str) -> str:
     return hashlib.sha256(f"{SEED}:{session_id}".encode()).hexdigest()
 
 
+def parts_of(entries: list[dict]) -> dict[str, list[str]]:
+    """The parts of one manifest. Every entry may declare `part` of `train` or `holdout`.
+
+    When every entry carries a valid `part`, those fields decide the parts. When no
+    entry carries `part`, the stable hash split decides. A mixed manifest, or a
+    `part` with another value, raises ValueError that names the session.
+    """
+    declared = [entry.get("part") for entry in entries]
+    if all(part is None for part in declared):
+        return split([entry["session"] for entry in entries])
+    for entry in entries:
+        part = entry.get("part")
+        if part not in ("train", "holdout"):
+            raise ValueError(f"session {entry['session']} has part {part!r}: "
+                             "use train or holdout on every entry, or none")
+    return {name: sorted(entry["session"] for entry in entries if entry["part"] == name)
+            for name in ("train", "holdout")}
+
+
 def split(session_ids: list[str]) -> dict[str, list[str]]:
     """Split session ids into train and holdout lists, about 30 percent held out."""
     ordered = sorted(set(session_ids), key=_rank)

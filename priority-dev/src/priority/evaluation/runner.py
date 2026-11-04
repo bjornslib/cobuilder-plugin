@@ -21,7 +21,7 @@ from priority.evaluation.eval_report import diagnostics, print_calls, print_repo
 from priority.evaluation.judge import reset_usage, usage_line
 from priority.evaluation.labels import load_labels, match_session_key
 from priority.evaluation.metric import score_checked
-from priority.evaluation.split import split
+from priority.evaluation.split import parts_of
 
 MAX_THREADS = 6  # the most stops that one eval scores in flight at once
 
@@ -144,7 +144,7 @@ def run(manifest: Path, labels: Path, real_dir: Path, split_name: str,
     print(f"threads: {workers}")
     try:
         entries, labels_by_session = _load(manifest, labels)
-        parts = split([entry["session"] for entry in entries])
+        parts = parts_of(entries)
         if split_name == "all":
             wanted = {session for name in parts for session in parts[name]}
         else:

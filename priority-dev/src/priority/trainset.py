@@ -33,11 +33,11 @@ def build_trainset(manifest: Path, labels_path: Path, real_dir: Path) -> tuple[l
     count is printed."""
     from priority.evaluation.check import stop_key
     from priority.evaluation.labels import load_labels, match_session_key
-    from priority.evaluation.split import split
+    from priority.evaluation.split import parts_of
 
     entries = json.loads(Path(manifest).read_text())
     labels_by_session = load_labels(labels_path)
-    parts = split([entry["session"] for entry in entries])
+    parts = parts_of(entries)
     examples, excluded = [], 0
     for entry in (entry for entry in entries if entry["session"] in set(parts["train"])):
         session_id = entry["session"]
