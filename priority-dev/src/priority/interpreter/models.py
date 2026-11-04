@@ -134,7 +134,7 @@ class Dismiss(Strict):
 class Notify(Strict):
     """A finished run becomes a notice. The model takes the excerpt from the final reply."""
     kind: Literal["notify"] = "notify"
-    excerpt: str = Field(max_length=600)
+    excerpt: str
 
 
 Step = Annotated[

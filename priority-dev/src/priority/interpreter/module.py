@@ -18,7 +18,7 @@ from priority.interpreter.calls import CallRecorder
 from priority.interpreter.signatures import ProposeStop
 
 INTERPRETER_MODEL = config.model()
-MAX_TOKENS = 3000  # a reasoning model spends tokens on its reasoning first, so a low cap cuts the reply
+MAX_TOKENS = 16000  # a reasoning model spends tokens on its reasoning first, so a low cap cuts the reply
 STAGE = "propose"
 WAITS = (5, 15, 45)  # seconds between the 4 tries of a rate-limited call
 log = logging.getLogger("priority.interpreter")
