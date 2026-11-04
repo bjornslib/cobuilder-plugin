@@ -190,6 +190,19 @@ Rule: if the agreement bar of the judge fails, no arm result counts. The bar pas
 - Judge calls: 36 per arm. Arm A used 391,389 prompt and 62,936 completion tokens. Arm C used 389,435 and 75,485. No judge or model errors. 1 bad reply for each arm.
 - The 36 references are drafts written from the stop briefs only. The engineer has not confirmed them.
 
+### Holdout 2 on the confirmed references, 26 stops, 18 sessions (4 November 2026)
+
+| Subset | Stops | Sessions | Arm A | Arm C | C minus A | 95% CI |
+|---|---|---|---|---|---|---|
+| All | 26 | 18 | 0.555 | 0.641 | +0.086 | -0.051 to +0.251 |
+| agencheck | 13 | 13 | 0.489 | 0.558 | +0.069 | -0.136 to +0.259 |
+| story-writer | 7 | 2 | 0.596 | 0.743 | +0.147 | too few sessions |
+| PreEmployment PoC | 6 | 3 | 0.649 | 0.703 | +0.054 | -0.128 to +0.500 |
+
+- This set keeps only chats between the agent and the engineer. It replaces the earlier 36-stop run, which held 13 stops that were not chats. The engineer confirmed all 26 references.
+- Judge calls: 26 per arm. Arm A used 299,163 prompt and 65,905 completion tokens. Arm C used 304,240 and 84,387. No judge or model errors.
+- Holdout 1 without its 10 non-chat stops: C minus A +0.138 (CI -0.037 to +0.261, 20 stops). Both holdouts together: +0.109 (CI +0.001 to +0.215, 24 sessions). The pooled check was chosen after the results.
+
 ### Caveats
 
 - One holdout run per arm. A second run is planned. The holdout is not used for tuning.

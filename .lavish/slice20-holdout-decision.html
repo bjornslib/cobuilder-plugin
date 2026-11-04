@@ -80,8 +80,8 @@ li{margin:4px 0}
 
 <section>
   <div class="card answer">
-    <p><strong>Holdout 2 was rebuilt on 4 November, on your rules.</strong> It now keeps only chats between the agent and you: no <span class="mono">shutdown_request</span>, no <span class="mono">teammate_id</span> message, no <span class="mono">&lt;task-notification&gt;</span>, and no compaction summary. Every <span class="mono">agent_recommendation</span> is filled. The set is <strong>26 stops from 18 sessions</strong> (agencheck 13, story-writer 7, pre-employment 6).</p>
-    <p><strong>The first holdout 2 run (+0.129, 36 stops) is superseded.</strong> It used the earlier set, where 13 stops were not chats. I rerun A and C on the 26 stops after you confirm the drafts. Review page: <span class="mono">~/Downloads/holdout2-reference-review.html</span>.</p>
+    <p><strong>Holdout 2, run on the 26 stops that you confirmed:</strong> arm C beats arm A by <strong>+0.086</strong>, but the 95% interval is <span class="mono">&minus;0.051 to +0.251</span>. It includes 0. The gain is positive in all three repositories.</p>
+    <p><strong>Both holdouts together</strong> (24 sessions): <span class="mono">+0.109, CI +0.001 to +0.215</span>. This pooled check is mine, made after the results. Treat the gain as likely but small.</p>
   </div>
 </section>
 
@@ -206,34 +206,35 @@ li{margin:4px 0}
   <p class="note" style="margin:10px 0 0">C scored 0.615 on the holdout and 0.563 on the train stops that it trained on. A pure overfit would show the reverse. One run is noisy, so I read this as evidence against memorising, not as proof.</p>
 </section>
 
-<h2>3b. Holdout 2, first run <small>earlier 36-stop set, superseded; rerun pending on the rebuilt 26 stops</small></h2>
+<h2>3b. Holdout 2, run on the confirmed references <small>26 stops, 18 sessions, 3 repositories, chats only</small></h2>
 <section class="card">
   <div class="scroll">
   <svg viewBox="0 0 760 230" role="img" aria-label="Holdout 2 per repository">
     <g stroke="var(--line)"><line x1="190" y1="190" x2="740" y2="190"/><line x1="190" y1="10" x2="190" y2="190"/></g>
     <g font-size="11" class="m" text-anchor="middle"><text x="190" y="206" class="m">0</text><text x="327.5" y="206" class="m">0.25</text><text x="465" y="206" class="m">0.5</text><text x="602.5" y="206" class="m">0.75</text><text x="740" y="206" class="m">1</text></g>
     <g font-size="12.5">
-      <text x="0" y="36">All 36 stops</text><rect x="190" y="14" width="203" height="14" fill="var(--a)" rx="2"/><rect x="190" y="30" width="274" height="14" fill="var(--c)" rx="2"/>
-      <text x="472" y="42" class="mono">A 0.369 &middot; C 0.498</text>
-      <text x="0" y="86">agencheck (16 sessions)</text><rect x="190" y="64" width="228" height="14" fill="var(--a)" rx="2"/><rect x="190" y="80" width="302" height="14" fill="var(--c)" rx="2"/>
-      <text x="500" y="92" class="mono">A 0.415 &middot; C 0.549</text>
-      <text x="0" y="136">story-writer (2 sessions)</text><rect x="190" y="114" width="285" height="14" fill="var(--a)" rx="2"/><rect x="190" y="130" width="351" height="14" fill="var(--c)" rx="2"/>
-      <text x="549" y="142" class="mono">A 0.519 &middot; C 0.638</text>
-      <text x="0" y="186">pre-employment (3 sessions)</text><rect x="190" y="164" width="114" height="14" fill="var(--a)" rx="2"/><rect x="190" y="180" width="185" height="14" fill="var(--c)" rx="2"/>
-      <text x="383" y="188" class="mono">A 0.208 &middot; C 0.336</text>
+      <text x="0" y="36">All 26 stops</text><rect x="190" y="14" width="305" height="14" fill="var(--a)" rx="2"/><rect x="190" y="30" width="353" height="14" fill="var(--c)" rx="2"/>
+      <text x="551" y="42" class="mono" font-size="11.5">A 0.555 &middot; C 0.641</text>
+      <text x="0" y="86">agencheck (13 sessions)</text><rect x="190" y="64" width="269" height="14" fill="var(--a)" rx="2"/><rect x="190" y="80" width="307" height="14" fill="var(--c)" rx="2"/>
+      <text x="505" y="92" class="mono" font-size="11.5">A 0.489 &middot; C 0.558</text>
+      <text x="0" y="136">story-writer (2 sessions)</text><rect x="190" y="114" width="328" height="14" fill="var(--a)" rx="2"/><rect x="190" y="130" width="409" height="14" fill="var(--c)" rx="2"/>
+      <text x="607" y="142" class="mono" font-size="11.5">A 0.596 &middot; C 0.743</text>
+      <text x="0" y="186">pre-employment (3 sessions)</text><rect x="190" y="164" width="357" height="14" fill="var(--a)" rx="2"/><rect x="190" y="180" width="387" height="14" fill="var(--c)" rx="2"/>
+      <text x="585" y="188" class="mono" font-size="11.5">A 0.649 &middot; C 0.703</text>
     </g>
-    <g font-size="11.5"><rect x="560" y="20" width="10" height="10" fill="var(--a)"/><text x="576" y="29">A base</text><rect x="640" y="20" width="10" height="10" fill="var(--c)"/><text x="656" y="29">C GEPA</text></g>
+    <g font-size="11.5"><rect x="560" y="8" width="10" height="10" fill="var(--a)"/><text x="576" y="17">A base</text><rect x="640" y="8" width="10" height="10" fill="var(--c)"/><text x="656" y="17">C GEPA</text></g>
   </svg>
   </div>
   <table>
     <tr><th>Subset</th><th>Stops</th><th>Sessions</th><th>C minus A</th><th>95% CI</th><th>C wins / A wins / equal</th><th>Reading</th></tr>
-    <tr><td>All</td><td class="mono">36</td><td class="mono">21</td><td class="mono">+0.129</td><td class="mono">+0.011 to +0.261</td><td class="mono">16 / 7 / 13</td><td><span class="tag pass">above 0</span></td></tr>
-    <tr><td>agencheck</td><td class="mono">16</td><td class="mono">16</td><td class="mono">+0.135</td><td class="mono">&minus;0.059 to +0.352</td><td class="mono">6 / 4 / 6</td><td><span class="tag warnt">cannot tell</span></td></tr>
-    <tr><td>story-writer</td><td class="mono">8</td><td class="mono">2</td><td class="mono">+0.120</td><td class="mono">too few sessions</td><td class="mono">5 / 2 / 1</td><td><span class="tag warnt">cannot tell</span></td></tr>
-    <tr><td>PreEmployment PoC</td><td class="mono">12</td><td class="mono">3</td><td class="mono">+0.128</td><td class="mono">0.000 to +0.267</td><td class="mono">5 / 1 / 6</td><td><span class="tag warnt">cannot tell</span></td></tr>
-    <tr><td>Other repositories pooled</td><td class="mono">20</td><td class="mono">5</td><td class="mono">+0.125</td><td class="mono">&minus;0.002 to +0.304</td><td class="mono">10 / 3 / 7</td><td><span class="tag warnt">cannot tell</span></td></tr>
+    <tr><td>All</td><td class="mono">26</td><td class="mono">18</td><td class="mono">+0.086</td><td class="mono">&minus;0.051 to +0.251</td><td class="mono">13 / 7 / 6</td><td><span class="tag warnt">includes 0</span></td></tr>
+    <tr><td>agencheck</td><td class="mono">13</td><td class="mono">13</td><td class="mono">+0.069</td><td class="mono">&minus;0.136 to +0.259</td><td class="mono">6 / 3 / 4</td><td><span class="tag warnt">cannot tell</span></td></tr>
+    <tr><td>story-writer</td><td class="mono">7</td><td class="mono">2</td><td class="mono">+0.147</td><td class="mono">too few sessions</td><td class="mono">4 / 1 / 2</td><td><span class="tag warnt">cannot tell</span></td></tr>
+    <tr><td>PreEmployment PoC</td><td class="mono">6</td><td class="mono">3</td><td class="mono">+0.054</td><td class="mono">&minus;0.128 to +0.500</td><td class="mono">3 / 3 / 0</td><td><span class="tag warnt">cannot tell</span></td></tr>
+    <tr><td>Other repositories pooled</td><td class="mono">13</td><td class="mono">5</td><td class="mono">+0.104</td><td class="mono">&minus;0.056 to +0.477</td><td class="mono">7 / 4 / 2</td><td><span class="tag warnt">cannot tell</span></td></tr>
   </table>
-  <p class="note" style="margin:10px 0 0">The sign agrees in every repository, but no single repository has enough sessions to stand alone. Per session in the other repositories: story-writer +0.42 and &minus;0.06, pre-employment +0.20, +0.27 and 0.00. The base score is lower here than on holdout 1 (A 0.369 against 0.478), so these repositories are harder, or the drafts are stricter. I do not know which. Bad replies: 1 for each arm.</p>
+  <p class="note" style="margin:10px 0 0">The gain is positive in all three repositories, but the interval includes 0 for the whole set. Arm A scores higher here (0.555) than on the earlier, mixed set (0.369). Cleaner stops are easier. Arm C had 1 bad reply, and arm A had none. After I removed the stops that are not chats, the references are yours (you confirmed all 26).</p>
+  <p style="margin:10px 0 4px"><strong>Both holdouts together</strong> (an extra check that I chose after seeing the results): holdout 1 without its 10 non-chat stops (20 stops, 6 sessions, +0.138) and holdout 2 (26 stops, 18 sessions, +0.086) give <span class="mono">+0.109, 95% CI +0.001 to +0.215</span> over 24 sessions. The lower end is just above 0.</p>
 </section>
 
 <h2>4. New training data <small>the 21 holdout 2 transcripts are copied; the training sessions are not</small></h2>
@@ -323,7 +324,7 @@ li{margin:4px 0}
   <ul>
     <li><strong>First 97 references changed on 4 November.</strong> Seven null recommendations are filled (36752881/027, 438c1bee/008, 7ba9f3e6/004 and /014, b61517c7/001, /006, /008). The train scores of arms A, B and C, and judge pairs 2, 3 and 10, used the old references. They are not recomputed. A backup of the old file is at /tmp/labels-confirmed.before-nullfix.json.</li>
     <li><strong>Some holdout 2 stops start from a launch prompt, not from a person.</strong> Five stops open with an orchestrator launch prompt instead of a message from a person. You reviewed them and did not object. I did not remove them. Say if you want them replaced.</li>
-    <li><strong>Holdout 2 uses unconfirmed drafts.</strong> A drafter wrote each reference from the brief only. Some briefs have an empty final reply, so those notify excerpts are grounded in the run text. The result can change after you confirm.</li>
+    <li><strong>Holdout 2 references are confirmed by you</strong> (26 of 26, on 4 November). A drafter wrote each from the brief only. Some briefs have an empty final reply, so their notify excerpts come from the run text.</li>
     <li><strong>One holdout run per arm.</strong> The second run is not done. The interval will change with it.</li>
     <li><strong>Judge pass is fragile.</strong> 6 of 8 needs pairs 4 and 2. Pairs 1 and 3 differ in every run.</li>
     <li><strong>Arm C looks partly tuned to single stops.</strong> Its instruction names two option labels from one training stop (one of them in no brief), and has a CoBuilder paragraph that stops mid-sentence. The holdout result argues against pure overfit, but I did not trace where GEPA took these.</li>
@@ -340,13 +341,13 @@ li{margin:4px 0}
 
 <section class="decision">
   <h2>Decision</h2>
-  <p class="q">Confirm the 36 draft references, and what comes next?</p>
+  <p class="q">What do we do with a gain of +0.09 that is positive but not yet certain?</p>
   <div class="opts">
-    <div class="opt rec"><b>Confirm or correct the 36 drafts now (recommended)</b><span>Open <span class="mono">~/Downloads/holdout2-reference-review.html</span> and reply "confirm all", or "confirm all except" with the numbers and a short instruction. I rerun A and C if any reference changes, and report per repository.</span></div>
-    <div class="opt"><b>Then draft the 53 training sessions (about 61 stops)</b><span>Only after the holdout 2 result is confirmed. It uses the same drafting process.</span></div>
-    <div class="opt"><b>Or first: the 7-stop token cap diagnosis, and the second holdout 1 run</b><span>The cap may have cut 7 replies on holdout 1. The diagnosis is about 2 minutes. If the cap costs score, it is raised for both arms and holdout 1 runs again.</span></div>
+    <div class="opt rec"><b>Collect clean training stops, then train arm C again (recommended)</b><span>Take up to 3 clean stops from each agencheck session, draft the references, and confirm them. Then run GEPA on the clean data. We keep holdout 1 (clean stops) and holdout 2 untouched for the test.</span></div>
+    <div class="opt"><b>Run arms A and C a second time on both holdouts</b><span>About 10 minutes. It shows how much one run moves, and it tightens the interval. It adds no new information about other projects.</span></div>
+    <div class="opt"><b>Stop here and write the slice 20 result</b><span>Report: C is probably better than A by about 0.1, with a wide interval. Then close slice 20 after the blind check.</span></div>
   </div>
-  <p class="note" style="color:inherit;opacity:.75;margin:14px 0 0">With no answer, I change no reference and make no further live call.</p>
+  <p class="note" style="color:inherit;opacity:.75;margin:14px 0 0">With no answer, I make no further live call.</p>
 </section>
 
 </div>

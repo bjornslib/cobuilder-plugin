@@ -150,6 +150,20 @@ Check of the other data against the rules:
 - First 97 references: seven null recommendations are filled. Backup: `/tmp/labels-confirmed.before-nullfix.json`. The train scores and judge pairs 2, 3 and 10 used the old references and are not recomputed.
 - Open: five holdout 2 stops start from a launch prompt (7438c281/001, 396b87e9/001, 3b3d87e3/001, 391d47b9/001, e5d71545/001). The engineer reviewed them. They stay unless the engineer says otherwise.
 
+## Holdout 2 on the confirmed references (4 November 2026)
+
+The engineer confirmed all 26 references. Arms A and C ran once each on 26 stops (18 sessions), with 0 judge and model errors. Arm C had 1 bad reply and arm A had none.
+
+| Subset | Stops | Sessions | Arm A | Arm C | C minus A | 95% CI |
+|---|---|---|---|---|---|---|
+| All | 26 | 18 | 0.555 | 0.641 | +0.086 | -0.051 to +0.251 |
+| agencheck | 13 | 13 | 0.489 | 0.558 | +0.069 | -0.136 to +0.259 |
+| story-writer | 7 | 2 | 0.596 | 0.743 | +0.147 | too few sessions |
+| PreEmployment PoC | 6 | 3 | 0.649 | 0.703 | +0.054 | -0.128 to +0.500 |
+| Other repositories pooled | 13 | 5 | 0.620 | 0.725 | +0.104 | -0.056 to +0.477 |
+
+The interval for the whole set includes 0. Both holdouts together (holdout 1 without its 10 non-chat stops, and holdout 2): 46 stops, 24 sessions, C minus A +0.109, 95% CI +0.001 to +0.215. This pooled check was chosen after the results.
+
 ## Decision
 
-Which new data do we label first, and how much? Recommended: label holdout 2 first (79 stops from 23 sessions), run arms A and C on it with no training, then decide about the 188 training stops. The alternatives are all 267 stops, or a lower cap of 3 stops per session. The second holdout run of A and C on the first holdout waits.
+The gain of C over A is positive in both holdouts and in every repository, but the interval of holdout 2 alone includes 0. Next step proposed: collect clean training stops (up to 3 from each agencheck session), draft and confirm the references, and train arm C again. The alternatives are a second run of A and C on both holdouts, or to stop and write the slice 20 result.
