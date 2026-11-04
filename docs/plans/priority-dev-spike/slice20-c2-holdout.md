@@ -9,13 +9,13 @@ reader is `.lavish/c2-holdout-report.html` (Git ignores it). This file is the re
 |---|---|---|---|---|---|---|
 | All holdout stops | 56 / 24 | 0.488 | 0.677 | +0.189 | +0.094 to +0.285 | 36 / 11 / 9 |
 | Holdout 1 (CoBuilder sessions) | 30 / 6 | 0.471 | 0.720 | +0.249 | +0.143 to +0.383 | 21 / 6 / 3 |
-| Holdout 1, chat stops only (after the fact) | 20 / 6 | 0.463 | 0.777 | +0.313 | +0.210 to +0.438 | 15 / 3 / 2 |
+| Holdout 1, chat stops only (subgroup chosen after the results) | 20 / 6 | 0.463 | 0.777 | +0.313 | +0.210 to +0.438 | 15 / 3 / 2 |
 | Holdout 2 | 26 / 18 | 0.509 | 0.628 | +0.119 | −0.006 to +0.247 | 15 / 5 / 6 |
 | agencheck | 13 / 13 | 0.454 | 0.517 | +0.063 | −0.104 to +0.215 | 7 / 4 / 2 |
-| story-writer | 7 / 2 | 0.457 | 0.717 | +0.260 | +0.164 to +0.500 | 6 / 1 / 0 |
-| pre-employment | 6 / 3 | 0.689 | 0.766 | +0.077 | −0.093 to +0.500 | 2 / 0 / 4 |
+| story-writer | 7 / 2 | 0.457 | 0.717 | +0.260 | n too small, no interval | 6 / 1 / 0 |
+| pre-employment | 6 / 3 | 0.689 | 0.766 | +0.077 | n too small, no interval | 2 / 0 / 4 |
 
-Paired difference, bootstrap over sessions, 20,000 resamples. Each arm ran once. There were 0 judge errors and
+Paired difference, bootstrap over sessions, 20,000 resamples. A group with fewer than 5 sessions shows no interval: a bootstrap over 2 or 3 sessions gives only a few distinct means (the earlier upper bound of +0.500 came from that). Each arm ran once. There were 0 judge errors and
 0 model errors. Arm A had 2 invalid replies (score 0). C2 had none. Without those 2 stops the gap is +0.166 on 54 stops.
 
 ## How C2 was made
