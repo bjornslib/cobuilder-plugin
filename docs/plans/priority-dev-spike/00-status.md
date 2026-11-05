@@ -17,7 +17,8 @@
     view: http://localhost:62583/active/viewer/#/priority-dev-spike/build/epics
   - 4e E7 addendum, slice plan (epic E7, slices 22 to 27): APPROVED 2026-11-05
     view: http://localhost:62583/active/viewer/#/priority-dev-spike/build/epics
-  - 4f E7 addendum, epic design and rubrics 22 to 27: pending
+  - 4f E7 addendum, epic design and rubrics 22 to 27: APPROVED 2026-11-05 (engineer's instruction to implement E7 slices 22 to 25 end to end; design not presented page by page, see epic-E7-design.md risks)
+    view: http://localhost:62583/active/viewer/#/priority-dev-spike/build/epics
 
 Design mode: priority-dev-spike
 Memory (Gate 1): consulted 2026-10-24

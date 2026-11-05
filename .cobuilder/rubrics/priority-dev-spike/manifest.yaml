@@ -30,3 +30,9 @@ slices:
   - {id: 18, name: "E5 optimiser comparison", weight: 0.08}
   - {id: 20, name: "E6 reference payloads and judge validation", weight: 0.08}
   - {id: 21, name: "E6 every stop reaches Pick and Fill", weight: 0.06}
+  - {id: 22, name: "E7 complete reflection evidence", weight: 0.05}
+  - {id: 23, name: "E7 whole proposals from the reflection model", weight: 0.05}
+  - {id: 24, name: "E7 general instructions only", weight: 0.05}
+  - {id: 25, name: "E7 compact stop brief", weight: 0.05}
+  - {id: 26, name: "E7 live smoke run", weight: 0.05}
+  - {id: 27, name: "E7 optimiser run C3", weight: 0.05}
