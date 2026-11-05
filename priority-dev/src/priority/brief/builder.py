@@ -122,11 +122,10 @@ def build_brief(transcript: Path, stop: int | None = None, previous: Any = None,
         return Abstain(reason="no_agent_reply")
 
     if stop is None:
-        target_idx = stop_indices[-1]
-    else:
-        if stop < 1 or stop > len(stop_indices):
-            return Abstain(reason="no_agent_reply")
-        target_idx = stop_indices[stop - 1]
+        stop = len(stop_indices)
+    elif stop < 1 or stop > len(stop_indices):
+        return Abstain(reason="no_agent_reply")
+    target_idx = stop_indices[stop - 1]
 
     is_last = target_idx == stop_indices[-1]
 
@@ -146,6 +145,8 @@ def build_brief(transcript: Path, stop: int | None = None, previous: Any = None,
         after_stop=tuple(after_stop),
         redactions=after_redactions + ask_redactions + item_redactions,
         previous=previous,
+        session_id=transcript.stem,
+        stop=f"{stop:03d}",
     )
 
     abstain = _check_budget(brief)

@@ -47,7 +47,7 @@ class DigestRun(dspy.Module):
         self.predict = dspy.Predict(Digest)
 
     def forward(self, brief) -> RunDigest | Abstain:
-        recorder = CallRecorder(self.log_dir)
+        recorder = CallRecorder(self.log_dir, session_id=brief.session_id, stop=brief.stop)
         # The fallback of ChatAdapter would make a second model call after a parse fault. A run makes one.
         adapter = dspy.ChatAdapter(use_json_adapter_fallback=False)
         with dspy.context(lm=self.lm or dspy.settings.lm, adapter=adapter, callbacks=[recorder]):

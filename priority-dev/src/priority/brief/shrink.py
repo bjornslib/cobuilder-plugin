@@ -29,7 +29,7 @@ def shrink_brief(brief: StopBrief, lm: Any, log_dir: Path | str | None = None) -
     from priority.interpreter.models import Abstain as CallAbstain
     from priority.interpreter.shrink import shorten
 
-    recorder = CallRecorder(log_dir)
+    recorder = CallRecorder(log_dir, session_id=brief.session_id, stop=brief.stop)
     done: set[tuple[int, str]] = set()
     while len(brief.for_model()) > BUDGET_CHARS:
         target = _largest_left(brief, done)

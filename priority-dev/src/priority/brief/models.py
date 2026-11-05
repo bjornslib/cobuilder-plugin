@@ -82,6 +82,8 @@ class StopBrief:
     redactions: int = 0
     previous: Any = None  # the RunDigest of the run before, or None
     shrunk: tuple[ShrunkEntry, ...] = ()
+    session_id: str = ""
+    stop: str = ""
 
     def for_model(self) -> str:
         return BriefText(self._render(exclude_older_payloads=False))
