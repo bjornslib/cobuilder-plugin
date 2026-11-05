@@ -39,7 +39,8 @@ def env(monkeypatch, tmp_path):
     monkeypatch.setattr(config, "ENV_PATH", empty)
     for name in ("LLM_PROVIDER", "LLM_MODEL", "LLM_BASE_URL", "LLM_API_KEY",
                  "NVIDIA_API_KEY", "OPENROUTER_API_KEY", "INCEPTION_LABS_API_KEY",
-                 "JUDGE_PROVIDER", "JUDGE_MODEL", "JUDGE_BASE_URL", "JUDGE_API_KEY"):
+                 "JUDGE_PROVIDER", "JUDGE_MODEL", "JUDGE_BASE_URL", "JUDGE_API_KEY",
+                 "REFLECTION_PROVIDER", "REFLECTION_MODEL", "REFLECTION_BASE_URL", "REFLECTION_API_KEY"):
         monkeypatch.delenv(name, raising=False)
     return monkeypatch
 
@@ -243,10 +244,12 @@ def test_reflection_lm_uses_the_judge_model_not_the_task_model(env):
 
 
 def test_reflection_lm_reads_the_env_overrides(env):
-    env.setenv("JUDGE_PROVIDER", "openrouter")
-    env.setenv("JUDGE_MODEL", "made-up/judge-small")
-    env.setenv("JUDGE_BASE_URL", "https://made-up.example/v1")
-    env.setenv("OPENROUTER_API_KEY", "sk-test-or")
-    parts = lm_parts(optimise_api()._reflection_lm())
+    env.setenv("REFLECTION_PROVIDER", "openrouter")
+    env.setenv("REFLECTION_MODEL", "made-up/judge-small")
+    env.setenv("REFLECTION_BASE_URL", "https://made-up.example/v1")
+    env.setenv("REFLECTION_API_KEY", "sk-test-or")
+    lm = optimise_api()._reflection_lm()
+    assert lm is not None, "_reflection_lm returned None, so no reflection model was built"
+    parts = lm_parts(lm)
     assert parts["model"] == "openrouter/made-up/judge-small"
     assert parts["api_base"] == "https://made-up.example/v1"
