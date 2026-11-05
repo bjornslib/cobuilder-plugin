@@ -66,7 +66,9 @@ def scores(text: str) -> dict:
 
 
 def chars_by_key(calls: list[dict]) -> dict:
-    return {(row["session_id"][:8], row["stop"]): len(row.get("rendered_input") or "") for row in calls}
+    """The propose-stage input size of each call, keyed by (session, int stop)."""
+    return {(row["session_id"][:8], int(row["stop"])): len(row.get("rendered_input") or "")
+            for row in calls if row.get("stage") == "propose"}
 
 
 def mean(values: list[float]) -> float:
