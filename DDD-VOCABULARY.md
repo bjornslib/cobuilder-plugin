@@ -289,6 +289,90 @@ The maximum character count of rendered stop-brief text that the interpreter rea
 A build slice whose end state is a measured answer to one unknown, in a committed report. Its blind rubric scores the honesty and completeness of the report, not the size of the number.
 _Avoid_: spike slice
 
+<a id="optimiser-run"></a>
+**Optimiser run** (`priority-dev`):
+One `optimizer.compile(...)` call: the whole GEPA search, from the seed program to the saved best candidate. Named "optimiser run" because a bare "run" is the agent's work in a stop brief.
+_Avoid_: run (alone), training run
+
+<a id="seed-program"></a>
+**Seed program** (`priority-dev`):
+The program that an optimiser run starts from, loaded with `--seed-program`. Arm C2 had the arm C program as its seed program.
+_Avoid_: starting point
+
+<a id="candidate"></a>
+**Candidate** (`priority-dev`):
+One version of the interpreter program inside an optimiser run. Candidates differ only in the instruction of the `propose` predictor.
+_Avoid_: prompt, program (for one version inside a run)
+
+<a id="training-stops"></a>
+**Training stops** (`priority-dev`):
+The stops in the `train` part of the manifest. An optimiser run splits them by session into its trainset and its valset.
+_Avoid_: training data
+
+<a id="trainset"></a>
+**Trainset** (`priority-dev`):
+The training stops that GEPA samples minibatches from, to find failures and write new instructions. DSPy term.
+_Avoid_: reflection set
+
+<a id="valset"></a>
+**Valset** (`priority-dev`):
+The training stops that score each kept candidate in full, build the Pareto front, and choose the best candidate. DSPy term. Set by `--val-sessions`.
+_Avoid_: selection set, validation examples
+
+<a id="test-set"></a>
+**Test set** (`priority-dev`):
+Stops that no optimiser run sees. They compare the arms after the optimiser run. Test set 1 holds the first 30 stops, and test set 2 holds the 26 stops from three other repositories.
+_Avoid_: holdout, holdout 1, holdout 2
+
+<a id="minibatch"></a>
+**Minibatch** (`priority-dev`):
+The small sample of the trainset that one mutation runs, set by `reflection_minibatch_size`. DSPy term.
+_Avoid_: subsample, batch
+
+<a id="rollout"></a>
+**Rollout** (`priority-dev`):
+One task-model call on one stop plus one judge score. The budget of an optimiser run counts rollouts. DSPy also calls it a metric call.
+_Avoid_: sample
+
+<a id="full-evaluation"></a>
+**Full evaluation** (`priority-dev`):
+One candidate scored on every stop of the valset.
+_Avoid_: full eval, valset pass
+
+<a id="mutation"></a>
+**Mutation** (`priority-dev`):
+One cycle of an optimiser run: select a parent candidate, run a minibatch, reflect, propose a new instruction, and test it on the same minibatch. The DSPy log calls it an iteration.
+_Avoid_: iteration, epoch
+
+<a id="pareto-front"></a>
+**Pareto front** (`priority-dev`):
+The candidates that score best on at least one valset stop. GEPA picks the parent of the next mutation from it.
+
+<a id="candidate-merge"></a>
+**Candidate merge** (`priority-dev`):
+A new candidate that GEPA builds from two candidates that do well on different valset stops (`use_merge`). Not a Git merge.
+_Avoid_: merge (alone)
+
+<a id="task-model"></a>
+**Task model** (`priority-dev`):
+The model that runs the interpreter program on a stop.
+_Avoid_: student, LM (alone)
+
+<a id="judge"></a>
+**Judge** (`priority-dev`):
+The model that scores a proposal against the reference payload of a stop and writes notes. It is the metric of the eval and of GEPA.
+_Avoid_: grader
+
+<a id="reflection-model"></a>
+**Reflection model** (`priority-dev`):
+The model that reads the results of a minibatch and writes a new instruction. It has its own settings, and it is never the task model.
+_Avoid_: teacher, proposer model
+
+<a id="arm"></a>
+**Arm** (`priority-dev`):
+One interpreter program that a comparison scores on the test set, such as A (the unmodified prompt), C, or C2.
+_Avoid_: variant (for a compared program)
+
 ## Cross-cutting
 
 <a id="self"></a>

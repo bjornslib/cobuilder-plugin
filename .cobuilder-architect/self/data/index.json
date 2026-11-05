@@ -1,13 +1,13 @@
 {
   "schema_version": "1.4",
   "sources": {
-    "git_head": "f707a74decb60035660c6e226cb50d0ceeda6404",
+    "git_head": "6e56b52faed92f2bbb775f8661c884bf36ca00ab",
     "trees": {
       "docs/architecture/adr": "sha256:2db8d2e9a5fb5ee2e27f6091cbda3ae193c349e8e5c29b807d8e34ade7cef5a0",
-      "docs/architecture/designs": "sha256:64ef184f1b50643c5abd1573edd685df71cf8bc9c2fbd048d1c7ba27e44552b4",
+      "docs/architecture/designs": "sha256:6f1e085aaa10eca63937611fdaee5e290b5c9fbe2fd0ac308391a6c633f3d76d",
       "docs/architecture/contexts": "sha256:6663ee456e31bfbe31401908ae494017ed864dbb9c72211b6cbdccc44d078482",
-      "docs/plans": "sha256:1a71705f1befe27a7689b796c0cba420ac4e50e36d69cf928fab15382afc623c",
-      ".cobuilder/rubrics": "sha256:73992eb99f59b3d27fce1fdc61c58aeee78bb5b270423b8b9a1188332d05e024"
+      "docs/plans": "sha256:c49adb05cf34ee90f2cf4161904b0936b072886860c0b28c5c930ce88e019940",
+      ".cobuilder/rubrics": "sha256:7522f66f96c44ccd34144e38037da21db0ba4959e168e5f2a838557f086217e0"
     }
   },
   "entities": {
@@ -392,7 +392,7 @@
         "epic_id": "E1",
         "branch": "design/beads-storage/tracker-port",
         "pr": null,
-        "state": "in_progress",
+        "state": "closed",
         "note": null,
         "design_doc": "beads-storage/E1"
       },
@@ -402,7 +402,7 @@
         "epic_id": "E2",
         "branch": "design/beads-storage/tracker-port",
         "pr": null,
-        "state": "in_progress",
+        "state": "closed",
         "note": null,
         "design_doc": "beads-storage/E2"
       },
@@ -412,7 +412,7 @@
         "epic_id": "E3",
         "branch": "design/beads-storage/tracker-port",
         "pr": null,
-        "state": "in_progress",
+        "state": "closed",
         "note": null,
         "design_doc": "beads-storage/E3"
       },
@@ -422,7 +422,7 @@
         "epic_id": "E4",
         "branch": "design/beads-storage/tracker-port",
         "pr": null,
-        "state": "in_progress",
+        "state": "closed",
         "note": null,
         "design_doc": "beads-storage/E4"
       },
@@ -432,7 +432,7 @@
         "epic_id": "E5",
         "branch": "feature/beads-native-e5",
         "pr": null,
-        "state": "in_progress",
+        "state": "closed",
         "note": null,
         "design_doc": "beads-storage/E5"
       },
@@ -488,7 +488,7 @@
         "epic_id": "E4",
         "branch": null,
         "pr": null,
-        "state": "open",
+        "state": "closed",
         "note": "A colleague's scratch artifact (/private/tmp/.../diagram-viewer.html, session-local, not part of this repo) uses a top-of-panel tab switcher across three views — Diagram, Data flow, Data types — instead of stacking them, plus a right-hand info rail. Evaluate adopting the same top-tab pattern for viewer/index.html's per-PR diagram levels (currently level 1/2/3 switching, per ADR-0020's viewer/src/ plan), and separately evaluate narrowing the left-hand navigation rail so it takes less width once tabs handle top-level switching. This touches only the viewer, so it can run through architect:design on its own without waiting on E1-E3."
       },
       {
@@ -515,7 +515,7 @@
         "epic_id": "E1",
         "branch": "design/cobuilder-memory",
         "pr": 40,
-        "state": "open",
+        "state": "closed",
         "note": null,
         "design_doc": "cobuilder-memory/E1"
       },
@@ -525,7 +525,7 @@
         "epic_id": "E2",
         "branch": null,
         "pr": null,
-        "state": "open",
+        "state": "closed",
         "note": null
       },
       {
@@ -534,7 +534,7 @@
         "epic_id": "E3",
         "branch": null,
         "pr": null,
-        "state": "open",
+        "state": "closed",
         "note": null
       },
       {
@@ -718,7 +718,7 @@
         "epic_id": "E1",
         "branch": "design/design-mode",
         "pr": 11,
-        "state": "open",
+        "state": "closed",
         "note": "Design mode as a pre-code interview and challenge gate. Shares a branch and a pull request with the cobuilder-implement design. See ADR-0013: a branch may carry more than one design."
       },
       {
@@ -913,7 +913,7 @@
         "epic_id": "E1",
         "branch": null,
         "pr": null,
-        "state": "open",
+        "state": "closed",
         "note": "The build exists and is guarded. build_viewer.py concatenates ordered parts under viewer/src/ into the committed viewer/index.html, and a test rebuilds from the parts and fails on any difference. The first split is mechanical only, cut at the file's own 35 banner comments, with no line rewritten. This epic is the tracer bullet: it proves or disproves that the single IIFE separates by concatenation alone, which is the abort condition the whole design rests on."
       },
       {
@@ -922,7 +922,7 @@
         "epic_id": "E2",
         "branch": null,
         "pr": null,
-        "state": "open",
+        "state": "closed",
         "note": "The exporter seam becomes declared. export_artifact.py stops matching incidental literals and matches named markers the parts emit deliberately. Today it hard-errors with not-found-verbatim when a literal moves, so the publish pipeline breaks silently under any refactor until somebody publishes. This must land before the parts are rewritten, not after, or every later epic risks breaking publishing without a test noticing."
       },
       {
@@ -931,7 +931,7 @@
         "epic_id": "E3",
         "branch": null,
         "pr": null,
-        "state": "open",
+        "state": "closed",
         "note": "One definition per fragment. A template layer replaces the 45 innerHTML string blocks, and the rail-item, empty-card, and empty-detail fragments collapse from 4, 16, and 18 copies to one each. The viewer uses no template element today, so the mechanism is a design choice this epic makes and does not inherit."
       },
       {
@@ -940,7 +940,7 @@
         "epic_id": "E4",
         "branch": null,
         "pr": null,
-        "state": "open",
+        "state": "closed",
         "note": "Each mode owns its own part. The five view modes stop interleaving: the 50 scattered mode-predicate calls collapse into one registry, and renderContextsMainContent, renderBuildsMainContent, and renderMainContent stop being three functions of over 200 lines that live beside each other. Adding a sixth mode becomes one new part plus one registry entry."
       },
       {
@@ -949,7 +949,7 @@
         "epic_id": "E1",
         "branch": "design/nexus-borrowings/runtime-arch-diagram",
         "pr": null,
-        "state": "open",
+        "state": "closed",
         "note": "All eight slices built in one pass on design/nexus-borrowings/runtime-arch-diagram (2026-10-01): contract, validator, build_index projections, viewer tile + contracts section, stage-6 spawn, contracts artifact, vocabulary bootstrap + mode surfaces, implement guards + bumps. Behavioral rubrics score on the first real design runs.",
         "design_doc": "nexus-borrowings/E1"
       },
@@ -959,7 +959,7 @@
         "epic_id": "E2",
         "branch": "design/nexus-borrowings/runtime-arch-diagram",
         "pr": null,
-        "state": "open",
+        "state": "closed",
         "note": "All eight slices built in one pass on design/nexus-borrowings/runtime-arch-diagram (2026-10-01): contract, validator, build_index projections, viewer tile + contracts section, stage-6 spawn, contracts artifact, vocabulary bootstrap + mode surfaces, implement guards + bumps. Behavioral rubrics score on the first real design runs.",
         "design_doc": "nexus-borrowings/E2"
       },
@@ -969,7 +969,7 @@
         "epic_id": "E3",
         "branch": "design/nexus-borrowings/runtime-arch-diagram",
         "pr": null,
-        "state": "open",
+        "state": "closed",
         "note": "All eight slices built in one pass on design/nexus-borrowings/runtime-arch-diagram (2026-10-01): contract, validator, build_index projections, viewer tile + contracts section, stage-6 spawn, contracts artifact, vocabulary bootstrap + mode surfaces, implement guards + bumps. Behavioral rubrics score on the first real design runs.",
         "design_doc": "nexus-borrowings/E3"
       },
@@ -979,7 +979,7 @@
         "epic_id": "E4",
         "branch": "design/nexus-borrowings/runtime-arch-diagram",
         "pr": null,
-        "state": "open",
+        "state": "closed",
         "note": "All eight slices built in one pass on design/nexus-borrowings/runtime-arch-diagram (2026-10-01): contract, validator, build_index projections, viewer tile + contracts section, stage-6 spawn, contracts artifact, vocabulary bootstrap + mode surfaces, implement guards + bumps. Behavioral rubrics score on the first real design runs.",
         "design_doc": "nexus-borrowings/E4"
       },
@@ -989,7 +989,7 @@
         "epic_id": "E1",
         "branch": "design/options-mode",
         "pr": null,
-        "state": "open",
+        "state": "closed",
         "note": "One epic. Four slices: the mode and its command, the report template and validator, the manifests and glossary and counts, and one real run of the mode.",
         "design_doc": "options-mode/E1"
       },
@@ -999,7 +999,7 @@
         "epic_id": "E1",
         "branch": "design/design-mode",
         "pr": 11,
-        "state": "open",
+        "state": "closed",
         "note": "One plugin becomes five. The whole packaging split: the mode renames inside today's single plugin, the deleted duplicate explore-design command, the 33 cross-pillar references, the five manifests, and the two ports. The rename is a rotation, not a split: odyssey submit becomes cobuilder-pr:generate, and the old odyssey generate, which narrates merged history, becomes cobuilder-pr:review. Four slices.",
         "design_doc": "cobuilder-family/E1"
       },
@@ -1009,7 +1009,7 @@
         "epic_id": "E2",
         "branch": "design/design-mode",
         "pr": 11,
-        "state": "open",
+        "state": "closed",
         "note": "Shared code survives an install. Prove the marketplace symlink dereference, then vendor the four bundle modules and the two shared skills. One slice, because it is a spike whose result decides whether the rest of the design stands. goal.json.abort_if names its failure."
       },
       {
@@ -1018,7 +1018,7 @@
         "epic_id": "E3",
         "branch": "design/design-mode",
         "pr": 11,
-        "state": "open",
+        "state": "closed",
         "note": "The seam is version-safe. require_compatible(), min_reader_schema, the generators map, bundle format 3, and schema 1.3, so two plugins at different versions cannot corrupt one bundle. Two slices.",
         "design_doc": "cobuilder-family/E3"
       },
@@ -1028,7 +1028,7 @@
         "epic_id": "E4",
         "branch": "design/design-mode",
         "pr": 11,
-        "state": "open",
+        "state": "closed",
         "note": "The record index. build_index.py replaces the two projection scripts, emits every entity with a stable id, and resolves every join including an ADR to its pull request. Two slices.",
         "design_doc": "cobuilder-family/E4"
       },
@@ -1038,7 +1038,7 @@
         "epic_id": "E5",
         "branch": "design/design-mode",
         "pr": 11,
-        "state": "open",
+        "state": "closed",
         "note": "One lifecycle surface. The Decisions, Contexts, and Builds modes, the Backlog lane, and moving generated pages out of the foreign directory into the bundle. Two slices (10, 11).",
         "design_doc": "cobuilder-family/E5"
       },
@@ -1048,7 +1048,7 @@
         "epic_id": "E6",
         "branch": "design/design-mode",
         "pr": 11,
-        "state": "open",
+        "state": "closed",
         "note": "The reply channel. The append-only ledger and its projection, the anchor computed from the live DOM, the write endpoint, and the background wake command. Three slices (12, 13, 14).",
         "design_doc": "cobuilder-family/E6"
       },
@@ -1058,7 +1058,7 @@
         "epic_id": "E7",
         "branch": null,
         "pr": null,
-        "state": "open",
+        "state": "closed",
         "note": "Threads read as conversations. The drawer renders a reply under the comment it answers. Deferred past E6 on purpose: E6 ships the record shape, so this epic adds no migration and carries no slice yet."
       },
       {
@@ -1111,12 +1111,41 @@
         "design_doc": "priority-dev-spike/E4"
       },
       {
+        "id": "priority-dev-spike/E5",
+        "design": "priority-dev-spike",
+        "epic_id": "E5",
+        "branch": "design/priority-dev-spike",
+        "pr": null,
+        "state": "open",
+        "note": null,
+        "design_doc": "priority-dev-spike/E5"
+      },
+      {
+        "id": "priority-dev-spike/E6",
+        "design": "priority-dev-spike",
+        "epic_id": "E6",
+        "branch": null,
+        "pr": null,
+        "state": "open",
+        "note": null,
+        "design_doc": "priority-dev-spike/E6"
+      },
+      {
+        "id": "priority-dev-spike/E7",
+        "design": "priority-dev-spike",
+        "epic_id": "E7",
+        "branch": null,
+        "pr": null,
+        "state": "open",
+        "note": null
+      },
+      {
         "id": "react-viewer/E1",
         "design": "react-viewer",
         "epic_id": "E1",
         "branch": null,
         "pr": null,
-        "state": "open",
+        "state": "closed",
         "note": "The exporter rewrites the viewer by verbatim string replacement today and hard-errors when a literal moves. A bundled build moves every literal, so this seam must become explicit before any build lands."
       },
       {
@@ -1125,7 +1154,7 @@
         "epic_id": "E2",
         "branch": null,
         "pr": null,
-        "state": "open",
+        "state": "closed",
         "note": "Vite plus vite-plugin-singlefile, a lockfile, and a pinned Node version. This epic starts with a spike, at the engineer's direction: publish one throwaway bundled page and measure the byte-equal rebuild across two machines, the size with React inlined, and whether a Claude Artifact renders a Mermaid block that React injects after page load. Two of the three abort conditions are settled by that spike, before five epics of work depend on the answer."
       },
       {
@@ -1134,7 +1163,7 @@
         "epic_id": "E3",
         "branch": null,
         "pr": null,
-        "state": "open",
+        "state": "closed",
         "note": "The viewer resolves joins by hand in each render path today. index.json already computed them. This epic makes the index the source and the types the contract."
       },
       {
@@ -1143,7 +1172,7 @@
         "epic_id": "E4",
         "branch": null,
         "pr": null,
-        "state": "open",
+        "state": "closed",
         "note": "The prototype of 2026-09-07 is the reference for this surface."
       },
       {
@@ -1152,7 +1181,7 @@
         "epic_id": "E5",
         "branch": null,
         "pr": null,
-        "state": "open",
+        "state": "closed",
         "note": "Parity covers the four levels, diagrams, scene art, narration audio, the diff, and the intent and assessment sheet."
       },
       {
@@ -1161,7 +1190,7 @@
         "epic_id": "E6",
         "branch": null,
         "pr": null,
-        "state": "open",
+        "state": "closed",
         "note": "tests/test_viewer_modes.py asserts the five data-mode buttons. That test changes with this epic, and the change is the point, not a regression."
       },
       {
@@ -1170,7 +1199,7 @@
         "epic_id": "E7",
         "branch": null,
         "pr": null,
-        "state": "open",
+        "state": "closed",
         "note": "Closes the loop on E1. Measures the real budget with React inlined, and settles the Mermaid question the third abort condition names."
       },
       {
@@ -1179,7 +1208,7 @@
         "epic_id": "E8",
         "branch": null,
         "pr": null,
-        "state": "open",
+        "state": "closed",
         "note": "build-workflow-polish is superseded by this design at the engineer's direction. Its E4, the tab-based viewer layout, is absorbed by E4 and E5 here. Its other three epics are not viewer work and would be lost silently: E1 adds the pointer from design mode stage 7 to /implement:start, E2 states the six-column slice-table shape that shared/slice_table.py parses, and E3 commits an accepted slice without a second prompt. They are carried here so the supersede is safe."
       },
       {
@@ -1188,7 +1217,7 @@
         "epic_id": "E9",
         "branch": null,
         "pr": null,
-        "state": "open",
+        "state": "closed",
         "note": "The comment mechanism does not work today, and the engineer confirmed it on 2026-09-07. Three causes, all verified in the tree. First, LEDGER_AVAILABLE at viewer/index.html line 1399 tests only whether fetch exists in the browser, which is always true, so it never tells a reviewer that no ledger server is listening. Second, a failed POST falls back to localStorage and shows 'Will sync when server is reachable', although nothing syncs: no code reads that key back. Third, a published Artifact cannot reach any server, because the Artifact CSP blocks fetch, so every comment left where review actually happens is written to one browser's localStorage and lost. This epic also settles ADR-0019's anchoring under React, which owns the DOM the anchor walk uses. The transport is decided: the served viewer keeps POST /feedback under --allow-write, and the published Artifact marks comments read-only and exports them for paste-back through the copy-as-markdown path that already exists. The Artifact platform's own storage is rejected, because it would make the published page behave differently from the served one, which is the split ADR-0001 exists to prevent."
       },
       {
@@ -1197,7 +1226,7 @@
         "epic_id": "F0",
         "branch": "design/review-flight-deck",
         "pr": null,
-        "state": "open",
+        "state": "closed",
         "note": "New in round 4. It closes the gap the prototype had to show as a warning: 8 of 12 pull requests in this repository carry no intent block. Reuses generate mode whole, and adds only the check for an existing description."
       },
       {
@@ -1206,7 +1235,7 @@
         "epic_id": "F1",
         "branch": "design/review-flight-deck",
         "pr": null,
-        "state": "open",
+        "state": "closed",
         "note": "The same work as the first epic of the inflight-record-store design. Build it once, in shared code. The auto-merge split is read from the team's own rules, and this design does not define them."
       },
       {
@@ -1215,7 +1244,7 @@
         "epic_id": "F2",
         "branch": "design/review-flight-deck",
         "pr": null,
-        "state": "open",
+        "state": "closed",
         "note": "divergent-exploration.md already generates competing options in isolation and criticises them in a separate pass. The baseline is load-bearing: simulating against the default branch inverts the order whenever an open pull request restructures the tree."
       },
       {
@@ -1224,7 +1253,7 @@
         "epic_id": "F3",
         "branch": "design/review-flight-deck",
         "pr": null,
-        "state": "open",
+        "state": "closed",
         "note": "New in round 4, and the step that makes the recommendation something to stand behind. Read-only against a scratch worktree. A route that fails the replay is kept, with the failure as its reason for losing. Systems that precompute mergeable slices may already do this part, so keep the interface narrow enough to swap one in. It must also classify what it cannot merge. A superseded branch and an unresolvable conflict are different findings and get different treatments in the layout."
       },
       {
@@ -1233,7 +1262,7 @@
         "epic_id": "F4",
         "branch": "design/review-flight-deck",
         "pr": null,
-        "state": "open",
+        "state": "closed",
         "note": "Round 5 fixed the register. State the outcome first, then the contributions, and never lead with the mechanics. The engineer's worked example: perform the renames and restructuring across the repository, which merges without conflict, then incorporate the new viewer into the resulting structure and naming conventions."
       },
       {
@@ -1242,7 +1271,7 @@
         "epic_id": "F5",
         "branch": "design/review-flight-deck",
         "pr": null,
-        "state": "open",
+        "state": "closed",
         "note": "Reuses the existing view modes, the level rail, and the ledger from ADR-0019. flightdeck-prototype.html is the reference layout."
       },
       {
@@ -1251,7 +1280,7 @@
         "epic_id": "F6",
         "branch": "design/review-flight-deck",
         "pr": null,
-        "state": "open",
+        "state": "closed",
         "note": "New in round 6, and the first epic in this design that writes to a remote. ADR-0026 records the decision. The integration branch per bundle is what makes a path abandonable: delete N branches and the default branch never saw any of it. The default branch receives one pull request, from the last bundle's branch."
       },
       {
@@ -2936,7 +2965,7 @@
         "id": "beads-storage/1",
         "feature": "beads-storage",
         "n": 1,
-        "title": "**Tracer bullet: fake adapter and golden index**",
+        "title": "Tracer bullet: fake adapter and golden index",
         "ends_with": "A test loads the fixture corpus through the fake adapter, matches `expected-index.json`, and one next-ready case passes.",
         "score": "1.00",
         "attempts": 1,
@@ -2946,7 +2975,7 @@
         "id": "beads-storage/2",
         "feature": "beads-storage",
         "n": 2,
-        "title": "**Full contract suite on the fake adapter**",
+        "title": "Full contract suite on the fake adapter",
         "ends_with": "Contract cases 1 to 6 pass on the fake adapter, and a write with no configured adapter exits 2.",
         "score": "1.00",
         "attempts": 2,
@@ -2956,7 +2985,7 @@
         "id": "beads-storage/3",
         "feature": "beads-storage",
         "n": 3,
-        "title": "**Files adapter reads the plans tree and backfill dry run**",
+        "title": "Files adapter reads the plans tree and backfill dry run",
         "ends_with": "The files adapter lists the miniature plans tree and projects it to the same index shape as the fake corpus with no `bd` on the path, and every state write it receives exits 2. The backfill dry run on the fake adapter lists the creates, the list equals a checked-in file, and a second run creates nothing. The reference `shared/tracker-backfill.md` names each of its seven steps.",
         "score": "1.00",
         "attempts": 1,
@@ -2966,7 +2995,7 @@
         "id": "beads-storage/4",
         "feature": "beads-storage",
         "n": 4,
-        "title": "**Command prints JSON and exit codes**",
+        "title": "Command prints JSON and exit codes",
         "ends_with": "`shared/tracker.py list-programs` prints the corpus as JSON, and the CLI test shows exit codes 0, 2, 3, and 4. A spy shows zero opens of `docs/plans` during `list-programs` and `next-ready`. With `--state-file`, a write in one call shows in the next call.",
         "score": "0.92",
         "attempts": 1,
@@ -2976,7 +3005,7 @@
         "id": "beads-storage/5",
         "feature": "beads-storage",
         "n": 5,
-        "title": "**Usage reference matches the command**",
+        "title": "Usage reference matches the command",
         "ends_with": "A reader runs each example in `shared/tracker-usage.md` and gets the output that the reference shows.",
         "score": "1.00",
         "attempts": 3,
@@ -2986,7 +3015,7 @@
         "id": "beads-storage/6",
         "feature": "beads-storage",
         "n": 6,
-        "title": "**Beads reads match the fake adapter**",
+        "title": "Beads reads match the fake adapter",
         "ends_with": "The beads adapter maps the recorded `bd list --json` transcript to the same records as the fake corpus, the read cases pass, and contract case 7 (projector parity) passes.",
         "score": "1.00",
         "attempts": 2,
@@ -2996,7 +3025,7 @@
         "id": "beads-storage/7",
         "feature": "beads-storage",
         "n": 7,
-        "title": "**Beads writes on recorded transcripts**",
+        "title": "Beads writes on recorded transcripts",
         "ends_with": "The beads write cases pass on recorded transcripts, including the claim read-back and the `metadata.cb` value round trip. Closing slice n makes slice n+1 the answer of `next-ready`.",
         "score": "1.00",
         "attempts": 5,
@@ -3006,7 +3035,7 @@
         "id": "beads-storage/8",
         "feature": "beads-storage",
         "n": 8,
-        "title": "**Beads dry run matches the backfill file**",
+        "title": "Beads dry run matches the backfill file",
         "ends_with": "The beads adapter implements `seed-from-files`. On the recorded transcripts, its dry run lists the same creates as the checked-in file of slice 3.",
         "score": "1.00",
         "attempts": 2,
@@ -3016,7 +3045,7 @@
         "id": "beads-storage/9",
         "feature": "beads-storage",
         "n": 9,
-        "title": "**Fresh clone initializes, syncs, and seeds**",
+        "title": "Fresh clone initializes, syncs, and seeds",
         "ends_with": "After explicit consent, the first publish runs `bd sync -y`, one `bd dolt push`, and `bd sync`, which exits 0. A fresh git clone runs `bd init --skip-agents --skip-hooks` and `bd sync` and sees the state. The backfill's write step then seeds the miniature plans tree there. A second run creates nothing, and the `bd list --json` count equals the dry-run count. The command output is pasted into the slice evidence.",
         "score": "1.00",
         "attempts": 1,
@@ -3026,7 +3055,7 @@
         "id": "beads-storage/10",
         "feature": "beads-storage",
         "n": 10,
-        "title": "**Bundle index unchanged after the port**",
+        "title": "Bundle index unchanged after the port",
         "ends_with": "`build_index.py` writes the same `data/index.json` for this repo as before the change, and the viewer `index.html` is byte equal.",
         "score": "1.00",
         "attempts": 3,
@@ -3036,7 +3065,7 @@
         "id": "beads-storage/11",
         "feature": "beads-storage",
         "n": 11,
-        "title": "**Gate check and builds view read the port**",
+        "title": "Gate check and builds view read the port",
         "ends_with": "`verify_gate.py` and `build_builds_view.py` return the same result for every plan under `docs/plans` as before the change.",
         "score": "1.00",
         "attempts": 3,
@@ -3046,7 +3075,7 @@
         "id": "beads-storage/12",
         "feature": "beads-storage",
         "n": 12,
-        "title": "**Status files regenerate from records**",
+        "title": "Status files regenerate from records",
         "ends_with": "Regenerating the fixture corpus writes `00-status.md` and `04-slices.md` files that equal their golden files.",
         "score": "1.00",
         "attempts": 1,
@@ -3056,7 +3085,7 @@
         "id": "beads-storage/13",
         "feature": "beads-storage",
         "n": 13,
-        "title": "**Implement writes slice state**",
+        "title": "Implement writes slice state",
         "ends_with": "A fixture slice run writes its claim, attempts, score, and state through `tracker.py`, and the status file shows the new score.",
         "score": "0.97",
         "attempts": 1,
@@ -3066,7 +3095,7 @@
         "id": "beads-storage/14",
         "feature": "beads-storage",
         "n": 14,
-        "title": "**Architect writes gate values**",
+        "title": "Architect writes gate values",
         "ends_with": "A fixture program records each gate value and the program stage through `tracker.py`, and the status file shows each approval date.",
         "score": "0.95",
         "attempts": 1,
@@ -3076,7 +3105,7 @@
         "id": "beads-storage/15",
         "feature": "beads-storage",
         "n": 15,
-        "title": "**Pull request blocks two epics**",
+        "title": "Pull request blocks two epics",
         "ends_with": "A pull request record blocks two fixture epics until its state is set to merged, and then both epics show as ready.",
         "score": "0.93",
         "attempts": 1,
@@ -3086,7 +3115,7 @@
         "id": "beads-storage/16",
         "feature": "beads-storage",
         "n": 16,
-        "title": "**Goal file drops epic state fields**",
+        "title": "Goal file drops epic state fields",
         "ends_with": "`goal.json` holds no `branch`, `pr`, or `state` key after the migration, and the artifact view lists the same epics.",
         "score": "0.97",
         "attempts": 1,
@@ -3096,7 +3125,7 @@
         "id": "beads-storage/17",
         "feature": "beads-storage",
         "n": 17,
-        "title": "**Docs test guards the port and install asks first**",
+        "title": "Docs test guards the port and install asks first",
         "ends_with": "`tests/test_tracker_docs.py` passes on this repo, and it fails when a `bd` call appears outside `shared/tracker_port/`. The install command runs the backfill dry run after adapter config and asks for consent before any write.",
         "score": "0.97",
         "attempts": 1,
@@ -3106,7 +3135,7 @@
         "id": "beads-storage/18",
         "feature": "beads-storage",
         "n": 18,
-        "title": "**Spike: claim flags, exit codes, lease expiry**",
+        "title": "Spike: claim flags, exit codes, lease expiry",
         "ends_with": "The beads notes list each flag set, exit code, and lease result, with the command that produced it.",
         "score": "1.00",
         "attempts": 1,
@@ -3116,7 +3145,7 @@
         "id": "beads-storage/19",
         "feature": "beads-storage",
         "n": 19,
-        "title": "**Atomic claim**",
+        "title": "Atomic claim",
         "ends_with": "Contract case 3 passes on beads with one write, and eight concurrent claims give one winner.",
         "score": "1.00",
         "attempts": 1,
@@ -3126,7 +3155,7 @@
         "id": "beads-storage/20",
         "feature": "beads-storage",
         "n": 20,
-        "title": "**Native ready, with parity**",
+        "title": "Native ready, with parity",
         "ends_with": "Ready parity holds for each kind on the recorded corpus, and contract cases 1 and 2 pass on beads.",
         "score": "0.92",
         "attempts": 1,
@@ -3136,7 +3165,7 @@
         "id": "beads-storage/21",
         "feature": "beads-storage",
         "n": 21,
-        "title": "**Pull request gate**",
+        "title": "Pull request gate",
         "ends_with": "The gate resolves when the pull request merges, and the slice 15 test stays green.",
         "score": "1.00",
         "attempts": 1,
@@ -3146,7 +3175,7 @@
         "id": "beads-storage/22",
         "feature": "beads-storage",
         "n": 22,
-        "title": "**Slice-loop formula**",
+        "title": "Slice-loop formula",
         "ends_with": "The formula cooks and pours, a failed attempt adds a wisp, and squash with `--keep-children` keeps the attempt history.",
         "score": "1.00",
         "attempts": 1,
@@ -3156,7 +3185,7 @@
         "id": "beads-storage/23",
         "feature": "beads-storage",
         "n": 23,
-        "title": "**Spike notes into the adapter notes**",
+        "title": "Spike notes into the adapter notes",
         "ends_with": "The notes hold each spike finding with its command and exit code",
         "score": "1.00",
         "attempts": 1,
@@ -3166,7 +3195,7 @@
         "id": "beads-storage/24",
         "feature": "beads-storage",
         "n": 24,
-        "title": "**Type, title, label, and text mapping**",
+        "title": "Type, title, label, and text mapping",
         "ends_with": "A created issue has the new type, the name as title, the label, and the text fields. A read returns them. `prepare` sets no custom type.",
         "score": "1.00",
         "attempts": 2,
@@ -3176,61 +3205,141 @@
         "id": "beads-storage/25",
         "feature": "beads-storage",
         "n": 25,
-        "title": "**Hierarchy and ordering edges**",
+        "title": "Hierarchy and ordering edges",
         "ends_with": "A seed gives the epic chain and the slice chain, and the deferred epic gets a native defer date",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "beads-storage/26",
         "feature": "beads-storage",
         "n": 26,
-        "title": "**Pull request as a milestone with `tracks`**",
+        "title": "Pull request as a milestone with `tracks`",
         "ends_with": "A PR holds its epics by `tracks` and blocks nothing. No gate remains.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "beads-storage/27",
         "feature": "beads-storage",
         "n": 27,
-        "title": "**Native ready for slices, with parity**",
+        "title": "Native ready for slices, with parity",
         "ends_with": "`next_ready(\"slice\", under)` runs `bd ready`. `native_ready` is true. The parity test holds on the corpus.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "beads-storage/28",
         "feature": "beads-storage",
         "n": 28,
-        "title": "**`claim-next`**",
+        "title": "`claim-next`",
         "ends_with": "One call claims the first ready slice. Nothing ready gives `null` and exit 0.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "beads-storage/29",
         "feature": "beads-storage",
         "n": 29,
-        "title": "**`migrate-mapping` with dry run**",
+        "title": "`migrate-mapping` with dry run",
         "ends_with": "A legacy scratch tracker converts in one sync. A dry run writes nothing. A second run changes nothing.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "beads-storage/30",
         "feature": "beads-storage",
         "n": 30,
-        "title": "**Docs, install, usage**",
+        "title": "Docs, install, usage",
         "ends_with": "The docs name the two operations and the migration. `tracker.py --help` lists them.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 2,
+        "state": "completed"
+      },
+      {
+        "id": "beads-storage/31",
+        "feature": "beads-storage",
+        "n": 31,
+        "title": "Spike notes into the adapter notes",
+        "ends_with": "The notes hold each spike finding with its command and exit code",
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
+      },
+      {
+        "id": "beads-storage/32",
+        "feature": "beads-storage",
+        "n": 32,
+        "title": "The tracker creates the program record, and design mode says so",
+        "ends_with": "`set-program-stage --plans-dir` creates a missing record. A write refuses on a duplicate.",
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
+      },
+      {
+        "id": "beads-storage/33",
+        "feature": "beads-storage",
+        "n": 33,
+        "title": "The index reads the stage from the tracker, with a fallback",
+        "ends_with": "`design.stage` comes from the tracker, then from the file. The build makes at most three bd calls.",
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
+      },
+      {
+        "id": "beads-storage/34",
+        "feature": "beads-storage",
+        "n": 34,
+        "title": "The strip step and the schema change",
+        "ends_with": "Design mode writes no `goal.stage` when a tracker exists. The strip script passes its tests.",
+        "score": "0.97",
+        "attempts": 1,
+        "state": "completed"
+      },
+      {
+        "id": "beads-storage/35",
+        "feature": "beads-storage",
+        "n": 35,
+        "title": "Epic and slice status on the board",
+        "ends_with": "The words follow the table. `done` counts `completed` epics.",
+        "score": "0.95",
+        "attempts": 1,
+        "state": "completed"
+      },
+      {
+        "id": "beads-storage/36",
+        "feature": "beads-storage",
+        "n": 36,
+        "title": "Next ready and pull request state on the board",
+        "ends_with": "A card shows the next ready slice and the state of each pull request record.",
+        "score": "0.90",
+        "attempts": 1,
+        "state": "completed"
+      },
+      {
+        "id": "beads-storage/37",
+        "feature": "beads-storage",
+        "n": 37,
+        "title": "`repair-status` with a dry run",
+        "ends_with": "A scratch tracker repairs in one sync. A dry run writes nothing. A second run changes nothing.",
+        "score": "0.95",
+        "attempts": 1,
+        "state": "completed"
+      },
+      {
+        "id": "beads-storage/38",
+        "feature": "beads-storage",
+        "n": 38,
+        "title": "Live repair, docs, and install",
+        "ends_with": "The three live steps run in order. The docs name the new operations and the strip.",
+        "score": "0.97",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "coach-reaches-green/1",
@@ -3266,7 +3375,7 @@
         "id": "cobuilder-family/1",
         "feature": "cobuilder-family",
         "n": 1,
-        "title": "**Tracer bullet: two plugins, one shared module**",
+        "title": "Tracer bullet: two plugins, one shared module",
         "ends_with": "Two throwaway plugins install from a local marketplace and both resolve the shared module from their own cache",
         "score": "1.00",
         "attempts": 1,
@@ -3488,9 +3597,9 @@
         "n": 9,
         "title": "A Jev gate decides every n tool calls",
         "ends_with": "Every n tool calls, one Jev `noul` question judges whether a consult would help. Above the threshold, the plugin starts a run. A measured sample sets n, the threshold, the latency, and the cost.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "cobuilder-memory/10",
@@ -3498,15 +3607,15 @@
         "n": 10,
         "title": "Stub: the pane lists every Hindsight call of the session",
         "ends_with": "The memory pane lists each Hindsight call of the session. It marks the plugin's own runs apart. Sources: the agent's `mcp__hindsight__` calls, `diag.jsonl`, and the audit log.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "cobuilder-viewer/1",
         "feature": "cobuilder-viewer",
         "n": 1,
-        "title": "**Tracer bullet: a publish survives a marker rename**",
+        "title": "Tracer bullet: a publish survives a marker rename",
         "ends_with": "The exporter matches the built file's named markers, and a real publish of the current viewer still succeeds after the marker names move",
         "score": "—",
         "attempts": 0,
@@ -3943,6 +4052,76 @@
         "state": "planned"
       },
       {
+        "id": "mechanical-smells/1",
+        "feature": "mechanical-smells",
+        "n": 1,
+        "title": "Tracer bullet: the logic layer",
+        "ends_with": "`habit-sensors` reports no finding for those five files. The viewer tests pass, the exported names of `model.ts` and the data layer match the list taken before the slice, and the committed `index.html` rebuilds byte-identically.",
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
+      },
+      {
+        "id": "mechanical-smells/2",
+        "feature": "mechanical-smells",
+        "n": 2,
+        "title": "The atoms and sections: split `shell/atoms.tsx`, `shell/sections.tsx`, and the three `shell/panels/*` files",
+        "ends_with": "`habit-sensors` reports no finding for those five files. The seven section renderers and the atom vocabulary import from their old files, and the section tests pass.",
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
+      },
+      {
+        "id": "mechanical-smells/3",
+        "feature": "mechanical-smells",
+        "n": 3,
+        "title": "The change surface: split the five `shell/change/*` files, `shell/DiagramTiles.tsx`, and `shell/Pager.tsx`, and fix the `react-hooks/exhaustive-deps` finding",
+        "ends_with": "`habit-sensors` reports no finding for those seven files, the change-view tests pass, and the diagram tiles still render.",
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
+      },
+      {
+        "id": "mechanical-smells/4",
+        "feature": "mechanical-smells",
+        "n": 4,
+        "title": "The shell and chrome: split `ShellApp`, the sheet, the drawer, the rail, the top bar, the hooks, the work board, and the long tail of 17 files. Fix the `jsx-a11y/media-has-caption` finding and the 2 non-null assertions in `shell/App.tsx`",
+        "ends_with": "`habit-sensors` reports no finding for those 17 files, `ShellApp` and `Theme` still export from `shell/App.tsx`, and the full viewer suite and the build pass.",
+        "score": "1.00",
+        "attempts": 2,
+        "state": "completed"
+      },
+      {
+        "id": "mechanical-smells/5",
+        "feature": "mechanical-smells",
+        "n": 5,
+        "title": "The viewer test files: split large `describe` blocks by concern in the 20 `*.test.*` files. Remove the 2 `any`, the 10 non-null assertions, and the 8 duplicate imports",
+        "ends_with": "`habit-sensors` reports no finding for the 20 test files, apart from each recorded 13-to-30-line callback. The test count and every assertion stay the same, and the suite passes.",
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
+      },
+      {
+        "id": "mechanical-smells/6",
+        "feature": "mechanical-smells",
+        "n": 6,
+        "title": "The comments in viewer source: review each of the 658 flagged comments in 42 files. Delete it, or keep it reworded when it explains why",
+        "ends_with": "`habit-sensors` reports no `non-essential-comment` finding for the 42 source files. A reviewer sample of at least 20 deleted comments finds no more than one that explained why.",
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
+      },
+      {
+        "id": "mechanical-smells/7",
+        "feature": "mechanical-smells",
+        "n": 7,
+        "title": "The comments in viewer tests: review each of the 422 flagged comments in 20 files, with the same rule",
+        "ends_with": "`habit-sensors` reports no `non-essential-comment` finding for the 20 test files, and the reviewer sample meets the same limit. The viewer then reports no finding apart from the recorded residual.",
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
+      },
+      {
         "id": "nexus-borrowings/1",
         "feature": "nexus-borrowings",
         "n": 1,
@@ -4067,70 +4246,70 @@
         "feature": "priority-dev-spike",
         "n": 1,
         "title": "**Model probe**",
-        "ends_with": "`uv run python priority-dev/probes/model_probe.py <transcript>` runs Nemo on three redacted real transcripts and prints the five facts, an action kind, a quote, and whether the quote is in the text. `probes/model-probe.md` states the JSON validity and the rate-limit count",
-        "score": "1.00",
-        "attempts": 3,
+        "ends_with": "`uv run python priority-dev/probes/model_probe.py <transcript> [--model interpreter\\|digest] [--repeat N]` runs the model on three redacted real transcripts and prints the five facts, an action kind, a quote, and whether the quote is in the text, plus the agreement across repeats. `probes/model-probe.md` states the JSON validity, the rate-limit count, the agreement, and one full prompt with its replies. The call log stores the prompt text",
+        "score": "0.875",
+        "attempts": 5,
         "state": "planned"
       },
       {
         "id": "priority-dev-spike/2",
         "feature": "priority-dev-spike",
         "n": 2,
-        "title": "**Hook probe**",
-        "ends_with": "In a scratch tmux session, Stop, PermissionRequest, and AskUserQuestion hooks append lines to a local file. `probes/hook-probe.md` states whether `$TMUX_PANE` is set, the fields seen, and the transcript lag. The report also states what the transcript holds when `/goal` clears. A failing hook exits 0 within 5 seconds, and the bypass file makes every hook a no-op",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "title": "**Hook command and scratch-session probe**",
+        "ends_with": "The command `priority-hook` reads a hook event on stdin and appends one line, with `$TMUX_PANE` and a time, to a local file. An installer writes marked entries for Stop, PermissionRequest, and PreToolUse on AskUserQuestion into the settings file of a scratch project, and the uninstall removes only those entries. A scratch Claude Code session in a tmux pane triggers each event. `probes/hook-probe.md` states whether `$TMUX_PANE` was set, the fields seen, the transcript lag after Stop, what the transcript holds when `/goal` clears, and whether the permission dialog shows while a PermissionRequest hook waits and closes after an allow. A failing hook exits 0 within 5 seconds, and the bypass file makes every hook a no-op",
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "priority-dev-spike/3",
         "feature": "priority-dev-spike",
         "n": 3,
-        "title": "**Tmux probe**",
-        "ends_with": "`probes/tmux-probe.md` states whether a paste is lost in an idle pane and in a busy pane, whether newlines survive, and whether the permission dialog shows while a PermissionRequest hook waits 20 seconds",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "title": "**Tmux paste probe**",
+        "ends_with": "`probes/tmux-probe.md` states, for 10 trials in an idle pane and 10 in a busy pane, whether a paste is lost and how newlines arrive. It uses `tmux load-buffer` and `paste-buffer`, and only on the scratch pane",
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "priority-dev-spike/4",
         "feature": "priority-dev-spike",
         "n": 4,
         "title": "**Stop brief**",
-        "ends_with": "`uv run priority brief fixtures/run-3.jsonl --stop 2` prints a stop brief that equals the stored snapshot. Replies group by message id, results pair by id, a duplicate message id is handled, and a planted key is redacted",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "ends_with": "`uv run priority brief fixtures/run-3.jsonl --stop 2` prints a stop brief that equals the stored snapshot. Replies group by message id, results pair by id, a duplicate message id is handled, and a planted key is redacted. A client message never becomes the stop: it fills a `CLIENT MESSAGE:` section, and the run stays full after a bare `continue`. Nothing is clipped below the size budget, and the final reply, the human ask, and the last three exchanges are never clipped. Over the budget, the builder gives an Abstain `brief_too_large`, never a cut",
+        "score": "1.00",
+        "attempts": 3,
+        "state": "completed"
       },
       {
         "id": "priority-dev-spike/5",
         "feature": "priority-dev-spike",
         "n": 5,
         "title": "**Interpret a stop**",
-        "ends_with": "`uv run priority interpret` runs Triage, Pick, Fill, and Card on Nemo through DSPy. It prints an Interpretation or an Abstain. Each call is stored with its model id, prompt hash, and raw reply",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "ends_with": "`uv run priority interpret` runs Triage, Pick, Fill, and Card on the interpreter model through DSPy. Pick returns one to three steps, and Fill runs once for each step. It prints an Interpretation with a Proposal of one to three steps, or an Abstain. Code checks the kind and the quote of each step. A step that fails a check gives an Abstain that names the step. Each call is stored with its model id, prompt hash, and raw reply",
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "priority-dev-spike/6",
         "feature": "priority-dev-spike",
         "n": 6,
         "title": "**Digest a run**",
-        "ends_with": "`uv run priority digest` calls Inkling and prints a RunDigest that validates. The next stop brief of the same session carries it as `previous`",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "ends_with": "`uv run priority digest` calls the digest model and prints a RunDigest that validates. The next stop brief of the same session carries it as `previous`. A brief over the size budget has its largest older tool inputs and results shortened by the digest model, and the brief records each one. Over the budget after that, it is still an Abstain",
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "priority-dev-spike/7",
         "feature": "priority-dev-spike",
         "n": 7,
         "title": "**Replay report with failure drills**",
-        "ends_with": "`uv run priority replay fixtures/` writes `report.md` with the valid-output rate, the quote-found rate, the abstain reasons, the kinds picked, and the characters, seconds, and cost for each stage. A replay at the event rate of 5 sessions counts the free-tier limit errors. An injected 429, malformed JSON, empty quote, and timeout each end as an Abstain with a logged reason",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "ends_with": "`uv run priority replay fixtures/` writes `report.md` with the valid-output rate, the quote-found rate, the abstain reasons, the kinds picked, the count of proposals for each step count, and the characters, seconds, and cost for each stage. A replay at the event rate of 5 sessions counts the rate-limit errors. An injected 429, malformed JSON, empty quote, and timeout each end as an Abstain with a logged reason",
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "priority-dev-spike/8",
@@ -4188,6 +4367,146 @@
         "n": 13,
         "title": "**Answer from a held hook**",
         "ends_with": "A PermissionRequest hook waits, a stub command returns allow, and the scratch session runs the tool with no dialog",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
+        "id": "priority-dev-spike/14",
+        "feature": "priority-dev-spike",
+        "n": 14,
+        "title": "**Notify for a done stop**",
+        "ends_with": "`notify` is an action kind. For a stop that Triage calls done, `priority interpret` prints an Interpretation with one `notify` step. Code builds the step from the final reply, with no Pick or Fill call, and the excerpt is an exact part of the final reply",
+        "score": "0.90",
+        "attempts": 1,
+        "state": "completed"
+      },
+      {
+        "id": "priority-dev-spike/15",
+        "feature": "priority-dev-spike",
+        "n": 15,
+        "title": "**Labelled fixture set**",
+        "ends_with": "`uv run priority fixtures check` passes on 10 real sessions and about 50 stops. Every stop has a label that the engineer confirmed. The split lists the train sessions and the held-out sessions, and no session is in both. Git ignores the real files",
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
+      },
+      {
+        "id": "priority-dev-spike/16",
+        "feature": "priority-dev-spike",
+        "n": 16,
+        "title": "**Metric and baseline**",
+        "ends_with": "`uv run priority eval --split train` and `--split holdout` print a score for each fact, the step kinds, and the grounding, and an overall score. `probes/eval-baseline.md` states both scores, the spread over three repeats, and the cost",
+        "score": "1.00",
+        "attempts": 3,
+        "state": "completed"
+      },
+      {
+        "id": "priority-dev-spike/17",
+        "feature": "priority-dev-spike",
+        "n": 17,
+        "title": "**One-call variant**",
+        "ends_with": "`uv run priority eval --variant combined` runs Triage and one call that writes the steps, the payloads, and the card. `probes/eval-variant.md` compares it with the split chain on the same stops: score, calls, characters, seconds, and cost. It states which one the next slice uses",
+        "score": "0.90",
+        "attempts": 2,
+        "state": "completed"
+      },
+      {
+        "id": "priority-dev-spike/18",
+        "feature": "priority-dev-spike",
+        "n": 18,
+        "title": "**Optimiser comparison**",
+        "ends_with": "`uv run priority optimise --optimiser gepa` and `--optimiser miprov2` compile the chosen interpreter on the train sessions only. `probes/optimiser-report.md` gives the held-out score before and after for each, with BootstrapFewShot as the cheap baseline, the cost of each run, and the saved programs",
+        "score": "0.70",
+        "attempts": 2,
+        "state": "completed"
+      },
+      {
+        "id": "priority-dev-spike/19",
+        "feature": "priority-dev-spike",
+        "n": 19,
+        "title": "**Judge-scored payload flow**",
+        "ends_with": "The label-free gate, `Decide.questions`, the judge module, and the metric wiring run end to end on made-up fixtures with a stub judge: each gate fault abstains with a named 0-score note, a multi-question payload parses, readers use the list, the judge returns a clamped score with per-part notes, and per-stop rows carry the payload score",
+        "score": "1.00",
+        "attempts": 2,
+        "state": "completed"
+      },
+      {
+        "id": "priority-dev-spike/20",
+        "feature": "priority-dev-spike",
+        "n": 20,
+        "title": "**Reference payloads and judge validation**",
+        "ends_with": "Every stop has an engineer-confirmed reference payload drafted from the brief only. The judge scores the payload only, and it clears an agreement bar against human grades. `probes/optimiser-report.md` rescores every arm under the new metric. The live runs need slice 21",
+        "score": "0.00",
+        "attempts": 1,
+        "state": "planned"
+      },
+      {
+        "id": "priority-dev-spike/21",
+        "feature": "priority-dev-spike",
+        "n": 21,
+        "title": "**One typed call**",
+        "ends_with": "One predictor, `ProposeStop`, reads the stop brief and returns the status, `needs_human`, 0 to 3 typed steps, and one priority (P1, P2, or P3) for the whole payload. Schema validation is the only gate. Eval and GEPA score the same prediction object, and GEPA tunes one component. The chain, its routing, and its gates are gone. Design: `priority-dev/probes/program-flow-v2.svg`",
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
+      },
+      {
+        "id": "priority-dev-spike/22",
+        "feature": "priority-dev-spike",
+        "n": 22,
+        "title": "**Complete reflection evidence**",
+        "ends_with": "An optimiser run on made-up fixtures with stub models keeps its reflection prompts and candidate stats on disk. In the saved prompt, each stop that failed to parse shows its raw reply, the validation error, the judge note, and the score 0, and every other stop shows its score. Closes gaps 2, 3, and 7",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
+        "id": "priority-dev-spike/23",
+        "feature": "priority-dev-spike",
+        "n": 23,
+        "title": "**Whole proposals from the reflection model**",
+        "ends_with": "An optimiser run on made-up fixtures saves a proposal longer than 4000 characters unchanged. `priority optimise` prints the reflection model id, which comes from the `REFLECTION_*` settings (default NVIDIA Mistral), and a judge set to Mercury 3 leaves it unchanged. Closes gaps 1 and 6",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
+        "id": "priority-dev-spike/24",
+        "feature": "priority-dev-spike",
+        "n": 24,
+        "title": "**General instructions only**",
+        "ends_with": "The rendered `ProposeStop` prompt shows an example with a non-null `agent_recommendation`. The reflection model is told to write general rules, and a proposal that quotes an option label or a file name from a trainset reference is rejected with a printed reason. Closes gaps 8 and 9",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
+        "id": "priority-dev-spike/25",
+        "feature": "priority-dev-spike",
+        "n": 25,
+        "title": "**Compact stop brief**",
+        "ends_with": "First, a digest report on Mercury 3 covers at least three human-chat training sessions with three or more stops each (such as `fe9bb39f` and `fece50d8`). It shows a valid `RunDigest` per stop, `PREVIOUS RUN:` in each later brief, a filled `HUMAN ASKED:`, and one shrink call. Then `priority eval --brief compact` builds each stop brief from the human message, the digest of the run, and the final reply, and a report gives the size of both brief forms per stop and the arm A score on the test set for both forms. The live runs need the engineer's go. Answers gap 10",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
+        "id": "priority-dev-spike/26",
+        "feature": "priority-dev-spike",
+        "n": 26,
+        "title": "**Live smoke run**",
+        "ends_with": "A live optimiser run with a valset of 1 or 2 sessions, a minibatch of 3 trainset stops that scored low on C2 (at least one a parse failure), and a `max_metric_calls` that covers the seed score on the valset plus two minibatch runs. It uses the brief form that slice 25 chose. The call logs show Mercury 3 as task model and judge, and at least one NVIDIA Mistral reflection call; the slice fails if no reflection call shows. The saved reflection prompt holds each stop with its score, and the failed stop with its error text. The proposal is saved whole. The run finishes with no model or judge failure. The live run needs the engineer's go",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
+        "id": "priority-dev-spike/27",
+        "feature": "priority-dev-spike",
+        "n": 27,
+        "title": "**Optimiser run C3**",
+        "ends_with": "`priority optimise` prints the trainset, valset, and minibatch sizes in the glossary terms. Arm C3 is seeded from a copy of C2 with its cut sentence repaired, with a larger valset and minibatch (gaps 4 and 5). A report compares arm A, run again after slice 24, with C3 on the test set. Starts only after slice 26 passes. The live runs need the engineer's go",
         "score": "—",
         "attempts": 0,
         "state": "planned"
@@ -4755,7 +5074,7 @@
         "feature_slug": "priority-dev-spike",
         "gate": 3,
         "title": "Program Design: priority-dev-spike",
-        "body_md": "# Program Design: priority-dev-spike\n\nThe sketches `priority-dev/docs/design/schemas/interpreter_schemas.py` and `dspy_modules.py` run today and hold the types. They are the starting point, not the layout.\n\n## Files\n\n- `priority-dev/pyproject.toml`: Python 3.11 or later, `uv`, `pytest`, `dspy`, `pydantic`, `psycopg`, `fastapi`, `watchfiles`.\n- `src/priority/config.py`: the only module that reads `OPENROUTER_API_KEY` and other settings.\n- `src/priority/brief/`: the brief builder and the redactor (E2).\n- `src/priority/interpreter/`: the signatures, the `Interpreter` and `DigestRun` modules, and the checks (E2).\n- `src/priority/log/`: the event log client and service (E3).\n- `src/priority/host/`: the hook command, the spool, the tailer, the tmux module, and the puller (E1 probes first, then E4).\n- `probes/`: three probe scripts and their committed reports (E1).\n- `tests/` and `fixtures/` (real ones ignored by Git).\n\n## Types & signatures\n\n- `StopBrief`, `RunItem`, `RunDigest`, `Facts`, `Question`, `Proposal`, `Action` and its 13 kinds, `Abstain`, `Interpretation`, `InterpreterCall` as in `interpreter_schemas.py`.\n- `build_brief(transcript: Path, stop: int, previous: RunDigest | None) -> StopBrief`\n- `Interpreter.forward(brief: StopBrief) -> Interpretation`\n- `DigestRun.forward(brief: StopBrief) -> RunDigest`\n- `append(event: Event) -> int`, and `follow(cursor: int) -> Iterator[Event]`.\n\n## Call stack\n\n`priority interpret` calls `build_brief`, then `Interpreter.forward`. That runs Triage, then Pick, then Fill, then Card, each through one `dspy.Predict`. Code checks the kind and the quote, builds the `Action`, and stores each call in `interpreter_call`.\n\n## Test plan\n\n- Modules run with `DummyLM` for the valid path, the quote-not-in-brief path, and the done path (already in the sketch).\n- The brief builder compares to stored snapshots of the fixtures, and a planted key must be redacted.\n- Failure drills inject 429, malformed JSON, an empty quote, and a timeout. Each must end as an Abstain with a reason.\n- The log has a contract test for the idempotency key and the cursor.\n- A test searches `priority-dev/` for imports from `plugins/` or `shared/`, and the plugin test run must not collect `priority-dev/`.\n- The probes run in a scratch tmux session only.\n\n## Least confident decisions\n\n- Whether the interpreter model returns valid payloads for most of the 13 kinds. The split into small calls is a bet.\n- Whether `JSONAdapter` or `ChatAdapter` works better on the interpreter model. The replay compares both.\n- Whether the digest model sustains the event rate, and what it costs.\n- Whether a held hook leaves the dialog visible. Slice 3 measures it.\n- Whether the transcript lag after Stop is short enough for the brief builder.\n",
+        "body_md": "# Program Design: priority-dev-spike\n\nThe sketches `priority-dev/docs/design/schemas/interpreter_schemas.py` and `dspy_modules.py` run today and hold the types. They are the starting point, not the layout.\n\n## Files\n\n- `priority-dev/pyproject.toml`: Python 3.11 or later, `uv`, `pytest`, `dspy`, `pydantic`, `psycopg`, `fastapi`, `watchfiles`.\n- `src/priority/config.py`: the only module that reads `OPENROUTER_API_KEY` and other settings.\n- `src/priority/brief/`: the brief builder and the redactor (E2).\n- `src/priority/interpreter/`: the signatures, the `Interpreter` and `DigestRun` modules, and the checks (E2).\n- `src/priority/log/`: the event log client and service (E3).\n- `src/priority/host/`: the hook command, the spool, the tailer, the tmux module, and the puller (E1 probes first, then E4).\n- `probes/`: three probe scripts and their committed reports (E1).\n- `tests/` and `fixtures/` (real ones ignored by Git).\n\n## Types & signatures\n\n- `StopBrief`, `RunItem`, `RunDigest`, `Facts`, `Question`, `Proposal`, `Action` and its 13 kinds, `Abstain`, `Interpretation`, `InterpreterCall` as in `interpreter_schemas.py`.\n- `build_brief(transcript: Path, stop: int, previous: RunDigest | None) -> StopBrief`\n- `Interpreter.forward(brief: StopBrief) -> Interpretation`\n- `DigestRun.forward(brief: StopBrief) -> RunDigest`\n- `append(event: Event) -> int`, and `follow(cursor: int) -> Iterator[Event]`.\n\n## Call stack\n\n`priority interpret` calls `build_brief`, then `Interpreter.forward`. That runs Triage, then Pick, then Fill for each picked step, then Card, each through one `dspy.Predict`. Pick returns one to three steps. Code checks the kind and the quote of each step, builds the `Proposal`, and stores each call in `interpreter_call`.\n\n## Test plan\n\n- Modules run with `DummyLM` for the valid path, the quote-not-in-brief path, and the done path (already in the sketch).\n- The brief builder compares to stored snapshots of the fixtures, and a planted key must be redacted.\n- Failure drills inject 429, malformed JSON, an empty quote, and a timeout. Each must end as an Abstain with a reason.\n- The log has a contract test for the idempotency key and the cursor.\n- A test searches `priority-dev/` for imports from `plugins/` or `shared/`, and the plugin test run must not collect `priority-dev/`.\n- The probes run in a scratch tmux session only.\n\n## Least confident decisions\n\n- Whether the interpreter model returns valid payloads for most of the 13 kinds. The split into small calls is a bet.\n- Whether `JSONAdapter` or `ChatAdapter` works better on the interpreter model. The replay compares both.\n- Whether the digest model sustains the event rate, and what it costs.\n- Whether a held hook leaves the dialog visible. Slice 3 measures it.\n- Whether the transcript lag after Stop is short enough for the brief builder.\n",
         "approved_date": null,
         "source_path": "docs/plans/priority-dev-spike/03-program-design.md"
       },
@@ -5045,7 +5364,7 @@
         "epic_id": "E1",
         "feature_slug": "priority-dev-spike",
         "title": "Epic Technical Solution Design: E1 — Probes",
-        "body_md": "# Epic Technical Solution Design: E1 — Probes\n\nFeature: priority-dev-spike\nEpic ID: E1\n\n## Scope and Intent\n\nThree probes measure the model, the hooks (a Claude Code behaviour), and the tmux paste before any database exists. Each ends in a committed report. A probe may refute its claim. The design source is `priority-dev/docs/design/adapter-host.md` (sections 2, 3, and 7) and `dspy-modules.md`.\n\n## Files Touched\n\n- `priority-dev/probes/model_probe.py`, `hook_probe.py`, `tmux_probe.py`\n- `priority-dev/probes/{model,hook,tmux}-probe.md` and `probes/logs/`\n- `src/priority/host/hook_cli.py` (the hook command, with timeout and bypass)\n- `src/priority/config.py` (the one reader of the key)\n\n## Types & Signatures\n\n- `hook_cli.main(event: str) -> int`: reads JSON on stdin, writes one line to the local file, exits 0 on any failure within 5 seconds, and does nothing when `~/.priority-dev/bypass` exists.\n- `model_probe.run(transcript: Path, *, model=INTERPRETER_MODEL) -> ProbeResult` with the five facts, a kind, a quote, and `quote_in_text: bool`. `INTERPRETER_MODEL` is `openrouter/deepseek/deepseek-v4.1-flash-1017`. `DIGEST_MODEL` is `openrouter/thinkingmachines/inkling-small`.\n- `model_probe.repeat(transcript, n, *, model) -> list[ProbeResult]` and `agreement(results) -> dict` (the share of results that hold the most common value, for each of the five facts and the kind).\n- A model reply is a string or a dict with `text` and `reasoning_content`. Any other shape is an Abstain `invalid_output`.\n- Each call record in `probes/logs/calls.jsonl` holds the model id, the prompt hash, the full prompt text, the reply text, and the reasoning text or null. Raw prompts hold redacted text only.\n\n## Slice Decomposition\n\n1. Slice 1: the model probe. It runs the interpreter model and the digest model on 3 redacted real transcripts, 3 calls each, and reports validity, quote-found rate, agreement, and the exact prompt. The brief gets three small fixes only: skip `<synthetic>` client records when it picks the stop, label the human line `HUMAN ASKED:`, and state the model's role. The full stop brief belongs to slice 4.\n2. Slice 2: the hook command, its installer, and a scratch Claude Code session in a tmux pane. Claude Code runs the hooks. The pane only hosts the session and supplies `$TMUX_PANE`. Slice 2 also measures the held-hook dialog. Needs no slice 1.\n3. Slice 3: the tmux paste probe. Needs only a scratch pane.\n\n## Test Plan\n\nTests cover the hook command timeout and bypass. The reports are read by the validator against the rubric. Probes run only in a scratch session, and a test checks the target pane id.\n\n## Risks & Open Questions\n\n- Whether `$TMUX_PANE` reaches the hook. The report answers it.\n- A hook installed in a live session may freeze it. Scratch only, with the bypass file first.\n- Real transcripts hold secrets. Redaction runs before any model call.\n- The first probe of slice 1 sent a near-empty brief. Its stop was a client error, and the label `ASK:` hid that the human spoke. The two models then disagreed. Slice 4 owns the fix (see its row). Slice 1 only reports the defect and the agreement.\n- `inkling:free` refuses direct API calls (403, \"only available on agentic harnesses\"). The digest model is `inkling-small`, which costs money. The report states the cost.\n",
+        "body_md": "# Epic Technical Solution Design: E1 — Probes\n\nFeature: priority-dev-spike\nEpic ID: E1\n\n## Scope and Intent\n\nThree probes measure the model, the hooks (a Claude Code behaviour), and the tmux paste before any database exists. Each ends in a committed report. A probe may refute its claim. The design source is `priority-dev/docs/design/adapter-host.md` (sections 2, 3, and 7) and `dspy-modules.md`.\n\n## Files Touched\n\n- `priority-dev/probes/model_probe.py`, `hook_probe.py`, `tmux_probe.py`\n- `priority-dev/probes/{model,hook,tmux}-probe.md` and `probes/logs/`\n- `src/priority/host/hook_cli.py` (the hook command, with timeout and bypass)\n- `src/priority/config.py` (the one reader of the key)\n\n## Types & Signatures\n\n- `hook_cli.main(event: str) -> int`: reads JSON on stdin, writes one line to the local file, exits 0 on any failure within 5 seconds, and does nothing when `~/.priority-dev/bypass` exists.\n- `model_probe.run(transcript: Path, *, model=INTERPRETER_MODEL) -> ProbeResult` with the five facts, a kind, a quote, and `quote_in_text: bool`. `INTERPRETER_MODEL` is `openrouter/deepseek/deepseek-v4.1-flash-1017`. `DIGEST_MODEL` is `openrouter/thinkingmachines/inkling-small`.\n- `model_probe.repeat(transcript, n, *, model) -> list[ProbeResult]` and `agreement(results) -> dict` (the share of results that hold the most common value, for each of the five facts and the kind).\n- A model reply is a string or a dict with `text` and `reasoning_content`. Any other shape is an Abstain `invalid_output`.\n- Each call record in `probes/logs/calls.jsonl` holds the model id, the prompt hash, the full prompt text, the reply text, and the reasoning text or null. Raw prompts hold redacted text only.\n\n## Slice Decomposition\n\n1. Slice 1: the model probe. It runs the interpreter model and the digest model on 3 redacted real transcripts, 3 calls each, and reports validity, quote-found rate, agreement, and the exact prompt. Both models get the same classification prompt. The digest model's run checks that it answers and how stable it is. It does not test Digest, which is slice 6. The brief gets three small fixes only: skip `<synthetic>` client records when it picks the stop, label the human line `HUMAN ASKED:`, and state the model's role. The full stop brief belongs to slice 4.\n2. Slice 2: the hook command, its installer, and a scratch Claude Code session in a tmux pane. Claude Code runs the hooks. The pane only hosts the session and supplies `$TMUX_PANE`. Slice 2 also measures the held-hook dialog. Needs no slice 1.\n3. Slice 3: the tmux paste probe. Needs only a scratch pane.\n\n## Test Plan\n\nTests cover the hook command timeout and bypass. The reports are read by the validator against the rubric. Probes run only in a scratch session, and a test checks the target pane id.\n\n## Risks & Open Questions\n\n- Whether `$TMUX_PANE` reaches the hook. The report answers it.\n- A hook installed in a live session may freeze it. Scratch only, with the bypass file first.\n- Real transcripts hold secrets. Redaction runs before any model call.\n- The first probe of slice 1 sent a near-empty brief. Its stop was a client error, and the label `ASK:` hid that the human spoke. The two models then disagreed. Slice 4 owns the fix (see its row). Slice 1 only reports the defect and the agreement.\n- `inkling:free` refuses direct API calls (403, \"only available on agentic harnesses\"). The digest model is `inkling-small`, which costs money. The report states the cost.\n",
         "approved_date": null,
         "source_path": "docs/plans/priority-dev-spike/epic-E1-design.md"
       },
@@ -5054,7 +5373,7 @@
         "epic_id": "E2",
         "feature_slug": "priority-dev-spike",
         "title": "Epic Technical Solution Design: E2 — Interpreter",
-        "body_md": "# Epic Technical Solution Design: E2 — Interpreter\n\nFeature: priority-dev-spike\nEpic ID: E2\n\n## Scope and Intent\n\nThe interpreter turns a recorded transcript into a stop brief, an Interpretation or an Abstain, and a RunDigest. The source is `schemas.md`, `dspy-modules.md`, and the two running sketches.\n\n## Files Touched\n\n- `src/priority/brief/` (builder, redactor), `src/priority/interpreter/` (signatures, modules, checks), `src/priority/cli.py`\n- `fixtures/` (real ones ignored by Git), `tests/`, `reports/replay.md`\n\n## Types & Signatures\n\n- `build_brief(transcript, stop, previous) -> StopBrief`\n- `Interpreter.forward(brief) -> Interpretation`; `DigestRun.forward(brief) -> RunDigest`\n- Types as in `interpreter_schemas.py`, with `brief_id` for the id.\n\n## Slice Decomposition\n\n1. Slice 4: the stop brief and its snapshots. The brief picks the last non-`<synthetic>` assistant message as the stop. A client message after it goes in a `CLIENT MESSAGE:` section, and the stop source is `client_error`. A transcript with only synthetic assistant records is an Abstain `no_agent_reply`. The RUN section holds the last 40 lines before the stop, counted across ask boundaries, with human asks as `[human]` lines.\n2. Slice 5: Interpret, with call records.\n3. Slice 6: Digest and `previous`.\n4. Slice 7: the replay report with failure drills, then the go or no-go.\n\n## Test Plan\n\nSnapshots for the brief. `DummyLM` for the valid, quote-not-in-brief, kind-not-allowed, and done paths. Real calls only in the replay. Failure drills inject 429, malformed JSON, an empty quote, and a timeout.\n\n## Risks & Open Questions\n\n- The interpreter model is `deepseek/deepseek-v4.1-flash-1017` and the digest model is `thinkingmachines/inkling-small`. Validity on the 13 payloads is unknown. The split into small calls is a bet.\n- `JSONAdapter` against `ChatAdapter` on the interpreter model is open. The replay compares both.\n- Slice 1 found that `inkling:free` refuses direct calls. The replay counts the rate-limit errors of the paid models instead.\n",
+        "body_md": "# Epic Technical Solution Design: E2 — Interpreter\n\nFeature: priority-dev-spike\nEpic ID: E2\n\n## Scope and Intent\n\nThe interpreter turns a recorded transcript into a stop brief, an Interpretation or an Abstain, and a RunDigest. The source is `schemas.md`, `dspy-modules.md`, and the two running sketches.\n\n## Files Touched\n\n- `src/priority/brief/` (builder, redactor), `src/priority/interpreter/` (signatures, modules, checks), `src/priority/cli.py`\n- `fixtures/` (real ones ignored by Git), `tests/`, `reports/replay.md`\n\n## Types & Signatures\n\n- `build_brief(transcript, stop, previous) -> StopBrief`\n- `Interpreter.forward(brief) -> Interpretation`; `DigestRun.forward(brief) -> RunDigest`\n- Types as in `interpreter_schemas.py`, with `brief_id` for the id.\n\n## Slice Decomposition\n\n1. Slice 4: the stop brief and its snapshots. The brief picks the last non-`<synthetic>` assistant message as the stop. A client message after it goes in a `CLIENT MESSAGE:` section, and the stop source is `client_error`. A transcript with only synthetic assistant records is an Abstain `no_agent_reply`. The RUN section shows every item of the run in order, with no line limit, and it counts across ask boundaries, so a bare `continue` still shows the work before it. Human asks inside the run show as `[human]` lines. Slice 4 is plain code. It never cuts text and never shrinks it. The size budget is 160,000 characters of brief text, which excludes the instruction block. Over the budget, it returns an Abstain `brief_too_large` and lists the tool inputs and tool results of older exchanges by size, largest first. The parts that never shrink are the human ask, the final reply, the last three exchanges with their inputs and results, the `CLIENT MESSAGE:` section, and the human lines after the last agent message. When those parts alone exceed the budget, the Abstain is final. There is no model call and no cut. The budget is a guess from the design.\n2. Slice 5: Interpret, with call records. Pick returns one to three steps. Fill runs once for each step. Code checks the kind and the quote of each step. A fault in any step gives one Abstain that names the step. `Proposal` holds the steps in order (`schemas.md` section 4.2).\n3. Slice 6: Digest and `previous`, and the Shrink call. Over the budget, the digest model turns the largest older tool inputs and tool results into shorter texts, one at a time, until the brief fits. The brief records each item that shrank. If the brief is still over the budget after every older input and result shrank, the Abstain `brief_too_large` stands. Until slice 6 exists, an over-budget brief is an Abstain.\n4. Slice 7: the replay report with failure drills, then the go or no-go.\n\n## Test Plan\n\nSnapshots for the brief. `DummyLM` for the valid, quote-not-in-brief, kind-not-allowed, and done paths. Real calls only in the replay. Failure drills inject 429, malformed JSON, an empty quote, and a timeout.\n\n## Risks & Open Questions\n\n- The interpreter model is `deepseek/deepseek-v4.1-flash-1017` and the digest model is `thinkingmachines/inkling-small`. Validity on the 13 payloads is unknown. The split into small calls is a bet.\n- `JSONAdapter` against `ChatAdapter` on the interpreter model is open. The replay compares both.\n- Slice 1 found that `inkling:free` refuses direct calls. The replay counts the rate-limit errors of the paid models instead.\n- The slice 1 probe cut each RUN line at 300 characters and kept only the last 40 lines. This is against the design (\"Nothing in a stop brief is clipped\"). The report of slice 1 measured the effect with raised limits in a throwaway copy. Slice 4 replaces both limits with the policy above (rubric C7).\n",
         "approved_date": null,
         "source_path": "docs/plans/priority-dev-spike/epic-E2-design.md"
       },
@@ -5075,6 +5394,24 @@
         "body_md": "# Epic Technical Solution Design: E4 — Adapter to the log\n\nFeature: priority-dev-spike\nEpic ID: E4\n\n## Scope and Intent\n\nThe adapter host sends hook events and transcript records to the log through a spool, receives a signed command, and answers from a held hook. The source is `adapter-host.md`.\n\n## Files Touched\n\n- `src/priority/host/` (spool, tailer, puller, tmux module, installer), `tests/test_host_*.py`\n\n## Types & Signatures\n\n- `spool.write(event)`, `spool.flush(post)`; `tmux.send(pane, text) -> SendResult` as the only tmux caller; `verify(command, key) -> bool` over an HMAC.\n\n## Slice Decomposition\n\n1. Slice 11: hooks and tail to the log.\n2. Slice 12: a signed send with confirmation.\n3. Slice 13: an answer from a held hook.\n\n## Test Plan\n\nA test searches the repository for tmux calls outside the tmux module. Scratch session tests for the send and the held hook. A restart test for the tailer keys.\n\n## Risks & Open Questions\n\n- Pane state, newlines, and a lost paste (measured in slice 3).\n- Whether the dialog shows while a hook waits (slice 3). Slice 13 depends on it.\n",
         "approved_date": null,
         "source_path": "docs/plans/priority-dev-spike/epic-E4-design.md"
+      },
+      {
+        "id": "priority-dev-spike/E5",
+        "epic_id": "E5",
+        "feature_slug": "priority-dev-spike",
+        "title": "Epic Technical Solution Design: E5 — Labelled prompts",
+        "body_md": "# Epic Technical Solution Design: E5 — Labelled prompts\n\nFeature: priority-dev-spike\nEpic ID: E5\n\n## Scope and Intent\n\nE2 showed that the interpreter runs end to end on real stops. It also showed wrong picks. The engineer reviewed the output on 26 October 2026 and found a `snooze` where a reply or a question was due, and a proposal that approved a design choice for the human. E5 measures the interpreter against labels, and then asks whether prompt optimisation improves it on stops that the optimiser never saw.\n\nThe engineer asked for about 10 real sessions, some with several stops, a held-out part, and a DSPy optimiser comparison between MIPROv2 and GEPA. The engineer also asked that a done session become a notice with the agent's reply as evidence, and asked whether Pick, Fill, and Card should run as one call.\n\nE5 builds no policy and no actuator. It changes the interpreter only through the `notify` action, the combined variant, and compiled prompts.\n\n## Files Touched\n\n- `priority-dev/src/priority/interpreter/` (the `notify` action, the combined variant, loading a compiled program)\n- `priority-dev/src/priority/evaluation/` (the label loader, the metric, the split, the runner)\n- `priority-dev/src/priority/cli.py` (`fixtures check`, `eval`, `optimise`)\n- `priority-dev/fixtures/real/` (sessions, briefs, drafts: Git ignores it), `priority-dev/fixtures/set-manifest.json`\n- `priority-dev/tools/draft_fixtures.py` (picks stops and writes briefs)\n- `priority-dev/docs/design/schemas.md` (the `notify` kind)\n- `priority-dev/probes/eval-baseline.md`, `eval-variant.md`, `optimiser-report.md`\n\n\n- Label of one stop: `status` (one value or a list of accepted values), `needs_human`, `answer_class`, `risk`, `priority_hint`, `steps` (an ordered list of 0 to 3 kinds, where a list at one position means any one of those kinds), `ambiguous`, `why`, `confirmed_by`, `confirmed_on`. An unconfirmed draft never counts.\n- `Notify(ActionBase)`: `kind=\"notify\"`, `excerpt: str`. Code sets `excerpt` from the final reply. The model writes nothing.\n- `split(manifest) -> (train_sessions, holdout_sessions)`: by session, never by stop, so no stop of a held-out session trains the prompt. A fixed seed and the session id decide the part. About 30 percent of the sessions are held out.\n- `score(example, prediction, trace=None, pred_name=None, pred_trace=None)`: it follows the GEPA signature. It returns a score from 0 to 1 and a feedback text for GEPA. Weights: facts 0.4 (each of the five fields counts the same), step kinds 0.4 (the first step 0.2, the whole ordered list 0.2), grounding 0.1 (every quote is in the brief), validity 0.1 (no Abstain from a model fault). Slice 16 fixes the weights and states them. A stop that the label calls ambiguous scores in the report both with and without it.\n- `Interpreter(variant=\"chain\"|\"combined\")`: the combined variant runs Triage, then one call that writes the steps, payloads, and card.\n- `optimise(program, trainset, optimiser) -> compiled program`, saved as a file.\n\n## Slice Decomposition\n1. Slice 14: `notify`. A done stop gives one `notify` step built by code. The excerpt must state what the human has to do (for example, merge the PR), because no separate external action kind exists. A label may pair `notify` with `ask_human` when the work is done and a decision is still open. The interpreter chain stays Pick, Fill, and Card, and Fill runs once for each picked step. Slice 15 labels need this kind, so it comes first.\n2. Slice 15: the fixture set. Ten sessions across projects, about 50 stops, with labels that a blind reader drafts and the engineer corrects and confirms. The split is by session. The engineer then adds more sessions so the held-out part is big enough to trust, and approves the final set. The current 10 sessions are too small for a held-out verdict on their own.\n3. Slice 16: the metric, the evaluation command, and the baseline report. The baseline records the spread over three repeats, so a later gain is read against the noise.\n4. Slice 17: the combined variant against the chain, with the slice 16 metric on the same stops.\n5. Slice 18: BootstrapFewShot, GEPA, and MIPROv2 on the train sessions only, scored on the held-out sessions.\n\nSlices run in order. Each one needs the one before.\n\n## Test Plan\n\n- `DummyLM` tests for the `notify` step, the label loader, the split, the metric on made-up stops, and the combined variant.\n- The metric tests use made-up fixtures in the repository, never real text.\n- Real calls only in the baseline, the variant comparison, and the optimiser runs.\n- `fixtures check` fails on an unconfirmed label, on a session in both parts, and on a real file that Git does not ignore.\n\n## Risks & Open Questions\n\n- About 50 labelled stops from 10 sessions is small. A held-out part of 3 sessions holds about 15 stops. A gain smaller than the spread over repeats is not a result. The reports must say so.\n- A label is a judgement. Many drafted stops are ambiguous. The engineer's corrections are the ground truth, and the report counts ambiguous stops on their own.\n- The model varies between runs on the same stop, so every figure needs repeats.\n- Sampling the stops (spread over each session) puts many opening stops in the set. The engineer may ask for more mid-session stops.\n- GEPA suits small data and a metric with text feedback. MIPROv2 usually needs more examples. The comparison may favour GEPA only because of the data size. The report states that.\n- Optimiser runs cost model calls. Slice 18 records the cost of each run.\n- The excerpt rule for `notify` (the first 600 characters of the final reply, cut at a sentence end) is a first guess. The engineer decides if the end of the reply is the better evidence.\n- Real sessions and their labels hold private text. Git ignores them. The report quotes none.\n",
+        "approved_date": null,
+        "source_path": "docs/plans/priority-dev-spike/epic-E5-design.md"
+      },
+      {
+        "id": "priority-dev-spike/E6",
+        "epic_id": "E6",
+        "feature_slug": "priority-dev-spike",
+        "title": "Epic Technical Solution Design: E6 — Judge-scored payload flow",
+        "body_md": "# Epic Technical Solution Design: E6 — Judge-scored payload flow\n\nFeature: priority-dev-spike\nEpic ID: E6\n\n## Scope and Intent\n\nE5 showed that instruction tuning and demos move train and valset numbers but prove nothing on held-out stops, and that the metric cannot see payload quality: `to_prediction` keeps only step kinds, pick's evidence quote, and the card question, while labels carry no payload fields. A fill rewrite can therefore only move the score through parse success. E6 gives the scorer eyes: labels record the expected payload, and a judge model grades meaning.\n\nThe flow is fixed: build input data, run TriageLM, PickStep, FILL, and WriteCard, pass the label-free mechanical gate, then judge the raw payload against the expected payload. The judge returns the final score with one note per part. The metric only clamps the score and wraps it in `dspy.Prediction`. A gate failure scores 0 with feedback naming the failed check, so reflection still sees format failures. The target diagram in `priority-dev/probes/schema-flow-target.svg` draws this contract. Code that disagrees with either is wrong.\n\nE6 builds no policy and no actuator. It changes the interpreter schema, the metric, and the labels. It does not change the brief. Slice 21 changes the routing after triage, at the engineer's direction on 30 October 2026.\n\n## Files Touched\n\n- `priority-dev/src/priority/interpreter/models.py` (`Decide.questions`, non-empty, order free)\n- `priority-dev/src/priority/interpreter/module.py` (slice 21: every stop reaches Pick and Fill, Fill sees the facts and the earlier steps)\n- `priority-dev/src/priority/interpreter/checks.py` (label-free gate: parse, fields, enums, kinds, step count, non-empty questions)\n- `priority-dev/src/priority/interpreter/signatures.py` (ask_human fill emits the questions list)\n- `priority-dev/src/priority/evaluation/judge.py` (new: the judge module, brief plus raw payload plus expected payload in, score plus per-part notes out)\n- `priority-dev/src/priority/evaluation/metric.py` (calls the judge, clamps the score, wraps `Prediction`; per-predictor feedback stays; closed fields compare exactly inside the judge rubric)\n- `priority-dev/src/priority/evaluation/runner.py` (readers of `.question` move to the list, per-stop rows carry facts, steps, validity, payload score)\n- `priority-dev/src/priority/optimise.py` (judge-backed `gepa_feedback`, seeded runs keep working)\n- `priority-dev/fixtures/real/labels-confirmed.json` (payloads per ask_human step, Git-ignored like the rest)\n- `priority-dev/probes/schema-flow.html`, `schema-flow-current.svg`, `schema-flow-target.svg` (review aid, already in the repo)\n\n## Key Structures\n\n- `Decide.questions: tuple[Question, ...]` with at least one item and no empty default. One `ask_human` step holds all of a stop's questions. Order does not count. Readers of `.question` (card, `to_prediction`, tests) move to the list in the same slice.\n- Label-free gate: the output must parse, fields and enums must be valid, kinds must be allowed, the step count must sit in range, and an `ask_human` step must hold at least one question. \"The model should have asked here\" belongs to the judge, which can give partial credit. The gate runs at inference time with no label.\n- `judge(brief_text, model_payload, expected_payload) -> (score, notes)`: raw payloads in, never flattened. Closed parts compare exactly inside the rubric. Open parts compare by meaning.\n- `gepa_feedback` keeps the five-argument GEPA signature and forwards `pred_name` and `pred_trace`, so each predictor gets its own notes. The metric clamps the judge score and returns `dspy.Prediction(score, feedback)`.\n- Model separation: a stronger reflection LM and a judge model that is not the task model, each with a metered cost per run, decided before the slice scores anything.\n\n## Slice Decomposition\n\n1. Slice 19: the code flow. Label-free gate, `Decide.questions`, ask_human fill emits the list, readers move to the list, judge module with a stub judge for tests, metric calls the judge then clamps and wraps with closed fields exact inside the rubric, per-stop rows carry the payload score, `gepa_feedback` calls the judge. Made-up fixtures only, no live calls. A pilot set of 10 labelled stops with payloads proves the path end to end.\n2. Slice 20: reference payloads and judge validation. The judge scores the payload only, against a reference payload in the model's own shape. Facts and step kinds are no longer judge inputs. A stop with no reference does not count until it has one. The drafter writes each reference from the stop brief only and never sees a seed or candidate payload, as for the pilot set. The engineer corrects and confirms each draft. Seed outputs serve only as a regression check, never as a draft or a reference. Target: every stop of the fixture set, 67 train and 30 holdout, with no stop skipped. Done and continuing stops get a reference too, even when it is short. One `ask_human` step per stop holds all its questions. The judge needs an agreement bar against human grades before it scores anything. Then rescore every arm under the new metric.\n   Two rules covered a missing payload in the first design: a stop with a reference payload and no candidate payload scored 0, and a stop whose reference states that no payload is due scored 0 when the candidate wrote one. On 2 November 2026 the engineer moved both cases to the judge (see the metric paragraph below). Code no longer pins them.\n   The payload is the list of steps that the system emits for the stop, as the model shape dumps it. A reference is a label field `payloads`: the target proposal of 1 to 3 steps, drawn from the full action set (reply, continue, snooze, notify with its excerpt, set_priority_hint, ask_human with the decide, do, or review role, and the others). `[]` means that no step helps, and it is rare. On 30 October the engineer rejected a first draft that used only ask_human, notify, and `[]`. When both lists are empty, the stop scores 1. Any abstain scores 0 with a note that names its reason. Code-set fields (`session_id`, `author`, `confidence`, `evidence_quote`) never reach the judge, and the judge grades only the fields that the reference states. With no judge model, a stop scores 0 with the stub note. The legacy facts-and-steps score no longer runs as a fallback. Facts and step kinds stay in the report as diagnostics only.\n   Routing: the old chain sent a done stop to a notify built by code and a continuing stop to no step, so a reference such as continue then notify was out of reach for every arm. Slice 21 removes that routing. The live runs of slice 20 wait for slice 21.\n   `to_prediction` must carry the payloads. Today it drops them, so every eval-path judge call so far saw no predicted payload. The runner and optimise exclude each stop without a reference and print the count.\n   The agreement bar is one command, `priority judge-check`. It reads a local pairs file with two payload lists per stop and the human pick, and it judges each side twice. Three bars, fixed before the run: the judge direction matches the human on at least 75% of the picked pairs, with at least 6 pairs. On code-made copies of each reference with one closed field changed (priority, multi_select, role, one option label), the judge scores the copy lower than the unchanged reference at least 90% of the time. The judge direction flips between repeats on at most 10% of the pairs. The command prints each bar, then `agreement bar: pass` or `agreement bar: fail`, and exits 1 on a fail.\n   Metering: the judge counts its calls and its prompt and completion tokens. `eval`, `optimise`, and `judge-check` print the totals. The price per token is not known, so the report states tokens, not dollars. The judge stays the Mercury task model by the engineer's choice, and self-preference stays a named risk.\n3. Slice 21: one typed call. The design is `priority-dev/probes/program-flow-v2.svg`, and code that disagrees with it is wrong. The engineer chose this on 31 October 2026, after the analysis showed that the code between the signatures and the judge lost payloads, hid 33 references behind routing, and spread GEPA over 18 predictors with the same notes.\n   Program: `Interpreter(dspy.Module)` holds one predictor, `propose = dspy.Predict(ProposeStop)`. `ProposeStop` takes `brief_text` (the stop brief, which already ends with the final reply) and returns `status`, `needs_human`, `steps` (0 to 3 steps, a list discriminated on `kind` over the payload models of the 13 action kinds that remain), and `priority` (`P1` disturb now with an alert, `P2` show in the inbox now, `P3` batch into the next digest), one priority for the whole payload. A payload with no notify or ask_human step takes P3. The model writes no `session_id`, `author`, `confidence`, or `evidence_quote`. Code sets `session_id` and `author`.\n   Gate: the adapter parse and the pydantic validation of the output are the only gate. A failure is an Abstain with `invalid_output` and the validator's error text, which reaches GEPA as feedback. `forward` returns one `dspy.Prediction(status, needs_human, priority, steps, abstain)`, and the eval path and the GEPA path score that same object.\n   Reference: the label fields `priority` and `payloads`. `status` and `needs_human` stay as report diagnostics and are never scored.\n   Metric, changed on 31 October 2026 at the engineer's direction: the judge sees every stop, so that GEPA gets feedback on every failure. For an abstain, the judge gets the raw reply and the validator's error text in place of the predicted payload, and it explains what the model must change. On 2 November 2026 the engineer directed that the judge, not code, decides every case that has a payload. Code pins one case only: an abstain scores 0, because no payload exists to judge. A reference with steps against no predicted steps, a reference `[]` against predicted steps, and both empty all go to the judge, and the judge sees an empty list as the text `[]`. The scoring version `unpinned-v1` is part of the judge identity, so a `judge-check` row of the old pins is not reused. Risk: only the judge now stops a candidate that skips an asking stop or adds a step where none is due, so GEPA can gain score where the judge is lenient on an empty list. The rubric does not yet say what an empty list means. The first `judge-check` run under this rule shows if it must. A failed judge call on any non-abstain case is a judge error, and it stops an optimise run.\n   Removed: TriageLM, PickStep, the 14 Fill predictors, WriteCard, WriteCombined, the routing by status, `done_outcome`, `check_steps`, `check_fill_payload`, `to_prediction` on the scoring path, `BusyComponentSelector`, the variant flag, and the `set_priority_hint` action. The question card goes, because the `ask_human` questions take its place. The chain programs in `probes/programs/` stay as records, and no code loads them. On the engineer's instruction, no chain baseline runs before the removal. Every caller moves to the new output in the same slice: `priority interpret`, `priority replay` and its drills, `priority eval`, `priority optimise`, and `priority judge-check`.\n   Demos: a demo picker chooses up to 4 train stops with short briefs, one for each main payload shape, and gives each one its brief as input and its full reference as output. It prints the stops by name. Those stops are excluded from GEPA (its train set and its valset) and from every train rescore. Holdout stops never appear in a prompt.\n   Stops for the slice 20 runs. Train: 14 sessions, 67 stops. Holdout: 6 sessions, 30 stops. Arm A (the base program) and arm B (the base program with the 4 demos) each run twice on the same 63 train stops, which are the 67 minus the demo stops. The better of A and B seeds arm C, a GEPA run on those 63 stops: about 11 sessions form its train set and 3 sessions its valset. Arm C's train score is not evidence, because GEPA tuned on those stops. The holdout duel then runs the better base arm and arm C twice each on the 30 holdout stops, paired per stop, with a session-cluster bootstrap CI over 6 sessions. The holdout is used once, at the end.\n   The agreement bar needs fresh blind pairs. The 8 graded pairs show outputs of the old chain, without a payload priority. New pairs come from arms A and B on train stops, and the engineer grades them blind. The bar does not stop a run. It decides whether an arm result counts as evidence. Every live run needs the engineer's clear go-ahead first.\n   Judge and reflection model, set by the engineer on 31 October 2026: the judge and the GEPA reflection LM both use `mistralai/mistral-large-4-1t-a52b` on NVIDIA (`https://integrate.api.nvidia.com/v1`, key `NVIDIA_API_KEY` in `.env`). The task model stays Mercury. This removes the self-preference risk of a judge that is the task model. The settings `JUDGE_PROVIDER`, `JUDGE_MODEL`, `JUDGE_BASE_URL`, and `JUDGE_API_KEY` override the defaults, and only `config.py` reads them. NVIDIA rate limits stopped a GEPA run before, so the judge keeps its retries.\n\nSlices run in order. Slice 20 needs slice 19. The live runs of slice 20 need slice 21.\n\n## Test Plan\n\n- `DummyLM` tests for the gate (each fault abstains with a named 0-score note), the questions list (multi accepted, empty rejected), and the readers move.\n- `optimise` writes per-stop rows for its own evaluations, in the runner format, so GEPA runs leave an auditable record instead of only the GEPA log.\n- The metric tests use made-up fixtures in the repository, never real text.\n- Real calls only in the agreement bar and the rescore.\n\n## Risks & Open Questions\n\n- Judging exact fields with a model adds run-to-run noise. The agreement bar must cover the exact fields too, not just the open ones.\n- The judge costs one model call per stop. Meter it before the slice scores anything, or the rescore bill arrives unseen.\n- Relabelling adds payloads to the existing steps. Step lists do not split: one `ask_human` step keeps all its questions.\n- Payload labels are a judgement. The engineer's confirmation is the ground truth, as with the existing labels.\n- The judge returns the final score, so there is no payload-share weight to set. The metric only clamps and wraps.\n- A reference drafted from a seed output anchors the reviewer to seed wording, so the score drifts back to closeness to the seed. Drafts come from the brief only.\n- Open, raised by the engineer on 30 October: the interface needs a digest of the human message and the final agent reply. The current `RunDigest` sums up a run for the next stop brief and is not shown to users. This is an architecture change outside slice 20, and it needs a design decision first.\n- Open: the question card from `WriteCard` is not part of the payload, so no score grades it.\n",
+        "approved_date": null,
+        "source_path": "docs/plans/priority-dev-spike/epic-E6-design.md"
       },
       {
         "id": "review-link/E1",
@@ -6025,7 +6362,7 @@
         "feature_slug": "priority-dev-spike",
         "n": 1,
         "title": "Slice 1 — Model probe",
-        "body_md": "# Rubric: Slice 1 — Model probe\n\nFeature: priority-dev-spike\nEpic: E1\nSlice goal: `uv run python priority-dev/probes/model_probe.py <transcript> [--model interpreter|digest] [--repeat N]` runs a model on three redacted real transcripts and prints the five facts, an action kind, a quote, and whether the quote is in the text, plus the agreement across repeats. `probes/model-probe.md` states the JSON validity, the rate-limit count, the agreement, and one full prompt with its replies. The call log stores the prompt text.\nModels: interpreter `openrouter/deepseek/deepseek-v4.1-flash-1017`, digest `openrouter/thinkingmachines/inkling-small`.\nTest command: `uv run pytest priority-dev/tests -q`\n\nRun the exact command from the repo root with no `--project` flag. A form that needs another flag does not count.\n\n## Criteria\n\n### C1 — The probe prints the five facts, a kind, a quote, and a substring flag for three transcripts [CRITICAL]\n**Must be true:** for each of three fixtures in `priority-dev/fixtures/real/`, the output on the interpreter model holds the five facts, one action kind, one quote, and `quote_in_text`. Code computes the flag by a substring test.\n**Evidence to check:**\n- Run the exact command on each fixture.\n- Read the function that sets `quote_in_text`.\n**Scoring:**\n- 1.0 — all three runs print every field, and the flag comes from a substring test in code.\n- 0.5 — the output is complete for two fixtures, or the flag is set by the model.\n- 0.0 — a field is missing, or the exact command fails.\n\n### C2 — The report states measured counts for both models, with raw logs committed [CRITICAL]\n**Must be true:** `probes/model-probe.md` states, for the interpreter model and for the digest model, how many replies parsed as valid JSON, how many calls hit a rate limit or another error, and how many quotes were in the text. A reply that is a dict with `text` and `reasoning_content` counts by its `text`. Raw replies sit in `probes/logs/`.\n**Evidence to check:**\n- Read the report and count the lines in the logs for each model id.\n- Compare each count to the logs.\n**Scoring:**\n- 1.0 — every count matches the logs, for both models.\n- 0.5 — counts exist, but one does not match the logs, or one model is missing.\n- 0.0 — a count is missing, or no logs are committed.\n\n### C3 — The key has one reader and never reaches a log [CRITICAL]\n**Must be true:** only `src/priority/config.py` reads `OPENROUTER_API_KEY` at run time, and no committed file or log holds the key.\n**Evidence to check:**\n- Search `priority-dev/` for `OPENROUTER_API_KEY` and `os.environ`. Ignore design sketches under `priority-dev/docs/` that no code imports.\n- Search the committed files for the first 8 characters of the key value from `priority-dev/.env`. Do not print the key.\n**Scoring:**\n- 1.0 — one reader, and no key in any file.\n- 0.5 — one reader, but the key text appears in an ignored file only.\n- 0.0 — a second reader, or the key in a committed file.\n\n### C4 — The report names the abort condition it informs\n**Must be true:** the report states which `abort_if` condition of `goal.json` it informs, and gives a plain result: held, refuted, or not measured.\n**Evidence to check:**\n- Read the report named in the slice goal.\n- Find the sentence that names the condition and the result.\n**Scoring:**\n- 1.0 — the sentence exists and the result matches the raw logs.\n- 0.5 — the sentence exists, but the result is vague or the logs are missing.\n- 0.0 — no such sentence.\n\n### C5 — The input is readable, and the report shows it [CRITICAL]\n**Must be true:** each call record in the log holds the full redacted prompt text, and its hash matches that text. The report shows one complete prompt for one transcript, with the reply of each model to it, and the prompt equals the text in the log. The report also names each defect of the brief that it found.\n**Evidence to check:**\n- Hash the prompt text of one log record and compare it to `prompt_hash`.\n- Compare the prompt in the report to the log record, character by character.\n- Read the defects named in the report, and check each against the fixture.\n**Scoring:**\n- 1.0 — the hash matches, the prompt in the report equals the log, and at least one real defect of the brief is named and true.\n- 0.5 — the prompt is stored, but the report omits it or names no defect.\n- 0.0 — the log holds only a hash, or the prompt in the report differs from the log.\n\n### C6 — The report states the agreement across repeats\n**Must be true:** with `--repeat 3`, each model runs 3 calls on each of the three transcripts. The report gives the agreement for each of the five facts and the kind, and each value equals what `agreement()` computes from the log.\n**Evidence to check:**\n- Run the exact command with `--repeat 3` on one fixture and read the `agreement:` lines.\n- Recompute the share of the most common value from the log for one transcript, and compare it to the report.\n**Scoring:**\n- 1.0 — values exist for both models and match the recomputation.\n- 0.5 — values exist for one model only, or one value does not match.\n- 0.0 — no agreement is reported, or the values are invented.\n\n### C7 — The stop is a real agent message, and the brief names its speakers\n**Must be true:** a transcript whose last assistant record has model `<synthetic>` does not give that record as the stop. The human line of the brief starts `HUMAN ASKED:`. The instruction block states that the model advises the developer who runs the agents.\n**Evidence to check:**\n- Build the brief from a made-up fixture that ends on a synthetic assistant record, and read the stop.\n- Read the prompt text of one log record.\n**Scoring:**\n- 1.0 — the synthetic record is skipped, the label is `HUMAN ASKED:`, and the role sentence is present.\n- 0.5 — two of the three hold.\n- 0.0 — a synthetic record is the stop.\n\n## Regression check\n- All tests that passed before this slice must still pass.\n- Files outside `priority-dev/` must remain unchanged, except the committed reports named in the slice.\n\n## Out of scope — do not penalise\n- The `CLIENT MESSAGE:` section, the `client_error` stop source, the `no_agent_reply` Abstain, and a RUN section that counts across ask boundaries. They belong to slice 4.\n- A model call through DSPy `Predict`, the Triage, Pick, Fill, and Card split, and the replay. They belong to slices 5 to 7.\n- Behaviour that belongs to a later slice of the plan.\n- The policy, the actuator, the attention queue, and the notifier.\n",
+        "body_md": "# Rubric: Slice 1 — Model probe\n\nFeature: priority-dev-spike\nEpic: E1\nSlice goal: `uv run python priority-dev/probes/model_probe.py <transcript> [--model interpreter|digest] [--repeat N]` runs a model on three redacted real transcripts and prints the five facts, an action kind, a quote, and whether the quote is in the text, plus the agreement across repeats. `probes/model-probe.md` states the JSON validity, the rate-limit count, the agreement, and one full prompt with its replies. The call log stores the prompt text.\nModels: interpreter `openrouter/deepseek/deepseek-v4.1-flash-1017`, digest `openrouter/thinkingmachines/inkling-small`.\nTest command: `uv run pytest priority-dev/tests -q`\n\nRun the exact command from the repo root with no `--project` flag. A form that needs another flag does not count.\n\n## Criteria\n\n### C1 — The probe prints the five facts, a kind, a quote, and a substring flag for three transcripts [CRITICAL]\n**Must be true:** for each of three fixtures in `priority-dev/fixtures/real/`, the output on the interpreter model holds the five facts, one action kind, one quote, and `quote_in_text`. Code computes the flag by a substring test.\n**Evidence to check:**\n- Run the exact command on each fixture.\n- Read the function that sets `quote_in_text`.\n**Scoring:**\n- 1.0 — all three runs print every field, and the flag comes from a substring test in code.\n- 0.5 — the output is complete for two fixtures, or the flag is set by the model.\n- 0.0 — a field is missing, or the exact command fails.\n\n### C2 — The report states measured counts for both models, with raw logs committed [CRITICAL]\n**Must be true:** `probes/model-probe.md` states, for the interpreter model and for the digest model, how many replies parsed as valid JSON, how many calls hit a rate limit or another error, and how many quotes were in the text. A reply that is a dict with `text` and `reasoning_content` counts by its `text`. Raw replies sit in `probes/logs/`.\n**Evidence to check:**\n- Read the report and count the lines in the logs for each model id.\n- Compare each count to the logs.\n**Scoring:**\n- 1.0 — every count matches the logs, for both models.\n- 0.5 — counts exist, but one does not match the logs, or one model is missing.\n- 0.0 — a count is missing, or no logs are committed.\n\n### C3 — The key has one reader and never reaches a log [CRITICAL]\n**Must be true:** only `src/priority/config.py` reads `OPENROUTER_API_KEY` at run time, and no committed file or log holds the key.\n**Evidence to check:**\n- Search `priority-dev/` for `OPENROUTER_API_KEY` and `os.environ`. Ignore design sketches under `priority-dev/docs/` that no code imports.\n- Search the committed files for the first 8 characters of the key value from `priority-dev/.env`. Do not print the key.\n**Scoring:**\n- 1.0 — one reader, and no key in any file.\n- 0.5 — one reader, but the key text appears in an ignored file only.\n- 0.0 — a second reader, or the key in a committed file.\n\n### C4 — The report names the abort condition it informs\n**Must be true:** the report states which `abort_if` condition of `goal.json` it informs, and gives a plain result: held, refuted, or not measured.\n**Evidence to check:**\n- Read the report named in the slice goal.\n- Find the sentence that names the condition and the result.\n**Scoring:**\n- 1.0 — the sentence exists and the result matches the raw logs.\n- 0.5 — the sentence exists, but the result is vague or the logs are missing.\n- 0.0 — no such sentence.\n\n### C5 — The input is readable, and the report shows it [CRITICAL]\n**Must be true:** each call record in the log holds the full redacted prompt text, and its hash matches that text. The report shows one complete prompt for one transcript, with the reply of each model to it, and the prompt equals the text in the log. The report also names each defect of the brief that it found.\n**Evidence to check:**\n- Hash the prompt text of one log record and compare it to `prompt_hash`.\n- Compare the prompt in the report to the log record, character by character.\n- Read the defects named in the report, and check each against the fixture.\n**Scoring:**\n- 1.0 — the hash matches, the prompt in the report equals the log, and at least one real defect of the brief is named and true.\n- 0.5 — the prompt is stored, but the report omits it or names no defect.\n- 0.0 — the log holds only a hash, or the prompt in the report differs from the log.\n\n### C6 — The report states the agreement across repeats\n**Must be true:** with `--repeat 3`, each model runs 3 calls on each of the three transcripts. The report gives the agreement for each of the five facts and the kind, and each value equals what `agreement()` computes from the log.\n**Evidence to check:**\n- Run the exact command with `--repeat 3` on one fixture and read the `agreement:` lines.\n- Recompute the share of the most common value from the log for one transcript, and compare it to the report.\n**Scoring:**\n- 1.0 — values exist for both models and match the recomputation.\n- 0.5 — values exist for one model only, or one value does not match.\n- 0.0 — no agreement is reported, or the values are invented.\n\n### C7 — The stop is a real agent message, and a blind reader understands the prompt\n**Must be true:**\n- (Structure) A transcript whose last assistant record has model `<synthetic>` does not give that record as the stop.\n- (Behaviour) A fresh subagent that sees only the stored prompt text of one log record, with no rubric and no hint about what is checked, can state who wrote the human line (the developer, not the agent) and what it must produce (a JSON object that proposes the developer's next step). The prompt text is the `prompt` field of the log. The check reads no wording of the prompt.\n**Evidence to check:**\n- Build the brief from `fixtures/made-up/synthetic-tail.jsonl` and read the stop.\n- Spawn one blind subagent with the prompt of `173ae36f` and the prompt of `5d2114e3` from the log. Ask it two plain questions: who wrote the line after the human label, and what is the reply for? Record its tool calls and answers as evidence.\n**Scoring:**\n- 1.0 — the synthetic record is skipped, and the blind reader names the developer as the speaker and the next-step proposal as the task, for both prompts.\n- 0.5 — the synthetic record is skipped, and the reader is right for one prompt only.\n- 0.0 — a synthetic record is the stop, or the reader names the agent as the speaker for both prompts.\n\n### C8 — The report scores correctness twice, and names the cause of each miss [CRITICAL]\n**Must be true:** `priority-dev/fixtures/labels.json` holds, for each of the three stops, a label of the right answer for the five facts and the kind. It holds two labels: Score A, the right answer for the true end of the session, and Score B, the right answer for a careful reader who sees only the logged prompt. The engineer confirmed both. The report scores each of the 18 replies against both labels, and names one cause for each miss: the brief builder, the prompt definitions, or the model. The report does not blame the model for a fact that the prompt never held.\n**Evidence to check:**\n- Read `labels.json` and check that each stop has both labels and a note of who confirmed them.\n- Recompute the two scores for three replies from the log and the labels, and compare them to the report.\n- For `173ae36f`, check that the report names the brief builder as the cause of the Score A misses.\n**Scoring:**\n- 1.0 — both labels exist for all three stops, both scores are in the report for all 18 replies and match the recomputation, and each miss has a cause.\n- 0.5 — only one of the two scores is reported, or causes are missing, or one score does not match.\n- 0.0 — no labels, or the report scores replies without a label.\n\n## Regression check\n- All tests that passed before this slice must still pass.\n- Files outside `priority-dev/` must remain unchanged, except the committed reports named in the slice.\n\n## Out of scope — do not penalise\n- The `CLIENT MESSAGE:` section, the `client_error` stop source, the `no_agent_reply` Abstain, and a RUN section that counts across ask boundaries. They belong to slice 4.\n- A model call through DSPy `Predict`, the Triage, Pick, Fill, and Card split, and the replay. They belong to slices 5 to 7.\n- Behaviour that belongs to a later slice of the plan.\n- The policy, the actuator, the attention queue, and the notifier.\n",
         "source_path": ".cobuilder/rubrics/priority-dev-spike/slice-1.md"
       },
       {
@@ -6049,7 +6386,7 @@
         "feature_slug": "priority-dev-spike",
         "n": 4,
         "title": "Slice 4 — Stop brief",
-        "body_md": "# Rubric: Slice 4 — Stop brief\n\nFeature: priority-dev-spike\nEpic: E2\nSlice goal: `uv run priority brief fixtures/run-3.jsonl --stop 2` prints a stop brief that equals the stored snapshot, with grouped replies, paired results, and redacted keys.\nTest command: `uv run pytest priority-dev/tests -q`\n\n## Criteria\n\n### C1 — The brief equals the stored snapshot [CRITICAL]\n**Must be true:** the printed brief for the fixture equals `tests/snapshots/run-3-stop-2.json` after `json.loads`.\n**Evidence to check:**\n- Run the command and compare.\n**Scoring:**\n- 1.0 — equal.\n- 0.5 — equal except for field order that the snapshot does not fix.\n- 0.0 — different.\n\n### C2 — Replies group by message id, and a duplicate id is handled [CRITICAL]\n**Must be true:** several records with one `message.id` give one reply, and a fixture with a duplicated id gives no duplicated text.\n**Evidence to check:**\n- Run the brief tests on the fixtures.\n- Read the duplicate-id fixture.\n**Scoring:**\n- 1.0 — both cases pass.\n- 0.5 — the grouping passes, and the duplicate case is missing.\n- 0.0 — the grouping fails.\n\n### C3 — Each tool call pairs with its full result, and the error flag stays\n**Must be true:** each tool call holds the full result text and `is_error` from the record with the same `tool_use_id`. No result is clipped.\n**Evidence to check:**\n- Run the pairing test.\n- Compare the result length in the brief to the fixture record.\n**Scoring:**\n- 1.0 — the pairing test passes and the lengths match.\n- 0.5 — pairing holds, but one result is clipped.\n- 0.0 — a call has no result, or the flag is lost.\n\n### C4 — A planted secret is redacted before any model call [CRITICAL]\n**Must be true:** a fixture with a planted fake key shows `[redacted]` in the brief, and the redaction count is stored.\n**Evidence to check:**\n- Run the redaction test.\n- Search the brief output for the planted value.\n**Scoring:**\n- 1.0 — the value is absent and the count is right.\n- 0.5 — the value is absent, but the count is wrong.\n- 0.0 — the value appears.\n\n### C5 — The report names the abort condition it informs\n**Must be true:** the report states which `abort_if` condition of `goal.json` it informs, and gives a plain result: held, refuted, or not measured.\n**Evidence to check:**\n- Read the report named in the slice goal.\n- Find the sentence that names the condition and the result.\n**Scoring:**\n- 1.0 — the sentence exists and the result matches the raw logs.\n- 0.5 — the sentence exists, but the result is vague or the logs are missing.\n- 0.0 — no such sentence.\n\n### C6 — A client message never becomes the stop, and the run is never empty by accident [CRITICAL]\n**Must be true:** given a transcript whose last assistant record has model `<synthetic>`, the brief picks the last real agent message as the stop and holds the client text in a `CLIENT MESSAGE:` section with stop source `client_error`. A transcript with only synthetic assistant records gives an Abstain `no_agent_reply`. After a bare human ask such as `continue`, the RUN section still shows the work before it, up to 40 lines, with human asks as `[human]` lines.\n**Evidence to check:**\n- Run the brief builder on three made-up fixtures: a client error after a real reply, only synthetic records, and a bare `continue` after earlier work.\n- Compare each output to its stored snapshot, and read the stop source.\n**Scoring:**\n- 1.0 — all three fixtures give the stated result.\n- 0.5 — two of the three give it.\n- 0.0 — a synthetic record becomes the stop, or the run is empty although work precedes it.\n\n## Regression check\n- All tests that passed before this slice must still pass.\n- Files outside `priority-dev/` must remain unchanged, except the committed reports named in the slice.\n\n## Out of scope — do not penalise\n- Behaviour that belongs to a later slice of the plan.\n- The policy, the actuator, the attention queue, and the notifier.\n",
+        "body_md": "# Rubric: Slice 4 — Stop brief\n\nFeature: priority-dev-spike\nEpic: E2\nSlice goal: `uv run priority brief fixtures/run-3.jsonl --stop 2` prints a stop brief that equals the stored snapshot, with grouped replies, paired results, and redacted keys.\nTest command: `uv run pytest priority-dev/tests -q`\n\n## Criteria\n\n### C1 — The brief equals the stored snapshot [CRITICAL]\n**Must be true:** the printed brief for the fixture equals `tests/snapshots/run-3-stop-2.json` after `json.loads`.\n**Evidence to check:**\n- Run the command and compare.\n**Scoring:**\n- 1.0 — equal.\n- 0.5 — equal except for field order that the snapshot does not fix.\n- 0.0 — different.\n\n### C2 — Replies group by message id, and a duplicate id is handled [CRITICAL]\n**Must be true:** several records with one `message.id` give one reply, and a fixture with a duplicated id gives no duplicated text.\n**Evidence to check:**\n- Run the brief tests on the fixtures.\n- Read the duplicate-id fixture.\n**Scoring:**\n- 1.0 — both cases pass.\n- 0.5 — the grouping passes, and the duplicate case is missing.\n- 0.0 — the grouping fails.\n\n### C3 — Each tool call pairs with its full result, and the error flag stays\n**Must be true:** each tool call holds the full result text and `is_error` from the record with the same `tool_use_id`. No result is clipped.\n**Evidence to check:**\n- Run the pairing test.\n- Compare the result length in the brief to the fixture record.\n**Scoring:**\n- 1.0 — the pairing test passes and the lengths match.\n- 0.5 — pairing holds, but one result is clipped.\n- 0.0 — a call has no result, or the flag is lost.\n\n### C4 — A planted secret is redacted before any model call [CRITICAL]\n**Must be true:** a fixture with a planted fake key shows `[redacted]` in the brief, and the redaction count is stored.\n**Evidence to check:**\n- Run the redaction test.\n- Search the brief output for the planted value.\n**Scoring:**\n- 1.0 — the value is absent and the count is right.\n- 0.5 — the value is absent, but the count is wrong.\n- 0.0 — the value appears.\n\n### C5 — The report names the abort condition it informs\n**Must be true:** the report states which `abort_if` condition of `goal.json` it informs, and gives a plain result: held, refuted, or not measured.\n**Evidence to check:**\n- Read the report named in the slice goal.\n- Find the sentence that names the condition and the result.\n**Scoring:**\n- 1.0 — the sentence exists and the result matches the raw logs.\n- 0.5 — the sentence exists, but the result is vague or the logs are missing.\n- 0.0 — no such sentence.\n\n### C6 — A client message never becomes the stop, and the run is never empty by accident [CRITICAL]\n**Must be true:** given a transcript whose last assistant record has model `<synthetic>`, the brief picks the last real agent message as the stop and holds the client text in a `CLIENT MESSAGE:` section with stop source `client_error`. A transcript with only synthetic assistant records gives an Abstain `no_agent_reply`. After a bare human ask such as `continue`, the RUN section still shows the work before it, with no line limit, and with human asks as `[human]` lines.\n**Evidence to check:**\n- Run the brief builder on three made-up fixtures: a client error after a real reply, only synthetic records, and a bare `continue` after earlier work.\n- Compare each output to its stored snapshot, and read the stop source.\n**Scoring:**\n- 1.0 — all three fixtures give the stated result.\n- 0.5 — two of the three give it.\n- 0.0 — a synthetic record becomes the stop, or the run is empty although work precedes it.\n\n### C7 — Nothing is clipped, and an over-budget brief fails closed [CRITICAL]\n**Must be true:**\n- The brief builder is plain code. It makes no model call. It never cuts text at a character count and never shrinks text.\n- Below the size budget of 160,000 characters of brief text (the instruction block does not count), the brief holds every item of the run in order, with no cap on RUN lines. Redaction is the only change to the text.\n- Never clipped, in any brief: the human ask, the final reply (all text blocks of the last agent message), the last three exchanges (each tool call input and its full result, with the error flag), the `CLIENT MESSAGE:` section, and the human lines after the last agent message.\n- Over the budget, the builder returns the Abstain `brief_too_large`. Its detail lists the tool inputs and tool results of older exchanges by size, largest first, with the size of each and the size of the parts that never shrink.\n- When the parts that never shrink exceed the budget alone, the Abstain says so, and it is final.\n**Evidence to check:**\n- Build the brief from five made-up fixtures: a final reply of 5,000 characters; a 2,600-character tool call with a 50,000-character result, below the budget; an over-budget run with large older inputs and results; a run whose protected parts alone exceed the budget; and a long run of more than 100 RUN lines below the budget.\n- Compare each output to its stored snapshot. Search each brief for a cut such as `...` at a fixed length. Run the builder with a model stub that fails the test when it is called.\n**Scoring:**\n- 1.0 — the below-budget fixtures keep their text byte for byte (redaction apart), both over-budget fixtures give `brief_too_large` with the right detail, and the stub is never called.\n- 0.5 — the protected items stay whole, but the Abstain detail is missing or wrong.\n- 0.0 — any protected item is cut, any text is cut at a fixed length below the budget, or the builder calls a model.\n\n## Regression check\n- All tests that passed before this slice must still pass.\n- Files outside `priority-dev/` must remain unchanged, except the committed reports named in the slice.\n\n## Out of scope — do not penalise\n- Behaviour that belongs to a later slice of the plan.\n- The policy, the actuator, the attention queue, and the notifier.\n",
         "source_path": ".cobuilder/rubrics/priority-dev-spike/slice-4.md"
       },
       {
@@ -6057,7 +6394,7 @@
         "feature_slug": "priority-dev-spike",
         "n": 5,
         "title": "Slice 5 — Interpret a stop",
-        "body_md": "# Rubric: Slice 5 — Interpret a stop\n\nFeature: priority-dev-spike\nEpic: E2\nSlice goal: `uv run priority interpret` runs Triage, Pick, Fill, and Card on the interpreter model through DSPy, prints an Interpretation or an Abstain, and stores each call with its model id, prompt hash, and raw reply.\nTest command: `uv run pytest priority-dev/tests -q`\n\n## Criteria\n\n### C1 — The valid path gives a one-step proposal [CRITICAL]\n**Must be true:** with a dummy model that answers correctly, the result is an Interpretation with one step and a question card when a human must answer.\n**Evidence to check:**\n- Run the module tests.\n**Scoring:**\n- 1.0 — the test passes.\n- 0.5 — the proposal is built, but the card is missing.\n- 0.0 — the test fails.\n\n### C2 — A quote that is not in the brief gives an Abstain, and so does a kind that is not allowed [CRITICAL]\n**Must be true:** the reasons are `quote_not_in_brief` and `kind_not_allowed`. Neither raises an exception.\n**Evidence to check:**\n- Run the two tests.\n**Scoring:**\n- 1.0 — both pass.\n- 0.5 — one passes.\n- 0.0 — either raises or proposes.\n\n### C3 — Each call is stored with its model id, prompt hash, and raw reply\n**Must be true:** after one run, the store holds one row for each model call with the three fields, and the rendered input.\n**Evidence to check:**\n- Run `priority interpret` on one fixture, then read the store.\n**Scoring:**\n- 1.0 — every call has all fields.\n- 0.5 — one call lacks a field.\n- 0.0 — no rows.\n\n### C4 — A real run on one fixture prints a result\n**Must be true:** with the real model on one local fixture, the command prints an Interpretation or an Abstain and does not crash.\n**Evidence to check:**\n- Run it on one fixture.\n**Scoring:**\n- 1.0 — a result prints.\n- 0.5 — a result prints after a retry by hand.\n- 0.0 — a crash or no output.\n\n### C5 — The report names the abort condition it informs\n**Must be true:** the report states which `abort_if` condition of `goal.json` it informs, and gives a plain result: held, refuted, or not measured.\n**Evidence to check:**\n- Read the report named in the slice goal.\n- Find the sentence that names the condition and the result.\n**Scoring:**\n- 1.0 — the sentence exists and the result matches the raw logs.\n- 0.5 — the sentence exists, but the result is vague or the logs are missing.\n- 0.0 — no such sentence.\n\n## Regression check\n- All tests that passed before this slice must still pass.\n- Files outside `priority-dev/` must remain unchanged, except the committed reports named in the slice.\n\n## Out of scope — do not penalise\n- Behaviour that belongs to a later slice of the plan.\n- The policy, the actuator, the attention queue, and the notifier.\n",
+        "body_md": "# Rubric: Slice 5 — Interpret a stop\n\nFeature: priority-dev-spike\nEpic: E2\nSlice goal: `uv run priority interpret` runs Triage, Pick, Fill, and Card on the interpreter model through DSPy, prints an Interpretation or an Abstain, and stores each call with its model id, prompt hash, and raw reply.\nTest command: `uv run pytest priority-dev/tests -q`\n\n## Criteria\n\n### C1 — The valid path gives a proposal of one to three steps [CRITICAL]\n**Must be true:** with a dummy model that answers correctly, the result is an Interpretation. A dummy that picks one step gives a proposal of one step. A dummy that picks three steps gives a proposal of three steps, in order, with one Fill call for each step. The result holds a question card when a human must answer. A dummy that picks four steps gives an Abstain.\n**Evidence to check:**\n- Run the module tests.\n**Scoring:**\n- 1.0 — the one-step, three-step, and four-step tests pass.\n- 0.5 — the one-step test passes, but a multi-step test fails.\n- 0.0 — the one-step test fails.\n\n### C2 — A bad quote or a bad kind in any step gives an Abstain [CRITICAL]\n**Must be true:** a quote that is not in the brief gives `quote_not_in_brief`, and a kind that is not allowed gives `kind_not_allowed`. The check applies to each step, so a fault in step 2 or 3 also gives an Abstain that names the step. None raises an exception.\n**Evidence to check:**\n- Run the tests for step 1 and for a later step.\n**Scoring:**\n- 1.0 — both faults give an Abstain in step 1 and in a later step.\n- 0.5 — the faults give an Abstain in step 1 only.\n- 0.0 — either raises or proposes.\n\n### C3 — Each call is stored with its model id, prompt hash, and raw reply\n**Must be true:** after one run, the store holds one row for each model call with the three fields, and the rendered input.\n**Evidence to check:**\n- Run `priority interpret` on one fixture, then read the store.\n**Scoring:**\n- 1.0 — every call has all fields.\n- 0.5 — one call lacks a field.\n- 0.0 — no rows.\n\n### C4 — A real run on one fixture prints a result\n**Must be true:** with the real model on one local fixture, the command prints an Interpretation or an Abstain and does not crash.\n**Evidence to check:**\n- Run it on one fixture.\n**Scoring:**\n- 1.0 — a result prints.\n- 0.5 — a result prints after a retry by hand.\n- 0.0 — a crash or no output.\n\n### C5 — The report names the abort condition it informs\n**Must be true:** the report states which `abort_if` condition of `goal.json` it informs, and gives a plain result: held, refuted, or not measured.\n**Evidence to check:**\n- Read the report named in the slice goal.\n- Find the sentence that names the condition and the result.\n**Scoring:**\n- 1.0 — the sentence exists and the result matches the raw logs.\n- 0.5 — the sentence exists, but the result is vague or the logs are missing.\n- 0.0 — no such sentence.\n\n## Regression check\n- All tests that passed before this slice must still pass.\n- Files outside `priority-dev/` must remain unchanged, except the committed reports named in the slice.\n\n## Out of scope — do not penalise\n- Behaviour that belongs to a later slice of the plan.\n- The policy, the actuator, the attention queue, and the notifier.\n",
         "source_path": ".cobuilder/rubrics/priority-dev-spike/slice-5.md"
       },
       {
@@ -6065,7 +6402,7 @@
         "feature_slug": "priority-dev-spike",
         "n": 6,
         "title": "Slice 6 — Digest a run",
-        "body_md": "# Rubric: Slice 6 — Digest a run\n\nFeature: priority-dev-spike\nEpic: E2\nSlice goal: `uv run priority digest` calls the digest model and prints a RunDigest that validates, and the next stop brief of the same session carries it as `previous`.\nTest command: `uv run pytest priority-dev/tests -q`\n\n## Criteria\n\n### C1 — The digest validates against its limits\n**Must be true:** the output parses into `RunDigest`: `ran` up to 600 characters, `result` up to 300, up to 5 open items and 5 decisions.\n**Evidence to check:**\n- Run the digest on one fixture and parse the output.\n**Scoring:**\n- 1.0 — it parses.\n- 0.5 — it parses after one repair by code.\n- 0.0 — it does not parse.\n\n### C2 — The next brief carries the digest as previous [CRITICAL]\n**Must be true:** after a digest is stored, the brief of the next stop of the same session holds it in `previous`.\n**Evidence to check:**\n- Run the two-stop fixture.\n**Scoring:**\n- 1.0 — `previous` equals the stored digest.\n- 0.5 — `previous` is set, but from another session.\n- 0.0 — `previous` is empty.\n\n### C3 — A digest failure blocks nothing [CRITICAL]\n**Must be true:** with an injected failure, `previous` stays empty, the reason is logged, and the interpretation still runs.\n**Evidence to check:**\n- Run the failure test.\n**Scoring:**\n- 1.0 — all three hold.\n- 0.5 — the reason is not logged.\n- 0.0 — the interpretation is blocked.\n\n### C4 — The report names the abort condition it informs\n**Must be true:** the report states which `abort_if` condition of `goal.json` it informs, and gives a plain result: held, refuted, or not measured.\n**Evidence to check:**\n- Read the report named in the slice goal.\n- Find the sentence that names the condition and the result.\n**Scoring:**\n- 1.0 — the sentence exists and the result matches the raw logs.\n- 0.5 — the sentence exists, but the result is vague or the logs are missing.\n- 0.0 — no such sentence.\n\n## Regression check\n- All tests that passed before this slice must still pass.\n- Files outside `priority-dev/` must remain unchanged, except the committed reports named in the slice.\n\n## Out of scope — do not penalise\n- Behaviour that belongs to a later slice of the plan.\n- The policy, the actuator, the attention queue, and the notifier.\n",
+        "body_md": "# Rubric: Slice 6 — Digest a run\n\nFeature: priority-dev-spike\nEpic: E2\nSlice goal: `uv run priority digest` calls the digest model and prints a RunDigest that validates, and the next stop brief of the same session carries it as `previous`.\nTest command: `uv run pytest priority-dev/tests -q`\n\n## Criteria\n\n### C1 — The digest validates against its limits\n**Must be true:** the output parses into `RunDigest`: `ran` up to 600 characters, `result` up to 300, up to 5 open items and 5 decisions.\n**Evidence to check:**\n- Run the digest on one fixture and parse the output.\n**Scoring:**\n- 1.0 — it parses.\n- 0.5 — it parses after one repair by code.\n- 0.0 — it does not parse.\n\n### C2 — The next brief carries the digest as previous [CRITICAL]\n**Must be true:** after a digest is stored, the brief of the next stop of the same session holds it in `previous`.\n**Evidence to check:**\n- Run the two-stop fixture.\n**Scoring:**\n- 1.0 — `previous` equals the stored digest.\n- 0.5 — `previous` is set, but from another session.\n- 0.0 — `previous` is empty.\n\n### C3 — A digest failure blocks nothing [CRITICAL]\n**Must be true:** with an injected failure, `previous` stays empty, the reason is logged, and the interpretation still runs.\n**Evidence to check:**\n- Run the failure test.\n**Scoring:**\n- 1.0 — all three hold.\n- 0.5 — the reason is not logged.\n- 0.0 — the interpretation is blocked.\n\n### C4 — The report names the abort condition it informs\n**Must be true:** the report states which `abort_if` condition of `goal.json` it informs, and gives a plain result: held, refuted, or not measured.\n**Evidence to check:**\n- Read the report named in the slice goal.\n- Find the sentence that names the condition and the result.\n**Scoring:**\n- 1.0 — the sentence exists and the result matches the raw logs.\n- 0.5 — the sentence exists, but the result is vague or the logs are missing.\n- 0.0 — no such sentence.\n\n### C5 — An over-budget brief shrinks only older tool inputs and results, and fails closed when it cannot fit [CRITICAL]\n**Must be true:** given a brief over 160,000 characters of brief text, the Shrink call replaces the largest older tool inputs and tool results with shorter texts, one at a time, until the brief fits. It never touches the human ask, the final reply, the last three exchanges, the `CLIENT MESSAGE:` section, or the human lines after the last agent message. The brief records how many items shrank and which ones. When the brief is still over the budget after every older input and result shrank, the interpreter gives the Abstain `brief_too_large` and makes no further call.\n**Evidence to check:**\n- Run the brief builder with the Shrink call on two made-up fixtures: an over-budget run whose older inputs and results are large, and a run whose protected parts alone exceed the budget. Use a stubbed model for the shrink text.\n- Read the shrink record, and compare each protected item to its text before the shrink.\n**Scoring:**\n- 1.0 — the first fixture fits after shrinking only older inputs and results, with a correct record. The second gives `brief_too_large` and makes no model call.\n- 0.5 — the first fixture fits, but the record is missing, or the second makes a model call.\n- 0.0 — a protected item shrinks, or a brief over the budget goes to the interpreter model.\n\n## Regression check\n- All tests that passed before this slice must still pass.\n- Files outside `priority-dev/` must remain unchanged, except the committed reports named in the slice.\n\n## Out of scope — do not penalise\n- Behaviour that belongs to a later slice of the plan.\n- The policy, the actuator, the attention queue, and the notifier.\n",
         "source_path": ".cobuilder/rubrics/priority-dev-spike/slice-6.md"
       },
       {
@@ -6073,7 +6410,7 @@
         "feature_slug": "priority-dev-spike",
         "n": 7,
         "title": "Slice 7 — Replay report with failure drills",
-        "body_md": "# Rubric: Slice 7 — Replay report with failure drills\n\nFeature: priority-dev-spike\nEpic: E2\nSlice goal: `uv run priority replay fixtures/` writes `report.md` with the rates, the abstain reasons, the kinds, and the cost for each stage, and each injected failure ends as an Abstain with a reason.\nTest command: `uv run pytest priority-dev/tests -q`\n\n## Criteria\n\n### C1 — The report holds every listed measure for both adapters [CRITICAL]\n**Must be true:** the report lists the valid-output rate, the quote-found rate, the abstain reasons, the kinds picked, the characters sent, the seconds, and the cost for each stage, for `JSONAdapter` and `ChatAdapter`.\n**Evidence to check:**\n- Run the replay on the local fixtures.\n- Check each measure against the stored call rows.\n**Scoring:**\n- 1.0 — every measure is present and matches the rows.\n- 0.5 — one measure is missing or does not match.\n- 0.0 — several are missing.\n\n### C2 — Four injected failures each end as an Abstain with a reason [CRITICAL]\n**Must be true:** a 429, malformed JSON, an empty quote, and a timeout each give an Abstain with a logged reason, and none gives a crash or silence.\n**Evidence to check:**\n- Run the drill tests.\n**Scoring:**\n- 1.0 — all four pass.\n- 0.5 — three pass.\n- 0.0 — two or fewer pass.\n\n### C3 — The free-tier limit count at the rate of 5 sessions is stated\n**Must be true:** the report states how many limit errors came from a replay at the event rate of 5 sessions.\n**Evidence to check:**\n- Read the report and the raw logs.\n**Scoring:**\n- 1.0 — stated and matches the logs.\n- 0.5 — stated, but with no logs.\n- 0.0 — not stated.\n\n### C4 — The go or no-go section names each abort condition [CRITICAL]\n**Must be true:** the report ends with a section that names each `abort_if` condition and states held, refuted, or not measured.\n**Evidence to check:**\n- Read the last section.\n**Scoring:**\n- 1.0 — both conditions are named with a result.\n- 0.5 — one is named.\n- 0.0 — no section.\n\n### C5 — The report names the abort condition it informs\n**Must be true:** the report states which `abort_if` condition of `goal.json` it informs, and gives a plain result: held, refuted, or not measured.\n**Evidence to check:**\n- Read the report named in the slice goal.\n- Find the sentence that names the condition and the result.\n**Scoring:**\n- 1.0 — the sentence exists and the result matches the raw logs.\n- 0.5 — the sentence exists, but the result is vague or the logs are missing.\n- 0.0 — no such sentence.\n\n## Regression check\n- All tests that passed before this slice must still pass.\n- Files outside `priority-dev/` must remain unchanged, except the committed reports named in the slice.\n\n## Out of scope — do not penalise\n- Behaviour that belongs to a later slice of the plan.\n- The policy, the actuator, the attention queue, and the notifier.\n",
+        "body_md": "# Rubric: Slice 7 — Replay report with failure drills\n\nFeature: priority-dev-spike\nEpic: E2\nSlice goal: `uv run priority replay fixtures/` writes `report.md` with the rates, the abstain reasons, the kinds, and the cost for each stage, and each injected failure ends as an Abstain with a reason.\nTest command: `uv run pytest priority-dev/tests -q`\n\n## Criteria\n\n### C1 — The report holds every listed measure for both adapters [CRITICAL]\n**Must be true:** the report lists the valid-output rate, the quote-found rate, the abstain reasons, the kinds picked, the count of proposals for each step count, the characters sent, the seconds, and the cost for each stage, for `JSONAdapter` and `ChatAdapter`.\n**Evidence to check:**\n- Run the replay on the local fixtures.\n- Check each measure against the stored call rows.\n**Scoring:**\n- 1.0 — every measure is present and matches the rows.\n- 0.5 — one measure is missing or does not match.\n- 0.0 — several are missing.\n\n### C2 — Four injected failures each end as an Abstain with a reason [CRITICAL]\n**Must be true:** a 429, malformed JSON, an empty quote, and a timeout each give an Abstain with a logged reason, and none gives a crash or silence.\n**Evidence to check:**\n- Run the drill tests.\n**Scoring:**\n- 1.0 — all four pass.\n- 0.5 — three pass.\n- 0.0 — two or fewer pass.\n\n### C3 — The free-tier limit count at the rate of 5 sessions is stated\n**Must be true:** the report states how many limit errors came from a replay at the event rate of 5 sessions.\n**Evidence to check:**\n- Read the report and the raw logs.\n**Scoring:**\n- 1.0 — stated and matches the logs.\n- 0.5 — stated, but with no logs.\n- 0.0 — not stated.\n\n### C4 — The go or no-go section names each abort condition [CRITICAL]\n**Must be true:** the report ends with a section that names each `abort_if` condition and states held, refuted, or not measured.\n**Evidence to check:**\n- Read the last section.\n**Scoring:**\n- 1.0 — both conditions are named with a result.\n- 0.5 — one is named.\n- 0.0 — no section.\n\n### C5 — The report names the abort condition it informs\n**Must be true:** the report states which `abort_if` condition of `goal.json` it informs, and gives a plain result: held, refuted, or not measured.\n**Evidence to check:**\n- Read the report named in the slice goal.\n- Find the sentence that names the condition and the result.\n**Scoring:**\n- 1.0 — the sentence exists and the result matches the raw logs.\n- 0.5 — the sentence exists, but the result is vague or the logs are missing.\n- 0.0 — no such sentence.\n\n## Regression check\n- All tests that passed before this slice must still pass.\n- Files outside `priority-dev/` must remain unchanged, except the committed reports named in the slice.\n\n## Out of scope — do not penalise\n- Behaviour that belongs to a later slice of the plan.\n- The policy, the actuator, the attention queue, and the notifier.\n",
         "source_path": ".cobuilder/rubrics/priority-dev-spike/slice-7.md"
       },
       {
@@ -6123,6 +6460,70 @@
         "title": "Slice 13 — Answer from a held hook",
         "body_md": "# Rubric: Slice 13 — Answer from a held hook\n\nFeature: priority-dev-spike\nEpic: E4\nSlice goal: A PermissionRequest hook waits, a stub command returns allow, and the scratch session runs the tool with no dialog.\nTest command: `uv run pytest priority-dev/tests -q`\n\n## Criteria\n\n### C1 — An allow from the stub runs the tool with no dialog [CRITICAL]\n**Must be true:** the hook returns the decision, and the scratch session runs the tool without a dialog.\n**Evidence to check:**\n- Run the scratch test and capture the pane.\n**Scoring:**\n- 1.0 — the tool runs, with no dialog in the capture.\n- 0.5 — the tool runs, and the capture is missing.\n- 0.0 — a dialog shows.\n\n### C2 — A timeout leaves the normal dialog [CRITICAL]\n**Must be true:** if no verdict arrives in the hold time, the hook returns no decision, and the dialog shows.\n**Evidence to check:**\n- Run the timeout test.\n**Scoring:**\n- 1.0 — the dialog shows.\n- 0.5 — the dialog shows after a delay beyond the hold time.\n- 0.0 — the tool is blocked or allowed.\n\n### C3 — The bypass file skips the wait [CRITICAL]\n**Must be true:** with the bypass file, the hook returns at once with no decision.\n**Evidence to check:**\n- Run the bypass test.\n**Scoring:**\n- 1.0 — returns at once.\n- 0.5 — returns within the timeout.\n- 0.0 — waits.\n\n## Regression check\n- All tests that passed before this slice must still pass.\n- Files outside `priority-dev/` must remain unchanged, except the committed reports named in the slice.\n\n## Out of scope — do not penalise\n- Behaviour that belongs to a later slice of the plan.\n- The policy, the actuator, the attention queue, and the notifier.\n",
         "source_path": ".cobuilder/rubrics/priority-dev-spike/slice-13.md"
+      },
+      {
+        "id": "priority-dev-spike/14",
+        "feature_slug": "priority-dev-spike",
+        "n": 14,
+        "title": "Slice 14 — Notify for a done stop",
+        "body_md": "# Rubric: Slice 14 — Notify for a done stop\n\nFeature: priority-dev-spike\nEpic: E5\nSlice goal: `notify` is an action kind. For a stop that Triage calls done, `priority interpret` prints an Interpretation with one `notify` step that code builds from the final reply, with no Pick or Fill call.\nTest command: `uv run --project priority-dev pytest priority-dev/tests -q`\n\n## Criteria\n\n### C1 — A done stop gives one notify step and no model call after Triage [CRITICAL]\n**Must be true:** with a dummy model that says `done`, the result holds exactly one step of kind `notify`. The model received one call (Triage) and no Pick, Fill, or Card call.\n**Evidence to check:**\n- Run the module tests.\n- Count the calls the dummy model received.\n**Scoring:**\n- 1.0 — both hold\n- 0.5 — the step is there, but a Pick or Fill call also ran\n- 0.0 — no notify step\n\n### C2 — The excerpt is an exact part of the final reply [CRITICAL]\n**Must be true:** `excerpt` is a substring of the FINAL REPLY of the brief, is not empty, and is at most 600 characters. A brief with an empty final reply gives an Abstain with a stated reason, not an empty excerpt.\n**Evidence to check:**\n- Run the tests for a short reply, a long reply, a reply with several paragraphs, and an empty reply.\n- Check the substring by script.\n**Scoring:**\n- 1.0 — all four cases hold\n- 0.5 — the excerpt is a substring in three cases\n- 0.0 — an excerpt that is not in the reply\n\n### C3 — The new kind is wired into the schema and the checks\n**Must be true:** `notify` is in the action kinds, in `schemas.md`, and in the allowed kinds that Pick receives. A Pick step of kind `notify` on a stop that is not done is allowed by the schema but is reported in the output.\n**Evidence to check:**\n- Read the schema tests and `schemas.md`.\n- Run the kind-list test.\n**Scoring:**\n- 1.0 — all three places hold it\n- 0.5 — two of three\n- 0.0 — one place or none\n\n### C4 — A real run prints the notice\n**Must be true:** with the real model on one finished real stop, `priority interpret` prints an Interpretation with a `notify` step and an excerpt that is in the reply.\n**Evidence to check:**\n- Run it once on a finished real session.\n**Scoring:**\n- 1.0 — it prints and the excerpt is in the reply\n- 0.5 — it prints after a retry by hand\n- 0.0 — a crash, or no notify step\n\n### C5 — Nothing else changed\n**Must be true:** stops that Triage calls waiting or continuing still go to stage 2 as before.\n**Evidence to check:**\n- Run the full suite and read the stage 2 gate tests.\n**Scoring:**\n- 1.0 — all earlier tests pass and the gate tests are unchanged\n- 0.5 — one earlier test was edited to pass\n- 0.0 — a gate test fails\n\n## Regression check\n- All tests that passed before this slice must still pass.\n- Files outside `priority-dev/` must remain unchanged, except the committed reports named in the slice.\n\n## Out of scope — do not penalise\n- Behaviour that belongs to a later slice of the plan.\n- The policy, the actuator, the attention queue, and the notifier.\n- Real transcript text is private. A report that quotes none of it is correct.\n",
+        "source_path": ".cobuilder/rubrics/priority-dev-spike/slice-14.md"
+      },
+      {
+        "id": "priority-dev-spike/15",
+        "feature_slug": "priority-dev-spike",
+        "n": 15,
+        "title": "Slice 15 — Labelled fixture set",
+        "body_md": "# Rubric: Slice 15 — Labelled fixture set\n\nFeature: priority-dev-spike\nEpic: E5\nSlice goal: `uv run priority fixtures check` passes on 10 real sessions and about 50 stops. Every stop has an engineer-confirmed label. The split is by session. Git ignores the real files.\nTest command: `uv run --project priority-dev pytest priority-dev/tests -q`\n\n## Criteria\n\n### C1 — Every stop has a confirmed label [CRITICAL] [CRITICAL]\n**Must be true:** each stop in the manifest has a label with `confirmed_by` and `confirmed_on` set to the engineer. An unconfirmed draft is not counted. The check fails when one is missing.\n**Evidence to check:**\n- Run `priority fixtures check`.\n- Delete one confirmation in a copy and run it again.\n**Scoring:**\n- 1.0 — it passes on the set and fails on the copy\n- 0.5 — it passes, but it also passes on the copy\n- 0.0 — no check of confirmation\n\n### C2 — The split is by session and has no overlap [CRITICAL] [CRITICAL]\n**Must be true:** the manifest lists the train sessions and the held-out sessions. No session is in both. Every stop belongs to the part of its session. The held-out part holds at least 3 sessions.\n**Evidence to check:**\n- Read the split and recompute the overlap by script.\n**Scoring:**\n- 1.0 — no overlap, and every stop is assigned\n- 0.5 — no overlap, but a stop is unassigned\n- 0.0 — a session is in both parts\n\n### C3 — The set is the size and the spread that the epic names\n**Must be true:** 10 sessions, from at least 3 projects, with at least 40 labelled stops. At least 4 sessions hold 3 or more labelled stops. The `notify` kind is in use for done stops.\n**Evidence to check:**\n- Count sessions, stops, and projects from the manifest.\n**Scoring:**\n- 1.0 — all four counts hold\n- 0.5 — one count is short\n- 0.0 — two or more are short\n\n### C4 — Real text stays out of Git\n**Must be true:** the real sessions, briefs, drafts, and labels are ignored by Git, and no tracked file holds a 60-character string from a real session. `fixtures check` tests the ignore rule.\n**Evidence to check:**\n- Run `git check-ignore` on each real path.\n- Search tracked files for strings from the real briefs.\n**Scoring:**\n- 1.0 — all ignored and no hit\n- 0.5 — ignored, but one tracked file has a hit\n- 0.0 — a real file is tracked\n\n### C5 — Ambiguous stops are marked and the draft process is on record\n**Must be true:** each label carries an `ambiguous` flag. A short note states how the drafts were made (blind readers) and that the engineer corrected them.\n**Evidence to check:**\n- Read the manifest and the note.\n**Scoring:**\n- 1.0 — both present\n- 0.5 — one present\n- 0.0 — neither\n\n## Regression check\n- All tests that passed before this slice must still pass.\n- Files outside `priority-dev/` must remain unchanged, except the committed reports named in the slice.\n\n## Out of scope — do not penalise\n- Behaviour that belongs to a later slice of the plan.\n- The policy, the actuator, the attention queue, and the notifier.\n- Real transcript text is private. A report that quotes none of it is correct.\n",
+        "source_path": ".cobuilder/rubrics/priority-dev-spike/slice-15.md"
+      },
+      {
+        "id": "priority-dev-spike/16",
+        "feature_slug": "priority-dev-spike",
+        "n": 16,
+        "title": "Slice 16 — Metric and baseline",
+        "body_md": "# Rubric: Slice 16 — Metric and baseline\n\nFeature: priority-dev-spike\nEpic: E5\nSlice goal: `uv run priority eval --split train` and `--split holdout` print a score for each fact, the step kinds, and the grounding, and an overall score. `probes/eval-baseline.md` states both scores, the spread over three repeats, and the cost.\nTest command: `uv run --project priority-dev pytest priority-dev/tests -q`\n\n## Criteria\n\n### C1 — The metric scores made-up stops correctly [CRITICAL] [CRITICAL]\n**Must be true:** on made-up fixtures with a known answer, a perfect prediction scores 1.0, a wrong status loses exactly its share, a wrong first step loses its share, an accepted alternative in a list counts as right, and a quote that is not in the brief loses the grounding share.\n**Evidence to check:**\n- Run the metric tests and read the stated weights.\n**Scoring:**\n- 1.0 — all five cases hold and the weights are stated\n- 0.5 — four hold\n- 0.0 — a wrong prediction scores 1.0\n\n### C2 — The metric is compatible with GEPA [CRITICAL]\n**Must be true:** it accepts the five-argument GEPA signature and returns a score and a feedback text that names which field or step was wrong and what the label says. It also works as a plain metric with `dspy.Evaluate`.\n**Evidence to check:**\n- Call it both ways in the tests.\n**Scoring:**\n- 1.0 — both ways work and the feedback names the wrong field\n- 0.5 — both work, but the feedback is generic\n- 0.0 — one way fails\n\n### C3 — Train and held-out scores are reported apart\n**Must be true:** `eval` prints the train score and the held-out score on their own, and a score for each session. It never mixes the parts.\n**Evidence to check:**\n- Run both splits and read the output.\n**Scoring:**\n- 1.0 — both print and no mixing\n- 0.5 — both print, but no score for each session\n- 0.0 — one split missing or mixed\n\n### C4 — The baseline report holds the spread and the cost\n**Must be true:** `eval-baseline.md` states the scores of three repeats on each split, the spread, the number of calls, the characters sent, and an estimated cost. Ambiguous stops are scored with and without.\n**Evidence to check:**\n- Read the report and compare it with the stored call rows.\n**Scoring:**\n- 1.0 — all stated and the figures match the rows\n- 0.5 — one figure is missing or does not match\n- 0.0 — several missing\n\n### C5 — The report says what the baseline cannot show\n**Must be true:** the report states the number of held-out stops, says whether a later gain smaller than the spread counts, and names the abort condition it informs with a result of held, refuted, or not measured.\n**Evidence to check:**\n- Read the report.\n**Scoring:**\n- 1.0 — all three present\n- 0.5 — two present\n- 0.0 — one or none\n\n## Regression check\n- All tests that passed before this slice must still pass.\n- Files outside `priority-dev/` must remain unchanged, except the committed reports named in the slice.\n\n## Out of scope — do not penalise\n- Behaviour that belongs to a later slice of the plan.\n- The policy, the actuator, the attention queue, and the notifier.\n- Real transcript text is private. A report that quotes none of it is correct.\n",
+        "source_path": ".cobuilder/rubrics/priority-dev-spike/slice-16.md"
+      },
+      {
+        "id": "priority-dev-spike/17",
+        "feature_slug": "priority-dev-spike",
+        "n": 17,
+        "title": "Slice 17 — One-call variant",
+        "body_md": "# Rubric: Slice 17 — One-call variant\n\nFeature: priority-dev-spike\nEpic: E5\nSlice goal: `uv run priority eval --variant combined` runs Triage and one call that writes the steps, the payloads, and the card, and `probes/eval-variant.md` compares it with the split chain on the same stops.\nTest command: `uv run --project priority-dev pytest priority-dev/tests -q`\n\n## Criteria\n\n### C1 — The combined variant returns the same types [CRITICAL] [CRITICAL]\n**Must be true:** with a dummy model, the variant returns an Interpretation with the same `Proposal`, `Question`, and Abstain types as the chain. Code still sets the session, author, and confidence, and still checks every kind and quote. A bad quote in any step gives an Abstain that names the step.\n**Evidence to check:**\n- Run the variant tests, including four steps and a bad quote in step 2.\n**Scoring:**\n- 1.0 — all hold\n- 0.5 — the types match but one check is missing\n- 0.0 — a different output type or an unchecked quote\n\n### C2 — The comparison uses the same stops and the same metric [CRITICAL]\n**Must be true:** the report scores the chain and the variant on the same held-in and held-out stops, with the slice 16 metric and the same number of repeats.\n**Evidence to check:**\n- Read the report and the call rows.\n**Scoring:**\n- 1.0 — same stops, metric, and repeats\n- 0.5 — same stops, but a different repeat count\n- 0.0 — different stops or metric\n\n### C3 — Calls, characters, seconds, and cost are compared\n**Must be true:** the report gives the calls, the characters sent, the seconds, and the estimated cost of each, and the score difference against the spread.\n**Evidence to check:**\n- Recompute two figures from the rows.\n**Scoring:**\n- 1.0 — all stated and two recomputed figures match\n- 0.5 — one missing or one mismatch\n- 0.0 — several missing\n\n### C4 — A contradiction check is reported\n**Must be true:** the report counts the proposals where the card and the first step disagree, for both the chain and the variant, for example a `snooze` beside a question card.\n**Evidence to check:**\n- Recompute the count from the rows.\n**Scoring:**\n- 1.0 — stated and it matches the rows\n- 0.5 — stated but not checkable\n- 0.0 — absent\n\n### C5 — The decision is stated\n**Must be true:** the report names which one the next slice uses and the reason, and says plainly when the difference is inside the spread.\n**Evidence to check:**\n- Read the last section.\n**Scoring:**\n- 1.0 — named with a reason\n- 0.5 — named without a reason\n- 0.0 — absent\n\n## Regression check\n- All tests that passed before this slice must still pass.\n- Files outside `priority-dev/` must remain unchanged, except the committed reports named in the slice.\n\n## Out of scope — do not penalise\n- Behaviour that belongs to a later slice of the plan.\n- The policy, the actuator, the attention queue, and the notifier.\n- Real transcript text is private. A report that quotes none of it is correct.\n",
+        "source_path": ".cobuilder/rubrics/priority-dev-spike/slice-17.md"
+      },
+      {
+        "id": "priority-dev-spike/18",
+        "feature_slug": "priority-dev-spike",
+        "n": 18,
+        "title": "Slice 18 — Optimiser comparison",
+        "body_md": "# Rubric: Slice 18 — Optimiser comparison\n\nFeature: priority-dev-spike\nEpic: E5\nSlice goal: `priority optimise --optimiser gepa` and `--optimiser miprov2` compile the chosen interpreter on the train sessions only, and `probes/optimiser-report.md` gives the held-out score before and after for each, with BootstrapFewShot as the cheap baseline, the cost of each run, and the saved programs.\nTest command: `uv run --project priority-dev pytest priority-dev/tests -q`\n\n## Criteria\n\n### C1 — Optimisers see only the train sessions [CRITICAL] [CRITICAL]\n**Must be true:** the training set holds no stop of a held-out session, and the validation data used inside an optimiser comes from the train sessions. A test fails when a held-out stop enters the training set.\n**Evidence to check:**\n- Read the loader and run its test.\n- Check the stored optimiser inputs by script.\n**Scoring:**\n- 1.0 — no held-out stop reaches any optimiser\n- 0.5 — no stop reaches the training set, but the inner validation set is unchecked\n- 0.0 — a held-out stop reaches an optimiser\n\n### C2 — Both optimisers and the baseline ran with the stated settings [CRITICAL] [CRITICAL]\n**Must be true:** GEPA, MIPROv2, and BootstrapFewShot each ran once on the same train set, and the report states each setting (the budget, the number of candidates, the seed, and the reflection model for GEPA).\n**Evidence to check:**\n- Read the report and the saved run files.\n**Scoring:**\n- 1.0 — all three ran and the settings are stated\n- 0.5 — two ran, or a setting is missing\n- 0.0 — one ran\n\n### C3 — The held-out score before and after is reported with the spread\n**Must be true:** for each optimiser the report gives the held-out score before and after, the spread of repeats from slice 16, and says whether the change is outside the spread. It claims no gain that is inside it.\n**Evidence to check:**\n- Recompute one held-out score from the call rows.\n**Scoring:**\n- 1.0 — stated, recomputed, and honest about the spread\n- 0.5 — stated, but no statement on the spread\n- 0.0 — a claimed gain inside the spread, or no scores\n\n### C4 — The cost of each run and the saved programs are recorded\n**Must be true:** the report gives the calls, the characters, and an estimated cost of each optimiser run, and the compiled programs are saved as files that `eval` can load.\n**Evidence to check:**\n- Load one saved program with `eval --program`.\n**Scoring:**\n- 1.0 — all stated and a program loads and runs\n- 0.5 — stated, but a program does not load\n- 0.0 — cost missing\n\n### C5 — The report names the limits and the abort condition\n**Must be true:** the report states the size of the held-out set, that GEPA may win only because the data is small, and which `abort_if` condition it informs, with held, refuted, or not measured.\n**Evidence to check:**\n- Read the report.\n**Scoring:**\n- 1.0 — all three present\n- 0.5 — two present\n- 0.0 — one or none\n\n## Regression check\n- All tests that passed before this slice must still pass.\n- Files outside `priority-dev/` must remain unchanged, except the committed reports named in the slice.\n\n## Out of scope — do not penalise\n- Behaviour that belongs to a later slice of the plan.\n- The policy, the actuator, the attention queue, and the notifier.\n- Real transcript text is private. A report that quotes none of it is correct.\n",
+        "source_path": ".cobuilder/rubrics/priority-dev-spike/slice-18.md"
+      },
+      {
+        "id": "priority-dev-spike/19",
+        "feature_slug": "priority-dev-spike",
+        "n": 19,
+        "title": "Slice 19 — Judge-scored payload flow",
+        "body_md": "# Rubric: Slice 19 — Judge-scored payload flow\n\nFeature: priority-dev-spike\nEpic: E6\nSlice goal: The label-free gate, `Decide.questions`, the judge module, and the metric wiring run end to end on made-up fixtures with a stub judge: each gate fault abstains with a named 0-score note, a multi-question payload parses, readers use the list, the judge returns the final score with per-part notes, and per-stop rows carry the parts.\nTest command: `uv run pytest priority-dev/tests -q`\n\n## Criteria\n\n### C1 — Label-free gate faults abstain with named notes and score 0 [CRITICAL]\n**Must be true:** each gate fault (unparsable output, bad enum value, disallowed kind, step count out of range, `ask_human` with an empty questions list) ends as an Abstain whose reason names the failed check, scores 0.00, and carries feedback naming the check. No label is consulted. The gate runs with no label present.\n**Evidence to check:**\n- Run the gate tests on made-up inputs.\n- Feed one faulty input per fault through the interpreter with the stub model and read the Abstain reason, the score, and the feedback.\n**Scoring:**\n- 1.0 — all five faults abstain with named reasons, score 0, and named feedback, label-free.\n- 0.5 — faults abstain but a reason or note is missing or generic.\n- 0.0 — any fault crashes, scores non-zero, or needs a label.\n\n### C2 — Multi-question payload parses; empty list rejected; readers use the list [CRITICAL]\n**Must be true:** a `Decide` with two or more questions parses and flows through pick, fill, and card. An empty questions list is rejected. No code path reads the old single `.question` field: card, `to_prediction`, and the runner address the list.\n**Evidence to check:**\n- Run the schema and reader tests.\n- Grep the source for `.question` reads outside tests and migration notes.\n**Scoring:**\n- 1.0 — multi parses, empty rejected, zero stale single-question reads in source.\n- 0.5 — parses but one reader still uses the single field.\n- 0.0 — multi fails or empty passes.\n\n### C3 — Judge contract: raw payloads in, clamped score with per-part notes out [CRITICAL]\n**Must be true:** the judge receives the raw predicted payloads (never a flattened dict), the brief text, and the expected payloads, and returns a score within 0.00 to 1.00 with one note per scored part. The metric clamps an out-of-range judge score and wraps the result as a `Prediction` with `score` and `feedback`. A stub judge stands in for tests; no test makes a model call.\n**Evidence to check:**\n- Run the judge contract tests with the stub judge.\n- Feed the judge an out-of-range score and a malformed note; check clamping and fallback.\n- Grep the tests for live model calls.\n**Scoring:**\n- 1.0 — raw in, clamped score plus per-part notes out, `Prediction` shape, stub only.\n- 0.5 — contract holds but clamping or a note is missing.\n- 0.0 — judge sees flattened input, or a test calls a live model.\n\n### C4 — Per-stop rows carry the judge parts; aggregation unchanged\n**Must be true:** each per-stop line carries the judge score with its per-part notes and the gate outcome. Session means and arm means aggregate exactly as before.\n**Evidence to check:**\n- Run eval on made-up fixtures and parse the per-stop lines.\n- Run the optimiser stub run and check one row per stop.\n- Recompute one session mean by hand from its stop lines.\n**Scoring:**\n- 1.0 — every stop line carries the score, the parts, and the gate outcome, and the means recompute exactly.\n- 0.5 — numbers present but a mean does not recompute.\n- 0.0 — lines missing or means changed.\n### C5 — Predictor feedback names its target\n**Must be true:** with a predictor name given, the feedback names that predictor and speaks to its own fields, while the score stays the program-level number.\n**Evidence to check:**\n- Run the feedback tests for triage, pick, and one fill.\n**Scoring:**\n- 1.0 — all three name their target with field-specific notes and unchanged scores.\n- 0.5 — names the target but notes stay generic.\n- 0.0 — feedback ignores the target.\n\n## Regression check\n- All tests that passed before this slice must still pass.\n- No test makes a live model call.\n- Files outside `priority-dev/` must remain unchanged, except the committed reports named in the slice.\n\n## Out of scope — do not penalise\n- Behaviour that belongs to slice 20 (payload labels, agreement bar, rescore).\n- The policy, the actuator, the attention queue, and the notifier.\n",
+        "source_path": ".cobuilder/rubrics/priority-dev-spike/slice-19.md"
+      },
+      {
+        "id": "priority-dev-spike/20",
+        "feature_slug": "priority-dev-spike",
+        "n": 20,
+        "title": "Slice 20 — Reference payloads and judge validation",
+        "body_md": "# Rubric: Slice 20 — Reference payloads and judge validation\n\nFeature: priority-dev-spike\nEpic: E6\nSlice goal: The judge scores the payload only, against engineer-confirmed reference payloads drafted from the brief only. Two missing-payload rules hold. The eval path passes the payloads to the judge. An agreement bar runs before any result counts. Judge use is metered. Every arm is rescored, and the holdout duel reports a paired cluster bootstrap CI.\nTest command: `uv run --project priority-dev pytest priority-dev/tests -q`\n\n## Criteria\n\n### C1 — The judge sees payloads only [CRITICAL]\n**Must be true:** the judge receives the brief text, the predicted step list, and the reference step list. It never receives the five facts or the step-kind labels. `session_id`, `author`, `confidence`, and `evidence_quote` are removed from both sides before the judge call. The rubric text tells the judge to grade only the fields that the reference states, to ignore question order, and to compare closed fields exactly. A reference given as one step dict is treated as a one-item list.\n**Evidence to check:**\n- Run the judge input tests with a stub judge that records its arguments.\n- Read `judge.py` and `metric.py` for any facts or label steps passed to the judge.\n**Scoring:**\n- 1.0 — recorded judge input holds no facts, no label steps, no code-set fields, and the rubric holds the three instructions.\n- 0.5 — facts gone but a code-set field or the dict-to-list case is missing.\n- 0.0 — facts or label steps still reach the judge.\n\n### C2 — Missing and unwanted payloads score 0 with named notes [CRITICAL]\n**Must be true:** a reference with steps and a candidate with none scores 0, and the note names the candidate's triage status. A reference `[]` and a candidate with steps scores 0, and the note names the candidate's step kinds. Both empty scores 1. Any abstain scores 0 with its reason named. None of these cases calls the judge. With no judge model reachable, a stop with both sides non-empty scores 0 with the stub note, and no legacy facts-and-steps score runs.\n**Amended 31 October 2026:** the engineer changed the contract in slice 21. The judge now sees every stop, and code only pins the score in these cases. Score \"None of these cases calls the judge\" against the code before slice 21, at commit `5bd53bc`. After slice 21, the slice 21 rubric C3 governs.\n**Evidence to check:**\n- Run the rule tests. Each case asserts the score, the note content, and that the stub judge was not called.\n- Grep `metric.py` for `components(` inside `score`.\n**Scoring:**\n- 1.0 — all five cases hold and the legacy fallback is gone from `score`.\n- 0.5 — the two rules hold but one other case or the fallback removal fails.\n- 0.0 — either rule skips, scores non-zero, or calls the judge.\n\n### C3 — The eval path carries payloads and excludes unreferenced stops [CRITICAL]\n**Must be true:** `to_prediction` returns a `payloads` list built from the proposal steps, and `[]` when there is no advice. The runner and optimise build no example for a stop whose label has no `payloads` field, and each prints how many stops it excluded. A stop with `payloads: []` is kept.\n**Evidence to check:**\n- Run the runner and optimise tests on made-up fixtures with one referenced, one `[]`, and one unreferenced stop.\n- Read one per-stop line and the exclusion count line.\n**Scoring:**\n- 1.0 — payloads reach the judge from the runner, the unreferenced stop is excluded and counted in both paths, and `[]` stays.\n- 0.5 — one path excludes, the other does not.\n- 0.0 — the runner still drops payloads.\n\n### C4 — `priority judge-check` computes three pre-set bars [CRITICAL]\n**Must be true:** the command reads a pairs file and the labels, judges each side twice, and prints the human agreement (bar 0.75, at least 6 pairs), the closed-field probe rate (bar 0.90, copies with multi_select, role, or one option label changed), and the repeat flip rate (bar 0.10). It prints `agreement bar: pass` or `agreement bar: fail` and exits 1 on a fail. Fewer than 6 picked pairs is a fail.\n**Evidence to check:**\n- Run the command tests with stub judges that agree, disagree, and flip.\n- Check that the probe copies differ from the reference in exactly one closed field.\n**Scoring:**\n- 1.0 — all three bars, the pass and fail lines, the exit code, and the 6-pair floor hold.\n- 0.5 — the bars compute but the exit code or the floor is wrong.\n- 0.0 — the command is missing or a bar is not computed.\n\n### C5 — Judge use is metered\n**Must be true:** the judge counts its calls and its prompt and completion tokens when the model reports usage. `eval`, `optimise`, and `judge-check` print the totals.\n**Evidence to check:**\n- Run the metering test with a stub model that reports usage.\n- Read the totals line in one live eval log.\n**Scoring:**\n- 1.0 — counts are right in the test and appear in a live log.\n- 0.5 — counts appear but tokens stay 0 when usage is given.\n- 0.0 — no metering.\n\n### C6 — References drafted from briefs only and confirmed [CRITICAL]\n**Must be true:** every stop of the fixture set, 67 train and 30 holdout, has a reference in the Git-ignored `labels-confirmed.json` under `payloads`. Done and continuing stops are not skipped. The drafter input held stop briefs, the payload shape, and the pilot references, and no seed output, candidate payload, call log, label file, or blind-pair file. The engineer confirmed each reference. No real text is committed.\n**Evidence to check:**\n- Count the referenced stops per split in `labels-confirmed.json`.\n- Read the drafter task text and its tool calls for any read of `/tmp/vj-*`, `calls.jsonl`, `blind-pairs*`, or `probes/programs`.\n- Run `git ls-files priority-dev/fixtures/real .lavish` for real text.\n**Scoring:**\n- 1.0 — counts met, drafter input clean, engineer confirmation recorded, nothing real tracked.\n- 0.5 — up to 5 stops lack a reference, or confirmation is partial.\n- 0.0 — a drafter saw a seed or candidate payload, or real text is tracked.\n\n### C7 — Live runs reported as measured [CRITICAL]\n**Must be true:** the agreement bar ran live and its output is saved. Every arm was scored twice under the new metric on the referenced stops. The holdout duel pairs base and the GEPA winner per stop, twice each, with a session-cluster bootstrap CI. `optimiser-report.md` states the numbers, the stop counts, the token totals, and whether the bar passed. When the bar fails, the report says that no arm result counts.\n**Evidence to check:**\n- Recompute one arm mean and the duel difference from the saved logs.\n- Compare the report numbers with the logs.\n**Scoring:**\n- 1.0 — all runs present, numbers recompute, the bar outcome governs the claims.\n- 0.5 — runs present but one number does not recompute or a count is missing.\n- 0.0 — a claimed result has no log, or a failed bar is reported as a win.\n\n## Regression check\n- All tests that passed before this slice must still pass, except tests that pinned the removed legacy fallback or the facts-and-steps judge input.\n- No test makes a live model call.\n- Files outside `priority-dev/`, `docs/plans/priority-dev-spike/`, and `.gitignore` stay unchanged.\n\n## Out of scope — do not penalise\n- A judge model other than Mercury, and a stronger reflection LM.\n- A cost in dollars.\n- The policy, the actuator, the attention queue, and the notifier.\n",
+        "source_path": ".cobuilder/rubrics/priority-dev-spike/slice-20.md"
+      },
+      {
+        "id": "priority-dev-spike/21",
+        "feature_slug": "priority-dev-spike",
+        "n": 21,
+        "title": "Slice 21 — One typed call",
+        "body_md": "# Rubric: Slice 21 — One typed call\n\nFeature: priority-dev-spike\nEpic: E6\nSlice goal: One predictor, `ProposeStop`, reads the stop brief and returns the status, `needs_human`, 0 to 3 typed steps, and one priority for the whole payload. Schema validation is the only gate. Eval and GEPA score the same prediction object, GEPA tunes one component, and reference demos can seed the prompt. The chain, its routing, and its gates are gone. Design: `priority-dev/probes/program-flow-v2.svg`.\nTest command: `uv run --project priority-dev pytest priority-dev/tests -q`\n\n## Criteria\n\n### C1 — One predictor with the designed signature [CRITICAL]\n**Must be true:** `Interpreter.named_predictors()` yields exactly one predictor. Its signature has one input, `brief_text`, and the outputs `status` (six literals), `needs_human` (bool), `steps` (a list of at most 3, discriminated on `kind` over the 13 payload models that remain after `set_priority_hint` goes), and `priority` (`P1`, `P2`, `P3`). No step model in the output schema holds `session_id`, `author`, `confidence`, or `evidence_quote`. No card output exists.\n**Evidence to check:**\n- Run the signature tests. Read `signatures.py` and the output JSON schema that the adapter renders.\n**Scoring:**\n- 1.0 — one predictor, the exact fields, the union, the cap of 3, and no code-set fields in the schema.\n- 0.5 — one predictor, but a field, the cap, or the union differs.\n- 0.0 — more than one predictor, or the chain still runs.\n\n### C2 — Schema validation is the only gate [CRITICAL]\n**Must be true:** a reply that does not parse, a step with an unknown kind, a step with a missing required field, 4 steps, and a priority outside P1 to P3 each give an abstain with `invalid_output` and an error text that names the fault. That text reaches the metric feedback. `check_steps`, `check_fill_payload`, the routing by status, and `done_outcome` are gone from the source. 0 steps is valid.\n**Evidence to check:**\n- Run the gate tests with a stub model for each fault.\n- Grep `src/priority` for the removed names.\n**Scoring:**\n- 1.0 — all five faults abstain with named text, 0 steps passes, and the removed names are gone.\n- 0.5 — the faults abstain but one text is generic, or one removed name remains.\n- 0.0 — a fault passes, or a fault raises.\n\n### C3 — One prediction object for eval and GEPA [CRITICAL]\n**Must be true:** `forward` returns a `dspy.Prediction` with `status`, `needs_human`, `priority`, `steps` (dicts with `session_id` and `author` set by code), and `abstain`. The runner and the GEPA metric score that object with no flattening step. The reference is built from the label fields `priority` and `payloads`. The judge is called for every stop. For an abstain it receives the raw reply and the error text. Code pins the score in four cases: an abstain 0, reference steps against no predicted steps 0, a `[]` reference against predicted steps 0, and both empty 1. In every other case the judge's clamped score is final. The feedback holds the pinned-case note, when one applies, followed by the judge's notes.\n**Evidence to check:**\n- Run the metric and runner tests with a stub model and a stub judge, and record the judge input.\n- Grep the scoring path for `to_prediction`.\n**Scoring:**\n- 1.0 — the same object reaches the metric on both paths, the judge is called for every stop with `{priority, steps}` or the abstain on the predicted side, the four pins hold, and the feedback joins both notes.\n- 0.5 — one path still converts the object, or priority does not reach the judge.\n- 0.0 — the payload or the priority is lost on either path.\n\n### C4 — GEPA tunes one component, and demos come from references\n**Must be true:** the GEPA run has one component, the `propose` predictor, and no `BusyComponentSelector`. A demo option picks up to 4 train stops from the references, prints them by name, gives each its brief and its full reference, and removes those stops from the GEPA valset and the train rescore. No holdout stop becomes a demo.\n**Evidence to check:**\n- Run the optimise tests on made-up fixtures with a stub GEPA and a stub model.\n**Scoring:**\n- 1.0 — one component, demos printed, excluded, and train only.\n- 0.5 — demos work but a demo stop stays in the valset or the rescore.\n- 0.0 — the selector or several components remain, or a holdout stop becomes a demo.\n\n### C5 — `judge-check` probes the priority\n**Must be true:** the closed-field probe also makes a copy of each reference with the priority changed, and counts it like the other copies.\n**Evidence to check:**\n- Run the probe tests and check that the copies differ from the reference in exactly one field.\n**Scoring:**\n- 1.0 — priority copies exist and count.\n- 0.0 — no priority copy.\n\n### C6 — A live stop runs end to end\n**Must be true:** one live `priority eval` run on a few referenced stops shows one model call per stop in `calls.jsonl`, the per-stop lines, the judge usage line, and a non-zero judge call count. At least one stop reaches the judge.\n**Evidence to check:**\n- Read the call log and the output of the live smoke run.\n**Scoring:**\n- 1.0 — one call per stop and a judged stop.\n- 0.0 — no live evidence.\n\n### C7 — The judge and the reflection LM use the NVIDIA Mistral model [CRITICAL]\n**Must be true:** with no override set, the judge's default model and the GEPA reflection LM are `nvidia_nim/mistralai/mistral-large-4-1t-a52b` on `https://integrate.api.nvidia.com/v1`, with the key from `NVIDIA_API_KEY`. The task model stays the `LLM_*` model. `JUDGE_PROVIDER`, `JUDGE_MODEL`, `JUDGE_BASE_URL`, and `JUDGE_API_KEY` override the defaults. No test reads the real key. A live smoke shows a judge call answered by that model.\n**Evidence to check:**\n- Run the config and judge tests with stubbed keys.\n- Read the live smoke output and the model id of the judge call.\n**Scoring:**\n- 1.0 — defaults, overrides, the key source, and a live judge call on the NVIDIA model all hold.\n- 0.5 — the configuration holds but no live evidence exists.\n- 0.0 — the judge or the reflection LM still uses the task model.\n\n## Regression check\n- All tests that passed before this slice must still pass, except tests that pinned the removed chain, its routing, its gates, its predictors, or the chain programs.\n- No test makes a live model call.\n- Files outside `priority-dev/` and `docs/plans/priority-dev-spike/` stay unchanged.\n\n## Out of scope — do not penalise\n- The UI digest of the human ask and the final reply.\n- The slice 20 live runs: the agreement bar, the rescore, and the holdout duel.\n",
+        "source_path": ".cobuilder/rubrics/priority-dev-spike/slice-21.md"
       },
       {
         "id": "review-link/1",
@@ -6304,7 +6705,10 @@
           "priority-dev-spike/E1",
           "priority-dev-spike/E2",
           "priority-dev-spike/E3",
-          "priority-dev-spike/E4"
+          "priority-dev-spike/E4",
+          "priority-dev-spike/E5",
+          "priority-dev-spike/E6",
+          "priority-dev-spike/E7"
         ]
       },
       "ADR-0013": {
@@ -6581,6 +6985,9 @@
           "priority-dev-spike/E2",
           "priority-dev-spike/E3",
           "priority-dev-spike/E4",
+          "priority-dev-spike/E5",
+          "priority-dev-spike/E6",
+          "priority-dev-spike/E7",
           "work-drawer/E1",
           "work-drawer/E2"
         ]
@@ -6657,7 +7064,10 @@
           "priority-dev-spike/E1",
           "priority-dev-spike/E2",
           "priority-dev-spike/E3",
-          "priority-dev-spike/E4"
+          "priority-dev-spike/E4",
+          "priority-dev-spike/E5",
+          "priority-dev-spike/E6",
+          "priority-dev-spike/E7"
         ]
       },
       "ADR-0041": {
@@ -6689,7 +7099,10 @@
           "priority-dev-spike/E1",
           "priority-dev-spike/E2",
           "priority-dev-spike/E3",
-          "priority-dev-spike/E4"
+          "priority-dev-spike/E4",
+          "priority-dev-spike/E5",
+          "priority-dev-spike/E6",
+          "priority-dev-spike/E7"
         ]
       }
     },
@@ -6741,22 +7154,22 @@
       "work-drawer/E2": 25
     },
     "epic_status": {
-      "beads-storage/E1": "in_progress",
-      "beads-storage/E2": "in_progress",
-      "beads-storage/E3": "in_progress",
-      "beads-storage/E4": "in_progress",
-      "beads-storage/E5": "in_progress",
+      "beads-storage/E1": "completed",
+      "beads-storage/E2": "completed",
+      "beads-storage/E3": "completed",
+      "beads-storage/E4": "completed",
+      "beads-storage/E5": "completed",
       "beads-storage/E6": "unstarted",
       "book-index-tiering/E1": "open",
       "build-workflow-polish/E1": "completed",
       "build-workflow-polish/E2": "completed",
       "build-workflow-polish/E3": "completed",
-      "build-workflow-polish/E4": "unstarted",
+      "build-workflow-polish/E4": "completed",
       "cobuilder-implement/E1": "merged",
       "cobuilder-implement/E2": "merged",
-      "cobuilder-memory/E1": "open",
-      "cobuilder-memory/E2": "unstarted",
-      "cobuilder-memory/E3": "unstarted",
+      "cobuilder-memory/E1": "completed",
+      "cobuilder-memory/E2": "completed",
+      "cobuilder-memory/E3": "completed",
       "cobuilder-viewer/E1": "open",
       "cobuilder-viewer/E2": "open",
       "cobuilder-viewer/E3": "open",
@@ -6776,7 +7189,7 @@
       "cobuilder-viewer/E17": "open",
       "cobuilder-viewer/E18": "open",
       "cobuilder-viewer/E19": "open",
-      "design-mode/E1": "merged",
+      "design-mode/E1": "completed",
       "gate-doc-surfacing/E1": "open",
       "gate-doc-surfacing/E2": "open",
       "gate-state-resolution/E1": "unstarted",
@@ -6797,43 +7210,46 @@
       "lean-bundle-diffs/E1": "unstarted",
       "lean-bundle-diffs/E2": "unstarted",
       "lean-bundle-diffs/E3": "completed",
-      "maintainable-viewer/E1": "unstarted",
-      "maintainable-viewer/E2": "unstarted",
-      "maintainable-viewer/E3": "unstarted",
-      "maintainable-viewer/E4": "unstarted",
-      "nexus-borrowings/E1": "open",
-      "nexus-borrowings/E2": "open",
-      "nexus-borrowings/E3": "open",
-      "nexus-borrowings/E4": "open",
-      "options-mode/E1": "open",
-      "plugin-split/E1": "merged",
-      "plugin-split/E2": "merged",
-      "plugin-split/E3": "merged",
-      "plugin-split/E4": "merged",
-      "plugin-split/E5": "merged",
-      "plugin-split/E6": "merged",
-      "plugin-split/E7": "unstarted",
+      "maintainable-viewer/E1": "completed",
+      "maintainable-viewer/E2": "completed",
+      "maintainable-viewer/E3": "completed",
+      "maintainable-viewer/E4": "completed",
+      "nexus-borrowings/E1": "completed",
+      "nexus-borrowings/E2": "completed",
+      "nexus-borrowings/E3": "completed",
+      "nexus-borrowings/E4": "completed",
+      "options-mode/E1": "completed",
+      "plugin-split/E1": "completed",
+      "plugin-split/E2": "completed",
+      "plugin-split/E3": "completed",
+      "plugin-split/E4": "completed",
+      "plugin-split/E5": "completed",
+      "plugin-split/E6": "completed",
+      "plugin-split/E7": "completed",
       "plugin-split/E8": "completed",
       "priority-dev-spike/E1": "no-pull-request",
       "priority-dev-spike/E2": "no-pull-request",
       "priority-dev-spike/E3": "no-pull-request",
       "priority-dev-spike/E4": "no-pull-request",
-      "react-viewer/E1": "unstarted",
-      "react-viewer/E2": "unstarted",
-      "react-viewer/E3": "unstarted",
-      "react-viewer/E4": "unstarted",
-      "react-viewer/E5": "unstarted",
-      "react-viewer/E6": "unstarted",
-      "react-viewer/E7": "unstarted",
-      "react-viewer/E8": "unstarted",
-      "react-viewer/E9": "unstarted",
-      "review-flight-deck/F0": "no-pull-request",
-      "review-flight-deck/F1": "no-pull-request",
-      "review-flight-deck/F2": "no-pull-request",
-      "review-flight-deck/F3": "no-pull-request",
-      "review-flight-deck/F4": "no-pull-request",
-      "review-flight-deck/F5": "no-pull-request",
-      "review-flight-deck/F6": "no-pull-request",
+      "priority-dev-spike/E5": "no-pull-request",
+      "priority-dev-spike/E6": "unstarted",
+      "priority-dev-spike/E7": "unstarted",
+      "react-viewer/E1": "completed",
+      "react-viewer/E2": "completed",
+      "react-viewer/E3": "completed",
+      "react-viewer/E4": "completed",
+      "react-viewer/E5": "completed",
+      "react-viewer/E6": "completed",
+      "react-viewer/E7": "completed",
+      "react-viewer/E8": "completed",
+      "react-viewer/E9": "completed",
+      "review-flight-deck/F0": "completed",
+      "review-flight-deck/F1": "completed",
+      "review-flight-deck/F2": "completed",
+      "review-flight-deck/F3": "completed",
+      "review-flight-deck/F4": "completed",
+      "review-flight-deck/F5": "completed",
+      "review-flight-deck/F6": "completed",
       "review-link/E1": "no-pull-request",
       "slice-agents-and-vocabulary/E1": "unstarted",
       "slice-agents-and-vocabulary/E2": "unstarted",
@@ -6955,6 +7371,20 @@
       "priority-dev-spike/11": "priority-dev-spike/E4",
       "priority-dev-spike/12": "priority-dev-spike/E4",
       "priority-dev-spike/13": "priority-dev-spike/E4",
+      "priority-dev-spike/14": "priority-dev-spike/E5",
+      "priority-dev-spike/15": "priority-dev-spike/E5",
+      "priority-dev-spike/16": "priority-dev-spike/E5",
+      "priority-dev-spike/17": "priority-dev-spike/E5",
+      "priority-dev-spike/18": "priority-dev-spike/E5",
+      "priority-dev-spike/19": "priority-dev-spike/E6",
+      "priority-dev-spike/20": "priority-dev-spike/E6",
+      "priority-dev-spike/21": "priority-dev-spike/E6",
+      "priority-dev-spike/22": "priority-dev-spike/E7",
+      "priority-dev-spike/23": "priority-dev-spike/E7",
+      "priority-dev-spike/24": "priority-dev-spike/E7",
+      "priority-dev-spike/25": "priority-dev-spike/E7",
+      "priority-dev-spike/26": "priority-dev-spike/E7",
+      "priority-dev-spike/27": "priority-dev-spike/E7",
       "review-link/1": "review-link/E1",
       "review-link/2": "review-link/E1",
       "review-link/3": "review-link/E1",

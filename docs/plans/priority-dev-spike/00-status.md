@@ -15,6 +15,9 @@
   - 4c Blind rubrics: APPROVED 2026-10-24
   - 4d E5 addendum (epic E5, slices 14 to 18, epic design, rubrics 14 to 18): APPROVED 2026-10-26
     view: http://localhost:62583/active/viewer/#/priority-dev-spike/build/epics
+  - 4e E7 addendum, slice plan (epic E7, slices 22 to 27): APPROVED 2026-11-05
+    view: http://localhost:62583/active/viewer/#/priority-dev-spike/build/epics
+  - 4f E7 addendum, epic design and rubrics 22 to 27: pending
 
 Design mode: priority-dev-spike
 Memory (Gate 1): consulted 2026-10-24

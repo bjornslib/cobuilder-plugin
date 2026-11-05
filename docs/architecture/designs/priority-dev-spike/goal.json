@@ -76,6 +76,24 @@
       "branch": "design/priority-dev-spike",
       "pr": null,
       "state": "planned"
+    },
+    {
+      "id": "E6",
+      "slug": "judge-scored-payloads",
+      "title": "Judge-scored payloads: reference payloads, a judge that grades meaning, and one typed call.",
+      "outcome": "A judge that clears its agreement bar scores each proposed payload against an engineer-confirmed reference.",
+      "branch": "design/priority-dev-spike",
+      "pr": null,
+      "state": "planned"
+    },
+    {
+      "id": "E7",
+      "slug": "gepa-gaps",
+      "title": "GEPA gaps: complete reflection evidence, whole proposals, general instructions, a compact stop brief, and optimiser run C3.",
+      "outcome": "An optimiser run gives the reflection model complete evidence, and arm C3 is compared with arm A on the test set.",
+      "branch": "design/priority-dev-spike",
+      "pr": null,
+      "state": "planned"
     }
   ],
   "later_programs": [
