@@ -33,7 +33,7 @@ Human-chat rule: a session is human-chat when a person typed 5 or more messages 
 - Valid digests: 7 of 15 in this run. Two earlier runs gave 9 of 11 (first three sessions, before the previous-run fix) and 8 of 15. Causes of the 8 invalid digests: 7 break a `RunDigest` length limit (`ran` over 600 characters, `result` over 300, or both), and 1 (7b308720 stop 1) gives the wrong field shape. Digest prompt tuning is out of scope for this slice.
 - Each later stop that had a stored digest before it carried `PREVIOUS RUN:` (5 of 5). Each later stop with no stored digest before it had none (6 of 6).
 - Each brief has a non-empty `HUMAN ASKED:` section (15 of 15).
-- Shrink on a real stop: fece50d8 stop 1 is over the 160,000-character budget. Its brief made 2 shrink calls on Mercury 3 (`openai/mercury-3`, session fece50d8, stop 001 in the call log): input 38,578 characters, reply 34,050; input 37,731 characters, reply 18,169. The brief then fit (158,066 characters). A shrink call on the made-up 169,000-character run of the test helpers gave input 38,795 and reply 71 characters.
+- Shrink on a real stop: fece50d8 stop 1 is over the 160,000-character budget. Its brief made 2 shrink calls on Mercury 3 (`openai/mercury-3`, session fece50d8, stop 001 in the call log): input 38,578 characters, reply 34,050; input 37,731 characters, reply 18,169. The brief then fit (158,066 characters).
 
 ## 2. Arm A on the test set, full and compact brief
 
