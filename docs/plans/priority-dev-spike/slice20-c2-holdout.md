@@ -39,6 +39,31 @@ notify excerpt. Earlier arm C numbers used 3000 tokens and a 600-character excer
 - Mercury 3 is the task model, the judge, and the reflection model.
 - Four notify excerpts and four P2-notify priority choices in the training drafts are open.
 
+## GEPA gaps
+
+These are gaps in how GEPA runs here. Each row is a fact from the code or the log, except where it says "not proved".
+None is fixed.
+
+| # | Gap | Evidence | Likely effect |
+|---|---|---|---|
+| 1 | Every proposal is cut at 4000 characters. The cut is silent, and the reflection model is not told the cap. | `gepa_proposer._cap_draft`, `MAX_PROPOSAL_CHARS = 4000`. All 31 logged proposal bodies measure 3995 to 4001 characters. The saved C2 text ends mid-sentence. | The prompt cannot grow, and a rule added at the end is lost. Not proved: this may be why no candidate beat iteration 4. |
+| 2 | A failed parse loses our judge note. | DSPy builds its own feedback for a reply that does not parse (`gepa_utils.py`, lines 429 to 437): the raw reply and a generic structure message. The log shows 15 parse failures. | The reflection model never sees the error text, or a null `agent_recommendation`. |
+| 3 | The reflection model sees no numeric score. | The reflective example holds Inputs, Generated Outputs and Feedback only. Our feedback has no numbers. | It cannot tell a 0.9 stop from a 0.3 stop, except by the words. |
+| 4 | The selection set is small and noisy. | 20 stops from 7 sessions. Scores for near-identical prompts ran from 0.43 to 0.675 over 19 evaluations. One stop moves the mean by 0.05. | GEPA cannot reliably choose between candidates that differ by less than about 0.1. |
+| 5 | The minibatch is small. | 3 stops per reflection step. 19 candidates accepted and 12 rejected on such samples. | Acceptance rests on 3 stops. |
+| 6 | The reflection model is the task model. | Mercury 3 does both. The DSPy GEPA skill advises a stronger, separate model. | The proposals may be weak. Not tested. |
+| 7 | GEPA logs are not kept. | No `log_dir` and no `track_stats`. | Nobody can show what the reflection model saw. |
+| 8 | The prompt example teaches a null. | `signatures.py` line 46 has `"agent_recommendation": null`. The references never use null. | The model copies the example. Arm A and the seed text carry it. |
+| 9 | Training detail enters the prompt. | The C2 text names two option labels and a file name from one training stop. | Overfitting to CoBuilder. The gain sits mainly in CoBuilder sessions. |
+| 10 | Briefs go in whole. | Median 17K characters, p90 103K, maximum 161K. A 3-stop minibatch can reach about 500K characters. | Dilution is possible. No context error seen. Not tested. |
+
+Two points for any new run:
+
+- The seed text of C2 is already cut. A higher cap does not repair it. Finish or remove the cut sentence in a copy of
+  the program file, and seed the next run from the copy.
+- The fix for gap 8 changes the prompt of arm A. Either keep the old A as the baseline, or rerun A after the fix. The
+  plan must say which.
+
 ## Changed in the run
 
 `Notify.excerpt` has no length cap (it was 600, a first guess in the E5 design). `MAX_TOKENS` of the task model
