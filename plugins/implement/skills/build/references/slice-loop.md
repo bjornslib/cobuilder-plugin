@@ -165,13 +165,19 @@ above.
    - Accept a spec change. Edit the plan document, and record the change in
      the slice note.
    - Accept a test change. Edit the plan document so that it states the
-     corrected behaviour. Then run the slice again from RED. A test change
-     changes the contract, so a score against the old tests does not count.
+     corrected behaviour.
 3. If you are uncertain, ask the user. Show the item, its evidence, and your
    recommendation. Uncertain means one of these:
    - The evidence does not settle the item.
    - The change alters scope, a product decision, or an approved gate document.
    - The change affects a slice that already passed.
+4. If an accepted item changes what the slice must do, run the slice again
+   from RED. This covers a change to its tests or its rubric criteria. The old
+   score does not count. If the item changes only wording or names that no test
+   or rubric criterion checks, the score stands.
+5. Do not close the slice while an item waits for the user. Ask about all open
+   items in one message. After all answers arrive, run the slice again from RED
+   at most once.
 
 Do not ask the user about an item that you can settle from the evidence.
 
