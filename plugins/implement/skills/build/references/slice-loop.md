@@ -151,6 +151,44 @@ Branch on the exit code only, and never parse the message. [shared/tracker-usage
 | **FAIL** | Run `record-attempt <id> <score> --note <text>`. Re-run GREEN with the feedback file. Do not re-run RED because the contract did not change. |
 | **ESCALATION** | Do not loop again. Run `escalate <id> <score> <reason>`. Then run `regenerate-status-files <program> --plans-dir <dir>` and rebuild the index. Discuss with the user. See the gap decision tree in `validation-scoring.md`. When the engineer decides to move on, run `tracker.py skip-slice <id> --reason <text> --outcome escalated`, then rebuild the index again. For a delayed slice, use `--outcome skipped`. Closing the slice unblocks the later slices. |
 
+## Handling suggestions
+
+RED and GREEN can add items to `suggestions`: a spec change, a test change, or
+a question. They do not stop for an answer. The workflow returns the items for
+each slice. Decide each item at the slice boundary, before the verdict action
+above.
+
+1. Read the item and its evidence. Check the evidence against the code and
+   the plan documents.
+2. If you are certain, decide alone:
+   - Reject the item, or answer the question, and record why in the slice note.
+   - Accept a spec change. Edit the plan document, and record the change in
+     the slice note.
+   - Accept a test change. Edit the plan document so that it states the
+     corrected behaviour.
+3. If you are uncertain, ask the user. Show the item, its evidence, and your
+   recommendation. Uncertain means one of these:
+   - The evidence does not settle the item.
+   - The change alters scope, a product decision, or an approved gate document.
+   - The change affects a slice that already passed.
+4. If an accepted item changes what the slice must do, run the slice again
+   from RED. This covers a change to its tests or its rubric criteria. The old
+   score does not count. If the item changes only wording or names that no test
+   or rubric criterion checks, the score stands.
+5. Do not close the slice while an item waits for the user. Ask about all open
+   items in one message. After all answers arrive, run the slice again from RED
+   at most once.
+
+Do not ask the user about an item that you can settle from the evidence.
+
+- The orchestrating session makes every edit to a spec (`docs/plans/<slug>/`)
+  and to a rubric (`.cobuilder/rubrics/<slug>/`).
+- RED, GREEN, and VALIDATE never edit a spec or a rubric. Do not give those
+  edits to a subagent.
+- If an accepted spec change or test change alters what the slice must do,
+  update the matching rubric criteria in the same step. RED and GREEN cannot
+  see the rubric.
+
 ## Slice note to project memory
 
 On a PASS, store one short note in project memory while the cause is still

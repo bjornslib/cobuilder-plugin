@@ -38,5 +38,11 @@ Then:
    - no TODO, FIXME, HACK, or XXX markers exist in modified files
    - no test file appears in your diff
 
+If a test or the spec looks wrong, do not change it, and do not work around
+it. Make the test pass as written. Add an item to `suggestions`: the kind, the
+target, the issue, your evidence, and your proposal. If you have a question,
+add it there too, and continue with your best reading. Name that reading in
+the item.
+
 Report: files created or modified, full test output with pass and fail counts,
-and — if this was a retry — how you addressed each point of the feedback.
+and — if this was a retry — how you addressed each point of the feedback, and your suggestions.
