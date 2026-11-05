@@ -7,13 +7,14 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
+from functools import partial
 from pathlib import Path
 
 from priority import config
 from priority.evaluation.demos import as_demo, demo_briefs, drop_demo_stops, pick_demos
 from priority.evaluation.metric import JudgeFailure, ModelFailure
 from priority.gepa_log import discard_run_log, recording_proposer, write_candidates
-from priority.gepa_proposer import guided_instruction_proposer
+from priority.gepa_proposer import blocked_details, guided_instruction_proposer
 from priority.optimise_report import append_report, write_eval_rows
 from priority.trainset import assert_train_only, build_trainset, split_gepa_valset
 
@@ -151,13 +152,14 @@ def _reflection_lm() -> object | None:
         return None
 
 
-def _build_optimiser(cls: object, settings: Settings) -> object:
+def _build_optimiser(cls: object, settings: Settings, train: list) -> object:
     """One optimiser with the run budget and seed recorded in its settings."""
     if settings.optimiser == "gepa":
         gepa_dir = settings.log_dir / "gepa"
         gepa_dir.mkdir(parents=True, exist_ok=True)
         options: dict = {"metric": gepa_feedback, "max_full_evals": settings.budget, "seed": settings.seed,
-                         "instruction_proposer": recording_proposer(guided_instruction_proposer, settings.log_dir),
+                         "instruction_proposer": recording_proposer(
+                             partial(guided_instruction_proposer, blocked=blocked_details(train)), settings.log_dir),
                          "add_format_failure_as_feedback": True, "track_stats": True,
                          "log_dir": str(gepa_dir)}
         if settings.minibatch is not None:
@@ -178,10 +180,10 @@ def _compile(cls: object, settings: Settings, student: object, examples: list, t
     """The compiled program. The labeled optimiser has no compile step: its student already holds the demos."""
     if settings.optimiser == "labeled":
         return student
-    optimiser = _build_optimiser(cls, settings)
     if settings.optimiser != "gepa":
-        return optimiser.compile(student, trainset=examples)
+        return _build_optimiser(cls, settings, examples).compile(student, trainset=examples)
     train, val, _ = split_gepa_valset(examples, train_ids, settings.seed, settings.val_sessions)
+    optimiser = _build_optimiser(cls, settings, train)
     if val:
         return optimiser.compile(student, trainset=train, valset=val)
     return optimiser.compile(student, trainset=train)

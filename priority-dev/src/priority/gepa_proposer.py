@@ -1,9 +1,18 @@
 """The GEPA instruction proposer: the default reflective flow plus a schema guard for the propose component."""
 from __future__ import annotations
 
+import re
+from collections.abc import Iterator
 from typing import Literal, get_args, get_origin
 
 SCHEMA_GUARD_LINE = "Use exactly these fields. Do not invent field names."
+
+GENERAL_RULES = (
+    "Write rules that hold for any coding session, not for one session. "
+    "Never quote an option label, a file name, a command, or a session detail from the examples. "
+    "Describe the kind of choice and the rule that decides it."
+)
+FILE_NAME = re.compile(r"\b[A-Za-z_][\w-]{2,}\.[A-Za-z][A-Za-z0-9]{0,7}\b")
 
 
 def _render(name: str, annotation: object) -> str:
@@ -37,8 +46,60 @@ def _strip_guard(text: str) -> str:
     return head.rstrip()
 
 
-def guided_instruction_proposer(candidate: dict, reflective_dataset: dict,
-                                components_to_update: list) -> dict:
+def _option_labels(node: object) -> Iterator[str]:
+    """Every option label in a nested payload."""
+    if isinstance(node, dict):
+        for option in node.get("options") or []:
+            if isinstance(option, dict) and isinstance(option.get("label"), str):
+                yield option["label"]
+        for value in node.values():
+            yield from _option_labels(value)
+    elif isinstance(node, list):
+        for item in node:
+            yield from _option_labels(item)
+
+
+def _strings(node: object) -> Iterator[str]:
+    """Every string in a nested payload."""
+    if isinstance(node, str):
+        yield node
+    elif isinstance(node, dict):
+        for value in node.values():
+            yield from _strings(value)
+    elif isinstance(node, list):
+        for item in node:
+            yield from _strings(item)
+
+
+def blocked_details(examples: list) -> frozenset[str]:
+    """The lower-case option labels of 3 or more words and the file names in the trainset references."""
+    found: set[str] = set()
+    for example in examples:
+        payloads = example.expected_payloads
+        found.update(label.lower() for label in _option_labels(payloads) if len(label.split()) >= 3)
+        found.update(name.lower() for text in _strings(payloads) for name in FILE_NAME.findall(text))
+    return frozenset(found)
+
+
+def _quoted(text: str, blocked: frozenset) -> tuple[int, int]:
+    """How many blocked option labels and file names occur in the text, ignoring case."""
+    lower = text.lower()
+    hits = [detail for detail in blocked if detail in lower]
+    files = sum(1 for detail in hits if FILE_NAME.fullmatch(detail))
+    return len(hits) - files, files
+
+
+def _admit(candidate: dict, name: str, text: str, blocked: frozenset) -> str:
+    """The guarded proposal, or the parent instruction when the proposal quotes a blocked detail."""
+    labels, files = _quoted(text, blocked)
+    if labels or files:
+        print(f"proposal rejected: quotes {labels} trainset option labels and {files} file names")
+        return candidate[name]
+    return _strip_guard(text) + "\n\n" + schema_guard(name)
+
+
+def guided_instruction_proposer(candidate: dict, reflective_dataset: dict, components_to_update: list,
+                                *, blocked: frozenset = frozenset()) -> dict:
     """The GEPA instruction proposer: the default reflective flow plus a schema guard.
 
     The call signature matches dspy's ProposalFn: the candidate instruction mapping, the reflective dataset
@@ -47,13 +108,15 @@ def guided_instruction_proposer(candidate: dict, reflective_dataset: dict,
     so a drifted field name fails the shape check instead of entering the prompt. An earlier guard is
     stripped before the new one is added, so guards do not pile up. No draft is cut: an earlier 4000-character
     cut lost the tail of every proposal and left rules unfinished.
+
+    The reflection model gets GENERAL_RULES. A proposal that quotes a blocked detail, an option label of 3 or
+    more words or a file name from the trainset, keeps the parent instruction, and the run prints counts only.
     """
     from dspy.teleprompt.gepa import InstructionProposer
 
-    proposed = InstructionProposer()(
+    proposed = InstructionProposer(additional_instructions=GENERAL_RULES)(
         candidate=candidate,
         reflective_dataset=reflective_dataset,
         components_to_update=components_to_update,
     )
-    return {name: _strip_guard(text) + "\n\n" + schema_guard(name)
-            for name, text in proposed.items()}
+    return {name: _admit(candidate, name, text, blocked) for name, text in proposed.items()}
