@@ -27,7 +27,7 @@ The terms follow `DDD-VOCABULARY.md`: optimiser run, seed program, candidate, tr
 
 ## Types & Signatures
 
-- Slice 22, failed-parse trace. When the `propose` call raises `AdapterParseError` or `ValidationError` and `dspy.settings.trace` is a list, `Interpreter._try_calls` appends `(self.propose, {"brief_text": text}, dspy.Prediction(raw_reply=<raw>, validation_error=<error text>))`. The abstain prediction that `forward` returns does not change. GEPA then builds a reflective example for that stop and calls the metric for its feedback.
+- Slice 22, failed-parse trace (exists, kept). `Interpreter._abstained` already appends `(self.propose, {"brief_text": text}, dspy.Prediction(raw_reply=<raw>, error=<error text>))` to an active DSPy trace, so gap 2 was a wrong claim. Slice 22 keeps this behaviour under regression tests and does not rename the keys.
 - Slice 22, feedback with the score. `gepa_feedback` returns `Prediction(score=v, feedback=f"Score: {v:.2f} of 1.00. " + notes)`. The value of `score` does not change.
 - Slice 22, logs. `run(..., gepa_log_dir: Path | None)`. Default: `probes/programs/<stem>-budget<b>-seed<s>-log/` (Git ignores `probes/programs/`). GEPA gets `log_dir=<dir>/gepa` and `track_stats=True`. The proposer writes `<dir>/reflection-<NNN>.json` per call: `{"component", "current_instruction", "reflective_dataset", "proposal"}`. After compile, the run writes `<dir>/candidates.json`: per candidate its instruction, parents, valset aggregate score, and the best index.
 - Slice 23, reflection settings. `REFLECTION_PROVIDER` (default `nvidia_nim`), `REFLECTION_MODEL` (default `mistralai/mistral-large-4-1t-a52b`), `REFLECTION_BASE_URL`, `REFLECTION_API_KEY` (else the provider key). `_reflection_lm()` reads only these. The judge settings never move the reflection model. The run prints `reflection model: <id>`.
@@ -58,9 +58,9 @@ Order: 22, 23, 24, 25, 26, 27. Slices 22 to 24 touch the same files, so they run
 
 ## Risks & Open Questions
 
-- The failed-parse trace depends on DSPy reading `dspy.settings.trace` during the GEPA rollout. If DSPy does not keep that list for an exception that the program catches, slice 22 must find another route, such as a custom adapter for the reflective dataset.
+- Gap 2 was a wrong claim, found by the slice 22 RED role: failed stops already reach the reflection model. Slice 22 now closes gaps 3 and 7 and keeps gap 2's behaviour under test.
 - The NVIDIA endpoint hung for the judge earlier. If the reflection model hangs, slice 26 fails. The 600-second timeout and the retries limit the wait.
 - A whole minibatch of 3 full briefs can reach about 500K characters. The NVIDIA Mistral context limit is not known. Slice 25 may cut this.
 - The trainset-detail check may reject a general rule that happens to contain a common 3-word label. The run prints the count, and slice 26 shows how often it fires.
 - The digest open items and decisions vary between calls (seen twice). The compact brief may move the score for that reason alone.
-- Gate 4f (this design and the rubrics) was not presented page by page. The engineer's instruction of 5 November 2026, "implement E7 end to end, slices 22 to 25, and report after the first live smoke run of slice 26", is recorded as the approval. The engineer may still reject this design.
+- Gate 4f (this design and the rubrics) was recorded first from the engineer's instruction to implement E7, then approved explicitly by the engineer on 5 November 2026.
