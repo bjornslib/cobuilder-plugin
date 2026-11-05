@@ -236,3 +236,17 @@ def test_compare_rows_summarises_each_group_from_its_own_stops_only():
 def test_compare_rows_bootstrap_is_seeded_and_repeats():
     report = load_report()
     assert compare(report)["all"] == compare(report)["all"], "two runs of the bootstrap gave different intervals"
+
+
+def test_compare_rows_reads_the_propose_input_size_for_string_stops_and_full_ids():
+    session = "a1b2c3d4-0000-4000-8000-000000000025"
+    full = [call_row(session_id=session, stop="002", stage="propose", rendered_input="f" * 31)]
+    compact = [call_row(session_id=session, stop="002", stage="digest", rendered_input="d" * 99),
+               call_row(session_id=session, stop="002", stage="propose", rendered_input="c" * 17),
+               call_row(session_id=session, stop="002", stage="digest", rendered_input="d" * 99)]
+    result = load_report().compare_rows(eval_output([(session, 2, 0.400)]), eval_output([(session, 2, 0.500)]),
+                                        full, compact, {session: "test set 1"})
+    rows = result["rows"]
+    assert len(rows) == 1, f"expected one paired stop, got {len(rows)}"
+    assert rows[0]["full_chars"] == 31, f"the full propose input is 31 characters, got {rows[0]['full_chars']}"
+    assert rows[0]["compact_chars"] == 17, f"the compact propose input is 17 characters, got {rows[0]['compact_chars']}"
