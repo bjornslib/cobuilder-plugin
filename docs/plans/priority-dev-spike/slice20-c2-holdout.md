@@ -54,7 +54,7 @@ None is fixed.
 | 6 | The reflection model is the task model. | Mercury 3 does both. The DSPy GEPA skill advises a stronger, separate model. | The proposals may be weak. Not tested. |
 | 7 | GEPA logs are not kept. | No `log_dir` and no `track_stats`. | Nobody can show what the reflection model saw. |
 | 8 | The prompt example teaches a null. | `signatures.py` line 46 has `"agent_recommendation": null`. The references never use null. | The model copies the example. Arm A and the seed text carry it. |
-| 9 | Training detail enters the prompt. | The C2 text names two option labels and a file name from one training stop. | Overfitting to CoBuilder. The gain sits mainly in CoBuilder sessions. |
+| 9 | Training detail enters the prompt. | The C2 text holds two option labels and a file name taken from one training stop. | Overfitting to CoBuilder. The gain sits mainly in CoBuilder sessions. |
 | 10 | Briefs go in whole. | Median 17K characters, p90 103K, maximum 161K. A 3-stop minibatch can reach about 500K characters. | Dilution is possible. No context error seen. Not tested. |
 
 Two points for any new run:
