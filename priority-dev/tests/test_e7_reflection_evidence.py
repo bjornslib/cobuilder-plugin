@@ -136,9 +136,9 @@ def spy_proposer(monkeypatch):
     original = require("priority.gepa_proposer").guided_instruction_proposer
     seen: list = []
 
-    def spy(candidate, reflective_dataset, components_to_update):
+    def spy(candidate, reflective_dataset, components_to_update, **kwargs):
         seen.append({name: [dict(item) for item in items] for name, items in reflective_dataset.items()})
-        return original(candidate, reflective_dataset, components_to_update)
+        return original(candidate, reflective_dataset, components_to_update, **kwargs)
 
     monkeypatch.setattr(optimise, "guided_instruction_proposer", spy)
     return seen

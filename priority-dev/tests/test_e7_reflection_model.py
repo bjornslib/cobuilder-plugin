@@ -77,6 +77,9 @@ def stub_instruction_proposer(monkeypatch, body):
     gepa = require("dspy.teleprompt.gepa")
 
     class StubInstructionProposer:
+        def __init__(self, *args, **kwargs):
+            pass
+
         def __call__(self, candidate, reflective_dataset, components_to_update):
             return {name: body for name in components_to_update}
 
