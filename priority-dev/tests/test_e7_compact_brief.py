@@ -269,3 +269,34 @@ def test_eval_compact_caches_an_abstain_and_skips_its_digest_on_a_second_run(mon
             continue
         abstained.append(path)
     assert len(abstained) == 1, f"expected one cached Abstain file in {first.digest_dir}, found {len(abstained)}"
+
+
+def test_eval_compact_does_not_cache_a_model_error_abstain(monkeypatch, tmp_path):
+    models = require("priority.interpreter.models")
+    seen: list = []
+
+    def model_error_on_first_stop(brief):
+        seen.append(brief)
+        if len(seen) == 1:
+            return models.Abstain(reason="model_error", detail="stub: the provider failed for the first stop")
+        return make_digest()
+
+    first = run_compact(monkeypatch, tmp_path, digest_for=model_error_on_first_stop)
+    assert first.code == 0, f"the first run crashed on a model error:\n{first.printed}"
+    assert "compact brief: 1 stops fell back to the full brief" in first.printed, (
+        f"the first run did not report the one fallback stop:\n{first.printed}")
+    cached = sorted(first.digest_dir.glob("*.json"))
+    assert len(cached) == len(first.digest_calls) - 1, (
+        f"expected {len(first.digest_calls) - 1} cached files, every stop except the model_error stop; "
+        f"found {len(cached)} in {first.digest_dir}")
+    for path in cached:
+        try:
+            models.Abstain.model_validate_json(path.read_text())
+        except ValueError:
+            continue
+        raise AssertionError(f"the model_error abstain was cached in {path}")
+    second = run_compact(monkeypatch, tmp_path, work_dir=tmp_path / "second", digest_dir=first.digest_dir)
+    assert second.code == 0, f"the second run failed:\n{second.printed}"
+    assert len(second.digest_calls) == 1, (
+        f"the second run made {len(second.digest_calls)} digest calls; expected 1, the model_error stop, "
+        "because a transient failure must not be cached")
