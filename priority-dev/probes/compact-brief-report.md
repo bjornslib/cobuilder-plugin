@@ -8,33 +8,32 @@ Numbers and 8-character session prefixes only. The run folder `fixtures/real/run
 
 ## 1. Digest check on human-chat training sessions
 
-Command: `priority digest TRANSCRIPT --stop N --log-dir DIR`, each listed stop in order, on Mercury 3 (`fixtures/real/runs/slice25/digest2/`). Each later stop reads the stored digest of the session as `PREVIOUS RUN:` (the slice 25 fix in `cli.digest`). The store holds one digest for each session: the last valid one. Only the listed stops were digested, so "the stop before" is the listed stop before.
+Command: `priority digest TRANSCRIPT --stop N --log-dir DIR`, each listed stop in order, on Mercury 3 (`fixtures/real/runs/slice25/digest3/`, one folder for each session). Each later stop reads the stored digest of the session as `PREVIOUS RUN:` (the slice 25 fix in `cli.digest`). The store holds one digest for each session: the last valid one. Only the listed stops were digested, so "the stop before" is the listed stop before. Each row below comes from `probes/digest_report.py digest <session folder>`; each call row carries its session and stop (the slice 25 fix in the call store).
 
 Human-chat rule: a session is human-chat when a person typed 5 or more messages in it. A typed message is a transcript line with `type` `user`, no `isMeta` and no `isSidechain`, whose content is a string, or a list of parts with no `tool_result` part (the text parts joined), and whose text does not start with `<command`, `<local-command` or `Caveat`. Counts by this rule: d3d83e74 7, fe9bb39f 11, 7b308720 5, fece50d8 37. Other count rules give other numbers, and each count is 5 or more. All four are training sessions with 3 or more listed stops.
 
 |Session|Stop|Model id (call log)|Input chars|Digest|PREVIOUS RUN:|HUMAN ASKED: chars|
 |---|---|---|---|---|---|---|
-|d3d83e74|1|openai/mercury-3|157,622|invalid_output|no (first stop)|7,795|
-|d3d83e74|3|openai/mercury-3|70,698|valid|no (stop 1 invalid)|340|
-|d3d83e74|6|openai/mercury-3|7,677|valid|yes, from stop 3|97|
-|fe9bb39f|1|openai/mercury-3|110,585|invalid_output|no (first stop)|155|
-|fe9bb39f|3|openai/mercury-3|2,625|invalid_output|no (stop 1 invalid)|165|
-|fe9bb39f|5|openai/mercury-3|2,917|valid|no (stops 1 and 3 invalid)|181|
-|fe9bb39f|7|openai/mercury-3|13,118|valid|yes, from stop 5|49|
-|fe9bb39f|9|openai/mercury-3|79,316|valid|yes, from stop 7|113|
-|7b308720|1|openai/mercury-3|32,519|invalid_output|no (first stop)|8,271|
+|d3d83e74|1|openai/mercury-3|157,622|invalid_output (length)|no (first stop)|7,795|
+|d3d83e74|3|openai/mercury-3|70,698|invalid_output (length)|no (stop 1 invalid)|340|
+|d3d83e74|6|openai/mercury-3|6,691|valid|no (stops 1 and 3 invalid)|97|
+|fe9bb39f|1|openai/mercury-3|110,585|invalid_output (length)|no (first stop)|155|
+|fe9bb39f|3|openai/mercury-3|2,625|valid|no (stop 1 invalid)|165|
+|fe9bb39f|5|openai/mercury-3|3,412|valid|yes, from stop 3|181|
+|fe9bb39f|7|openai/mercury-3|13,011|invalid_output (length)|yes, from stop 5|49|
+|fe9bb39f|9|openai/mercury-3|79,497|valid|yes, from stop 5 (stop 7 invalid)|113|
+|7b308720|1|openai/mercury-3|32,519|invalid_output (shape)|no (first stop)|8,271|
 |7b308720|2|openai/mercury-3|27,032|valid|no (stop 1 invalid)|157|
-|7b308720|3|openai/mercury-3|3,475|valid|yes, from stop 2|168|
-|fece50d8|1|openai/mercury-3|140,329 (after 2 shrink calls)|invalid_output|no (first stop)|492|
-|fece50d8|3|openai/mercury-3|14,272|invalid_output|no (stop 1 invalid)|337|
+|7b308720|3|openai/mercury-3|3,517|valid|yes, from stop 2|168|
+|fece50d8|1|openai/mercury-3|158,066 (after 2 shrink calls)|invalid_output (length)|no (first stop)|492|
+|fece50d8|3|openai/mercury-3|14,272|invalid_output (length)|no (stop 1 invalid)|337|
 |fece50d8|9|openai/mercury-3|3,516|valid|no (stops 1 and 3 invalid)|319|
-|fece50d8|19|openai/mercury-3|11,238|invalid_output|yes, from stop 9|36|
+|fece50d8|19|openai/mercury-3|11,154|invalid_output (length)|yes, from stop 9|36|
 
-- Valid digests: 8 of 15 in this run. The first run, before the previous-run fix, gave 9 of 11 on the first three sessions. Each of the 7 invalid digests has the same cause: the reply breaks a `RunDigest` length limit (`ran` over 600 characters, `result` over 300, or both). Digest prompt tuning is out of scope for this slice.
+- Valid digests: 7 of 15 in this run. Two earlier runs gave 9 of 11 (first three sessions, before the previous-run fix) and 8 of 15. Causes of the 8 invalid digests: 7 break a `RunDigest` length limit (`ran` over 600 characters, `result` over 300, or both), and 1 (7b308720 stop 1) gives the wrong field shape. Digest prompt tuning is out of scope for this slice.
 - Each later stop that had a stored digest before it carried `PREVIOUS RUN:` (5 of 5). Each later stop with no stored digest before it had none (6 of 6).
 - Each brief has a non-empty `HUMAN ASKED:` section (15 of 15).
-- Shrink on a real stop: fece50d8 stop 1 is over the 160,000-character budget. Its brief made 2 shrink calls on Mercury 3 (`openai/mercury-3` in the call log): input 38,578 characters, reply 34,030; input 37,731 characters, reply 450. The brief then fit. Its digest was invalid (length limit). A first shrink call on a made-up 169,000-character run gave input 38,795 and reply 71 characters.
-- Gap: the `priority digest` call log leaves `session_id` and `stop` empty. The rows above take the stop from the run order.
+- Shrink on a real stop: fece50d8 stop 1 is over the 160,000-character budget. Its brief made 2 shrink calls on Mercury 3 (`openai/mercury-3`, session fece50d8, stop 001 in the call log): input 38,578 characters, reply 34,050; input 37,731 characters, reply 18,169. The brief then fit (158,066 characters). A shrink call on the made-up 169,000-character run of the test helpers gave input 38,795 and reply 71 characters.
 
 ## 2. Arm A on the test set, full and compact brief
 
@@ -42,12 +41,16 @@ Commands: `priority eval --split holdout --threads 3` with the default full brie
 
 |Set|Stops|Sessions|Full|Compact|Difference|Interval|
 |---|---|---|---|---|---|---|
-|All|56|24|0.498|0.453|−0.045|−0.126 to +0.038|
+|All test-set stops|56|24|0.498|0.453|−0.045|−0.126 to +0.038|
 |Test set 1|30|6|0.482|0.387|−0.094|−0.219 to +0.005|
 |Test set 2|26|18|0.517|0.528|+0.011|−0.079 to +0.102|
-|Stops with a valid digest|39|19|0.536|0.470|−0.066|not computed|
+|Stops with a valid digest|39|19|0.536|0.470|−0.066|−0.176 to +0.059|
+|All, without 7f58085f stop 29|55|24|0.496|0.461|−0.035|−0.116 to +0.044|
+|Test set 1, without 7f58085f stop 29|29|6|0.478|0.401|−0.077|−0.205 to +0.013|
 
-Characters sent to the task model: full brief 2,039,189 in 56 calls; compact brief 1,498,377 in 56 calls. The compact run also made 56 digest calls on the full brief, so its total was 2,892,334 characters in 112 calls. Judge errors 0, model errors 0 in both runs. The compact output has 38 `too_long` lines for its 17 fallback stops; the cause was not checked per stop.
+7f58085f stop 29 had a valid digest, but the task model gave an empty reply on the compact brief (score 0.000). The last two rows leave that stop out.
+
+Characters sent to the task model: full brief 2,039,189 in 56 calls; compact brief 1,498,377 in 56 calls. The compact run also made 56 digest calls on the full brief, so its total was 2,892,334 characters in 112 calls. Judge errors 0, model errors 0 in both runs. The compact output has 19 `invalid_output` lines: the 17 digest abstains, the empty reply of 7f58085f stop 29, and the score gate of that stop. It has 38 `too_long` lines for the 17 digest abstains; the cause was not checked per stop.
 
 ## 3. Per stop
 
