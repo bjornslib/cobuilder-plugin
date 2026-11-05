@@ -175,6 +175,14 @@ above.
 
 Do not ask the user about an item that you can settle from the evidence.
 
+- The orchestrating session makes every edit to a spec (`docs/plans/<slug>/`)
+  and to a rubric (`.cobuilder/rubrics/<slug>/`).
+- RED, GREEN, and VALIDATE never edit a spec or a rubric. Do not give those
+  edits to a subagent.
+- If an accepted spec change or test change alters what the slice must do,
+  update the matching rubric criteria in the same step. RED and GREEN cannot
+  see the rubric.
+
 ## Slice note to project memory
 
 On a PASS, store one short note in project memory while the cause is still
