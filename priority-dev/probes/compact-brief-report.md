@@ -4,11 +4,13 @@ Numbers and 8-character session prefixes only. The run folder `fixtures/real/run
 
 ## Choice for slices 26 and 27
 
-**The full brief.** The compact brief scored lower on the test set (−0.045, interval −0.126 to +0.038), and lower again on the stops with a valid digest (0.470 against 0.536). Mercury 3 gave no valid digest for 17 of 56 stops. The size gain is small: the median input fell from 17,041 to 15,014 characters on the stops with a valid digest, because the prompt instructions are a large part of each input.
+**The full brief.** The compact brief scored lower on the 56 test-set stops (−0.045, interval −0.126 to +0.038), and lower again on the stops with a valid digest (0.470 against 0.536). Mercury 3 gave no valid digest for 17 of 56 stops. The size gain is small: the median input fell from 17,041 to 15,014 characters on the stops with a valid digest, because the prompt instructions are a large part of each input.
 
 ## 1. Digest check on human-chat training sessions
 
 Command: `priority digest TRANSCRIPT --stop N --log-dir DIR`, each stop in order, on Mercury 3 (`fixtures/real/runs/slice25/digest2/`). Each later stop reads the stored digest of the session as `PREVIOUS RUN:` (the slice 25 fix in `cli.digest`). The store keeps the last valid digest, so a stop after an invalid digest has no previous run.
+
+Human-chat rule: a session is human-chat when a person typed 5 or more messages in it (user messages that are not tool results, command output or meta lines). Counts: d3d83e74 7, fe9bb39f 11, 7b308720 5, fece50d8 37. All four are training sessions with 3 or more listed stops. By this rule, none of the four is a session that runs from one launch prompt.
 
 |Session|Stop|Model id (call log)|Input chars|Digest|PREVIOUS RUN:|HUMAN ASKED: chars|
 |---|---|---|---|---|---|---|
@@ -23,11 +25,15 @@ Command: `priority digest TRANSCRIPT --stop N --log-dir DIR`, each stop in order
 |7b308720|1|openai/mercury-3|32,519|invalid_output|no (first stop)|8,271|
 |7b308720|2|openai/mercury-3|27,032|valid|no (stop 1 invalid)|157|
 |7b308720|3|openai/mercury-3|3,475|valid|yes|168|
+|fece50d8|1|openai/mercury-3|140,329 (after 2 shrink calls)|invalid_output|no (first stop)|492|
+|fece50d8|3|openai/mercury-3|14,272|invalid_output|no (stop 1 invalid)|337|
+|fece50d8|9|openai/mercury-3|3,516|valid|no (stops 1 and 3 invalid)|319|
+|fece50d8|19|openai/mercury-3|11,238|invalid_output|yes|36|
 
-- Valid digests: 7 of 11 in this run, and 9 of 11 in the first run without the previous-run fix. Each invalid digest has the same cause: the reply breaks a `RunDigest` length limit (`ran` over 600 characters or `result` over 300). Digest prompt tuning is out of scope for this slice.
-- Each later stop with a stored digest before it carried `PREVIOUS RUN:` (4 of 4).
-- Each brief has a non-empty `HUMAN ASKED:` section (11 of 11).
-- Shrink: no real training stop is over the 160,000-character budget (the largest is 157,622). One shrink call ran on Mercury 3 on the made-up 169,000-character run of the test helpers: input 38,795 characters, reply 71 characters. The digest of that brief was valid.
+- Valid digests: 8 of 15 in this run. The first run, before the previous-run fix, gave 9 of 11 on the first three sessions. Each of the 7 invalid digests has the same cause: the reply breaks a `RunDigest` length limit (`ran` over 600 characters, `result` over 300, or both). Digest prompt tuning is out of scope for this slice.
+- Each later stop that had a stored digest before it carried `PREVIOUS RUN:` (5 of 5). Each later stop with no stored digest before it had none (6 of 6).
+- Each brief has a non-empty `HUMAN ASKED:` section (15 of 15).
+- Shrink on a real stop: fece50d8 stop 1 is over the 160,000-character budget. Its brief made 2 shrink calls on Mercury 3 (`openai/mercury-3` in the call log): input 38,578 characters, reply 34,030; input 37,731 characters, reply 450. The brief then fit. Its digest was invalid (length limit). A first shrink call on a made-up 169,000-character run gave input 38,795 and reply 71 characters.
 - Gap: the `priority digest` call log leaves `session_id` and `stop` empty. The rows above take the stop from the run order.
 
 ## 2. Arm A on the test set, full and compact brief
@@ -41,7 +47,7 @@ Commands: `priority eval --split holdout --threads 3` with the default full brie
 |Test set 2|26|18|0.517|0.528|+0.011|−0.079 to +0.102|
 |Stops with a valid digest|39|19|0.536|0.470|−0.066|not computed|
 
-Other lines: full brief 2,039,189 characters sent in 56 calls; compact brief 2,892,334 characters in 112 calls (56 digest calls on the full brief, then 56 task calls). Judge errors 0, model errors 0 in both runs.
+Characters sent to the task model: full brief 2,039,189 in 56 calls; compact brief 1,498,377 in 56 calls. The compact run also made 56 digest calls on the full brief, so its total was 2,892,334 characters in 112 calls. Judge errors 0, model errors 0 in both runs. The compact output has 38 `too_long` lines for its 17 fallback stops; the cause was not checked per stop.
 
 ## 3. Per stop
 
