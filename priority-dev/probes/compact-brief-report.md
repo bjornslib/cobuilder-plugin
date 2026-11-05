@@ -4,31 +4,31 @@ Numbers and 8-character session prefixes only. The run folder `fixtures/real/run
 
 ## Choice for slices 26 and 27
 
-**The full brief.** The compact brief scored lower on the 56 test-set stops (−0.045, interval −0.126 to +0.038), and lower again on the stops with a valid digest (0.470 against 0.536). Mercury 3 gave no valid digest for 17 of 56 stops. The size gain is small: the median input fell from 17,041 to 15,014 characters on the stops with a valid digest, because the prompt instructions are a large part of each input.
+**The full brief.** No interval excludes zero, so the test set does not show a real difference between the two forms. The point estimates favour the full brief: −0.045 on the 56 test-set stops (interval −0.126 to +0.038), and 0.470 against 0.536 on the 39 stops with a valid digest. The noise is large: on the 17 fallback stops, where both runs sent the same input, 11 stops scored differently (mean absolute difference 0.143). The compact brief also has costs: Mercury 3 gave no valid digest for 17 of 56 stops, and the median input fell only from 17,041 to 15,014 characters on the stops with a valid digest, because the prompt instructions are a large part of each input. The full brief is the default and needs no digest call, so slices 26 and 27 use it.
 
 ## 1. Digest check on human-chat training sessions
 
-Command: `priority digest TRANSCRIPT --stop N --log-dir DIR`, each stop in order, on Mercury 3 (`fixtures/real/runs/slice25/digest2/`). Each later stop reads the stored digest of the session as `PREVIOUS RUN:` (the slice 25 fix in `cli.digest`). The store keeps the last valid digest, so a stop after an invalid digest has no previous run.
+Command: `priority digest TRANSCRIPT --stop N --log-dir DIR`, each listed stop in order, on Mercury 3 (`fixtures/real/runs/slice25/digest2/`). Each later stop reads the stored digest of the session as `PREVIOUS RUN:` (the slice 25 fix in `cli.digest`). The store holds one digest for each session: the last valid one. Only the listed stops were digested, so "the stop before" is the listed stop before.
 
-Human-chat rule: a session is human-chat when a person typed 5 or more messages in it (user messages that are not tool results, command output or meta lines). Counts: d3d83e74 7, fe9bb39f 11, 7b308720 5, fece50d8 37. All four are training sessions with 3 or more listed stops. By this rule, none of the four is a session that runs from one launch prompt.
+Human-chat rule: a session is human-chat when a person typed 5 or more messages in it (user messages that are not tool results, command output or meta lines). Counts by this rule: d3d83e74 7, fe9bb39f 11, 7b308720 5, fece50d8 37. Other count rules give other numbers (the validator counted 8 or 9 and 10 or 13 for the first two), and each count is 5 or more. All four are training sessions with 3 or more listed stops.
 
 |Session|Stop|Model id (call log)|Input chars|Digest|PREVIOUS RUN:|HUMAN ASKED: chars|
 |---|---|---|---|---|---|---|
 |d3d83e74|1|openai/mercury-3|157,622|invalid_output|no (first stop)|7,795|
 |d3d83e74|3|openai/mercury-3|70,698|valid|no (stop 1 invalid)|340|
-|d3d83e74|6|openai/mercury-3|7,677|valid|yes|97|
+|d3d83e74|6|openai/mercury-3|7,677|valid|yes, from stop 3|97|
 |fe9bb39f|1|openai/mercury-3|110,585|invalid_output|no (first stop)|155|
 |fe9bb39f|3|openai/mercury-3|2,625|invalid_output|no (stop 1 invalid)|165|
 |fe9bb39f|5|openai/mercury-3|2,917|valid|no (stops 1 and 3 invalid)|181|
-|fe9bb39f|7|openai/mercury-3|13,118|valid|yes|49|
-|fe9bb39f|9|openai/mercury-3|79,316|valid|yes|113|
+|fe9bb39f|7|openai/mercury-3|13,118|valid|yes, from stop 5|49|
+|fe9bb39f|9|openai/mercury-3|79,316|valid|yes, from stop 7|113|
 |7b308720|1|openai/mercury-3|32,519|invalid_output|no (first stop)|8,271|
 |7b308720|2|openai/mercury-3|27,032|valid|no (stop 1 invalid)|157|
-|7b308720|3|openai/mercury-3|3,475|valid|yes|168|
+|7b308720|3|openai/mercury-3|3,475|valid|yes, from stop 2|168|
 |fece50d8|1|openai/mercury-3|140,329 (after 2 shrink calls)|invalid_output|no (first stop)|492|
 |fece50d8|3|openai/mercury-3|14,272|invalid_output|no (stop 1 invalid)|337|
 |fece50d8|9|openai/mercury-3|3,516|valid|no (stops 1 and 3 invalid)|319|
-|fece50d8|19|openai/mercury-3|11,238|invalid_output|yes|36|
+|fece50d8|19|openai/mercury-3|11,238|invalid_output|yes, from stop 9|36|
 
 - Valid digests: 8 of 15 in this run. The first run, before the previous-run fix, gave 9 of 11 on the first three sessions. Each of the 7 invalid digests has the same cause: the reply breaks a `RunDigest` length limit (`ran` over 600 characters, `result` over 300, or both). Digest prompt tuning is out of scope for this slice.
 - Each later stop that had a stored digest before it carried `PREVIOUS RUN:` (5 of 5). Each later stop with no stored digest before it had none (6 of 6).
@@ -89,7 +89,7 @@ Character size = the rendered task-model input of the stop. A fallback stop got 
 |7f58085f|8|1|14578|15628|valid|0.500|0.250|
 |7f58085f|15|1|18030|14718|valid|0.778|0.700|
 |7f58085f|22|1|26153|26153|fallback|0.500|0.500|
-|7f58085f|29|1|16285|15012|valid|0.600|0.000|
+|7f58085f|29|1|16285|15012|valid (task model gave an empty reply)|0.600|0.000|
 |a2f34209|1|1|16310|16301|valid|0.600|0.600|
 |a2f34209|5|1|24058|24058|fallback|0.200|0.400|
 |a2f34209|8|1|14352|14523|valid|0.500|0.530|
