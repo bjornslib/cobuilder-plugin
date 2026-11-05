@@ -9,6 +9,7 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
+from priority import config
 from priority.evaluation.demos import as_demo, demo_briefs, drop_demo_stops, pick_demos
 from priority.evaluation.metric import JudgeFailure, ModelFailure
 from priority.gepa_log import discard_run_log, recording_proposer, write_candidates
@@ -20,6 +21,8 @@ CLASS_BY_OPTIMISER = {"gepa": "GEPA", "miprov2": "MIPROv2", "bootstrap": "Bootst
 OPTIMISERS = ("gepa", "miprov2", "bootstrap", "labeled")
 REPORT_RELATIVE = Path("probes") / "optimiser-report.md"
 PROGRAM_DIR = Path("probes") / "programs"
+REFLECTION_MAX_TOKENS = 16000
+REFLECTION_TIMEOUT = 600  # seconds; one reflection prompt holds several whole briefs
 
 
 @dataclass(frozen=True)
@@ -136,12 +139,15 @@ def _teleprompter_for(optimiser: str) -> object | None:
 
 
 def _reflection_lm() -> object | None:
-    """The judge model for GEPA reflection, or None when the key is stubbed out."""
+    """The GEPA reflection model from the REFLECTION_* settings (default: NVIDIA Mistral), never the judge
+    or the task model. None when the key is stubbed out."""
     try:
-        from priority.evaluation.judge import judge_lm
-        return judge_lm(retries=3)
+        import dspy
+        return dspy.LM(config.reflection_model(), api_key=config.reflection_key(),
+                       api_base=config.reflection_base_url(), temperature=config.reflection_temperature(),
+                       max_tokens=REFLECTION_MAX_TOKENS, timeout=REFLECTION_TIMEOUT, num_retries=3, cache=False)
     except (AssertionError, RuntimeError):
-        # The made-up-world tests stub the judge key this way. Their stub teleprompter needs no model.
+        # The made-up-world tests stub the keys this way. Their stub teleprompter needs no model.
         return None
 
 
@@ -158,6 +164,7 @@ def _build_optimiser(cls: object, settings: Settings) -> object:
             options["reflection_minibatch_size"] = settings.minibatch
         if settings.threads is not None:
             options["num_threads"] = settings.threads
+        print(f"reflection model: {config.reflection_model()}")
         reflection = _reflection_lm()
         if reflection is not None:
             options["reflection_lm"] = reflection

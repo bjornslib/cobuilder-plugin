@@ -25,10 +25,17 @@ _BASE_URL = {
 # Lowest temperature the provider accepts. Mercury refuses anything under 0.5.
 _MIN_TEMPERATURE = {"inception": 0.5}
 
-# Judge defaults. The judge and the GEPA reflection LM use the NVIDIA Mistral model, not the task model.
+# Judge defaults. The judge uses the NVIDIA Mistral model, not the task model.
 _JUDGE_DEFAULTS = {
     "JUDGE_PROVIDER": "nvidia_nim",
     "JUDGE_MODEL": "mistralai/mistral-large-4-1t-a52b",
+}
+
+# GEPA reflection defaults. The reflection model has its own settings, so a judge override never moves it
+# to the task model. It stays the NVIDIA Mistral model unless REFLECTION_PROVIDER or REFLECTION_MODEL is set.
+_REFLECTION_DEFAULTS = {
+    "REFLECTION_PROVIDER": "nvidia_nim",
+    "REFLECTION_MODEL": "mistralai/mistral-large-4-1t-a52b",
 }
 
 # The key each judge provider reads when JUDGE_API_KEY is not set.
@@ -111,21 +118,54 @@ def judge_reasoning_effort() -> str | None:
     return (_get("JUDGE_REASONING_EFFORT") or "").strip() or None
 
 
-def _judge_key_reader() -> str:
-    """The judge key from JUDGE_API_KEY, else the per-provider key. It never prints the key.
+def _role_key(own_name: str, provider_name: str) -> str:
+    """The key from `own_name`, else the per-provider key. It never prints the key.
 
     A test-side stub (the suite-wide conftest guard) makes the reader raise before any
-    file or real key is read, so no test builds a live judge model. An explicit env
+    file or real key is read, so no test builds a live judge or reflection model. An explicit env
     value from a test still wins over the stub."""
-    env_key = os.environ.get("JUDGE_API_KEY") or os.environ.get(_JUDGE_KEY[judge_provider()])
+    env_key = os.environ.get(own_name) or os.environ.get(_JUDGE_KEY[provider_name])
     if env_key:
         return env_key
     if "judge_key" in _STUBS:
-        raise RuntimeError("JUDGE_API_KEY is stubbed for this test and no env value is set")
-    key = _get("JUDGE_API_KEY") or _get(_JUDGE_KEY[judge_provider()])
+        raise RuntimeError(f"{own_name} is stubbed for this test and no env value is set")
+    key = _get(own_name) or _get(_JUDGE_KEY[provider_name])
     if key:
         return key
-    raise RuntimeError("JUDGE_API_KEY is not set and priority-dev/.env has no value for it")
+    raise RuntimeError(f"{own_name} is not set and priority-dev/.env has no value for it")
+
+
+def _judge_key_reader() -> str:
+    """The judge key from JUDGE_API_KEY, else the per-provider key."""
+    return _role_key("JUDGE_API_KEY", judge_provider())
+
+
+def reflection_provider() -> str:
+    """The GEPA reflection provider. One of openrouter, nvidia_nim, or inception."""
+    name = _get("REFLECTION_PROVIDER") or _REFLECTION_DEFAULTS["REFLECTION_PROVIDER"]
+    if name not in _PREFIX:
+        raise RuntimeError(f"REFLECTION_PROVIDER is {name!r}, want one of {sorted(_PREFIX)}")
+    return name
+
+
+def reflection_model() -> str:
+    """The reflection model id, with the provider prefix the provider needs."""
+    return f"{_PREFIX[reflection_provider()]}/{_get('REFLECTION_MODEL') or _REFLECTION_DEFAULTS['REFLECTION_MODEL']}"
+
+
+def reflection_base_url() -> str:
+    """The reflection endpoint override, else the provider default."""
+    return _get("REFLECTION_BASE_URL") or _BASE_URL[reflection_provider()]
+
+
+def reflection_temperature() -> float:
+    """0, raised to the lowest value the reflection provider accepts."""
+    return max(0.0, _MIN_TEMPERATURE.get(reflection_provider(), 0.0))
+
+
+def reflection_key() -> str:
+    """The reflection key from REFLECTION_API_KEY, else the per-provider key."""
+    return _role_key("REFLECTION_API_KEY", reflection_provider())
 
 
 # Test-side stubs for key readers. The suite-wide conftest stubs `judge_key` so no test

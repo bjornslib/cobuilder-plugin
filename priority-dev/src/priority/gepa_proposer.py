@@ -4,7 +4,6 @@ from __future__ import annotations
 from typing import Literal, get_args, get_origin
 
 SCHEMA_GUARD_LINE = "Use exactly these fields. Do not invent field names."
-MAX_PROPOSAL_CHARS = 4000
 
 
 def _render(name: str, annotation: object) -> str:
@@ -38,14 +37,6 @@ def _strip_guard(text: str) -> str:
     return head.rstrip()
 
 
-def _cap_draft(text: str, limit: int = MAX_PROPOSAL_CHARS) -> str:
-    """The draft within the length cap, cut back to the last space."""
-    if len(text) <= limit:
-        return text
-    cut = text[:limit]
-    return cut.rsplit(" ", 1)[0] if " " in cut else cut
-
-
 def guided_instruction_proposer(candidate: dict, reflective_dataset: dict,
                                 components_to_update: list) -> dict:
     """The GEPA instruction proposer: the default reflective flow plus a schema guard.
@@ -54,7 +45,8 @@ def guided_instruction_proposer(candidate: dict, reflective_dataset: dict,
     of ReflectiveExamples (Inputs, Generated Outputs, Feedback), and the components to update. It returns
     the new instruction mapping. Each proposed instruction gains the exact output fields of ProposeStop,
     so a drifted field name fails the shape check instead of entering the prompt. An earlier guard is
-    stripped before the new one is added, so guards do not pile up, and each draft is capped.
+    stripped before the new one is added, so guards do not pile up. No draft is cut: an earlier 4000-character
+    cut lost the tail of every proposal and left rules unfinished.
     """
     from dspy.teleprompt.gepa import InstructionProposer
 
@@ -63,5 +55,5 @@ def guided_instruction_proposer(candidate: dict, reflective_dataset: dict,
         reflective_dataset=reflective_dataset,
         components_to_update=components_to_update,
     )
-    return {name: _cap_draft(_strip_guard(text)) + "\n\n" + schema_guard(name)
+    return {name: _strip_guard(text) + "\n\n" + schema_guard(name)
             for name, text in proposed.items()}
