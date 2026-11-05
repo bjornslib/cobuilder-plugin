@@ -6,8 +6,9 @@ The contract that these tests pin:
    the `PREVIOUS RUN:` block. Today the digest command passes no `previous`, so the block is missing.
 2. `probes/digest_report.py` reads `DIR/calls.jsonl`. `digest_rows(DIR)` returns one dict per call row, holds
    numbers and flags only, and never holds brief or reply text.
-3. `compare_rows(full_out, compact_out, full_calls, compact_calls, holdout_group)` pairs the `score stop` lines of
-   two eval outputs by session and stop. It returns `rows`, `all`, and one summary per group. A summary holds
+3. `compare_rows(full_out, compact_out, full_calls, compact_calls, groups)` pairs the `score stop` lines of
+   two eval outputs by session and stop. `groups` maps each full session id to its test-set group name, such as
+   `"test set 1"`. It returns `rows`, `all`, and one summary per group. A summary holds
    `n`, `sessions`, `full`, `compact`, `diff`, `lo`, and `hi`. ASSUMED here: `diff` is `compact - full`, and the
    bootstrap resamples sessions with a fixed seed at 95 percent.
 """
@@ -25,7 +26,6 @@ from digest_support import digest_reply, dummy, no_live_call, read_calls  # noqa
 PROBE = Path(__file__).resolve().parents[1] / "probes" / "digest_report.py"
 PREVIOUS = "PREVIOUS RUN:"
 FIRST_RAN = "RANFIRST the export model and its 9 tests are built."
-HOLD = "holdout"
 
 
 # ---- helpers ------------------------------------------------------------------
@@ -170,6 +170,7 @@ FULL = [("aaaa1111", 1, 0.200), ("aaaa1111", 2, 0.400), ("bbbb2222", 1, 0.600),
         ("bbbb2222", 2, 0.800), ("cccc3333", 1, 0.500), ("cccc3333", 2, 0.500)]
 COMPACT = [("aaaa1111", 1, 0.300), ("aaaa1111", 2, 0.500), ("bbbb2222", 1, 0.600),
            ("bbbb2222", 2, 0.900), ("cccc3333", 1, 0.400), ("cccc3333", 2, 0.600)]
+GROUPS = {"aaaa1111": "test set 1", "bbbb2222": "test set 1", "cccc3333": "test set 2"}
 
 
 def score_line(session: str, stop: int, overall: float) -> str:
@@ -188,7 +189,7 @@ def form_calls(scores, text: str) -> list[dict]:
 
 def compare(report):
     return report.compare_rows(eval_output(FULL), eval_output(COMPACT), form_calls(FULL, "BRIEF full form."),
-                               form_calls(COMPACT, "BRIEF compact form."), HOLD)
+                               form_calls(COMPACT, "BRIEF compact form."), GROUPS)
 
 
 def test_compare_rows_gives_the_paired_means_and_the_compact_minus_full_difference():
@@ -201,11 +202,35 @@ def test_compare_rows_gives_the_paired_means_and_the_compact_minus_full_differen
     assert summary["lo"] <= summary["diff"] <= summary["hi"], "the interval does not hold the difference"
 
 
-def test_compare_rows_keeps_a_summary_for_the_holdout_group():
+def test_compare_rows_keeps_a_summary_for_each_test_set_group():
     result = compare(load_report())
     assert "rows" in result and "all" in result, f"missing keys in {sorted(result)}"
-    assert HOLD in result, f"no summary for the group {HOLD!r}, keys are {sorted(result)}"
-    assert {"n", "sessions", "full", "compact", "diff", "lo", "hi"} <= set(result[HOLD])
+    for group in ("test set 1", "test set 2"):
+        assert group in result, f"no summary for the group {group!r}, keys are {sorted(result)}"
+        assert {"n", "sessions", "full", "compact", "diff", "lo", "hi"} <= set(result[group])
+
+
+def test_compare_rows_summarises_each_group_from_its_own_stops_only():
+    full = [("dddd4444", 1, 0.300), ("dddd4444", 2, 0.500), ("eeee5555", 1, 0.700), ("eeee5555", 2, 0.100),
+            ("ffff6666", 1, 0.900), ("ffff6666", 2, 0.300), ("gggg7777", 1, 0.300)]
+    compact = [("dddd4444", 1, 0.200), ("dddd4444", 2, 0.800), ("eeee5555", 1, 0.600), ("eeee5555", 2, 0.400),
+               ("ffff6666", 1, 0.500), ("ffff6666", 2, 0.100), ("gggg7777", 1, 0.600)]
+    groups = {"dddd4444": "test set 1", "eeee5555": "test set 1",
+              "ffff6666": "test set 2", "gggg7777": "test set 2"}
+    result = load_report().compare_rows(eval_output(full), eval_output(compact),
+                                        form_calls(full, "BRIEF full form."),
+                                        form_calls(compact, "BRIEF compact form."), groups)
+    one, two = result["test set 1"], result["test set 2"]
+    assert one["n"] == 4, f"test set 1: expected four stops, got {one['n']}"
+    assert one["sessions"] == 2, f"test set 1: expected two sessions, got {one['sessions']}"
+    assert one["full"] == pytest.approx(0.4), f"test set 1 full mean is {one['full']}"
+    assert one["compact"] == pytest.approx(0.5), f"test set 1 compact mean is {one['compact']}"
+    assert one["diff"] == pytest.approx(0.1), f"test set 1 diff is {one['diff']}"
+    assert two["n"] == 3, f"test set 2: expected three stops, got {two['n']}"
+    assert two["sessions"] == 2, f"test set 2: expected two sessions, got {two['sessions']}"
+    assert two["full"] == pytest.approx(0.5), f"test set 2 full mean is {two['full']}"
+    assert two["compact"] == pytest.approx(0.4), f"test set 2 compact mean is {two['compact']}"
+    assert two["diff"] == pytest.approx(-0.1), f"test set 2 diff is {two['diff']}"
 
 
 def test_compare_rows_bootstrap_is_seeded_and_repeats():
