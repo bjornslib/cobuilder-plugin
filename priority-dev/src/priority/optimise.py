@@ -11,6 +11,7 @@ from pathlib import Path
 
 from priority.evaluation.demos import as_demo, demo_briefs, drop_demo_stops, pick_demos
 from priority.evaluation.metric import JudgeFailure, ModelFailure
+from priority.gepa_log import discard_run_log, recording_proposer, write_candidates
 from priority.gepa_proposer import guided_instruction_proposer
 from priority.optimise_report import append_report, write_eval_rows
 from priority.trainset import assert_train_only, build_trainset, split_gepa_valset
@@ -29,6 +30,7 @@ class Settings:
     minibatch: int | None = None
     threads: int | None = None
     val_sessions: int = 1
+    log_dir: Path | None = None
 
 
 def gepa_feedback(example: object, prediction: object, trace: object = None,
@@ -40,6 +42,7 @@ def gepa_feedback(example: object, prediction: object, trace: object = None,
     from priority.evaluation.metric import score
 
     value, feedback = score(example, prediction, trace, pred_name, pred_trace)
+    feedback = f"Score: {value:.2f} of 1.00. {feedback}"
     return dspy.Prediction(score=value, feedback=feedback)
 
 
@@ -145,8 +148,12 @@ def _reflection_lm() -> object | None:
 def _build_optimiser(cls: object, settings: Settings) -> object:
     """One optimiser with the run budget and seed recorded in its settings."""
     if settings.optimiser == "gepa":
+        gepa_dir = settings.log_dir / "gepa"
+        gepa_dir.mkdir(parents=True, exist_ok=True)
         options: dict = {"metric": gepa_feedback, "max_full_evals": settings.budget, "seed": settings.seed,
-                         "instruction_proposer": guided_instruction_proposer, "add_format_failure_as_feedback": True}
+                         "instruction_proposer": recording_proposer(guided_instruction_proposer, settings.log_dir),
+                         "add_format_failure_as_feedback": True, "track_stats": True,
+                         "log_dir": str(gepa_dir)}
         if settings.minibatch is not None:
             options["reflection_minibatch_size"] = settings.minibatch
         if settings.threads is not None:
@@ -192,8 +199,9 @@ def _finish(compiled: object, settings: Settings, examples: list, parts: dict, s
     print(f"report: {REPORT_RELATIVE}")
 
 
-def _failure_stop(failure: BaseException) -> int:
-    """Print the stop message for a judge or a model that never worked, and return the exit code."""
+def _failure_stop(failure: BaseException, log_dir: Path, log_existed: bool) -> int:
+    """Remove this run's new log folder, print the stop message for a judge or a model that never worked, and return the exit code."""
+    discard_run_log(log_dir, log_existed)
     print(f"optimise failed: {failure}. The run stopped and saved nothing.")
     return 1
 
@@ -201,13 +209,17 @@ def _failure_stop(failure: BaseException) -> int:
 def run(manifest: Path, labels: Path, real_dir: Path,
         optimiser: str, budget: int, seed: int, minibatch: int | None = None,
         threads: int | None = None, val_sessions: int = 1,
-        seed_program: Path | str | None = None, tag: str | None = None) -> int:
+        seed_program: Path | str | None = None, tag: str | None = None,
+        gepa_log_dir: Path | None = None) -> int:
     """Compile the interpreter with one optimiser. Return exit code. A run that compiles ends on the
     judge call and token totals."""
     from priority.evaluation.judge import reset_usage, usage_line
 
     reset_usage()
-    settings = Settings(optimiser, budget, seed, minibatch, threads, val_sessions)
+    stem = (optimiser if tag is None else f"{optimiser}-{tag}") + ("-seeded" if seed_program is not None else "")
+    log_dir = gepa_log_dir or PROGRAM_DIR / f"{stem}-budget{budget}-seed{seed}-log"
+    settings = Settings(optimiser, budget, seed, minibatch, threads, val_sessions, log_dir)
+    log_existed = log_dir.exists()
     try:
         examples, parts = _prepare(manifest, labels, real_dir, optimiser, tag)
         cls = _teleprompter_for(optimiser)
@@ -223,15 +235,16 @@ def run(manifest: Path, labels: Path, real_dir: Path,
     try:
         compiled = _compile(cls, settings, student, examples, parts["train"])
     except (JudgeFailure, ModelFailure) as exc:
-        return _failure_stop(exc)
+        return _failure_stop(exc, log_dir, log_existed)
     except Exception as exc:  # noqa: BLE001 (any compile fault ends the run with a message)
         print(f"optimise failed: {optimiser} compile failed: {exc}")
         return 1
     _restore_seed_demos(compiled, seed_demos)
-    stem = (optimiser if tag is None else f"{optimiser}-{tag}") + ("-seeded" if seed_program is not None else "")
     try:
         _finish(compiled, settings, examples, parts, stem)
     except (JudgeFailure, ModelFailure) as exc:
-        return _failure_stop(exc)
+        return _failure_stop(exc, log_dir, log_existed)
+    if optimiser == "gepa":
+        write_candidates(log_dir, compiled)
     print(usage_line())
     return 0

@@ -76,7 +76,8 @@ def optimise_run(args: argparse.Namespace) -> int:
                         threads=getattr(args, "threads", None),
                         val_sessions=getattr(args, "val_sessions", 1),
                         seed_program=getattr(args, "seed_program", None),
-                        tag=getattr(args, "tag", None))
+                        tag=getattr(args, "tag", None),
+                        gepa_log_dir=getattr(args, "gepa_log_dir", None))
 
 
 def judge_check(args: argparse.Namespace) -> int:
@@ -174,6 +175,8 @@ def main(argv: list[str] | None = None) -> int:
                                  help="A saved program file to load as the compile student")
     optimise_parser.add_argument("--tag", default=None,
                                  help="Text inserted into the saved program name, as <optimiser>-<tag>-budget... (default: none)")
+    optimise_parser.add_argument("--gepa-log-dir", type=Path, default=None,
+                                 help="GEPA reflection and candidate records folder (default: the run's log folder)")
     judge_check_parser = subparsers.add_parser("judge-check", help="Measure the judge against the agreement bar")
     judge_check_parser.add_argument("--pairs", type=Path, required=True,
                                     help="Pairs file: two payload lists per stop and the human pick")

@@ -121,7 +121,7 @@ def test_gepa_feedback_returns_the_metric_score_and_feedback_as_a_prediction(mon
     value, feedback, _ = score(monkeypatch, 0.7, ex, pred, None, "propose", None)
     wrapped = require("priority.optimise").gepa_feedback(ex, pred, None, "propose", None)
     assert isinstance(wrapped, dspy.Prediction)
-    assert (wrapped.score, wrapped.feedback) == (value, feedback)
+    assert (wrapped.score, wrapped.feedback) == (value, f"Score: {value:.2f} of 1.00. {feedback}")
     assert wrapped.score == pytest.approx(0.7)
 
 
@@ -129,5 +129,6 @@ def test_gepa_feedback_scores_an_abstain_like_the_metric(monkeypatch):
     ex, pred = example([ask_step()]), prediction(abstain=dict(ABSTAIN))
     value, feedback, calls = score(monkeypatch, 0.9, ex, pred, None, "propose", None)
     wrapped = require("priority.optimise").gepa_feedback(ex, pred, None, "propose", None)
-    assert (wrapped.score, wrapped.feedback) == (value, feedback) == (0.0, feedback)
+    prefixed = f"Score: {value:.2f} of 1.00. {feedback}"
+    assert (wrapped.score, wrapped.feedback) == (value, prefixed) == (0.0, prefixed)
     assert len(calls) == 2, "gepa_feedback did not send the abstain to the judge"

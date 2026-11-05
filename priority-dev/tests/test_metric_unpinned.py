@@ -201,7 +201,7 @@ def test_the_optimise_metrics_return_the_judge_score_of_a_formerly_pinned_case(m
     install_judge(monkeypatch, JudgeRecorder(0.4, [NOTE]))
     result = getattr(require("priority.optimise"), name)(example(reference), prediction(steps))
     if name == "gepa_feedback":
-        assert (result.score, result.feedback) == (0.4, NOTE)
+        assert (result.score, result.feedback) == (0.4, f"Score: 0.40 of 1.00. {NOTE}")
     else:
         assert result == 0.4
 
