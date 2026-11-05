@@ -1,0 +1,10 @@
+{
+  "available": true,
+  "branch_base": "HEAD",
+  "commits_behind": 0,
+  "count_basis": "issues",
+  "findings": [],
+  "run_complete": true,
+  "smells": {},
+  "tool": "habit-sensors"
+}
