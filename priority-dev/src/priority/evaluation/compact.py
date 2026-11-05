@@ -70,6 +70,8 @@ class CompactDigests:
         result = self._run(brief)
         if not isinstance(result, (interpreter.RunDigest, interpreter.Abstain)):
             return None
+        if isinstance(result, interpreter.Abstain) and result.reason != "invalid_output":
+            return result  # a model error is not cached: the next run digests the stop again
         self.digest_dir.mkdir(parents=True, exist_ok=True)
         self._path(session_id, stop).write_text(result.model_dump_json(indent=2))
         return result
