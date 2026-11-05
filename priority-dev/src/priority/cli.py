@@ -37,7 +37,8 @@ def digest(transcript: Path, stop: int | None, log_dir: Path | None) -> int:
     from priority import interpreter  # a lazy import: only this command needs dspy and the key
 
     lm = interpreter.digest_lm()
-    brief = build_brief(transcript, stop=stop, shrink_lm=lm, log_dir=log_dir)
+    brief = build_brief(transcript, stop=stop, shrink_lm=lm, log_dir=log_dir,
+                        previous=load_digest(log_dir, transcript.stem))
     if isinstance(brief, StopBrief):
         result = interpreter.DigestRun(lm, log_dir=log_dir)(brief)
         if log_dir is not None and isinstance(result, interpreter.RunDigest):
