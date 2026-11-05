@@ -32,6 +32,12 @@ Then:
 3. Run the full test suite: <test_command>
    Tests from earlier slices must pass. Only your new tests fail.
 
+If you find a gap, a conflict, or an error in the spec, do not fix the spec.
+Write the tests for the spec as it stands. Add an item to `suggestions`: the
+kind, the target, the issue, your evidence, and your proposal. If you have a
+question, add it there too, and continue with your best reading. Name that
+reading in the item.
+
 Report: the test files created (full paths), the number of new failing tests,
 the exact assertion each test fails on, and the pass count for pre-existing
-tests.
+tests, and your suggestions.
