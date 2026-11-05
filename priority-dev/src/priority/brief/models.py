@@ -86,6 +86,13 @@ class StopBrief:
     def for_model(self) -> str:
         return BriefText(self._render(exclude_older_payloads=False))
 
+    def for_model_compact(self, digest: Any) -> str:
+        return BriefText(self._render_compact(digest))
+
+    def _render_compact(self, digest: Any) -> str:
+        lines = ["HUMAN ASKED:", self.ask.text, "RUN DIGEST:", *_digest_lines(digest)]
+        return "\n".join(lines + self._closing_lines())
+
     def _render(self, exclude_older_payloads: bool = False) -> str:
         lines: list[str] = self._render_previous() + ["HUMAN ASKED:", self.ask.text, "RUN:"]
         tool_indexes = [i for i, it in enumerate(self.items) if it.type == "tool"]
@@ -102,7 +109,10 @@ class StopBrief:
                 else:
                     lines.append(f"[tool {item.tool}] {item.input}")
                     lines.append(f"[result] {item.result}")
-        lines.append("FINAL REPLY:")
+        return "\n".join(lines + self._closing_lines())
+
+    def _closing_lines(self) -> list[str]:
+        lines = ["FINAL REPLY:"]
         if self.final:
             lines.append(self.final)
         if self.client_messages:
@@ -112,13 +122,17 @@ class StopBrief:
         for line in self.after_stop:
             if line.source == "human":
                 lines.append(f"[human] {line.text}")
-        return "\n".join(lines)
+        return lines
 
     def _render_previous(self) -> list[str]:
         if self.previous is None:
             return []
-        lines = ["PREVIOUS RUN:", f"ran: {self.previous.ran}", f"result: {self.previous.result}"]
-        for title, texts in (("open items", self.previous.open_items), ("decisions", self.previous.decisions)):
-            if texts:
-                lines += [f"{title}:", *(f"- {text}" for text in texts)]
-        return lines
+        return ["PREVIOUS RUN:", *_digest_lines(self.previous)]
+
+
+def _digest_lines(digest: Any) -> list[str]:
+    lines = [f"ran: {digest.ran}", f"result: {digest.result}"]
+    for title, texts in (("open items", digest.open_items), ("decisions", digest.decisions)):
+        if texts:
+            lines += [f"{title}:", *(f"- {text}" for text in texts)]
+    return lines

@@ -62,8 +62,14 @@ def eval_split(args: argparse.Namespace) -> int:
     threads = getattr(args, "threads", None)
     if threads is not None:
         threads = max(1, min(int(threads), runner.MAX_THREADS))
+    brief = getattr(args, "brief", "full")
+    digest_dir = getattr(args, "digest_dir", None)
+    if brief == "compact" and digest_dir is None:
+        print("eval failed: --brief compact needs --digest-dir")
+        return 1
     return runner.run(args.manifest, args.labels, args.real_dir, args.split, args.log_dir,
-                      program=args.program, threads=threads)
+                      program=args.program, threads=threads,
+                      digest_dir=digest_dir if brief == "compact" else None)
 
 
 def optimise_run(args: argparse.Namespace) -> int:
@@ -152,6 +158,10 @@ def main(argv: list[str] | None = None) -> int:
                              help="A saved program to load before scoring. Its demo stops are not scored")
     eval_parser.add_argument("--threads", type=int, default=None,
                              help="Stops scored in flight at once, clamped to 1..6 (default: 1)")
+    eval_parser.add_argument("--brief", default="full", choices=("full", "compact"),
+                             help="The brief the task model reads: full, or compact (one digest per stop; default: full)")
+    eval_parser.add_argument("--digest-dir", type=Path, default=None,
+                             help="Folder for the cached digests of a compact run (required with --brief compact)")
     optimise_parser = subparsers.add_parser("optimise", help="Compile the interpreter on the train sessions")
     optimise_parser.add_argument("--optimiser", default="gepa", choices=("gepa", "miprov2", "bootstrap", "labeled"),
                                  help="The optimiser to compile with, or labeled for picked demos (default: gepa)")

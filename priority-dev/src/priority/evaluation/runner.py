@@ -16,6 +16,7 @@ from pathlib import Path
 
 from priority.brief import StopBrief, build_brief
 from priority.evaluation.check import stop_key
+from priority.evaluation.compact import CompactBrief, CompactDigests
 from priority.evaluation.demos import demo_briefs
 from priority.evaluation.eval_report import diagnostics, print_calls, print_report
 from priority.evaluation.judge import reset_usage, usage_line
@@ -63,7 +64,7 @@ def _predict(model: object, brief: object, session_id: str = "", stop: str = "")
 
     The identity goes to the call, not to the model, because worker threads share one model.
     """
-    if isinstance(brief, StopBrief):
+    if isinstance(brief, (StopBrief, CompactBrief)):
         text = brief.for_model()
         return model(brief_text=text, session_id=session_id, stop=stop), text
     abstain = {"reason": brief.reason, "detail": brief.detail, "raw": ""}
@@ -99,7 +100,7 @@ def _stops(entries: list, labels_by_session: dict, wanted: set):
 
 
 def _score_split(model: object, entries: list, labels_by_session: dict, wanted: set,
-                 real_dir: Path, threads: int = 1) -> tuple[list, int, int]:
+                 real_dir: Path, threads: int = 1, compact: CompactDigests | None = None) -> tuple[list, int, int]:
     """Score each stop of the wanted sessions. Return the rows, the count of stops excluded for no
     reference payload, and the count excluded as a demo of the program. A missing label raises.
     With threads > 1 the stops are scored in a thread pool, and the rows come back in manifest order."""
@@ -114,6 +115,8 @@ def _score_split(model: object, entries: list, labels_by_session: dict, wanted: 
         if isinstance(brief, StopBrief) and brief.for_model() in briefs:
             demos += 1
             continue
+        if compact is not None and isinstance(brief, StopBrief):
+            brief = compact.brief_for(brief, session_id, key)
         work.append((session_id, key, brief, label))
     if threads > 1:
         with ThreadPoolExecutor(max_workers=min(threads, MAX_THREADS)) as pool:
@@ -136,7 +139,7 @@ def _load(manifest: Path, labels: Path) -> tuple[list, dict]:
 
 def run(manifest: Path, labels: Path, real_dir: Path, split_name: str,
         log_dir: Path | str | None = None, program: Path | str | None = None,
-        threads: int | None = None) -> int:
+        threads: int | None = None, digest_dir: Path | str | None = None) -> int:
     """Score one split of the fixture set and print the report. Return exit code.
     threads=None keeps the serial loop; threads > 1 scores the stops in a thread pool of at most
     MAX_THREADS workers, and the rows still come back in manifest order."""
@@ -157,13 +160,16 @@ def run(manifest: Path, labels: Path, real_dir: Path, split_name: str,
         if program is not None:
             print(f"program: {program}")
         reset_usage()
+        compact = CompactDigests(digest_dir, log_dir) if digest_dir is not None else None
         rows, excluded, demos = _score_split(model, entries, labels_by_session, wanted,
-                                              real_dir, workers)
+                                              real_dir, workers, compact)
     except ValueError as exc:
         print(f"eval failed: {exc}")
         return 1
     print(f"excluded: {excluded} stops (no reference payload)")
     print(f"demo stops excluded: {demos}")
+    if compact is not None:
+        print(f"compact brief: {compact.fallbacks} stops fell back to the full brief")
     if not rows:
         print(f"eval failed: split {split_name} holds no stops")
         return 1
