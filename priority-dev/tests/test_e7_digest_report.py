@@ -21,7 +21,7 @@ from pathlib import Path
 import pytest
 
 from brief_support import Transcript, require
-from digest_support import digest_reply, dummy, no_live_call, read_calls  # noqa: F401  (no_live_call is autouse)
+from digest_support import ONE_SHRINK, digest_reply, dummy, no_live_call, over_budget, read_calls, short_reply  # noqa: F401  (no_live_call is autouse)
 
 PROBE = Path(__file__).resolve().parents[1] / "probes" / "digest_report.py"
 PREVIOUS = "PREVIOUS RUN:"
@@ -98,6 +98,37 @@ def test_the_second_digest_run_passes_the_stored_digest_to_build_brief(monkeypat
     previous = getattr(briefs[0], "previous", None)
     assert previous is not None, "build_brief received previous=None for stop 2"
     assert previous.ran == FIRST_RAN, "build_brief received a digest that is not the stop 1 digest"
+
+
+# ---- 1b. The digest rows carry the session and the stop ----------------------
+
+
+def test_the_digest_row_carries_the_transcript_stem_and_the_zero_padded_stop(monkeypatch, capsys, tmp_path):
+    path = two_stops(tmp_path)
+    log_dir = tmp_path / "log"
+    run_cli(monkeypatch, capsys, "digest", dummy([digest_reply()]), path,
+            "--stop", "2", "--log-dir", str(log_dir))
+    rows = [c for c in read_calls(log_dir) if c["stage"] == "digest"]
+    assert len(rows) == 1, f"expected one digest row, got {len(rows)}"
+    assert rows[0]["session_id"] == "f1a2b3c4", f"digest row session_id is {rows[0]['session_id']!r}"
+    assert rows[0]["stop"] == "002", f"digest row stop is {rows[0]['stop']!r}, expected '002'"
+
+
+def test_the_shrink_and_digest_rows_of_an_over_budget_run_carry_the_session_and_the_stop(monkeypatch, capsys,
+                                                                                          tmp_path):
+    path = over_budget(tmp_path, ONE_SHRINK, name="f1a2b3c4.jsonl")
+    log_dir = tmp_path / "log"
+    run_cli(monkeypatch, capsys, "digest", dummy([short_reply("tiny"), digest_reply()]), path,
+            "--stop", "1", "--log-dir", str(log_dir))
+    calls = read_calls(log_dir)
+    shrink = [c for c in calls if c["stage"] == "shrink"]
+    digest = [c for c in calls if c["stage"] == "digest"]
+    assert len(shrink) == 1, f"expected one shrink row, got {len(shrink)}"
+    assert len(digest) == 1, f"expected one digest row, got {len(digest)}"
+    for row in shrink + digest:
+        assert row["session_id"] == "f1a2b3c4", f"{row['stage']} row session_id is {row['session_id']!r}"
+        assert row["stop"] == "001", f"{row['stage']} row stop is {row['stop']!r}, expected '001'"
+
 
 
 # ---- 2. The digest report ------------------------------------------------------

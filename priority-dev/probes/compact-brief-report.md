@@ -10,7 +10,7 @@ Numbers and 8-character session prefixes only. The run folder `fixtures/real/run
 
 Command: `priority digest TRANSCRIPT --stop N --log-dir DIR`, each listed stop in order, on Mercury 3 (`fixtures/real/runs/slice25/digest2/`). Each later stop reads the stored digest of the session as `PREVIOUS RUN:` (the slice 25 fix in `cli.digest`). The store holds one digest for each session: the last valid one. Only the listed stops were digested, so "the stop before" is the listed stop before.
 
-Human-chat rule: a session is human-chat when a person typed 5 or more messages in it (user messages that are not tool results, command output or meta lines). Counts by this rule: d3d83e74 7, fe9bb39f 11, 7b308720 5, fece50d8 37. Other count rules give other numbers (the validator counted 8 or 9 and 10 or 13 for the first two), and each count is 5 or more. All four are training sessions with 3 or more listed stops.
+Human-chat rule: a session is human-chat when a person typed 5 or more messages in it. A typed message is a transcript line with `type` `user`, no `isMeta` and no `isSidechain`, whose content is a string, or a list of parts with no `tool_result` part (the text parts joined), and whose text does not start with `<command`, `<local-command` or `Caveat`. Counts by this rule: d3d83e74 7, fe9bb39f 11, 7b308720 5, fece50d8 37. Other count rules give other numbers, and each count is 5 or more. All four are training sessions with 3 or more listed stops.
 
 |Session|Stop|Model id (call log)|Input chars|Digest|PREVIOUS RUN:|HUMAN ASKED: chars|
 |---|---|---|---|---|---|---|
