@@ -233,3 +233,39 @@ def test_eval_compact_falls_back_to_full_brief_for_one_abstaining_stop(monkeypat
     assert any("RUN DIGEST:" in text for text in texts), "no stop got the compact brief"
     assert any("RUN:" in text and "RUN DIGEST:" not in text for text in texts), (
         "the abstaining stop did not get the full brief")
+
+
+def test_eval_compact_caches_an_abstain_and_skips_its_digest_on_a_second_run(monkeypatch, tmp_path):
+    models = require("priority.interpreter.models")
+    seen: list = []
+
+    def abstain_on_first_stop(brief):
+        seen.append(brief)
+        if len(seen) == 1:
+            return models.Abstain(reason="invalid_output", detail="stub: the digest abstains for the first stop")
+        return make_digest()
+
+    first = run_compact(monkeypatch, tmp_path, digest_for=abstain_on_first_stop)
+    assert first.code == 0, f"the first run crashed on an abstaining digest:\n{first.printed}"
+    assert "compact brief: 1 stops fell back to the full brief" in first.printed, (
+        f"the first run did not report the one fallback stop:\n{first.printed}")
+    second = run_compact(monkeypatch, tmp_path, work_dir=tmp_path / "second", digest_dir=first.digest_dir)
+    assert second.code == 0, f"the second run failed:\n{second.printed}"
+    assert second.digest_calls == [], (
+        f"the second run made {len(second.digest_calls)} digest calls; the abstain was not cached")
+    assert "compact brief: 1 stops fell back to the full brief" in second.printed, (
+        f"the second run did not report the abstaining stop as a fallback:\n{second.printed}")
+    texts = [call["brief_text"] for call in second.task_calls]
+    assert any("RUN:" in text and "RUN DIGEST:" not in text for text in texts), (
+        "the abstaining stop did not get the full brief on the second run")
+    cached = sorted(first.digest_dir.glob("*.json"))
+    assert len(cached) == len(first.digest_calls), (
+        f"{len(first.digest_calls)} digest calls but {len(cached)} cached files in {first.digest_dir}")
+    abstained = []
+    for path in cached:
+        try:
+            models.Abstain.model_validate_json(path.read_text())
+        except ValueError:
+            continue
+        abstained.append(path)
+    assert len(abstained) == 1, f"expected one cached Abstain file in {first.digest_dir}, found {len(abstained)}"
