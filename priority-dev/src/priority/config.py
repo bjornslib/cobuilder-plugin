@@ -15,11 +15,15 @@ _DEFAULTS = {
 # LiteLLM provider prefixes. Only these providers are supported.
 _PREFIX = {"openrouter": "openrouter", "nvidia_nim": "nvidia_nim", "inception": "openai"}
 
+# Reflection-only providers. Meta serves Muse Wonder through the Responses API.
+_REFLECTION_PREFIX = {**_PREFIX, "meta": "openai"}
+
 # Endpoint override per provider. LiteLLM knows none of these except openrouter.
 _BASE_URL = {
     "openrouter": "https://openrouter.ai/api/v1",
     "nvidia_nim": "https://integrate.api.nvidia.com/v1",
     "inception": "https://api.inceptionlabs.ai/v1",
+    "meta": "https://api.meta.ai/v1",
 }
 
 # Lowest temperature the provider accepts. Mercury refuses anything under 0.5.
@@ -38,8 +42,8 @@ _REFLECTION_DEFAULTS = {
     "REFLECTION_MODEL": "mistralai/mistral-large-4-1t-a52b",
 }
 
-# The key each judge provider reads when JUDGE_API_KEY is not set.
-_JUDGE_KEY = {"openrouter": "OPENROUTER_API_KEY", "nvidia_nim": "NVIDIA_API_KEY", "inception": "INCEPTION_LABS_API_KEY"}
+# The key each provider reads when its role key is not set.
+_JUDGE_KEY = {"openrouter": "OPENROUTER_API_KEY", "nvidia_nim": "NVIDIA_API_KEY", "inception": "INCEPTION_LABS_API_KEY", "meta": "META_API_KEY"}
 
 
 def _get(name: str) -> str | None:
@@ -141,16 +145,16 @@ def _judge_key_reader() -> str:
 
 
 def reflection_provider() -> str:
-    """The GEPA reflection provider. One of openrouter, nvidia_nim, or inception."""
+    """The GEPA reflection provider. One of openrouter, nvidia_nim, inception, or meta."""
     name = _get("REFLECTION_PROVIDER") or _REFLECTION_DEFAULTS["REFLECTION_PROVIDER"]
-    if name not in _PREFIX:
-        raise RuntimeError(f"REFLECTION_PROVIDER is {name!r}, want one of {sorted(_PREFIX)}")
+    if name not in _REFLECTION_PREFIX:
+        raise RuntimeError(f"REFLECTION_PROVIDER is {name!r}, want one of {sorted(_REFLECTION_PREFIX)}")
     return name
 
 
 def reflection_model() -> str:
     """The reflection model id, with the provider prefix the provider needs."""
-    return f"{_PREFIX[reflection_provider()]}/{_get('REFLECTION_MODEL') or _REFLECTION_DEFAULTS['REFLECTION_MODEL']}"
+    return f"{_REFLECTION_PREFIX[reflection_provider()]}/{_get('REFLECTION_MODEL') or _REFLECTION_DEFAULTS['REFLECTION_MODEL']}"
 
 
 def reflection_base_url() -> str:
@@ -159,8 +163,24 @@ def reflection_base_url() -> str:
 
 
 def reflection_temperature() -> float:
-    """0, raised to the lowest value the reflection provider accepts."""
+    """1.0 for meta, which Muse Wonder needs. Otherwise 0, raised to the lowest value the provider accepts."""
+    if reflection_provider() == "meta":
+        return 1.0
     return max(0.0, _MIN_TEMPERATURE.get(reflection_provider(), 0.0))
+
+
+def reflection_model_type() -> str:
+    """The DSPy model type. Meta serves only the Responses API; the other providers take chat."""
+    return "responses" if reflection_provider() == "meta" else "chat"
+
+
+# lm15 has a door for these prefixes. NVIDIA has none, so its calls take the default engine, which uses LiteLLM.
+_LM15_PREFIXES = {"openai", "openrouter"}
+
+
+def reflection_engine() -> str:
+    """The DSPy engine: lm15 for a prefix it has a door for, else auto, which hands the call to LiteLLM."""
+    return "lm15" if _REFLECTION_PREFIX[reflection_provider()] in _LM15_PREFIXES else "auto"
 
 
 def reflection_key() -> str:

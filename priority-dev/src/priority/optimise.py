@@ -23,7 +23,8 @@ OPTIMISERS = ("gepa", "miprov2", "bootstrap", "labeled")
 REPORT_RELATIVE = Path("probes") / "optimiser-report.md"
 PROGRAM_DIR = Path("probes") / "programs"
 REFLECTION_MAX_TOKENS = 16000
-REFLECTION_TIMEOUT = 600  # seconds; one reflection prompt holds several whole briefs
+REFLECTION_META_MAX_TOKENS = 32000
+REFLECTION_TIMEOUT = 180  # seconds for the one attempt; one reflection prompt holds several whole briefs
 
 
 @dataclass(frozen=True)
@@ -146,10 +147,18 @@ def _reflection_lm() -> object | None:
         import dspy
         return dspy.LM(config.reflection_model(), api_key=config.reflection_key(),
                        api_base=config.reflection_base_url(), temperature=config.reflection_temperature(),
-                       max_tokens=REFLECTION_MAX_TOKENS, timeout=REFLECTION_TIMEOUT, num_retries=3, cache=False)
+                       model_type=config.reflection_model_type(), engine=config.reflection_engine(), num_retries=0, cache=False,
+                       timeout=REFLECTION_TIMEOUT, **_reflection_extras())
     except (AssertionError, RuntimeError):
         # The made-up-world tests stub the keys this way. Their stub teleprompter needs no model.
         return None
+
+
+def _reflection_extras() -> dict:
+    """Settings that only meta takes: a reasoning effort, top_p, and a larger output budget."""
+    if config.reflection_provider() != "meta":
+        return {"max_tokens": REFLECTION_MAX_TOKENS}
+    return {"max_tokens": REFLECTION_META_MAX_TOKENS, "reasoning_effort": "medium", "top_p": 1.0}
 
 
 def _build_optimiser(cls: object, settings: Settings, train: list) -> object:
