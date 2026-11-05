@@ -8,8 +8,8 @@ defaults are the NVIDIA Mistral judge: provider `nvidia_nim`, model id
 `https://integrate.api.nvidia.com/v1`, key from `NVIDIA_API_KEY`. The task
 readers do not change. `priority.evaluation.judge.judge_lm(retries=3)`
 builds the judge `dspy.LM` from those readers and the judge token cap, and
-`_default_lm()` returns it. `optimise._reflection_lm()` returns the same
-judge model id and base URL, not the task model. `tests/conftest.py` stubs
+`optimise._reflection_lm()` builds from the `REFLECTION_*` readers, not the judge. Their default is the
+NVIDIA Mistral model at the NVIDIA endpoint, so a judge setting never moves it. `tests/conftest.py` stubs
 `config.judge_key` like `config.load_key`, so no test reads the real key.
 Every test here points `config.ENV_PATH` at a temp file and sets the
 variables with `monkeypatch.setenv`, so the real `.env` never decides a
@@ -28,6 +28,8 @@ NVIDIA_JUDGE_BASE_URL = "https://integrate.api.nvidia.com/v1"
 OPENROUTER_JUDGE_BASE_URL = "https://openrouter.ai/api/v1"
 INCEPTION_JUDGE_BASE_URL = "https://api.inceptionlabs.ai/v1"
 TASK_MODEL = "openai/mercury-3"
+DEFAULT_REFLECTION_MODEL = "nvidia_nim/mistralai/mistral-large-4-1t-a52b"
+DEFAULT_REFLECTION_BASE_URL = "https://integrate.api.nvidia.com/v1"
 
 
 @pytest.fixture(autouse=True)
@@ -233,14 +235,11 @@ def optimise_api():
     return require("priority.optimise")
 
 
-def test_reflection_lm_uses_the_judge_model_not_the_task_model(env):
-    env.setenv("NVIDIA_API_KEY", "sk-test-nvidia")
-    lm = optimise_api()._reflection_lm()
-    assert lm is not None, "the reflection LM came back None with a stubbed judge key"
-    parts = lm_parts(lm)
-    assert parts["model"] == DEFAULT_JUDGE_MODEL
-    assert parts["model"] != TASK_MODEL
-    assert parts["api_base"] == DEFAULT_JUDGE_BASE_URL
+def test_reflection_default_is_the_nvidia_mistral_endpoint_not_the_task_model():
+    config = require("priority.config")
+    assert config.reflection_model() == DEFAULT_REFLECTION_MODEL
+    assert config.reflection_base_url() == DEFAULT_REFLECTION_BASE_URL
+    assert config.reflection_model() != TASK_MODEL
 
 
 def test_reflection_lm_reads_the_env_overrides(env):

@@ -12,11 +12,11 @@ def _settings_line(optimiser: str, budget: int, seed: int, minibatch: int | None
                    threads: int | None = None, val_sessions: int = 1) -> str:
     """The per-optimiser settings for the report."""
     if optimiser == "gepa":
-        from priority.interpreter.module import INTERPRETER_MODEL
+        from priority.config import reflection_model
         batch = str(minibatch) if minibatch is not None else "GEPA default"
         thread_text = str(threads) if threads is not None else "GEPA default"
-        return (f"candidates: {budget} (max_full_evals); reflection model: {INTERPRETER_MODEL} "
-                f"(same as the interpreter); reflection minibatch size: {batch}; "
+        return (f"candidates: {budget} (max_full_evals); reflection model: {reflection_model()}; "
+                f"reflection minibatch size: {batch}; "
                 f"threads (num_threads): {thread_text}; "
                 f"valset sessions: {val_sessions}; one component (propose), no component selector; "
                 f"schema-guarded instruction proposer; format failures as feedback; seed {seed}")

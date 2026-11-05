@@ -16,7 +16,8 @@ def _stub_model_key(monkeypatch):
     except Exception:  # noqa: BLE001 (a collection-time import fault fails loudly below)
         return
     for name in ("LLM_API_KEY", "OPENROUTER_API_KEY", "NVIDIA_API_KEY",
-                 "INCEPTION_LABS_API_KEY", "JUDGE_API_KEY"):
+                 "INCEPTION_LABS_API_KEY", "JUDGE_API_KEY", "REFLECTION_PROVIDER",
+                 "REFLECTION_MODEL", "REFLECTION_BASE_URL", "REFLECTION_API_KEY"):
         monkeypatch.delenv(name, raising=False)
     monkeypatch.setattr(config, "load_key", lambda: "sk-test-stub-key")
     monkeypatch.setattr(config, "judge_key", lambda: "sk-test-stub-judge-key", raising=False)
