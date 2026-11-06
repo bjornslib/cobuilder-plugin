@@ -253,3 +253,14 @@ See `docs/plans/priority-dev-spike/slice20-c2-holdout.md`.
 - spread over repeats: read each gain against the slice 16 baseline spread (probes/eval-baseline.md); a gain smaller than that spread is not a result
 - cost: optimiser budget 3; model-call count is not metered by this command
 - program: probes/programs/gepa-smoke26-seeded-budget3-seed7.json (load it with `priority eval --program`)
+
+## gepa (budget 3, seed 7)
+
+- settings: candidates: 3 (max_full_evals); reflection model: openai/muse-wonder-1.0; reflection minibatch size: 3; threads (num_threads): 2; valset sessions: 1; one component (propose), no component selector; schema-guarded instruction proposer; format failures as feedback; seed 7
+- train sessions (4): 0e21f94b-fcfc-4746-ad41-20d2de4cfe68, 1b3b2a95-562c-43cd-af92-b711a4c45f38, 44a2c88e-baaf-4dac-85d2-1512f19a862d, 99a61cfd-ceb8-4fd9-bab2-d1b82b958f4c
+- held-out sessions (24): 16505e93-2137-4fb6-9acb-f9a721e80e32, 173ae36f-0371-42ea-8519-ed26b52a5389, 391d47b9-cc4c-483b-ac93-2cd127922aa1, 396b87e9-546a-4964-931b-5b053aaa1cc3, 3b3d87e3-2b06-4972-a53b-f4a9d6ec2ceb, 40711e5b-aeb2-4e5b-a852-06fbe6f0efb5, 43e055c1-5644-45f6-91b0-dfbf747bdab0, 5597ca26-c2e1-4e74-8519-341323592b12, 63996751-1e17-41db-84c6-0cd161355cf6, 71a58b52-8c51-44ba-9222-9f64360b8751, 7438c281-93ba-40a6-bcb9-dbbf5e9e8dfb, 7ce2f07b-a4ea-4364-a7dd-de12b245c455, 7f26f5b0-d0c6-4a24-9f54-9e43e1f3fc90, 7f58085f-7121-4ec1-a263-ec8a6fe7c321, a2f34209-85df-49db-a40d-f015a3da5348, a41510dd-422c-4d90-9338-1d82c677e5f4, a6060e50-a23f-4486-a766-92e66a7bb2fb, af644c7f-7f0d-4c5d-b1c7-360d2952e266, b8272515-c796-4e58-9b38-29f396606603, e5d71545-0948-4ceb-86bc-f2eb8ac70d0c, e924e1e7-394f-4599-9a47-9360cc6b1f19, e9ebcd88-5fb1-49c0-a567-45ef7b7d1246, f33925f0-e981-4d65-b686-766dba0b76ef, f6cdd6bb-e585-460d-902a-1cfcc40ccce2
+- held-out score before: n/a in this run (no holdout scoring without model calls)
+- held-out score after: n/a in this run (score the saved program with `priority eval --split holdout --program probes/programs/gepa-smoke26-seeded-budget3-seed7.json`)
+- spread over repeats: read each gain against the slice 16 baseline spread (probes/eval-baseline.md); a gain smaller than that spread is not a result
+- cost: optimiser budget 3; model-call count is not metered by this command
+- program: probes/programs/gepa-smoke26-seeded-budget3-seed7.json (load it with `priority eval --program`)
