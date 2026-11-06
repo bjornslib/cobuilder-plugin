@@ -4,7 +4,6 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
-import threading
 import time
 from pathlib import Path
 from typing import Any
@@ -14,9 +13,9 @@ from dspy.utils.exceptions import AdapterParseError
 from pydantic import ValidationError
 
 from priority.interpreter.models import Abstain
+from priority.run_folder import RunFolder
 
 log = logging.getLogger("priority.interpreter")
-_WRITE = threading.Lock()  # sessions of a replay write to one call store from many threads
 
 
 def render(inputs: dict[str, Any]) -> str:
@@ -43,8 +42,9 @@ class CallRecorder(BaseCallback):
     A row waits until `commit(valid)`, because the caller knows only after the call whether the reply parsed.
     """
 
-    def __init__(self, log_dir: Path | str | None, adapter: str = "chat", session_id: str = "", stop: str = ""):
-        self.path = Path(log_dir) / "calls.jsonl" if log_dir is not None else None
+    def __init__(self, log_dir: RunFolder | Path | str | None, adapter: str = "chat", session_id: str = "",
+                 stop: str = ""):
+        self.folder = log_dir if log_dir is None or isinstance(log_dir, RunFolder) else RunFolder(log_dir)
         self.adapter = adapter
         self.session_id = session_id or ""
         self.stop = stop or ""
@@ -65,18 +65,19 @@ class CallRecorder(BaseCallback):
             record["error"] = f"{type(exception).__name__}: {exception}"
         self._pending.append(record)
 
-    def commit(self, valid: bool) -> None:
-        """Write the rows of the call. A row that holds an error is never valid."""
+    def commit(self, valid: bool, error: str = "") -> None:
+        """Write the rows of the call. A row that holds an error is never valid. `error` fills in the rows
+        that have none, such as a reply that did not parse."""
         pending, self._pending = self._pending, []
-        if self.path is None:
+        if self.folder is None:
             return
+        if error:
+            for row in pending:
+                row.setdefault("error", error)
         text = "".join(json.dumps({**row, "valid": valid and "error" not in row}) + "\n" for row in pending)
         if not text:
             return
-        with _WRITE:
-            self.path.parent.mkdir(parents=True, exist_ok=True)
-            with self.path.open("a") as handle:
-                handle.write(text)
+        self.folder.append("calls.jsonl", text)
 
 
 def guarded(recorder: CallRecorder, stage: str, predictor: Any, **inputs: Any) -> Any:

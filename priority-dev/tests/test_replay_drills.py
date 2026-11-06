@@ -57,7 +57,8 @@ def test_the_drills_use_their_own_models_and_leave_rows_of_their_own(drilled):
     errors = [r["error"] for r in rows if "error" in r]
     assert any("429" in e for e in errors), "no row of the 429 drill"
     assert any("TimeoutError" in e for e in errors), "no row of the timeout drill"
-    assert any(r["valid"] is False and "error" not in r for r in rows), "no row of a reply that does not parse"
+    assert any(r["valid"] is False and r.get("error", "").startswith("invalid_output") for r in rows), (
+        "no row of a reply that does not parse")
     assert all(isinstance(r["seconds"], float) and r["adapter"] == "chat" for r in rows)
 
 

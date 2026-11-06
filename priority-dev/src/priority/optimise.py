@@ -13,9 +13,11 @@ from pathlib import Path
 from priority import config
 from priority.evaluation.demos import as_demo, demo_briefs, drop_demo_stops, pick_demos
 from priority.evaluation.metric import JudgeFailure, ModelFailure
-from priority.gepa_log import discard_run_log, recording_proposer, write_candidates
+from priority.gepa_log import (judge_checker, print_split, recording_proposer,
+                               with_identity, write_candidates)
 from priority.gepa_proposer import blocked_details, guided_instruction_proposer
 from priority.optimise_report import append_report, write_eval_rows
+from priority.run_folder import RunFolder
 from priority.trainset import assert_train_only, build_trainset, split_gepa_valset
 
 CLASS_BY_OPTIMISER = {"gepa": "GEPA", "miprov2": "MIPROv2", "bootstrap": "BootstrapFewShot"}
@@ -35,18 +37,19 @@ class Settings:
     minibatch: int | None = None
     threads: int | None = None
     val_sessions: int = 1
-    log_dir: Path | None = None
+    log_dir: RunFolder | None = None
 
 
 def gepa_feedback(example: object, prediction: object, trace: object = None,
                   pred_name: object = None, pred_trace: object = None,
-                  program_trace: object = None) -> object:
-    """The metric score and feedback as a GEPA ScoreWithFeedback prediction."""
+                  program_trace: object = None, *, checked: object = None) -> object:
+    """The metric score and feedback as a GEPA ScoreWithFeedback prediction.
+    `checked` is the judge call that a GEPA run wraps with its log recorder. None uses the plain judge."""
     import dspy
 
     from priority.evaluation.metric import score
 
-    value, feedback = score(example, prediction, trace, pred_name, pred_trace)
+    value, feedback = score(example, prediction, trace, pred_name, pred_trace, checked=checked)
     feedback = f"Score: {value:.2f} of 1.00. {feedback}"
     return dspy.Prediction(score=value, feedback=feedback)
 
@@ -92,7 +95,7 @@ def _prepare(manifest: Path, labels: Path, real_dir: Path, optimiser: str, tag: 
     return examples, parts
 
 
-def _student(seed_program: Path | str | None) -> object:
+def _student(seed_program: Path | str | None, log_dir: RunFolder | None = None) -> object:
     """The program to compile: a fresh Interpreter, or one that carries a saved program."""
     from priority import interpreter as interpreter_mod
 
@@ -101,7 +104,7 @@ def _student(seed_program: Path | str | None) -> object:
     except (AssertionError, RuntimeError):
         # Offline, or the made-up-world tests, which stub the key: the stub teleprompter needs no model.
         lm = None
-    student = interpreter_mod.Interpreter(lm=lm)
+    student = interpreter_mod.Interpreter(lm=lm, log_dir=log_dir)
     if seed_program is not None:
         try:
             student.load(str(seed_program))
@@ -164,11 +167,13 @@ def _reflection_extras() -> dict:
 def _build_optimiser(cls: object, settings: Settings, train: list) -> object:
     """One optimiser with the run budget and seed recorded in its settings."""
     if settings.optimiser == "gepa":
-        gepa_dir = settings.log_dir / "gepa"
+        gepa_dir = settings.log_dir.path / "gepa"
         gepa_dir.mkdir(parents=True, exist_ok=True)
-        options: dict = {"metric": gepa_feedback, "max_full_evals": settings.budget, "seed": settings.seed,
+        metric = partial(gepa_feedback, checked=judge_checker(settings.log_dir))
+        options: dict = {"metric": metric, "max_full_evals": settings.budget, "seed": settings.seed,
                          "instruction_proposer": recording_proposer(
-                             partial(guided_instruction_proposer, blocked=blocked_details(train)), settings.log_dir),
+                             partial(guided_instruction_proposer, blocked=blocked_details(train)),
+                             settings.log_dir.path),
                          "add_format_failure_as_feedback": True, "track_stats": True,
                          "log_dir": str(gepa_dir)}
         if settings.minibatch is not None:
@@ -192,6 +197,8 @@ def _compile(cls: object, settings: Settings, student: object, examples: list, t
     if settings.optimiser != "gepa":
         return _build_optimiser(cls, settings, examples).compile(student, trainset=examples)
     train, val, _ = split_gepa_valset(examples, train_ids, settings.seed, settings.val_sessions)
+    train, val = with_identity(train), with_identity(val)
+    print_split(train, val, settings.minibatch)
     optimiser = _build_optimiser(cls, settings, train)
     if val:
         return optimiser.compile(student, trainset=train, valset=val)
@@ -202,8 +209,9 @@ def _finish(compiled: object, settings: Settings, examples: list, parts: dict, s
     """Rescore the train stops, then save the program, append the report, write the rows, and print the summary.
     The rescore runs first, so a judge that never works leaves no program, report, or rows file."""
     name = f"{stem}-budget{settings.budget}-seed{settings.seed}"
+    checked = judge_checker(settings.log_dir if settings.optimiser == "gepa" else None)
     try:
-        rows = write_eval_rows(compiled, examples, PROGRAM_DIR / f"{name}-rows.jsonl")
+        rows = write_eval_rows(compiled, examples, PROGRAM_DIR / f"{name}-rows.jsonl", checked=checked)
     except Exception:  # noqa: BLE001 (a stub teleprompter has no callable program; rows stay unwritten)
         rows = []
     program = save_program(compiled, PROGRAM_DIR / f"{name}.json")
@@ -217,9 +225,9 @@ def _finish(compiled: object, settings: Settings, examples: list, parts: dict, s
     print(f"report: {REPORT_RELATIVE}")
 
 
-def _failure_stop(failure: BaseException, log_dir: Path, log_existed: bool) -> int:
+def _failure_stop(failure: BaseException, folder: RunFolder) -> int:
     """Remove this run's new log folder, print the stop message for a judge or a model that never worked, and return the exit code."""
-    discard_run_log(log_dir, log_existed)
+    folder.discard()
     print(f"optimise failed: {failure}. The run stopped and saved nothing.")
     return 1
 
@@ -236,12 +244,12 @@ def run(manifest: Path, labels: Path, real_dir: Path,
     reset_usage()
     stem = (optimiser if tag is None else f"{optimiser}-{tag}") + ("-seeded" if seed_program is not None else "")
     log_dir = gepa_log_dir or PROGRAM_DIR / f"{stem}-budget{budget}-seed{seed}-log"
-    settings = Settings(optimiser, budget, seed, minibatch, threads, val_sessions, log_dir)
-    log_existed = log_dir.exists()
+    folder = RunFolder(log_dir)
+    settings = Settings(optimiser, budget, seed, minibatch, threads, val_sessions, folder)
     try:
         examples, parts = _prepare(manifest, labels, real_dir, optimiser, tag)
         cls = _teleprompter_for(optimiser)
-        student = _student(seed_program)
+        student = _student(seed_program, settings.log_dir if optimiser == "gepa" else None)
     except _Stop as stop:
         print(stop.message)
         return stop.code
@@ -253,7 +261,7 @@ def run(manifest: Path, labels: Path, real_dir: Path,
     try:
         compiled = _compile(cls, settings, student, examples, parts["train"])
     except (JudgeFailure, ModelFailure) as exc:
-        return _failure_stop(exc, log_dir, log_existed)
+        return _failure_stop(exc, folder)
     except Exception as exc:  # noqa: BLE001 (any compile fault ends the run with a message)
         print(f"optimise failed: {optimiser} compile failed: {exc}")
         return 1
@@ -261,8 +269,8 @@ def run(manifest: Path, labels: Path, real_dir: Path,
     try:
         _finish(compiled, settings, examples, parts, stem)
     except (JudgeFailure, ModelFailure) as exc:
-        return _failure_stop(exc, log_dir, log_existed)
+        return _failure_stop(exc, folder)
     if optimiser == "gepa":
-        write_candidates(log_dir, compiled)
+        write_candidates(folder.path, compiled)
     print(usage_line())
     return 0

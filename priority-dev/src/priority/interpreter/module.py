@@ -16,6 +16,7 @@ from pydantic import ValidationError
 from priority import config
 from priority.interpreter.calls import CallRecorder
 from priority.interpreter.signatures import ProposeStop
+from priority.run_folder import RunFolder
 
 INTERPRETER_MODEL = config.model()
 MAX_TOKENS = 16000  # a reasoning model spends tokens on its reasoning first, so a low cap cuts the reply
@@ -36,14 +37,21 @@ def _abstain(reason: str, error: Exception, raw: str = "") -> dict:
     return {"reason": reason, "detail": f"{type(error).__name__}: {error}", "raw": raw}
 
 
+def _row_error(abstain: dict | None) -> str:
+    """The error text of a call row that has none of its own, such as a reply that did not parse."""
+    if abstain is None:
+        return ""
+    return f"{abstain['reason']}: {abstain['detail'].partition(':')[0]}"
+
+
 def _is_rate_limit(error: Exception) -> bool:
     return (type(error).__name__.endswith("RateLimitError") or "Rate limit reached" in str(error)
             or getattr(error, "status_code", None) == 429)
 
 
 class Interpreter(dspy.Module):
-    def __init__(self, lm: dspy.LM | None = None, *, log_dir: Path | str | None = None, session_id: str = "",
-                 adapter: str = "chat", stop: str = "", waits: tuple[float, ...] = WAITS):
+    def __init__(self, lm: dspy.LM | None = None, *, log_dir: RunFolder | Path | str | None = None,
+                 session_id: str = "", adapter: str = "chat", stop: str = "", waits: tuple[float, ...] = WAITS):
         super().__init__()
         if adapter not in ADAPTERS:
             raise ValueError(f"unknown adapter {adapter!r}: use one of {', '.join(map(repr, ADAPTERS))}")
@@ -63,7 +71,7 @@ class Interpreter(dspy.Module):
         recorder = CallRecorder(self.log_dir, self.adapter_name, session_id, stop)
         recorder.stage = STAGE
         reply, abstain = self._try_calls(brief_text, recorder)
-        recorder.commit(abstain is None)
+        recorder.commit(abstain is None, error=_row_error(abstain))
         if abstain is not None:
             return self._abstained(brief_text, abstain)
         steps = [step.model_dump(mode="json") | {"session_id": session_id, "author": "interpreter"}

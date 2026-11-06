@@ -58,21 +58,27 @@ def append_report(report: Path, optimiser: str, budget: int, seed: int,
     return report
 
 
-def _row_for(example: object, prediction: object) -> dict:
-    """One runner-format per-stop row for one compiled output, scored by the metric."""
+def _row_for(example: object, prediction: object, checked: object = None) -> dict:
+    """One runner-format per-stop row for one compiled output, scored by the metric. `checked` is the judge call."""
     from priority.evaluation.metric import score
 
     abstain = get_field(prediction, "abstain")
     reason = get_field(abstain, "reason") if abstain is not None else None
-    value, feedback = score(example, prediction)
+    value, feedback = score(example, prediction, checked=checked)
     parts = [feedback] if feedback and reason is None else []
     return {"session": get_field(example, "session_id", ""), "stop": get_field(example, "stop", ""),
             "score": value, "parts": parts, "gate": reason or "pass"}
 
 
-def write_eval_rows(compiled: object, examples: list, path: Path) -> list[dict]:
+def _predict(compiled: object, example: object) -> object:
+    """The compiled program's output for one train stop. The call names the stop, so its call rows carry it."""
+    return compiled(brief_text=get_field(example, "brief_text", ""), session_id=get_field(example, "session_id", ""),
+                    stop=get_field(example, "stop", ""))
+
+
+def write_eval_rows(compiled: object, examples: list, path: Path, *, checked: object = None) -> list[dict]:
     """Score the compiled program on its train stops and write runner-format rows."""
-    rows = [_row_for(example, compiled(brief_text=get_field(example, "brief_text", ""))) for example in examples]
+    rows = [_row_for(example, _predict(compiled, example), checked) for example in examples]
     target = Path(path)
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text("".join(json.dumps(row) + "\n" for row in rows))

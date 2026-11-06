@@ -67,15 +67,16 @@ def _stop_name(example: object) -> str:
 
 
 def score(example: object, prediction: object, trace: object = None,
-          pred_name: object = None, pred_trace: object = None) -> tuple[float, str]:
+          pred_name: object = None, pred_trace: object = None, *, checked: object = None) -> tuple[float, str]:
     """Score one stop from 0 to 1 with feedback. A failed judge call is retried, and when every try fails
     this raises JudgeFailure. A `model_error` abstain raises ModelFailure, with no judge call. The GEPA
-    arguments do not change the result."""
+    arguments do not change the result. `checked` replaces the judge call, so a run can log its judge rows."""
+    check = score_checked if checked is None else checked
     abstain = abstain_of(prediction)
     if abstain is not None and abstain.get("reason") == "model_error":
         raise ModelFailure(f"the model call failed for {_stop_name(example)}: {abstain.get('detail')}")
     for attempt in range(MAX_TRIES):
-        value, feedback, judge_error = score_checked(example, prediction)
+        value, feedback, judge_error = check(example, prediction)
         if not judge_error:
             return (value, feedback)
         if attempt + 1 < MAX_TRIES:

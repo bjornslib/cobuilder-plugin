@@ -7,9 +7,16 @@ from __future__ import annotations
 
 import itertools
 import json
-import shutil
 from collections.abc import Callable
 from pathlib import Path
+
+import dspy
+
+from priority import config
+from priority.evaluation.metric import score_checked
+from priority.evaluation.payload_rules import get_field
+from priority.interpreter.calls import CallRecorder
+from priority.run_folder import RunFolder
 
 
 def _dump(path: Path, data: object) -> None:
@@ -26,6 +33,7 @@ def recording_proposer(propose: Callable, run_dir: Path) -> Callable:
         name = components_to_update[0]
         _dump(run_dir / f"reflection-{next(calls):03d}.json", {
             "component": name,
+            "model": config.reflection_model(),
             "current_instruction": candidate.get(name),
             "reflective_dataset": reflective_dataset.get(name),
             "proposal": proposed.get(name),
@@ -49,7 +57,44 @@ def write_candidates(run_dir: Path, compiled: object) -> None:
     _dump(run_dir / "candidates.json", {"best_index": result.best_idx, "candidates": entries})
 
 
-def discard_run_log(run_dir: Path, existed_before: bool) -> None:
-    """Remove a stopped run's log folder, but only when this run created it. A folder that was there before stays."""
-    if not existed_before and run_dir.exists():
-        shutil.rmtree(run_dir)
+MINIBATCH_DEFAULT = 3  # GEPA's default minibatch size (dspy gepa.py:408)
+
+
+def with_identity(examples: list) -> list:
+    """Copies of the examples that name their session and stop as inputs, so a student call carries both."""
+    return [example.with_inputs("brief_text", "session_id", "stop") for example in examples]
+
+
+def judge_checker(log_dir: RunFolder | None):
+    """The GEPA judge call. Each try writes one judge row to log_dir. None when no log dir is set."""
+    if log_dir is None:
+        return None
+
+    def checked(example: object, prediction: object) -> tuple[float, str, bool]:
+        recorder = CallRecorder(log_dir, "chat", get_field(example, "session_id"), get_field(example, "stop"))
+        recorder.stage = "judge"
+        with dspy.context(callbacks=[*dspy.settings.callbacks, recorder]):
+            value, feedback, judge_error = score_checked(example, prediction)
+        recorder.commit(not judge_error, feedback if judge_error else "")
+        return value, feedback, judge_error
+
+    return checked
+
+
+def print_split(train: list, val: list, minibatch: int | None) -> None:
+    """Print each split's stop and session counts, the minibatch size, and each split's stops."""
+    size = MINIBATCH_DEFAULT if minibatch is None else minibatch
+    print(f"trainset: {len(train)} stops ({_sessions(train)} sessions); "
+          f"valset: {len(val)} stops ({_sessions(val)} sessions); minibatch: {size}")
+    print(f"train stops: {_stop_list(train)}")
+    print(f"valset stops: {_stop_list(val) or '(none)'}")
+
+
+def _sessions(examples: list) -> int:
+    return len({get_field(example, "session_id") for example in examples})
+
+
+def _stop_list(examples: list) -> str:
+    """The stops as sorted session/stop pairs. The session shows eight characters, and the stop is zero-padded."""
+    keys = sorted((str(get_field(ex, "session_id")), str(get_field(ex, "stop")).zfill(3)) for ex in examples)
+    return " ".join(f"{session[:8]}/{stop}" for session, stop in keys)
