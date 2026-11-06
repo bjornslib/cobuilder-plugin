@@ -17,12 +17,13 @@ Test command: `uv run --project priority-dev pytest priority-dev/tests -q`
 - 0.0 — no reflection call
 
 ### C2 — The reflection prompt carries complete evidence [CRITICAL]
-**Must be true:** In a saved reflection file, each of the 3 minibatch stops appears with a feedback starting with its score, and the parse-failure stop shows its raw reply and error text.
+**Must be true:** In a saved reflection file of the live run, each of the 3 minibatch stops appears with a feedback starting with its score. The failure evidence comes from one of two sources: a stop in the live run that failed to parse shows its raw reply and error text in the reflection file, or, when no live reply failed to parse, the stub-model tests show it. The stub tests are in `priority-dev/tests/test_e7_reflection_evidence.py`: a failed stop keeps `raw_reply` and `error` in the trace, the reflective dataset keeps it, and a full stub GEPA run reflects on it. (Amended 6 November 2026 by the engineer, option c: a live parse failure happens by chance.)
 **Evidence to check:**
-- Read the reflection file.
+- Read the reflection files and `calls.jsonl` of the live run, and check whether any task-model row is invalid.
+- If none is invalid, run the three named stub tests and read what they assert.
 **Scoring:**
-- 1.0 — 3 stops, scores, and the failure evidence
-- 0.5 — the failure stop is missing its error text
+- 1.0 — 3 stops with scores, and the failure evidence from the live run or the passing stub tests
+- 0.5 — the failure evidence is missing its raw reply or its error text
 - 0.0 — fewer than 3 stops or no score
 
 ### C3 — The proposal is whole and the run is clean
