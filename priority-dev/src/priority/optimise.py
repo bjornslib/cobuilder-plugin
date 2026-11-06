@@ -263,6 +263,7 @@ def run(manifest: Path, labels: Path, real_dir: Path,
     except (JudgeFailure, ModelFailure) as exc:
         return _failure_stop(exc, folder)
     except Exception as exc:  # noqa: BLE001 (any compile fault ends the run with a message)
+        folder.discard()
         print(f"optimise failed: {optimiser} compile failed: {exc}")
         return 1
     _restore_seed_demos(compiled, seed_demos)
