@@ -2,13 +2,13 @@
 
 Feature: priority-dev-spike
 Epic: E8
-Slice goal: Two optimiser runs that differ only in the proposer: D1 with `--proposer v1`, D2 with `--proposer v2`. Same seed program, seed 7, the C3 valset of 12 sessions, minibatch 6, budget 3, Muse Wonder as the reflection model. Then D1, D2, and arm A on the 56 test-set stops. `probes/proposer-report.md` compares them.
+Slice goal: D1 is the completed C3s run (`--proposer v1`). D2 uses `--proposer v2`. Same seed program, seed 7, stratified valset `--val-stops 40`, minibatch 6, budget 5, Muse Wonder as the reflection model. Then D2, D1, and a same-day arm A run on the 56 test-set stops. `probes/proposer-report.md` compares them.
 Test command: `uv run --project priority-dev pytest priority-dev/tests -q`
 
 ## Criteria
 
 ### C1 — The two runs differ only in the proposer [CRITICAL]
-**Must be true:** The commands of D1 and D2 are the same except `--proposer`. Both print the same trainset, valset, and minibatch lines and the same reflection model.
+**Must be true:** The D2 command matches the recorded C3s command except `--proposer v2`. Both print the same trainset, valset, and minibatch lines and the same reflection model.
 **Evidence to check:**
 - Read the run script and both run outputs.
 **Scoring:**

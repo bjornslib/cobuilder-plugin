@@ -35,7 +35,7 @@ The terms follow `DDD-VOCABULARY.md`: optimiser run, seed program, candidate, tr
 1. Slice 28, proposer prompt and reference material. Stub models.
 2. Slice 29, reference and structural diff in the feedback. Stub models.
 3. Slice 30, live smoke run of the v2 proposer. The slice 26 setup (3 low-scoring trainset stops, a valset of 1 session, budget 3), seeded from the C3 seed. It counts the rejected proposals. If more than 1 in 4 proposals is rejected, the engineer decides before slice 31 whether to drop the `Reference:` block and keep the diff only.
-4. Slice 31, arms D1 and D2. The same seed (`probes/programs/seed-armC3-from-C2.json`), seed 7, the C3 valset (12 sessions), minibatch 6, budget 3, Muse Wonder as the reflection model. D1 uses `--proposer v1`; D2 uses `--proposer v2`. Then D1, D2, and arm A on the 56 test-set stops.
+4. Slice 31, arms D1 and D2. D1 is the completed C3s run: `--proposer v1`, seed program `probes/programs/seed-armC3-from-C2.json`, seed 7, stratified valset `--val-stops 40`, minibatch 6, budget 5, Muse Wonder as the reflection model. D2 reruns that setup with `--proposer v2`. Then D2, D1, and a same-day arm A run on the 56 test-set stops.
 
 Order: 28, 29, 30, 31. Slices 30 and 31 make live calls and wait for the engineer's go.
 
