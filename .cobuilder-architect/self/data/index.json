@@ -1,13 +1,13 @@
 {
   "schema_version": "1.4",
   "sources": {
-    "git_head": "10a2060f6cf956e24663e8fa58c727c94a54f176",
+    "git_head": "c79df418b9f825b56aaea2e8d62251d18c4b71aa",
     "trees": {
       "docs/architecture/adr": "sha256:2db8d2e9a5fb5ee2e27f6091cbda3ae193c349e8e5c29b807d8e34ade7cef5a0",
       "docs/architecture/designs": "sha256:6f1e085aaa10eca63937611fdaee5e290b5c9fbe2fd0ac308391a6c633f3d76d",
       "docs/architecture/contexts": "sha256:6663ee456e31bfbe31401908ae494017ed864dbb9c72211b6cbdccc44d078482",
-      "docs/plans": "sha256:121b08666994ec850897dbab2403a4ff7c61fb3963b83b6ef5dfc16a77d5ef95",
-      ".cobuilder/rubrics": "sha256:8e03678f9b216180da2eeb84e079d062fc468b6774160af360da4bb18a985c5f"
+      "docs/plans": "sha256:076ef58a8be033e7915d9483cd9324034d2e2f14db7bc4f29a79dea7f1f8960a",
+      ".cobuilder/rubrics": "sha256:347776f63ee16cf33a37d4f22f29b996b30b4daced05ee700aa1c6d80ac8300f"
     }
   },
   "entities": {
@@ -4508,9 +4508,9 @@
         "n": 27,
         "title": "**Optimiser run C3**",
         "ends_with": "`priority optimise` prints the trainset, valset, and minibatch sizes in the glossary terms. Arm C3 is seeded from a copy of C2 with its cut sentence repaired, with a larger valset and minibatch (gaps 4 and 5). A report compares arm A, run again after slice 24, with C3 on the test set. Starts only after slice 26 passes. The live runs need the engineer's go",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "review-link/1",
@@ -7071,7 +7071,7 @@
         ]
       },
       "ADR-0034": {
-        "pr": 25,
+        "pr": null,
         "via": "epic",
         "path": [
           "work-drawer/E1",
@@ -7079,7 +7079,7 @@
         ]
       },
       "ADR-0035": {
-        "pr": 26,
+        "pr": null,
         "via": "epic",
         "path": [
           "options-mode/E1"
@@ -7199,17 +7199,7 @@
       "nexus-borrowings/E1": 29,
       "nexus-borrowings/E2": 29,
       "nexus-borrowings/E3": 29,
-      "nexus-borrowings/E4": 29,
-      "options-mode/E1": 26,
-      "plugin-split/E1": 11,
-      "plugin-split/E2": 11,
-      "plugin-split/E3": 11,
-      "plugin-split/E4": 11,
-      "plugin-split/E5": 11,
-      "plugin-split/E6": 11,
-      "plugin-split/E8": 18,
-      "work-drawer/E1": 25,
-      "work-drawer/E2": 25
+      "nexus-borrowings/E4": 29
     },
     "epic_status": {
       "beads-storage/E1": "completed",
@@ -7285,11 +7275,11 @@
       "plugin-split/E6": "completed",
       "plugin-split/E7": "completed",
       "plugin-split/E8": "completed",
-      "priority-dev-spike/E1": "no-pull-request",
-      "priority-dev-spike/E2": "no-pull-request",
-      "priority-dev-spike/E3": "no-pull-request",
-      "priority-dev-spike/E4": "no-pull-request",
-      "priority-dev-spike/E5": "no-pull-request",
+      "priority-dev-spike/E1": "unknown",
+      "priority-dev-spike/E2": "unknown",
+      "priority-dev-spike/E3": "unknown",
+      "priority-dev-spike/E4": "unknown",
+      "priority-dev-spike/E5": "unknown",
       "priority-dev-spike/E6": "unstarted",
       "priority-dev-spike/E7": "unstarted",
       "react-viewer/E1": "completed",
@@ -7308,7 +7298,7 @@
       "review-flight-deck/F4": "completed",
       "review-flight-deck/F5": "completed",
       "review-flight-deck/F6": "completed",
-      "review-link/E1": "no-pull-request",
+      "review-link/E1": "unknown",
       "slice-agents-and-vocabulary/E1": "unstarted",
       "slice-agents-and-vocabulary/E2": "unstarted",
       "slice-agents-and-vocabulary/E3": "unstarted",
@@ -7318,8 +7308,8 @@
       "ubiquitous-language/E3": "unstarted",
       "ubiquitous-language/E4": "unstarted",
       "ubiquitous-language/E5": "unstarted",
-      "work-drawer/E1": "open",
-      "work-drawer/E2": "open"
+      "work-drawer/E1": "unknown",
+      "work-drawer/E2": "unknown"
     },
     "slice_to_epic": {
       "beads-storage/1": "beads-storage/E1",
