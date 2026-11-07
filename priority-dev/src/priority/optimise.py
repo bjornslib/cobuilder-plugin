@@ -13,11 +13,13 @@ from pathlib import Path
 from priority import config
 from priority.evaluation.demos import as_demo, demo_briefs, drop_demo_stops, pick_demos
 from priority.evaluation.metric import JudgeFailure, ModelFailure
+from priority.evaluation.payload_rules import abstain_of, as_steps, get_field, strip
 from priority.gepa_log import (judge_checker, print_split, recording_proposer,
                                with_identity, write_candidates)
 from priority.gepa_proposer import blocked_details, guided_instruction_proposer
 from priority.optimise_report import append_report, write_eval_rows
 from priority.run_folder import RunFolder
+from priority.structure_diff import structure_diff
 from priority.trainset import assert_train_only, build_trainset, split_gepa_valset
 from priority.valset import ValsetSize, describe, size_error
 
@@ -43,17 +45,40 @@ class Settings:
     proposer: str = "v2"
 
 
+def _reference_of(example: object) -> dict:
+    """The reference object of one labelled stop: its status, its yes or no, its priority, and its steps."""
+    return {"status": get_field(example, "status"), "needs_human": get_field(example, "needs_human"),
+            "priority": get_field(example, "priority"),
+            "steps": strip(as_steps(get_field(example, "expected_payloads")))}
+
+
+def _structured_feedback(example: object, prediction: object, value: float, notes: str) -> str:
+    """The score line, the notes, and the typed diff and reference JSON after their own header lines.
+    The note of an abstain keeps its reason alone, because its detail and its raw reply carry payload text."""
+    abstain = abstain_of(prediction)
+    if abstain is not None:
+        notes = f"abstain: the call gave no payload ({abstain.get('reason')})."
+    reference = _reference_of(example)
+    head = f"Score: {value:.2f} of 1.00. {notes}".strip()
+    return (f"{head}\nStructure:\n" + "\n".join(structure_diff(reference, prediction))
+            + "\nReference:\n" + json.dumps(reference, default=str))
+
+
 def gepa_feedback(example: object, prediction: object, trace: object = None,
                   pred_name: object = None, pred_trace: object = None,
-                  program_trace: object = None, *, checked: object = None) -> object:
+                  program_trace: object = None, *, checked: object = None, structure: bool = False) -> object:
     """The metric score and feedback as a GEPA ScoreWithFeedback prediction.
-    `checked` is the judge call that a GEPA run wraps with its log recorder. None uses the plain judge."""
+    `checked` is the judge call that a GEPA run wraps with its log recorder. None uses the plain judge.
+    `structure` adds the typed diff and the reference JSON, for the v2 proposer."""
     import dspy
 
     from priority.evaluation.metric import score
 
-    value, feedback = score(example, prediction, trace, pred_name, pred_trace, checked=checked)
-    feedback = f"Score: {value:.2f} of 1.00. {feedback}"
+    value, notes = score(example, prediction, trace, pred_name, pred_trace, checked=checked)
+    if structure:
+        feedback = _structured_feedback(example, prediction, value, notes)
+    else:
+        feedback = f"Score: {value:.2f} of 1.00. {notes}"
     return dspy.Prediction(score=value, feedback=feedback)
 
 
@@ -172,7 +197,8 @@ def _build_optimiser(cls: object, settings: Settings, train: list) -> object:
     if settings.optimiser == "gepa":
         gepa_dir = settings.log_dir.path / "gepa"
         gepa_dir.mkdir(parents=True, exist_ok=True)
-        metric = partial(gepa_feedback, checked=judge_checker(settings.log_dir))
+        metric = partial(gepa_feedback, checked=judge_checker(settings.log_dir),
+                         structure=settings.proposer == "v2")
         options: dict = {"metric": metric, "max_full_evals": settings.budget, "seed": settings.seed,
                          "instruction_proposer": recording_proposer(
                              partial(guided_instruction_proposer, blocked=blocked_details(train),
