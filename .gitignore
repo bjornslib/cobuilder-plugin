@@ -81,4 +81,5 @@ priority-dev/probes/programs/
 .lavish/holdout2-reference-review.html
 .lavish/train2-reference-review.html
 .lavish/c2-holdout-report.html
+.lavish/c3-train-val-report.html
 .lavish/priority-dev-labels-review.html
