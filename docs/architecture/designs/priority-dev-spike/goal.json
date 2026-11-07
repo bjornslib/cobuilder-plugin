@@ -94,6 +94,15 @@
       "branch": "design/priority-dev-spike",
       "pr": null,
       "state": "planned"
+    },
+    {
+      "id": "E8",
+      "slug": "instruction-proposer",
+      "title": "Instruction proposer: a new base prompt, a schema reference, the reference answer and a structural diff for the reflection model, and arms D1 and D2.",
+      "outcome": "Two arms that differ only in the proposer are compared with arm A on the test set.",
+      "branch": "design/priority-dev-spike",
+      "pr": null,
+      "state": "planned"
     }
   ],
   "later_programs": [

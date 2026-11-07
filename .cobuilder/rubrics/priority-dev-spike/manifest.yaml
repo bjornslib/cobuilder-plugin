@@ -36,3 +36,7 @@ slices:
   - {id: 25, name: "E7 compact stop brief", weight: 0.05}
   - {id: 26, name: "E7 live smoke run", weight: 0.05}
   - {id: 27, name: "E7 optimiser run C3", weight: 0.05}
+  - {id: 28, name: "E8 proposer prompt and reference material", weight: 0.05}
+  - {id: 29, name: "E8 reference and structural diff in the feedback", weight: 0.05}
+  - {id: 30, name: "E8 live smoke run of the v2 proposer", weight: 0.05}
+  - {id: 31, name: "E8 arms D1 and D2", weight: 0.05}

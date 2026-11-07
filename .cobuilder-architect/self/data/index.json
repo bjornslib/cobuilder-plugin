@@ -1,13 +1,13 @@
 {
   "schema_version": "1.4",
   "sources": {
-    "git_head": "c79df418b9f825b56aaea2e8d62251d18c4b71aa",
+    "git_head": "ae65f39aba602028291a7db8d69b95d7eacfc9d2",
     "trees": {
       "docs/architecture/adr": "sha256:2db8d2e9a5fb5ee2e27f6091cbda3ae193c349e8e5c29b807d8e34ade7cef5a0",
-      "docs/architecture/designs": "sha256:6f1e085aaa10eca63937611fdaee5e290b5c9fbe2fd0ac308391a6c633f3d76d",
+      "docs/architecture/designs": "sha256:1fa2051bc6a30499a42339b3a2053979b0ed88bc6c15337d2f845027a9d2c7ab",
       "docs/architecture/contexts": "sha256:6663ee456e31bfbe31401908ae494017ed864dbb9c72211b6cbdccc44d078482",
-      "docs/plans": "sha256:076ef58a8be033e7915d9483cd9324034d2e2f14db7bc4f29a79dea7f1f8960a",
-      ".cobuilder/rubrics": "sha256:347776f63ee16cf33a37d4f22f29b996b30b4daced05ee700aa1c6d80ac8300f"
+      "docs/plans": "sha256:673803123880fc2816d5e2758c02f66454b96478c361db6370f8ea92e5f982a0",
+      ".cobuilder/rubrics": "sha256:9acb856ebd59c7fe592d1f3a97dc0c538b2561852fff4fda166398f58a0a7300"
     }
   },
   "entities": {
@@ -1139,6 +1139,16 @@
         "state": "open",
         "note": null,
         "design_doc": "priority-dev-spike/E7"
+      },
+      {
+        "id": "priority-dev-spike/E8",
+        "design": "priority-dev-spike",
+        "epic_id": "E8",
+        "branch": null,
+        "pr": null,
+        "state": null,
+        "note": null,
+        "design_doc": "priority-dev-spike/E8"
       },
       {
         "id": "react-viewer/E1",
@@ -5424,6 +5434,15 @@
         "source_path": "docs/plans/priority-dev-spike/epic-E7-design.md"
       },
       {
+        "id": "priority-dev-spike/E8",
+        "epic_id": "E8",
+        "feature_slug": "priority-dev-spike",
+        "title": "Epic Technical Solution Design: E8 — Instruction proposer",
+        "body_md": "# Epic Technical Solution Design: E8 — Instruction proposer\n\nFeature: priority-dev-spike\nEpic ID: E8\n\n## Scope and Intent\n\nRun C3 (7 November 2026) gained on the training stops but not on the test set (C3 − C2 −0.025, interval −0.083 to +0.037). The reflection model rewrote the whole instruction each time, the instruction grew from 4,371 to 10,921 characters, and the dspy base prompt asks it to \"include all niche and domain specific factual information\". E8 changes what the reflection model reads, so that it edits the instruction in small, general steps, and it shows the reference answer of each stop. Then two arms that differ only in the proposer compare the change on the test set.\n\nE8 changes the instruction proposer and the GEPA feedback. It does not change the task model prompt (arm A), the judge, the references, the metric value, the valset rule, or the test set. The valset fixes (stratified valset, repeated scoring) come in a later epic.\n\nThe terms follow `DDD-VOCABULARY.md`: optimiser run, seed program, candidate, trainset, valset, test set, minibatch, mutation, task model, judge, reflection model, arm.\n\n## Files Touched\n\n- `priority-dev/src/priority/gepa_proposer.py` (slice 28: the new base prompt, `GENERAL_RULES` as additional instructions, the skills text, `max_chars`, and the proposer choice)\n- `priority-dev/src/priority/proposer_reference.py` (new, slice 28: builds the schema reference for the reflection model from the code)\n- `priority-dev/src/priority/structure_diff.py` (new, slice 29: the structural diff of a reference and an output)\n- `priority-dev/src/priority/optimise.py` (slice 29: `gepa_feedback` adds the reference and the diff; slice 28: one binding line for the proposer choice)\n- `priority-dev/src/priority/cli.py` (slice 28: `optimise --proposer v1|v2`)\n- `priority-dev/tests/` (one test file per slice, made-up fixtures and stub models only)\n- `priority-dev/probes/proposer-report.md` (slice 31: numbers only)\n\n## Types & Signatures\n\n- Slice 28, proposer choice. `--proposer v1` keeps the E7 proposer unchanged. `--proposer v2` (the default after E8) builds `InstructionProposer(base_instructions=PROPOSER_BASE, additional_instructions=GENERAL_RULES, skills=[proposer_reference()], max_chars=MAX_INSTRUCTION_CHARS)`. The schema guard and the trainset-detail check stay for both. The run prints `proposer: v1` or `proposer: v2`, and each `reflection-NNN.json` records it.\n- Slice 28, `PROPOSER_BASE`. It replaces the dspy `ProposeInstruction` text. It tells the reflection model to: keep the current instruction and change only what the examples show is wrong; change a rule only for a failure that shows in 2 or more examples; fix the lowest scores first and keep what scores 1.00; write general rules, never session detail; end with one line that states what changed and why. It drops the dspy sentence about niche facts.\n- Slice 28, `proposer_reference() -> str`. Built from the code, not copied from `docs/`: the output fields of `ProposeStop` with their allowed values, each step kind with its payload fields from `interpreter/models.py`, and the priority rule text of the `ProposeStop` docstring, plus the text of `docs/design/dspy-modules.md`. It holds no example from the trainset.\n- Slice 28, `MAX_INSTRUCTION_CHARS = 6000`. dspy asks the reflection model once to shorten a longer draft. It never cuts the text.\n- Slice 29, `structure_diff(reference: dict, prediction: object) -> list[str]`. It compares typed values only: `status`, `needs_human`, `priority`; the step kinds in order (missing, extra); for `ask_human` the role, the number of questions, and for each question the number of options, `multi_select`, `free_text`, whether `agent_recommendation` names one option, and the kinds of the helps; `proof.kind` of `continue_until`; `scope` of `approve_permission`; whether each required field is filled. It writes fixed schema values, counts, and yes or no only. It writes `structure: matches` when nothing differs, and `no output: the reply did not parse` for a parse failure.\n- Slice 29, feedback. `gepa_feedback` returns `Score: X.XX of 1.00.`, then the judge notes, then `Structure:` with the diff lines, then `Reference:` with the reference `status`, `needs_human`, `priority`, and payloads as JSON. Only `--proposer v2` adds the two blocks; v1 keeps the E7 feedback. So D1 and D2 differ in one thing: what the reflection model reads. The score value does not change. `plain_score` and `priority eval` do not change.\n\n## Slice Decomposition\n\n1. Slice 28, proposer prompt and reference material. Stub models.\n2. Slice 29, reference and structural diff in the feedback. Stub models.\n3. Slice 30, live smoke run of the v2 proposer. The slice 26 setup (3 low-scoring trainset stops, a valset of 1 session, budget 3), seeded from the C3 seed. It counts the rejected proposals. If more than 1 in 4 proposals is rejected, the engineer decides before slice 31 whether to drop the `Reference:` block and keep the diff only.\n4. Slice 31, arms D1 and D2. The same seed (`probes/programs/seed-armC3-from-C2.json`), seed 7, the C3 valset (12 sessions), minibatch 6, budget 3, Muse Wonder as the reflection model. D1 uses `--proposer v1`; D2 uses `--proposer v2`. Then D1, D2, and arm A on the 56 test-set stops.\n\nOrder: 28, 29, 30, 31. Slices 30 and 31 make live calls and wait for the engineer's go.\n\n## Test Plan\n\n- Slice 28, `tests/test_e8_proposer.py`: with a stub `InstructionProposer`, v2 passes `base_instructions=PROPOSER_BASE`, `additional_instructions=GENERAL_RULES`, one skills text, and `max_chars=6000`; v1 passes only `additional_instructions`. `proposer_reference()` names every output field of `ProposeStop` and every step kind in `ACTION_KINDS`, and holds no option label from a made-up trainset. The run prints the proposer, and the reflection file records it.\n- Slice 29, `tests/test_e8_structure_diff.py`: a table of made-up reference and output pairs with their expected diff lines; no text value of the reference payload appears in the diff; `gepa_feedback` holds the score line, the judge notes, `Structure:`, and `Reference:` in that order; `plain_score` is unchanged; with `--proposer v1` the feedback has neither block.\n- Slices 30 and 31: live runs. The evidence is the run output, the call logs, the reflection files, and `probes/proposer-report.md`.\n\n## Risks & Open Questions\n\n- The `Reference:` block puts trainset option labels and file names in front of the reflection model. The trainset-detail check may reject more proposals. Slice 30 counts them.\n- The valset is small and unlike the test set (`c3-train-val-report.html`). A difference between D1 and D2 smaller than about 0.08 on the test set is within the noise of one run per arm.\n- `max_chars` of 6000 may lose rules from a longer instruction. The compress call is told to keep every rule.\n- D1 and D2 run on different days from arm A's earlier runs, so the report compares them only with each other and with the arm A run of the same slice.\n",
+        "approved_date": null,
+        "source_path": "docs/plans/priority-dev-spike/epic-E8-design.md"
+      },
+      {
         "id": "review-link/E1",
         "epic_id": "E1",
         "feature_slug": "review-link",
@@ -6584,6 +6603,38 @@
         "source_path": ".cobuilder/rubrics/priority-dev-spike/slice-27.md"
       },
       {
+        "id": "priority-dev-spike/28",
+        "feature_slug": "priority-dev-spike",
+        "n": 28,
+        "title": "Slice 28 — Proposer prompt and reference material",
+        "body_md": "# Rubric: Slice 28 — Proposer prompt and reference material\n\nFeature: priority-dev-spike\nEpic: E8\nSlice goal: `priority optimise --proposer v2` gives the reflection model a new base prompt, `GENERAL_RULES` as additional instructions, a schema reference built from the code, and a 6000-character limit. `--proposer v1` keeps the E7 proposer. The run prints the proposer, and each reflection file records it.\nTest command: `uv run --project priority-dev pytest priority-dev/tests -q`\n\n## Criteria\n\n### C1 — v2 passes all four settings [CRITICAL]\n**Must be true:** With a stub `InstructionProposer`, v2 passes `base_instructions=PROPOSER_BASE`, `additional_instructions=GENERAL_RULES`, one skills text from `proposer_reference()`, and `max_chars=6000`. v1 passes only `additional_instructions=GENERAL_RULES`. The schema guard and the trainset-detail check apply to both.\n**Evidence to check:**\n- Run the slice tests and read what they capture.\n**Scoring:**\n- 1.0 — all four settings for v2, v1 unchanged, guard and check on both\n- 0.5 — one setting missing or v1 changed\n- 0.0 — no v2\n\n### C2 — The base prompt and the reference say the right things [CRITICAL]\n**Must be true:** `PROPOSER_BASE` tells the reflection model to keep the current instruction and change only what the examples show, to change a rule only for a failure in 2 or more examples, to fix the lowest scores first and keep what scores 1.00, to write general rules, and to end with one line on what changed. It does not ask for niche or domain facts. `proposer_reference()` names every output field of `ProposeStop` and every step kind, is built from the code, and holds no trainset option label.\n**Evidence to check:**\n- Read `PROPOSER_BASE` and the printed `proposer_reference()` text. Judge the wording yourself; the tests check structure only.\n- Run the reference test on a made-up trainset.\n**Scoring:**\n- 1.0 — all points present, reference complete and clean\n- 0.5 — one point missing\n- 0.0 — the dspy base prompt still asks for niche facts\n\n### C3 — The run shows which proposer ran\n**Must be true:** `priority optimise` prints `proposer: v1` or `proposer: v2` before the compile, and each `reflection-NNN.json` has a `proposer` field.\n**Evidence to check:**\n- Run the optimise test on made-up fixtures with a stub GEPA.\n**Scoring:**\n- 1.0 — printed and recorded\n- 0.5 — one of the two\n- 0.0 — neither\n\n## Regression check\n- All tests that passed before this slice still pass, apart from tests that this slice's RED role rewrote for the new contract.\n- `uv run shared/habit_smells.py --repo priority-dev --branch HEAD` reports no new finding in a file this slice touched.\n- Files outside the slice scope stay unchanged: the task model prompt, the judge, the references.\n\n## Out of scope — do not penalise\n- Whether v2 scores better (slice 31).\n",
+        "source_path": ".cobuilder/rubrics/priority-dev-spike/slice-28.md"
+      },
+      {
+        "id": "priority-dev-spike/29",
+        "feature_slug": "priority-dev-spike",
+        "n": 29,
+        "title": "Slice 29 — Reference and structural diff in the feedback",
+        "body_md": "# Rubric: Slice 29 — Reference and structural diff in the feedback\n\nFeature: priority-dev-spike\nEpic: E8\nSlice goal: With `--proposer v2`, the feedback of each stop holds the score line, the judge notes, a `Structure:` block from `structure_diff`, and a `Reference:` block with the reference answer. With v1, the feedback is the E7 feedback. The score value does not change.\nTest command: `uv run --project priority-dev pytest priority-dev/tests -q`\n\n## Criteria\n\n### C1 — The structural diff is correct [CRITICAL]\n**Must be true:** `structure_diff(reference, prediction)` reports differences in `status`, `needs_human`, `priority`, the step kinds (missing, extra), and for `ask_human` the role, the number of questions, and per question the number of options, `multi_select`, `free_text`, whether `agent_recommendation` names one option, and the help kinds; `proof.kind` of `continue_until`; `scope` of `approve_permission`; empty required fields. It writes `structure: matches` when equal and `no output: the reply did not parse` for a parse failure.\n**Evidence to check:**\n- Run the table test of made-up pairs and read its cases.\n**Scoring:**\n- 1.0 — every listed difference tested\n- 0.5 — one kind of difference untested\n- 0.0 — no table test\n\n### C2 — The diff holds no payload text [CRITICAL]\n**Must be true:** No text value of the reference payload (option labels, questions, excerpts, reply text, goals, commands) appears in the diff lines.\n**Evidence to check:**\n- Run the privacy test; read the diff code for any string copied from the payload.\n**Scoring:**\n- 1.0 — tested and none found\n- 0.0 — any text copied\n\n### C3 — The feedback order and the v1 path\n**Must be true:** With v2, `gepa_feedback` returns the score line, the judge notes, `Structure:`, and `Reference:`, in that order, and the score value is unchanged. With v1 the feedback has neither block. `plain_score` and `priority eval` are unchanged.\n**Evidence to check:**\n- Run the feedback tests.\n**Scoring:**\n- 1.0 — order, v1 path, and unchanged score tested\n- 0.5 — one untested\n- 0.0 — the score value changed\n\n## Regression check\n- All tests that passed before this slice still pass, apart from tests that this slice's RED role rewrote for the new contract.\n- `uv run shared/habit_smells.py --repo priority-dev --branch HEAD` reports no new finding in a file this slice touched.\n- Files outside the slice scope stay unchanged: the judge, the references, the task model prompt.\n\n## Out of scope — do not penalise\n- How often the trainset-detail check rejects a proposal (slice 30).\n",
+        "source_path": ".cobuilder/rubrics/priority-dev-spike/slice-29.md"
+      },
+      {
+        "id": "priority-dev-spike/30",
+        "feature_slug": "priority-dev-spike",
+        "n": 30,
+        "title": "Slice 30 — Live smoke run of the v2 proposer",
+        "body_md": "# Rubric: Slice 30 — Live smoke run of the v2 proposer\n\nFeature: priority-dev-spike\nEpic: E8\nSlice goal: One live optimiser run with `--proposer v2` on the slice 26 setup (3 low-scoring trainset stops, a valset of 1 session, budget 3), seeded from `probes/programs/seed-armC3-from-C2.json`. The reflection files show the new base prompt, the reference material, and the `Structure:` and `Reference:` blocks. The run reports how many proposals the trainset-detail check rejected.\nTest command: `uv run --project priority-dev pytest priority-dev/tests -q`\n\n## Criteria\n\n### C1 — The reflection model got the v2 input [CRITICAL]\n**Must be true:** Each reflection file records `proposer: v2` and the reflection model id. Each of its stops has a feedback that starts with the score and holds `Structure:` and `Reference:`.\n**Evidence to check:**\n- Read the reflection files of the run.\n**Scoring:**\n- 1.0 — all present in every file\n- 0.5 — one block missing in some stops\n- 0.0 — no reflection call\n\n### C2 — The proposals stay within the limit and are whole\n**Must be true:** Each proposal is at most 6000 characters plus the schema guard, and equals the candidate instruction when accepted.\n**Evidence to check:**\n- Compare the reflection files with `candidates.json`.\n**Scoring:**\n- 1.0 — all within the limit and whole\n- 0.5 — one over the limit\n- 0.0 — a cut proposal\n\n### C3 — The rejection count is reported\n**Must be true:** A short note in `probes/proposer-report.md` gives the number of proposals and the number rejected by the trainset-detail check, and states whether the count is above 1 in 4, the point at which the engineer decides on the `Reference:` block.\n**Evidence to check:**\n- Count the `proposal rejected` lines in the run output and compare with the note.\n**Scoring:**\n- 1.0 — counts match and the threshold is stated\n- 0.0 — no count\n\n## Regression check\n- All tests that passed before this slice still pass.\n- No code change in this slice except a run script.\n\n## Out of scope — do not penalise\n- The score of the run.\n- A judge retry caused by the provider.\n",
+        "source_path": ".cobuilder/rubrics/priority-dev-spike/slice-30.md"
+      },
+      {
+        "id": "priority-dev-spike/31",
+        "feature_slug": "priority-dev-spike",
+        "n": 31,
+        "title": "Slice 31 — Arms D1 and D2",
+        "body_md": "# Rubric: Slice 31 — Arms D1 and D2\n\nFeature: priority-dev-spike\nEpic: E8\nSlice goal: Two optimiser runs that differ only in the proposer: D1 with `--proposer v1`, D2 with `--proposer v2`. Same seed program, seed 7, the C3 valset of 12 sessions, minibatch 6, budget 3, Muse Wonder as the reflection model. Then D1, D2, and arm A on the 56 test-set stops. `probes/proposer-report.md` compares them.\nTest command: `uv run --project priority-dev pytest priority-dev/tests -q`\n\n## Criteria\n\n### C1 — The two runs differ only in the proposer [CRITICAL]\n**Must be true:** The commands of D1 and D2 are the same except `--proposer`. Both print the same trainset, valset, and minibatch lines and the same reflection model.\n**Evidence to check:**\n- Read the run script and both run outputs.\n**Scoring:**\n- 1.0 — only the proposer differs\n- 0.0 — another setting differs\n\n### C2 — D1, D2, and A compared on the test set [CRITICAL]\n**Must be true:** The report gives D1, D2, and arm A on the 56 test-set stops, D2 − D1 and each arm − A, per test set and per repository, with paired session-bootstrap intervals and no interval for groups under 5 sessions. It states that a difference under about 0.08 is within the noise of one run per arm.\n**Evidence to check:**\n- Recompute from the score lines of the eval outputs.\n**Scoring:**\n- 1.0 — complete\n- 0.5 — an interval or a group missing\n- 0.0 — no comparison\n\n### C3 — The runs are described\n**Must be true:** For each run, the report gives the valset score of the seed and the best candidate, the number of proposals, accepted and rejected, the rejected by the trainset-detail check, and the length of the saved instruction.\n**Evidence to check:**\n- Read the run outputs, the reflection files, and `candidates.json`.\n**Scoring:**\n- 1.0 — all facts for both runs\n- 0.5 — one fact missing\n- 0.0 — none\n\n## Regression check\n- All tests that passed before this slice still pass.\n- No code change in this slice except a run script and the report.\n\n## Out of scope — do not penalise\n- A noise rerun of any arm.\n- The valset fixes (a later epic).\n",
+        "source_path": ".cobuilder/rubrics/priority-dev-spike/slice-31.md"
+      },
+      {
         "id": "review-link/1",
         "feature_slug": "review-link",
         "n": 1,
@@ -6766,7 +6817,8 @@
           "priority-dev-spike/E4",
           "priority-dev-spike/E5",
           "priority-dev-spike/E6",
-          "priority-dev-spike/E7"
+          "priority-dev-spike/E7",
+          "priority-dev-spike/E8"
         ]
       },
       "ADR-0013": {
@@ -7046,6 +7098,7 @@
           "priority-dev-spike/E5",
           "priority-dev-spike/E6",
           "priority-dev-spike/E7",
+          "priority-dev-spike/E8",
           "work-drawer/E1",
           "work-drawer/E2"
         ]
@@ -7071,7 +7124,7 @@
         ]
       },
       "ADR-0034": {
-        "pr": null,
+        "pr": 25,
         "via": "epic",
         "path": [
           "work-drawer/E1",
@@ -7079,7 +7132,7 @@
         ]
       },
       "ADR-0035": {
-        "pr": null,
+        "pr": 26,
         "via": "epic",
         "path": [
           "options-mode/E1"
@@ -7125,7 +7178,8 @@
           "priority-dev-spike/E4",
           "priority-dev-spike/E5",
           "priority-dev-spike/E6",
-          "priority-dev-spike/E7"
+          "priority-dev-spike/E7",
+          "priority-dev-spike/E8"
         ]
       },
       "ADR-0041": {
@@ -7160,7 +7214,8 @@
           "priority-dev-spike/E4",
           "priority-dev-spike/E5",
           "priority-dev-spike/E6",
-          "priority-dev-spike/E7"
+          "priority-dev-spike/E7",
+          "priority-dev-spike/E8"
         ]
       }
     },
@@ -7199,7 +7254,17 @@
       "nexus-borrowings/E1": 29,
       "nexus-borrowings/E2": 29,
       "nexus-borrowings/E3": 29,
-      "nexus-borrowings/E4": 29
+      "nexus-borrowings/E4": 29,
+      "options-mode/E1": 26,
+      "plugin-split/E1": 11,
+      "plugin-split/E2": 11,
+      "plugin-split/E3": 11,
+      "plugin-split/E4": 11,
+      "plugin-split/E5": 11,
+      "plugin-split/E6": 11,
+      "plugin-split/E8": 18,
+      "work-drawer/E1": 25,
+      "work-drawer/E2": 25
     },
     "epic_status": {
       "beads-storage/E1": "completed",
@@ -7275,13 +7340,14 @@
       "plugin-split/E6": "completed",
       "plugin-split/E7": "completed",
       "plugin-split/E8": "completed",
-      "priority-dev-spike/E1": "unknown",
-      "priority-dev-spike/E2": "unknown",
-      "priority-dev-spike/E3": "unknown",
-      "priority-dev-spike/E4": "unknown",
-      "priority-dev-spike/E5": "unknown",
+      "priority-dev-spike/E1": "no-pull-request",
+      "priority-dev-spike/E2": "no-pull-request",
+      "priority-dev-spike/E3": "no-pull-request",
+      "priority-dev-spike/E4": "no-pull-request",
+      "priority-dev-spike/E5": "no-pull-request",
       "priority-dev-spike/E6": "unstarted",
       "priority-dev-spike/E7": "unstarted",
+      "priority-dev-spike/E8": "unstarted",
       "react-viewer/E1": "completed",
       "react-viewer/E2": "completed",
       "react-viewer/E3": "completed",
@@ -7298,7 +7364,7 @@
       "review-flight-deck/F4": "completed",
       "review-flight-deck/F5": "completed",
       "review-flight-deck/F6": "completed",
-      "review-link/E1": "unknown",
+      "review-link/E1": "no-pull-request",
       "slice-agents-and-vocabulary/E1": "unstarted",
       "slice-agents-and-vocabulary/E2": "unstarted",
       "slice-agents-and-vocabulary/E3": "unstarted",
@@ -7308,8 +7374,8 @@
       "ubiquitous-language/E3": "unstarted",
       "ubiquitous-language/E4": "unstarted",
       "ubiquitous-language/E5": "unstarted",
-      "work-drawer/E1": "unknown",
-      "work-drawer/E2": "unknown"
+      "work-drawer/E1": "open",
+      "work-drawer/E2": "open"
     },
     "slice_to_epic": {
       "beads-storage/1": "beads-storage/E1",
@@ -7433,6 +7499,10 @@
       "priority-dev-spike/25": "priority-dev-spike/E7",
       "priority-dev-spike/26": "priority-dev-spike/E7",
       "priority-dev-spike/27": "priority-dev-spike/E7",
+      "priority-dev-spike/28": "priority-dev-spike/E8",
+      "priority-dev-spike/29": "priority-dev-spike/E8",
+      "priority-dev-spike/30": "priority-dev-spike/E8",
+      "priority-dev-spike/31": "priority-dev-spike/E8",
       "review-link/1": "review-link/E1",
       "review-link/2": "review-link/E1",
       "review-link/3": "review-link/E1",
