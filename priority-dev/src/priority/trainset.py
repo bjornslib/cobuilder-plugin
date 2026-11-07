@@ -5,6 +5,8 @@ import json
 from pathlib import Path
 
 from priority.evaluation.payload_rules import get_field
+from priority.valset import ValsetSize, pick_ids
+from priority.valset_mix import repo_name, stop_tags
 
 
 def assert_train_only(examples: list, holdout_ids: list[str]) -> None:
@@ -15,8 +17,9 @@ def assert_train_only(examples: list, holdout_ids: list[str]) -> None:
         raise ValueError(f"train-only guard: held-out session leaked: {', '.join(sorted(leaked))}")
 
 
-def _train_example(session_id: str, key: str, label: dict, transcript: Path) -> object:
-    """One dspy example: the brief text in, the label reference and diagnostics as the other fields."""
+def _train_example(session_id: str, key: str, label: dict, transcript: Path, repo: str) -> object:
+    """One dspy example: the brief text in, the label reference and diagnostics as the other fields. The repo and
+    the kind tags place the stop in its group, for the stratified valset."""
     import dspy
 
     from priority.brief import StopBrief, build_brief
@@ -25,7 +28,8 @@ def _train_example(session_id: str, key: str, label: dict, transcript: Path) -> 
     text = brief.for_model() if isinstance(brief, StopBrief) else ""
     return dspy.Example(session_id=session_id, stop=key, brief_text=text, status=label["status"],
                         needs_human=label["needs_human"], priority=label.get("priority"),
-                        ambiguous=label["ambiguous"], expected_payloads=label["payloads"]).with_inputs("brief_text")
+                        ambiguous=label["ambiguous"], expected_payloads=label["payloads"], repo=repo,
+                        tags=stop_tags(label["steps"], label["needs_human"])).with_inputs("brief_text")
 
 
 def build_trainset(manifest: Path, labels_path: Path, real_dir: Path) -> tuple[list, dict[str, list[str]]]:
@@ -41,6 +45,7 @@ def build_trainset(manifest: Path, labels_path: Path, real_dir: Path) -> tuple[l
     examples, excluded = [], 0
     for entry in (entry for entry in entries if entry["session"] in set(parts["train"])):
         session_id = entry["session"]
+        repo = repo_name(entry.get("group"))
         matched_key = match_session_key(labels_by_session, session_id)
         if matched_key is None:
             raise ValueError(f"session {session_id} has no labels")
@@ -51,20 +56,19 @@ def build_trainset(manifest: Path, labels_path: Path, real_dir: Path) -> tuple[l
             if "payloads" not in label:
                 excluded += 1
                 continue
-            examples.append(_train_example(session_id, key, label, Path(real_dir) / f"{session_id}.jsonl"))
+            examples.append(_train_example(session_id, key, label, Path(real_dir) / f"{session_id}.jsonl", repo))
     print(f"excluded: {excluded} stops (no reference payload)")
     return examples, parts
 
 
-def split_gepa_valset(examples: list, train_ids: list[str], seed: int,
-                      val_sessions: int = 1) -> tuple[list, list, list[str]]:
-    """Train sessions, picked by seed, as the GEPA valset. Holdout is untouched."""
-    ordered = sorted(train_ids)
-    count = max(0, min(val_sessions, len(ordered) - 1)) if len(ordered) > 1 else 0
-    if count <= 0:
+def split_gepa_valset(examples: list, train_ids: list[str], seed: int, size: ValsetSize,
+                      method: str = "stratified") -> tuple[list, list, list[str]]:
+    """Train sessions, picked as the GEPA valset by `method` and sized by `size` (see priority.valset). Holdout is untouched.
+    Returns the train examples, the valset examples, and the valset session ids. An empty valset means no
+    session fits, and the train examples come back whole."""
+    val_ids = pick_ids(examples, train_ids, seed, method, size)
+    if not val_ids:
         return examples, [], []
-    start = seed % len(ordered)
-    val_ids = {ordered[(start + offset) % len(ordered)] for offset in range(count)}
     train = [example for example in examples if get_field(example, "session_id") not in val_ids]
     val = [example for example in examples if get_field(example, "session_id") in val_ids]
     if not train or not val:

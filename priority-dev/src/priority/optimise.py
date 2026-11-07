@@ -19,6 +19,7 @@ from priority.gepa_proposer import blocked_details, guided_instruction_proposer
 from priority.optimise_report import append_report, write_eval_rows
 from priority.run_folder import RunFolder
 from priority.trainset import assert_train_only, build_trainset, split_gepa_valset
+from priority.valset import ValsetSize, describe, size_error
 
 CLASS_BY_OPTIMISER = {"gepa": "GEPA", "miprov2": "MIPROv2", "bootstrap": "BootstrapFewShot"}
 OPTIMISERS = ("gepa", "miprov2", "bootstrap", "labeled")
@@ -36,8 +37,9 @@ class Settings:
     seed: int
     minibatch: int | None = None
     threads: int | None = None
-    val_sessions: int = 1
+    size: ValsetSize = ValsetSize()
     log_dir: RunFolder | None = None
+    method: str = "stratified"
 
 
 def gepa_feedback(example: object, prediction: object, trace: object = None,
@@ -196,7 +198,8 @@ def _compile(cls: object, settings: Settings, student: object, examples: list, t
         return student
     if settings.optimiser != "gepa":
         return _build_optimiser(cls, settings, examples).compile(student, trainset=examples)
-    train, val, _ = split_gepa_valset(examples, train_ids, settings.seed, settings.val_sessions)
+    train, val, _ = split_gepa_valset(examples, train_ids, settings.seed, settings.size,
+                                      method=settings.method)
     train, val = with_identity(train), with_identity(val)
     print_split(train, val, settings.minibatch)
     optimiser = _build_optimiser(cls, settings, train)
@@ -215,8 +218,9 @@ def _finish(compiled: object, settings: Settings, examples: list, parts: dict, s
     except Exception:  # noqa: BLE001 (a stub teleprompter has no callable program; rows stay unwritten)
         rows = []
     program = save_program(compiled, PROGRAM_DIR / f"{name}.json")
+    valset = describe(settings.method, settings.size)
     append_report(REPORT_RELATIVE, settings.optimiser, settings.budget, settings.seed, parts, program,
-                  settings.minibatch, settings.threads, settings.val_sessions)
+                  settings.minibatch, settings.threads, valset)
     if rows:
         print(f"train overall {sum(row['score'] for row in rows) / len(rows):.6f} ({len(rows)} stops)")
     print(f"optimise {settings.optimiser}: compiled on {len(examples)} train stops, "
@@ -234,18 +238,23 @@ def _failure_stop(failure: BaseException, folder: RunFolder) -> int:
 
 def run(manifest: Path, labels: Path, real_dir: Path,
         optimiser: str, budget: int, seed: int, minibatch: int | None = None,
-        threads: int | None = None, val_sessions: int = 1,
+        threads: int | None = None, size: ValsetSize = ValsetSize(),
         seed_program: Path | str | None = None, tag: str | None = None,
-        gepa_log_dir: Path | None = None) -> int:
+        gepa_log_dir: Path | None = None, method: str = "stratified") -> int:
     """Compile the interpreter with one optimiser. Return exit code. A run that compiles ends on the
     judge call and token totals."""
     from priority.evaluation.judge import reset_usage, usage_line
 
     reset_usage()
+    error = size_error(method, size)
+    if error is not None:
+        print(f"optimise failed: {error}")
+        return 2
     stem = (optimiser if tag is None else f"{optimiser}-{tag}") + ("-seeded" if seed_program is not None else "")
     log_dir = gepa_log_dir or PROGRAM_DIR / f"{stem}-budget{budget}-seed{seed}-log"
     folder = RunFolder(log_dir)
-    settings = Settings(optimiser, budget, seed, minibatch, threads, val_sessions, folder)
+    settings = Settings(optimiser, budget, seed, minibatch, threads, size, folder,
+                        method=method)
     try:
         examples, parts = _prepare(manifest, labels, real_dir, optimiser, tag)
         cls = _teleprompter_for(optimiser)

@@ -9,7 +9,7 @@ from priority.evaluation.payload_rules import get_field
 
 
 def _settings_line(optimiser: str, budget: int, seed: int, minibatch: int | None = None,
-                   threads: int | None = None, val_sessions: int = 1) -> str:
+                   threads: int | None = None, valset: str = "neighbours, sized by sessions (1)") -> str:
     """The per-optimiser settings for the report."""
     if optimiser == "gepa":
         from priority.config import reflection_model
@@ -18,7 +18,7 @@ def _settings_line(optimiser: str, budget: int, seed: int, minibatch: int | None
         return (f"candidates: {budget} (max_full_evals); reflection model: {reflection_model()}; "
                 f"reflection minibatch size: {batch}; "
                 f"threads (num_threads): {thread_text}; "
-                f"valset sessions: {val_sessions}; one component (propose), no component selector; "
+                f"valset: {valset}; one component (propose), no component selector; "
                 f"schema-guarded instruction proposer; format failures as feedback; seed {seed}")
     if optimiser == "miprov2":
         found = importlib.util.find_spec("optuna") is not None
@@ -31,7 +31,7 @@ def _settings_line(optimiser: str, budget: int, seed: int, minibatch: int | None
 
 def append_report(report: Path, optimiser: str, budget: int, seed: int,
                   parts: dict[str, list[str]], program: Path, minibatch: int | None = None,
-                  threads: int | None = None, val_sessions: int = 1) -> Path:
+                  threads: int | None = None, valset: str = "neighbours, sized by sessions (1)") -> Path:
     """Append one optimiser section to the cumulative comparison report."""
     report.parent.mkdir(parents=True, exist_ok=True)
     if not report.exists():
@@ -45,7 +45,7 @@ def append_report(report: Path, optimiser: str, budget: int, seed: int,
     with report.open("a") as handle:
         handle.write(
             f"\n## {optimiser} (budget {budget}, seed {seed})\n\n"
-            f"- settings: {_settings_line(optimiser, budget, seed, minibatch, threads, val_sessions)}\n"
+            f"- settings: {_settings_line(optimiser, budget, seed, minibatch, threads, valset)}\n"
             f"- train sessions ({len(train)}): {', '.join(train)}\n"
             f"- held-out sessions ({len(holdout)}): {', '.join(holdout)}\n"
             "- held-out score before: n/a in this run (no holdout scoring without model calls)\n"

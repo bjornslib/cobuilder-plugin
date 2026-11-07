@@ -10,6 +10,7 @@ from pathlib import Path
 from priority.brief import StopBrief, build_brief
 from priority.digest_store import load_digest, save_digest
 from priority.replay import options
+from priority.valset import METHODS, ValsetSize
 
 PREDICTION_FIELDS = ("status", "needs_human", "priority", "steps", "abstain")
 
@@ -81,7 +82,9 @@ def optimise_run(args: argparse.Namespace) -> int:
                         args.optimiser, args.budget, args.seed,
                         minibatch=getattr(args, "minibatch", None),
                         threads=getattr(args, "threads", None),
-                        val_sessions=getattr(args, "val_sessions", 1),
+                        size=ValsetSize(sessions=getattr(args, "val_sessions", None),
+                                        stops=getattr(args, "val_stops", None)),
+                        method=getattr(args, "valset", "stratified"),
                         seed_program=getattr(args, "seed_program", None),
                         tag=getattr(args, "tag", None),
                         gepa_log_dir=getattr(args, "gepa_log_dir", None))
@@ -174,8 +177,12 @@ def main(argv: list[str] | None = None) -> int:
                                  help="GEPA reflection minibatch size (default: GEPA's own default)")
     optimise_parser.add_argument("--threads", type=int, default=None,
                                  help="GEPA threads (default: GEPA's own default)")
-    optimise_parser.add_argument("--val-sessions", type=int, default=1,
-                                 help="Train sessions carved as the GEPA valset (default: 1)")
+    optimise_parser.add_argument("--val-sessions", type=int, default=None,
+                                 help="Train sessions carved as the GEPA valset (default: 1; not with --val-stops)")
+    optimise_parser.add_argument("--val-stops", type=int, default=None,
+                                 help="Stops the GEPA valset must reach or pass (not with --val-sessions)")
+    optimise_parser.add_argument("--valset", choices=METHODS, default="stratified",
+                                 help="GEPA valset pick: stratified (default, by repository and kind) or neighbours (old run of ids)")
     optimise_parser.add_argument("--manifest", type=Path, default=Path("fixtures/set-manifest.json"),
                                  help="Manifest with session ids and stop numbers")
     optimise_parser.add_argument("--labels", type=Path, default=Path("fixtures/real/labels-confirmed.json"),

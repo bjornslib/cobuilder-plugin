@@ -17,6 +17,7 @@ from priority.evaluation.metric import score_checked
 from priority.evaluation.payload_rules import get_field
 from priority.interpreter.calls import CallRecorder
 from priority.run_folder import RunFolder
+from priority.valset_mix import mix_line
 
 
 def _dump(path: Path, data: object) -> None:
@@ -82,10 +83,12 @@ def judge_checker(log_dir: RunFolder | None):
 
 
 def print_split(train: list, val: list, minibatch: int | None) -> None:
-    """Print each split's stop and session counts, the minibatch size, and each split's stops."""
+    """Print each split's stop and session counts, the minibatch size, each split's mix, and each split's stops."""
     size = MINIBATCH_DEFAULT if minibatch is None else minibatch
     print(f"trainset: {len(train)} stops ({_sessions(train)} sessions); "
           f"valset: {len(val)} stops ({_sessions(val)} sessions); minibatch: {size}")
+    print(mix_line("valset", val))
+    print(mix_line("trainset", train))
     print(f"train stops: {_stop_list(train)}")
     print(f"valset stops: {_stop_list(val) or '(none)'}")
 
