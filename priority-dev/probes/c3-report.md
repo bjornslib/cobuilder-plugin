@@ -1,6 +1,6 @@
 # Optimiser run C3 report (slice 27, E7)
 
-Numbers and 8-character session prefixes only. The run folder `fixtures/real/runs/slice27/` holds the run output, the call logs, the reflection files and the eval outputs. Git ignores it, because it holds real session text. Settings: task model and judge `openai/mercury-3` (`JUDGE_PROVIDER=inception JUDGE_MODEL=mercury-3 JUDGE_REASONING_EFFORT=high`), reflection model `openai/muse-wonder-1.0`, full brief (slice 25 choice). Script: `fixtures/real/scripts/run_slice27.sh`.
+Numbers and 8-character session prefixes only. The run folder `fixtures/real/runs/slice27/` holds the run output, the call logs, the reflection files and the eval outputs. Git ignores it, because it holds real session text. Settings: task model and judge `openai/mercury-3` (`JUDGE_PROVIDER=inception JUDGE_MODEL=mercury-3 JUDGE_REASONING_EFFORT=high`), reflection model `openai/muse-wonder-1.0` (set by `REFLECTION_*` in `priority-dev/.env`; the code default is NVIDIA Mistral), full brief (slice 25 choice). Script: `fixtures/real/scripts/run_slice27.sh`.
 
 ## Result
 
@@ -51,6 +51,8 @@ Commands: `priority eval --split holdout --threads 3` for arm A, and the same wi
 | DSPY_PreEmploymentDirectory_PoC | 6 | 3 | 0.658 | 0.769 | +0.111 | none (under 5 sessions) |
 | agencheck | 13 | 13 | 0.413 | 0.591 | +0.178 | -0.002 to +0.360 |
 | story-writer | 7 | 2 | 0.481 | 0.668 | +0.187 | none (under 5 sessions) |
+
+Stop 396b87e9/001 is marked ambiguous in both runs. Without it: A 0.481, C3 0.664, C3 − A +0.183 (55 stops). The C3 eval output has one warning that an LM reply was truncated; the output does not name the stop or the call.
 
 Other lines: arm A sent 2,039,189 characters in 56 task calls; C3 sent 2,535,853. Fact status: A 0.714, C3 0.679. Fact needs_human: A 0.839, C3 0.804. Steps: A 0.446, C3 0.464.
 
