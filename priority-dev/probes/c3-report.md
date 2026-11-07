@@ -6,7 +6,7 @@ Numbers and 8-character session prefixes only. The run folder `fixtures/real/run
 
 C3 scored 0.652 on the 56 test-set stops. Arm A, run again after the slice 24 prompt change, scored 0.472. C3 − A is +0.180 (interval +0.115 to +0.251). Each interval for a group with 5 or more sessions is above zero, except agencheck, whose lower end is −0.002.
 
-For reference, C2 scored 0.677 on the same 56 stops in slice 20, against an arm A of 0.488 then. The two runs used other A prompts and other run days, so this report does not compare C3 with C2.
+For reference, C2 scored 0.677 on the same 56 stops in slice 20, against an arm A of 0.488 then. The two runs used other A prompts and other run days, so this report does not compare C3 with C2. Arm A varies from run to run: after the slice 24 change it scored 0.498 in slice 25 and 0.472 here, on the same 56 stops. On identical inputs, single stops moved by 0.143 on average (slice 25 report). So the arm A scores do not show an effect of slice 24.
 
 ## 1. The seed
 
