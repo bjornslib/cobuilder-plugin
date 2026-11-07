@@ -85,6 +85,7 @@ def optimise_run(args: argparse.Namespace) -> int:
                         size=ValsetSize(sessions=getattr(args, "val_sessions", None),
                                         stops=getattr(args, "val_stops", None)),
                         method=getattr(args, "valset", "stratified"),
+                        proposer=getattr(args, "proposer", "v2"),
                         seed_program=getattr(args, "seed_program", None),
                         tag=getattr(args, "tag", None),
                         gepa_log_dir=getattr(args, "gepa_log_dir", None))
@@ -173,6 +174,9 @@ def main(argv: list[str] | None = None) -> int:
                                  help="The optimiser candidate budget (default: 5)")
     optimise_parser.add_argument("--seed", type=int, default=7,
                                  help="The optimiser seed (default: 7)")
+    optimise_parser.add_argument("--proposer", default="v2", choices=("v1", "v2"),
+                                 help="The GEPA instruction proposer: v2 adds the base prompt and the schema "
+                                      "reference, v1 is the E7 proposer (default: v2)")
     optimise_parser.add_argument("--minibatch", type=int, default=None,
                                  help="GEPA reflection minibatch size (default: GEPA's own default)")
     optimise_parser.add_argument("--threads", type=int, default=None,

@@ -40,6 +40,7 @@ class Settings:
     size: ValsetSize = ValsetSize()
     log_dir: RunFolder | None = None
     method: str = "stratified"
+    proposer: str = "v2"
 
 
 def gepa_feedback(example: object, prediction: object, trace: object = None,
@@ -174,14 +175,16 @@ def _build_optimiser(cls: object, settings: Settings, train: list) -> object:
         metric = partial(gepa_feedback, checked=judge_checker(settings.log_dir))
         options: dict = {"metric": metric, "max_full_evals": settings.budget, "seed": settings.seed,
                          "instruction_proposer": recording_proposer(
-                             partial(guided_instruction_proposer, blocked=blocked_details(train)),
-                             settings.log_dir.path),
+                             partial(guided_instruction_proposer, blocked=blocked_details(train),
+                                     version=settings.proposer),
+                             settings.log_dir.path, settings.proposer),
                          "add_format_failure_as_feedback": True, "track_stats": True,
                          "log_dir": str(gepa_dir)}
         if settings.minibatch is not None:
             options["reflection_minibatch_size"] = settings.minibatch
         if settings.threads is not None:
             options["num_threads"] = settings.threads
+        print(f"proposer: {settings.proposer}")
         print(f"reflection model: {config.reflection_model()}")
         reflection = _reflection_lm()
         if reflection is not None:
@@ -240,7 +243,7 @@ def run(manifest: Path, labels: Path, real_dir: Path,
         optimiser: str, budget: int, seed: int, minibatch: int | None = None,
         threads: int | None = None, size: ValsetSize = ValsetSize(),
         seed_program: Path | str | None = None, tag: str | None = None,
-        gepa_log_dir: Path | None = None, method: str = "stratified") -> int:
+        gepa_log_dir: Path | None = None, method: str = "stratified", proposer: str = "v2") -> int:
     """Compile the interpreter with one optimiser. Return exit code. A run that compiles ends on the
     judge call and token totals."""
     from priority.evaluation.judge import reset_usage, usage_line
@@ -254,7 +257,7 @@ def run(manifest: Path, labels: Path, real_dir: Path,
     log_dir = gepa_log_dir or PROGRAM_DIR / f"{stem}-budget{budget}-seed{seed}-log"
     folder = RunFolder(log_dir)
     settings = Settings(optimiser, budget, seed, minibatch, threads, size, folder,
-                        method=method)
+                        method=method, proposer=proposer)
     try:
         examples, parts = _prepare(manifest, labels, real_dir, optimiser, tag)
         cls = _teleprompter_for(optimiser)

@@ -25,8 +25,10 @@ def _dump(path: Path, data: object) -> None:
     path.write_text(json.dumps(data, indent=2, default=str) + "\n")
 
 
-def recording_proposer(propose: Callable, run_dir: Path) -> Callable:
-    """Wrap a GEPA instruction proposer so each reflection call writes reflection-NNN.json into run_dir."""
+def recording_proposer(propose: Callable, run_dir: Path, version: str = "v2") -> Callable:
+    """Wrap a GEPA instruction proposer so each reflection call writes reflection-NNN.json into run_dir.
+
+    Each file records the proposer version, so the run's own evidence names the prompt that ran."""
     calls = itertools.count(1)
 
     def record(candidate: dict, reflective_dataset: dict, components_to_update: list) -> dict:
@@ -34,6 +36,7 @@ def recording_proposer(propose: Callable, run_dir: Path) -> Callable:
         name = components_to_update[0]
         _dump(run_dir / f"reflection-{next(calls):03d}.json", {
             "component": name,
+            "proposer": version,
             "model": config.reflection_model(),
             "current_instruction": candidate.get(name),
             "reflective_dataset": reflective_dataset.get(name),
