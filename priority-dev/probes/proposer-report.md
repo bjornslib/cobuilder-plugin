@@ -62,3 +62,23 @@ Difference = second − first. Interval: 95 percent, paired, bootstrap over sess
 ### Reading
 
 D2 scored lower than D1 on the test set (−0.055), and its interval lies below zero. But arm A, with an unchanged prompt, moved by +0.068 between the two days, and that interval also excludes zero. So the session bootstrap understates the day-to-day spread, and a difference of this size between runs on different days is not a reliable result. Against its own same-day arm A, D2 gains +0.084 (interval spans zero) and D1 gained +0.207. On this evidence, the v2 proposer with `gpt-6.1-terra` did not beat the v1 proposer with Muse Wonder, and may be worse. The two changes cannot be separated.
+
+### Rows against arm A for each repository
+
+|Comparison|Group|Stops / sessions|First|Second|Difference|Interval|
+|---|---|---|---|---|---|---|
+|D2 − A2|agencheck|13 / 13|0.478|0.491|+0.013|−0.110 to +0.137|
+||DSPY_PreEmploymentDirectory_PoC|6 / 3|0.664|0.736|+0.072|none|
+||story-writer|7 / 2|0.478|0.593|+0.115|none|
+|D1 − A1|test set 1|30 / 6|0.438|0.665|+0.227|+0.094 to +0.333|
+||test set 2|26 / 18|0.470|0.654|+0.185|+0.087 to +0.304|
+||agencheck|13 / 13|0.415|0.625|+0.209|+0.008 to +0.398|
+||DSPY_PreEmploymentDirectory_PoC|6 / 3|0.585|0.755|+0.169|none|
+||story-writer|7 / 2|0.471|0.623|+0.152|none|
+
+### Validation and decision (10 November 2026)
+
+- A blind validation scored attempt 1 at 0.50 (FAIL). C1, "only the proposer differs", scored 0.0, because the reflection model also differs. C2 scored 0.5, because some rows against arm A were missing. This section now adds those rows. C3 scored 1.0.
+- The validator also noted: the seed's valset score differs between the runs (0.640 and 0.677) with the same seed and valset, and D2 logged 15 truncation warnings against 7 for D1.
+- The engineer decided not to rerun D1 or D2. The E8 question, "does the v2 proposer beat v1?", stays without an answer.
+- Next direction (engineer): stop optimising on past sessions. Run the digest and the interpreter on live Claude Code sessions through the Stop hook, so the engineer can give feedback on sessions that the engineer remembers.
