@@ -31,6 +31,11 @@ class ModelFailure(BaseException):
     that JudgeFailure is not one."""
 
 
+class ReflectionFailure(BaseException):
+    """The reflection model failed with a billing, auth, or unsupported-model error. No retry fixes it. It is
+    not an Exception, because GEPA catches every Exception from its instruction proposer and goes on."""
+
+
 def _clamp(value: float) -> float:
     """One score forced into 0..1."""
     try:

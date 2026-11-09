@@ -12,7 +12,7 @@ from pathlib import Path
 
 from priority import config
 from priority.evaluation.demos import as_demo, demo_briefs, drop_demo_stops, pick_demos
-from priority.evaluation.metric import JudgeFailure, ModelFailure
+from priority.evaluation.metric import JudgeFailure, ModelFailure, ReflectionFailure
 from priority.evaluation.payload_rules import abstain_of, as_steps, get_field, strip
 from priority.gepa_log import (judge_checker, print_split, recording_proposer,
                                with_identity, write_candidates)
@@ -298,7 +298,7 @@ def run(manifest: Path, labels: Path, real_dir: Path,
     examples = drop_demo_stops(examples, demo_briefs(student))
     try:
         compiled = _compile(cls, settings, student, examples, parts["train"])
-    except (JudgeFailure, ModelFailure) as exc:
+    except (JudgeFailure, ModelFailure, ReflectionFailure) as exc:
         return _failure_stop(exc, folder)
     except Exception as exc:  # noqa: BLE001 (any compile fault ends the run with a message)
         folder.discard()

@@ -5,6 +5,8 @@ import re
 from collections.abc import Iterator
 from typing import Literal, get_args, get_origin
 
+from priority.evaluation.metric import ReflectionFailure
+
 SCHEMA_GUARD_LINE = "Use exactly these fields. Do not invent field names."
 
 MAX_INSTRUCTION_CHARS = 6000
@@ -139,9 +141,14 @@ def guided_instruction_proposer(candidate: dict, reflective_dataset: dict, compo
     `version="v1"` keeps the E7 proposer. `version="v2"`, the default, adds PROPOSER_BASE as the base
     instructions, the schema reference as one skills text, and MAX_INSTRUCTION_CHARS as the length budget.
     """
-    proposed = _build_proposer(version)(
-        candidate=candidate,
-        reflective_dataset=reflective_dataset,
-        components_to_update=components_to_update,
-    )
+    from dspy.utils.exceptions import LMAuthError, LMBillingError, LMUnsupportedModelError
+
+    try:
+        proposed = _build_proposer(version)(
+            candidate=candidate,
+            reflective_dataset=reflective_dataset,
+            components_to_update=components_to_update,
+        )
+    except (LMAuthError, LMBillingError, LMUnsupportedModelError) as error:
+        raise ReflectionFailure(f"the reflection model failed: {type(error).__name__}") from error
     return {name: _admit(candidate, name, text, blocked) for name, text in proposed.items()}
