@@ -36,6 +36,50 @@ def raw_reply(outputs: Any) -> str:
     return json.dumps(outputs, default=str)
 
 
+def _field(node: Any, name: str) -> Any:
+    """A field of a response node: a key of a dict, or an attribute of a provider object."""
+    if node is None:
+        return None
+    if isinstance(node, dict):
+        return node.get(name)
+    return getattr(node, name, None)
+
+
+def _finish_reason(response: Any) -> Any:
+    """The finish reason, such as `stop` or `length`, of the first choice or the native response."""
+    if isinstance(response, tuple):
+        response = response[0] if response else None
+    choices = _field(response, "choices")
+    if choices:
+        return _field(choices[0], "finish_reason")
+    return _field(response, "finish_reason")
+
+
+def _usage(usage: Any) -> dict[str, Any]:
+    """The token counts of a usage record. The reasoning tokens sit under completion_tokens_details."""
+    details = _field(usage, "completion_tokens_details")
+    return {"prompt_tokens": _field(usage, "prompt_tokens"),
+            "completion_tokens": _field(usage, "completion_tokens"),
+            "reasoning_tokens": _field(details, "reasoning_tokens")}
+
+
+def _history_entry(lm: Any, outputs: Any) -> dict[str, Any]:
+    """The LM history entry that holds these outputs, found by identity. It is empty when none matches.
+    An explicit Request returns the lm15 response, which the entry keeps under "response"."""
+    if outputs is None:
+        return {}
+    for entry in reversed(getattr(lm, "history", None) or []):
+        if entry.get("outputs") is outputs or entry.get("response") is outputs:
+            return entry
+    return {}
+
+
+def call_meta(lm: Any, outputs: Any) -> dict[str, Any]:
+    """The finish reason and token counts of the LM call that made `outputs`. A missing value is None."""
+    entry = _history_entry(lm, outputs)
+    return {"finish_reason": _finish_reason(entry.get("response")), **_usage(entry.get("usage"))}
+
+
 class CallRecorder(BaseCallback):
     """A DSPy callback. It writes each LM call, also a failed one, when `log_dir` is set.
 
@@ -49,18 +93,20 @@ class CallRecorder(BaseCallback):
         self.session_id = session_id or ""
         self.stop = stop or ""
         self.stage = ""
-        self._open: dict[str, tuple[str, str, str, float]] = {}
+        self._open: dict[str, tuple[str, str, str, float, Any]] = {}
         self._pending: list[dict[str, Any]] = []
 
     def on_lm_start(self, call_id, instance, inputs):
-        self._open[call_id] = (self.stage, str(getattr(instance, "model", "")), render(inputs), time.perf_counter())
+        self._open[call_id] = (self.stage, str(getattr(instance, "model", "")), render(inputs),
+                               time.perf_counter(), instance)
 
     def on_lm_end(self, call_id, outputs, exception=None):
-        stage, model, rendered, started = self._open.pop(call_id)
+        stage, model, rendered, started, lm = self._open.pop(call_id)
         record = {"session_id": self.session_id, "stop": self.stop, "stage": stage, "model_id": model,
                   "prompt_hash": hashlib.sha256(rendered.encode()).hexdigest(),
                   "rendered_input": rendered, "raw_reply": raw_reply(outputs), "adapter": self.adapter,
                   "seconds": time.perf_counter() - started}
+        record.update(call_meta(lm, outputs))
         if exception is not None:
             record["error"] = f"{type(exception).__name__}: {exception}"
         self._pending.append(record)
