@@ -4,7 +4,7 @@ The pinned contract:
 
 1. `priority.gepa_proposer.guided_instruction_proposer(..., version="v2")` builds the dspy
    `InstructionProposer` with `base_instructions=PROPOSER_BASE`, `additional_instructions=GENERAL_RULES`,
-   `skills=[proposer_reference()]`, and `max_chars=MAX_INSTRUCTION_CHARS` (6000). `version="v1"` builds it
+   `skills=[proposer_reference()]`, and `max_chars=MAX_INSTRUCTION_CHARS` (18000). `version="v1"` builds it
    with `additional_instructions` only, as E7 did. `v2` is the default after E8.
 2. `PROPOSER_BASE` exists, is a non-empty string, differs from the dspy `ProposeInstruction` docstring, and
    is the exact string that the v2 proposer passes as `base_instructions`.
@@ -155,8 +155,8 @@ def test_v2_proposer_builds_the_base_prompt_general_rules_one_skills_text_and_ma
     assert_takes_version(gepa_proposer.guided_instruction_proposer)
     for name in ("PROPOSER_BASE", "GENERAL_RULES", "MAX_INSTRUCTION_CHARS"):
         assert hasattr(gepa_proposer, name), f"priority.gepa_proposer has no {name}"
-    assert gepa_proposer.MAX_INSTRUCTION_CHARS == 6000, \
-        f"MAX_INSTRUCTION_CHARS is {gepa_proposer.MAX_INSTRUCTION_CHARS!r}, not 6000"
+    assert gepa_proposer.MAX_INSTRUCTION_CHARS == 18000, \
+        f"MAX_INSTRUCTION_CHARS is {gepa_proposer.MAX_INSTRUCTION_CHARS!r}, not 18000"
     built = stub_instruction_proposer(monkeypatch, SAFE_TEXT)
     gepa_proposer.guided_instruction_proposer({"propose": PARENT}, {"propose": []}, ["propose"], version="v2")
     assert built, "the instruction proposer was never built"
@@ -165,7 +165,7 @@ def test_v2_proposer_builds_the_base_prompt_general_rules_one_skills_text_and_ma
         f"the v2 base_instructions are {settings.get('base_instructions')!r}"
     assert settings.get("additional_instructions") == gepa_proposer.GENERAL_RULES, \
         f"the v2 additional_instructions are {settings.get('additional_instructions')!r}"
-    assert settings.get("max_chars") == 6000, f"the v2 max_chars are {settings.get('max_chars')!r}"
+    assert settings.get("max_chars") == 18000, f"the v2 max_chars are {settings.get('max_chars')!r}"
     skills = settings.get("skills")
     assert isinstance(skills, list) and len(skills) == 1, f"the v2 skills are {skills!r}, not one source"
     assert skills[0] == proposer_reference_text(), "the one skills text is not proposer_reference()"

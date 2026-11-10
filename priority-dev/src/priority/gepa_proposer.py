@@ -9,7 +9,7 @@ from priority.evaluation.metric import ReflectionFailure
 
 SCHEMA_GUARD_LINE = "Use exactly these fields. Do not invent field names."
 
-MAX_INSTRUCTION_CHARS = 6000
+MAX_INSTRUCTION_CHARS = 18000
 
 PROPOSER_BASE = (
     "You improve the instruction of the propose component of a coding-session orchestrator.\n"
