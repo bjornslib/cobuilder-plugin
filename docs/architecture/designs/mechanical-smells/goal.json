@@ -1,0 +1,54 @@
+{
+  "name": "mechanical-smells",
+  "title": "The habit-hooks findings become a catalog, a viewer epic, and a rest-of-repo epic",
+  "adr": "ADR-0046",
+  "adrs": [
+    "ADR-0046",
+    "ADR-0038",
+    "ADR-0023",
+    "ADR-0020",
+    "ADR-0016"
+  ],
+  "created": "2026-10-24",
+  "outcome": "The viewer reports no habit-hooks finding apart from the recorded residuals and the recorded kept why-comments, and the findings outside the viewer sit in one named epic that a later pass cuts into slices.",
+  "done_when": [
+    "The findings catalog lists every smell, its count, its cluster, and a verdict, and a later design reads it instead of a fresh scan",
+    "Re-running habit-sensors reports no viewer finding except the recorded residuals and the kept why-comments, with components/ui and components/smoothui excluded in .habit-hooks/config.toml",
+    "Each oversized-function residual of 13 to 30 lines is one render unit or one test callback, and the catalog records it",
+    "The viewer builds with npm run build, its vitest suite passes, and the committed index.html rebuilds byte-identically after the logic slice",
+    "The seven section renderers and the atom and hook export names stay stable, proven by the tests that import them",
+    "A reviewer sample finds at most one deleted comment in twenty that explained why, and at most two kept comments in twenty that only restate the code",
+    "The second epic names each remaining finding group with its count and approach, so a later pass can cut its slices"
+  ],
+  "abort_if": [
+    "A split must change an export name the tests import, so the viewer's public surface cannot stay stable",
+    "A split changes the rendered output, so npm run build and vitest cannot both stay green",
+    "The function-line exception needs a sensor-card change the program does not own",
+    "A reviewer sample finds that more than one deleted comment in twenty explained why"
+  ],
+  "min_work": {
+    "derived_from": "1,637 viewer findings in 70 files and 703 other findings in 129 files, 14 smells across 2,340 findings, 7 clusters, 3 hard limits plus one function-line exception, 4 export surfaces",
+    "alternatives_explored": 4,
+    "boundary_rules_checked": true,
+    "challenge_stage_run": true,
+    "draft_review_run": false,
+    "note": "Decided in chat on 2026-10-25. An earlier draft held six epics. The engineer excluded the generated components/ui and components/smoothui folders and asked for two epics: the viewer, cut into slices, and the rest, cut later. The full reviewer round is pending, so the stage is decided, not approved."
+  },
+  "limits": { "warn_after_rounds": 3, "cutoff_rounds": 6 },
+  "epics": [
+    {
+      "id": "E1",
+      "title": "The viewer: clear every finding by area, logic first. The slices are the logic layer, the atoms and sections, the change surface, the shell and chrome, the test files, and last the comments in source and in tests. Each slice keeps the export names stable.",
+      "outcome": "The viewer reports no habit-hooks finding apart from the recorded residual, and vitest and the byte-identical build pass.",
+      "slug": "viewer-findings"
+    },
+    {
+      "id": "E2",
+      "title": "The rest of the repo: cobuilder-memory, the Python scripts, the root tests, the duplicated code, and the remaining comments. A later pass cuts the slices. This epic holds the groups and their counts.",
+      "outcome": "The 703 findings outside the viewer sit in named groups, each with a count and an approach, and a later pass cuts the slices.",
+      "slug": "remaining-findings"
+    }
+  ],
+  "supersedes": null,
+  "rounds": 0
+}

@@ -2,12 +2,10 @@ import { GitMerge } from "lucide-react";
 
 import type { TrackerPullRequest } from "@/data/types";
 
-/** The text of one pull request record: `#43 open`, or the ref when the record has no number. */
 export function prChipText(pr: TrackerPullRequest): string {
   return `${pr.number === null ? pr.ref : `#${pr.number}`} ${pr.state}`;
 }
 
-/** One chip for one pull request record. The merge icon shows for a merged record only. */
 export function PrChip({ pr }: { pr: TrackerPullRequest }) {
   return (
     <span
@@ -20,7 +18,6 @@ export function PrChip({ pr }: { pr: TrackerPullRequest }) {
   );
 }
 
-/** The next ready slice on one line, or null when the tracker names none. */
 export function nextReadyText(row: {
   nextReady: { id: string; title: string } | null;
   trackerRead: boolean;

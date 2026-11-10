@@ -1,0 +1,31 @@
+classDiagram
+    class model {
+        +SECTION_KEYS
+        +LEVEL_KEYS
+        +readRoute
+        +routeHref
+        +levelsOf
+    }
+    class atoms {
+        +Chip
+        +Panel
+        +Tile
+        +toneForStage
+    }
+    class sections {
+        +EpicGroupSection
+        +RubricsSection
+        +PlanSection
+        +FlightDeckPanel
+    }
+    class App {
+        +ShellApp
+        +Theme
+    }
+
+    model <.. sections : imports
+    model <.. App : imports
+    atoms <.. sections : imports
+    sections <.. App : imports
+
+    note for App "a split keeps every export name\nand re-exports the moved unit\nso an old import still resolves"

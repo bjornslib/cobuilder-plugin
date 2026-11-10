@@ -1,1 +1,16 @@
 plugins = ["python", "typescript", "generic"]
+
+# A root `files` key replaces the plugin defaults, so this list repeats the
+# python and typescript globs. The last two lines skip generated viewer code:
+# `components/ui` is shadcn output, and `components/smoothui` is a registry copy.
+files = [
+  "**/*.py",
+  "**/*.ts",
+  "**/*.tsx",
+  "!**/site-packages/**",
+  "!**/.venv/**",
+  "!**/venv/**",
+  "!**/node_modules/**",
+  "!plugins/artifact/viewer/src/components/ui/**",
+  "!plugins/artifact/viewer/src/components/smoothui/**",
+]

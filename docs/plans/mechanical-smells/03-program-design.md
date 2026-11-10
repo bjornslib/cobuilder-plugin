@@ -58,8 +58,11 @@ only on a surface that an earlier slice left stable.
 
 - **Sensor check.** `tests/test_viewer_habit_clean.py` runs `habit-sensors --file`
   for each file of a slice. It keeps the issues whose `details.file` is that
-  file, because jscpd reports repo-wide clusters in `--file` mode. It fails on
-  any finding. The test skips when `habit-sensors` or `node_modules` is absent.
+  file, because jscpd reports repo-wide clusters in `--file` mode. For slices 1
+  to 5 it fails on any finding other than `non-essential-comment`, and on a
+  rise in the comment count of a slice file above its count at the start of
+  the slice. For slices 6 and 7 it fails on any `non-essential-comment`
+  finding. The test skips when `habit-sensors` or `node_modules` is absent.
   RED writes the entry for its slice, so the test fails before GREEN starts.
 - **Behavior.** The existing vitest suite stays green. No test changes except in
   slice 5, where the tests themselves split. Slice 5 keeps every assertion.

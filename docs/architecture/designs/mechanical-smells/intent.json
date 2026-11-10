@@ -1,0 +1,51 @@
+{
+  "captured": "2026-10-25",
+  "source": "design",
+  "design_name": "mechanical-smells",
+  "authorship": "agent-assisted",
+  "problem": "The viewer holds 1,637 of the 2,340 habit-hooks findings, in 70 files that top every limit. A split must keep the viewer's public surface stable, or the tests that import it break. The findings outside the viewer have no owner. One catalog must name each group.",
+  "why_now": "ADR-0038 made the scan a standing check, and it reports findings the repo has never resolved. The engineer excluded the generated viewer folders. The viewer is now one bounded epic, and a second epic holds the rest.",
+  "approach": "Epic one clears the viewer by area, not by smell. Its first slice is the logic layer, because pure logic proves the split pattern with the vitest suite alone. Then come the atoms and sections, the change surface, the shell and chrome, the test files, and last the comments. Each slice keeps the export names and re-runs habit-sensors on its files. Epic two holds the other 703 findings in named groups. A later pass cuts its slices.",
+  "alternatives": [
+    {
+      "option": "Tune the sensor card for the viewer instead of refactoring the code to the limits",
+      "rejected_because": "It hides the debt behind a higher limit and leaves 1,560-line files."
+    },
+    {
+      "option": "Split by smell: one epic per smell across the whole repo",
+      "rejected_because": "It reopens each of the 70 viewer files once per smell and mixes the viewer with the Python scripts. By-area keeps one surface stable."
+    },
+    {
+      "option": "Refactor the whole repo now, Python and cobuilder-memory included, in one epic",
+      "rejected_because": "It widens the blast radius to 129 more files across the plugin families. ADR-0016 keeps the plugins as a bundle seam, and a bounded viewer epic respects it."
+    },
+    {
+      "option": "Leave the viewer's 1,080 comment findings out of the viewer epic",
+      "rejected_because": "They are two thirds of the viewer's findings, so the viewer would never read clean. Slices with a per-comment review keep every comment that explains why."
+    }
+  ],
+  "out_of_scope": [
+    "The 703 findings outside the viewer, which epic two holds and a later pass cuts into slices",
+    "The generated components/ui and components/smoothui folders, which the sensor config excludes",
+    "Any change to what the generation scripts write into the bundle, or to the bundle schema"
+  ],
+  "risks": [
+    "A split moves an export the tests import, and the suite breaks. The export-stability contract in the catalog guards it",
+    "A logic split changes the rendered output, so the build and the tests cannot both stay green",
+    "The 12-line function limit forces an atomic render unit to split, and the result reads worse than before",
+    "A comment slice deletes a comment that explains why, and a reviewer sample must catch it",
+    "The byte-equal rebuild guard depends on a pinned toolchain, and a version drift fails it for the wrong reason"
+  ],
+  "testing": "The vitest suite proves each split keeps behavior. After each slice, habit-sensors runs on the slice's files and reports no finding. The build check proves the committed index.html rebuilds byte-identically. A reviewer samples the comment slices.",
+  "reviewer_focus": [
+    "Slice one first: the logic layer proves the split pattern and the export-stability contract before the render slices depend on them",
+    "The function-line exception: whether a 13-to-30-line residual stays as one unit, or the sensor card tunes",
+    "The comment slices: whether the per-comment review keeps the comments that explain why"
+  ],
+  "unknowns": [
+    "Whether the 12-line function limit holds for React components and test callbacks, or the sensor card tunes",
+    "Whether a byte-identical index.html rebuild holds across the pinned Node and Vite versions after the logic slice",
+    "Whether the cobuilder-memory test any's are deliberate stubs, which epic two must judge per file",
+    "Whether the jscpd clusters that pair the stack prose in the architect and pr plugins are a duplicate or an intended copy"
+  ]
+}

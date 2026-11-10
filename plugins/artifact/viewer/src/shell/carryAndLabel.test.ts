@@ -1,14 +1,5 @@
 import { describe, expect, it } from "vitest";
-import * as model from "./model";
-
-const carriedSectionIndex = (model as any).carriedSectionIndex as (
-  names: string[],
-  carried: string | null,
-) => number;
-const readInLabel = (model as any).readInLabel as (
-  from: "program" | "change",
-  pr: number | null,
-) => string | null;
+import { carriedSectionIndex, readInLabel } from "./model";
 
 describe("carriedSectionIndex", () => {
   const names = ["Context", "Decision", "Result"];
@@ -19,12 +10,20 @@ describe("carriedSectionIndex", () => {
   it("ignores case and surrounding space", () => {
     expect(carriedSectionIndex(names, "  rEsUlT ")).toBe(2);
   });
+});
+
+describe("carriedSectionIndex", () => {
+  const names = ["Context", "Decision", "Result"];
+
   it("falls back to 0 when no name matches", () => {
     expect(carriedSectionIndex(names, "Nothing")).toBe(0);
   });
   it("gives 0 for a null carried name", () => {
     expect(carriedSectionIndex(names, null)).toBe(0);
   });
+});
+
+describe("carriedSectionIndex", () => {
   it("gives 0 for an empty list", () => {
     expect(carriedSectionIndex([], "Decision")).toBe(0);
   });
