@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>E8 proposer results and the move to live sessions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ground:#f4f1ea; --paper:#fffdf8; --ink:#1f1d1a; --muted:#6b665d; --rule:#d9d3c6;
+  --a:#8a8478; --d1:#2f5d8a; --d2:#b5562b; --good:#2f6f46; --bad:#a3352a; --warn:#8a6a12;
+  --warn-bg:#fbf3dc; --ask-bg:#1f1d1a; --ask-ink:#fffdf8; --ask-accent:#e7b75b;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#16150f; --paper:#1f1d18; --ink:#ece7dc; --muted:#a39d90; --rule:#3a372f;
+    --a:#9d978a; --d1:#7fb0de; --d2:#e8915f; --good:#7cc496; --bad:#ec8576; --warn:#e2c068;
+    --warn-bg:#2c2716; --ask-bg:#ece7dc; --ask-ink:#16150f; --ask-accent:#8a5a00;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#16150f; --paper:#1f1d18; --ink:#ece7dc; --muted:#a39d90; --rule:#3a372f;
+  --a:#9d978a; --d1:#7fb0de; --d2:#e8915f; --good:#7cc496; --bad:#ec8576; --warn:#e2c068;
+  --warn-bg:#2c2716; --ask-bg:#ece7dc; --ask-ink:#16150f; --ask-accent:#8a5a00;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);font:16px/1.6 "IBM Plex Sans",system-ui,sans-serif;overflow-x:hidden}
+main{max-width:920px;margin:0 auto;padding:48px 24px 80px}
+header{border-bottom:2px solid var(--ink);padding-bottom:20px;margin-bottom:32px}
+.kicker{font:500 12px/1 "IBM Plex Mono",monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+h1{font:600 40px/1.15 "Newsreader",Georgia,serif;margin:12px 0 10px}
+h2{font:600 26px/1.25 "Newsreader",Georgia,serif;margin:48px 0 12px;border-top:1px solid var(--rule);padding-top:24px}
+h3{font-size:15px;margin:24px 0 8px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+p{margin:0 0 12px}
+code{font:13px "IBM Plex Mono",monospace;background:var(--paper);border:1px solid var(--rule);padding:1px 5px;border-radius:3px}
+.lede{font-size:18px;color:var(--muted);max-width:720px}
+.verdict{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:24px 0}
+.verdict div{background:var(--paper);border:1px solid var(--rule);padding:14px 16px}
+.verdict b{display:block;font:600 28px/1.1 "Newsreader",serif}
+.verdict span{font-size:13px;color:var(--muted)}
+.scroll{overflow-x:auto;background:var(--paper);border:1px solid var(--rule);margin:12px 0 8px}
+table{border-collapse:collapse;width:100%;font-size:14px;min-width:640px}
+th,td{padding:7px 10px;text-align:left;border-bottom:1px solid var(--rule);white-space:nowrap}
+th{font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+td.n{font-family:"IBM Plex Mono",monospace;text-align:right}
+tr.grp td{border-top:2px solid var(--rule)}
+.pos{color:var(--good)} .neg{color:var(--bad)}
+.note{font-size:13px;color:var(--muted)}
+figure{margin:16px 0;background:var(--paper);border:1px solid var(--rule);padding:16px;overflow-x:auto}
+figcaption{font-size:13px;color:var(--muted);margin-top:8px}
+.doubts{background:var(--warn-bg);border-left:4px solid var(--warn);padding:16px 20px;margin:16px 0}
+.doubts li{margin-bottom:8px}
+.ask{background:var(--ask-bg);color:var(--ask-ink);padding:32px 28px;margin-top:56px}
+.ask h2{border:0;padding:0;margin:0 0 6px;color:var(--ask-ink);font-size:30px}
+.ask .kicker{color:var(--ask-accent)}
+.ask ol{padding-left:22px;margin:20px 0 0}
+.ask li{margin-bottom:18px}
+.ask li b{display:block;font-size:17px}
+.ask code{background:transparent;color:inherit;border-color:var(--ask-accent)}
+.rec{color:var(--ask-accent);font-weight:600}
+</style>
+</head>
+<body>
+<main>
+<header>
+  <div class="kicker">priority-dev spike · epic E8 · 10 November 2026</div>
+  <h1>The v2 proposer did not show a gain, and the next step moves to live sessions</h1>
+  <p class="lede">Source of record: <code>priority-dev/probes/proposer-report.md</code>. This page presents that file. Run folders under <code>fixtures/real/runs/</code> are Git-ignored, so this page holds numbers only.</p>
+</header>
+
+<div class="verdict">
+  <div><b>0.660</b><span>D1 on the test set (v1 proposer, Muse Wonder)</span></div>
+  <div><b>0.605</b><span>D2 on the test set (v2 proposer, gpt-6.1-terra)</span></div>
+  <div><b>+0.068</b><span>Arm A with the same prompt, from one day to the next</span></div>
+  <div><b>0.50 FAIL</b><span>Blind validation of slice 31. No rerun, by your decision</span></div>
+</div>
+
+<h2>What E8 tested</h2>
+<p>E8 asked one question: does the v2 proposer write better instructions than v1? v2 adds a <code>Structure:</code> block and a <code>Reference:</code> block to the feedback for each stop, and caps a proposal at 6,000 characters.</p>
+<p>Slices 28, 29 and 30 closed at 1.00. The live smoke run (slice 30) worked: 2 proposals of 5,245 and 5,145 characters, both accepted on the minibatch, 0 rejected by the trainset-detail check.</p>
+
+<h2>Arm D2: three tries</h2>
+<div class="scroll"><table>
+<tr><th>Try</th><th>Reflection model</th><th>Outcome</th></tr>
+<tr><td>8 Nov</td><td>Muse Wonder (Meta)</td><td>3 calls worked, then <code>LMBillingError</code> from iteration 4. The run saved the seed. Not valid.</td></tr>
+<tr><td>9 Nov</td><td>DeepSeek (NVIDIA)</td><td>About 42 seconds per call. Stopped with nothing to keep.</td></tr>
+<tr><td>9 Nov</td><td>gpt-6.1-terra (OpenRouter)</td><td>Completed. This is the D2 result below.</td></tr>
+</table></div>
+<p class="note">The billing failure exposed a defect: GEPA ran 70 more iterations with no proposals. A fix now stops the run and saves nothing when the reflection model fails with an auth, billing or unsupported-model error.</p>
+
+<h3>Optimiser runs</h3>
+<div class="scroll"><table>
+<tr><th>Run</th><th>Valset: seed → best</th><th>Proposals</th><th>Accepted / rejected</th><th>Trainset-detail rejections</th><th>Saved instruction</th></tr>
+<tr><td>D1 (C3s, v1, Muse Wonder)</td><td class="n">0.640 → 0.730</td><td class="n">13</td><td class="n">10 / 3</td><td class="n">0</td><td class="n">10,456 chars</td></tr>
+<tr><td>D2 (v2, gpt-6.1-terra)</td><td class="n">0.677 → 0.701</td><td class="n">18</td><td class="n">8 / 10</td><td class="n">0</td><td class="n">5,028 chars</td></tr>
+</table></div>
+<p class="note">A valset gain is not evidence. The best of N candidates, chosen on the same valset, scores too high on it.</p>
+
+<h2>Test set: 56 stops, 24 sessions</h2>
+<figure>
+<svg viewBox="0 0 640 170" width="100%" role="img" aria-label="Test-set scores of arms A and D on two days">
+  <g font-family="IBM Plex Mono, monospace" font-size="12" fill="var(--muted)">
+    <line x1="80" y1="130" x2="620" y2="130" stroke="var(--rule)"/>
+    <text x="80" y="150">0.40</text><text x="215" y="150">0.50</text><text x="350" y="150">0.60</text><text x="485" y="150">0.70</text>
+    <line x1="80" y1="125" x2="80" y2="135" stroke="var(--rule)"/><line x1="215" y1="125" x2="215" y2="135" stroke="var(--rule)"/>
+    <line x1="350" y1="125" x2="350" y2="135" stroke="var(--rule)"/><line x1="485" y1="125" x2="485" y2="135" stroke="var(--rule)"/>
+    <text x="0" y="44">8 Nov</text><text x="0" y="94">9 Nov</text>
+  </g>
+  <!-- x = 80 + (score-0.40)*1350 -->
+  <line x1="152" y1="40" x2="431" y2="40" stroke="var(--rule)" stroke-width="2"/>
+  <circle cx="152" cy="40" r="7" fill="var(--a)"/><circle cx="431" cy="40" r="7" fill="var(--d1)"/>
+  <text x="152" y="26" text-anchor="middle" font-size="12" fill="var(--a)">A1 0.453</text>
+  <text x="431" y="26" text-anchor="middle" font-size="12" fill="var(--d1)">D1 0.660</text>
+  <line x1="243" y1="90" x2="357" y2="90" stroke="var(--rule)" stroke-width="2"/>
+  <circle cx="243" cy="90" r="7" fill="var(--a)"/><circle cx="357" cy="90" r="7" fill="var(--d2)"/>
+  <text x="243" y="76" text-anchor="middle" font-size="12" fill="var(--a)">A2 0.521</text>
+  <text x="357" y="76" text-anchor="middle" font-size="12" fill="var(--d2)">D2 0.605</text>
+</svg>
+<figcaption>Each row is one day. Arm A uses the same prompt on both days and still moved by +0.068.</figcaption>
+</figure>
+
+<p class="note">Difference = second − first. Interval: 95 percent, paired bootstrap over sessions. No interval under 5 sessions.</p>
+<div class="scroll"><table>
+<tr><th>Comparison</th><th>Group</th><th>Stops / sessions</th><th>First</th><th>Second</th><th>Difference</th><th>Interval</th></tr>
+<tr class="grp"><td>D2 − D1</td><td>all</td><td class="n">56 / 24</td><td class="n">0.660</td><td class="n">0.605</td><td class="n neg">−0.055</td><td class="n">−0.116 to −0.010</td></tr>
+<tr><td></td><td>test set 1 (CoBuilder)</td><td class="n">30 / 6</td><td class="n">0.665</td><td class="n">0.631</td><td class="n neg">−0.034</td><td class="n">−0.114 to +0.019</td></tr>
+<tr><td></td><td>test set 2</td><td class="n">26 / 18</td><td class="n">0.654</td><td class="n">0.575</td><td class="n neg">−0.079</td><td class="n">−0.174 to −0.013</td></tr>
+<tr><td></td><td>agencheck</td><td class="n">13 / 13</td><td class="n">0.625</td><td class="n">0.491</td><td class="n neg">−0.134</td><td class="n">−0.243 to −0.046</td></tr>
+<tr><td></td><td>DSPY_PreEmploymentDirectory_PoC</td><td class="n">6 / 3</td><td class="n">0.755</td><td class="n">0.736</td><td class="n neg">−0.019</td><td class="n">none</td></tr>
+<tr><td></td><td>story-writer</td><td class="n">7 / 2</td><td class="n">0.623</td><td class="n">0.593</td><td class="n neg">−0.030</td><td class="n">none</td></tr>
+<tr class="grp"><td>D2 − A2 (same day)</td><td>all</td><td class="n">56 / 24</td><td class="n">0.521</td><td class="n">0.605</td><td class="n pos">+0.084</td><td class="n">−0.023 to +0.174</td></tr>
+<tr><td></td><td>test set 1</td><td class="n">30 / 6</td><td class="n">0.522</td><td class="n">0.631</td><td class="n pos">+0.110</td><td class="n">−0.072 to +0.261</td></tr>
+<tr><td></td><td>test set 2</td><td class="n">26 / 18</td><td class="n">0.521</td><td class="n">0.575</td><td class="n pos">+0.054</td><td class="n">−0.023 to +0.116</td></tr>
+<tr><td></td><td>agencheck</td><td class="n">13 / 13</td><td class="n">0.478</td><td class="n">0.491</td><td class="n pos">+0.013</td><td class="n">−0.110 to +0.137</td></tr>
+<tr><td></td><td>DSPY_PreEmploymentDirectory_PoC</td><td class="n">6 / 3</td><td class="n">0.664</td><td class="n">0.736</td><td class="n pos">+0.072</td><td class="n">none</td></tr>
+<tr><td></td><td>story-writer</td><td class="n">7 / 2</td><td class="n">0.478</td><td class="n">0.593</td><td class="n pos">+0.115</td><td class="n">none</td></tr>
+<tr class="grp"><td>D1 − A1 (same day)</td><td>all</td><td class="n">56 / 24</td><td class="n">0.453</td><td class="n">0.660</td><td class="n pos">+0.207</td><td class="n">+0.127 to +0.292</td></tr>
+<tr><td></td><td>test set 1</td><td class="n">30 / 6</td><td class="n">0.438</td><td class="n">0.665</td><td class="n pos">+0.227</td><td class="n">+0.094 to +0.333</td></tr>
+<tr><td></td><td>test set 2</td><td class="n">26 / 18</td><td class="n">0.470</td><td class="n">0.654</td><td class="n pos">+0.185</td><td class="n">+0.087 to +0.304</td></tr>
+<tr><td></td><td>agencheck</td><td class="n">13 / 13</td><td class="n">0.415</td><td class="n">0.625</td><td class="n pos">+0.209</td><td class="n">+0.008 to +0.398</td></tr>
+<tr><td></td><td>DSPY_PreEmploymentDirectory_PoC</td><td class="n">6 / 3</td><td class="n">0.585</td><td class="n">0.755</td><td class="n pos">+0.169</td><td class="n">none</td></tr>
+<tr><td></td><td>story-writer</td><td class="n">7 / 2</td><td class="n">0.471</td><td class="n">0.623</td><td class="n pos">+0.152</td><td class="n">none</td></tr>
+<tr class="grp"><td>A2 − A1 (same prompt)</td><td>all</td><td class="n">56 / 24</td><td class="n">0.453</td><td class="n">0.521</td><td class="n pos">+0.068</td><td class="n">+0.008 to +0.129</td></tr>
+<tr><td></td><td>test set 1</td><td class="n">30 / 6</td><td class="n">0.438</td><td class="n">0.522</td><td class="n pos">+0.083</td><td class="n">+0.024 to +0.149</td></tr>
+</table></div>
+
+<h3>Reading</h3>
+<p>D2 scored lower than D1, and that interval lies below zero. But arm A moved by +0.068 between the two days with no change, and that interval also excludes zero. So the session bootstrap understates the spread between days, and a difference of this size across days is not a reliable result.</p>
+<p>Against its own same-day arm A, D2 gained +0.084, with an interval that spans zero. D1 gained +0.207, with an interval above zero. On this evidence, the v2 proposer with gpt-6.1-terra did not beat the v1 proposer with Muse Wonder, and it may be worse.</p>
+
+<h2>Doubts, deviations and open items</h2>
+<div class="doubts"><ul>
+  <li><b>Two changes at once.</b> D1 and D2 differ in the proposer and in the reflection model. The data cannot say which caused the difference. This is why slice 31 failed criterion C1 (0.0).</li>
+  <li><b>No rerun.</b> You decided not to rerun D1 or D2. The E8 question stays without an answer.</li>
+  <li><b>Seed scores differ.</b> The same seed program on the same valset scored 0.640 in the D1 run and 0.677 in the D2 run. This is run-to-run variation, not explained further.</li>
+  <li><b>Truncation warnings.</b> D2 logged 15 "LM response was truncated" warnings, D1 logged 7. A single live check of one such input returned a complete reply (<code>finish_reason: stop</code>). The cause is unknown. Call rows now record <code>finish_reason</code> and token counts (commits <code>dbcf1c5</code>, <code>eaa4b50</code>), so a future run will show which calls were cut.</li>
+  <li><b>Unconfirmed data.</b> 91 new stops from think-with-ai and cobuilder-harness wait for your label check. Session <code>46ffdc01</code> (trainset) shares 731 records with <code>7f58085f</code> (test set).</li>
+  <li><b>Live use needs code.</b> The <code>interpret</code> command has no <code>--program</code> option today, so it cannot load D1 or any saved program. It runs the base interpreter.</li>
+</ul></div>
+
+<h2>Your proposal: live sessions through the Stop hook</h2>
+<p>You proposed to stop optimising on past sessions. Instead, a light Claude Code integration runs on each Stop hook: it builds the digest, runs the interpreter, and records the steps and the outcome (<code>Notify</code>, <code>AskHuman</code>, and the proposed actions). You then give feedback on sessions that you remember, and that feedback shows which parts to improve.</p>
+<p>The parts exist: <code>priority digest</code> stores a digest per session, and <code>priority interpret</code> reads that digest and prints the prediction. Facts that shape the design:</p>
+<ul>
+  <li>A digest and an interpreter call are model calls, which take seconds. A Stop hook that waits for them delays the session. <span class="note">[INFERENCE] The hook must start the work in the background and exit at once.</span></li>
+  <li>The best tested prompt is D1 (0.660 on the test set). Using it needs the <code>--program</code> option on <code>interpret</code>.</li>
+  <li>The repo process for a new integration is a design record (<code>/architect:design</code>), then slices.</li>
+</ul>
+
+<section class="ask">
+  <div class="kicker">Decisions for you</div>
+  <h2>How do we close E8, and how do we start the live integration?</h2>
+  <ol>
+    <li><b>Close slice 31 at 0.50 and close E8, with the open question recorded?</b>
+      The same route as slice 26. <span class="rec">Recommended: yes.</span> With no answer, slice 31 stays open as FAIL.</li>
+    <li><b>Which prompt runs on live sessions?</b>
+      D1 (best on the test set, needs a <code>--program</code> option), or the base interpreter (no change). <span class="rec">Recommended: D1.</span></li>
+    <li><b>How do you see the result and give feedback?</b>
+      A macOS notification per stop, or a local review page of recent stops with a feedback field, or both. <span class="rec">Recommended: the review page first, notifications later.</span></li>
+    <li><b>Start with a design record for the integration (<code>/architect:design</code>), as epic E9?</b>
+      <span class="rec">Recommended: yes.</span> With no answer, I write nothing.</li>
+    <li><b>Park the 91 draft labels and the <code>46ffdc01</code> overlap?</b>
+      Live feedback may replace them as the next data source. <span class="rec">Recommended: park both, and keep the drafts.</span></li>
+  </ol>
+</section>
+</main>
+</body>
+</html>

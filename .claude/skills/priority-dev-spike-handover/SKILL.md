@@ -44,6 +44,7 @@ Work in the worktree `/Users/theb/Documents/Windsurf/cobuilder-plugin/.claude/wo
 3. **The design stage.** `goal.json` holds `stage: approved`. The branch `design/priority-dev-spike` is the build branch, unpushed, and the engineer chose one pull request. Ask before you push it. No PR is open.
 4. **The index.** Built after the merge. Rebuild with `uv run shared/build_index.py` after any change to the plan or the design.
 5. **Later programs.** `priority-dev-phase-a` and later phases are planned, not created.
+6. **E9 is parked (10 November 2026).** The engineer wants to come back to it. E9 is a light Claude Code integration: on each Stop hook, it runs the digest and `priority interpret --program <D1 program>` on the live session in the background, and it shows the result for the engineer's feedback. Start with `/architect:design`. Open points and the E8 results are in `.lavish/proposer-e8-closeout.html` and `priority-dev/probes/proposer-report.md`.
 
 ## First steps
 

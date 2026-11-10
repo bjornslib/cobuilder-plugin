@@ -52,7 +52,7 @@ Each slice ends in one thing that a command prints or a file shows. A probe slic
 | 28 | `priority-dev-spike/E8` | **Proposer prompt and reference material** | `priority optimise --proposer v2` passes `PROPOSER_BASE`, `GENERAL_RULES`, a schema reference built from the code, and `max_chars=6000` to the dspy `InstructionProposer`; `--proposer v1` keeps the E7 proposer. The run prints the proposer and each reflection file records it | 1 (attempt 1) | done |
 | 29 | `priority-dev-spike/E8` | **Reference and structural diff in the feedback** | With `--proposer v2`, each stop's feedback holds the score line, the judge notes, a `Structure:` block from `structure_diff`, and a `Reference:` block with the reference answer. The diff holds no payload text. The score value does not change | 1 (attempt 1) | done |
 | 30 | `priority-dev-spike/E8` | **Live smoke run of the v2 proposer** | One live run on the slice 26 setup shows the v2 input in the reflection files, proposals within 6000 characters, and the number of proposals that the trainset-detail check rejected | 1 (attempt 1) | done |
-| 31 | `priority-dev-spike/E8` | **Arms D1 and D2** | D1 (`--proposer v1`) and D2 (`--proposer v2`) run with the same seed program, seed, valset, minibatch, and budget. `probes/proposer-report.md` compares D1, D2, and arm A on the 56 test-set stops | — | pending |
+| 31 | `priority-dev-spike/E8` | **Arms D1 and D2** | D1 (`--proposer v1`) and D2 (`--proposer v2`) run with the same seed program, seed, valset, minibatch, and budget. `probes/proposer-report.md` compares D1, D2, and arm A on the 56 test-set stops | 0.5 (attempt 1) | done |
 
 ## Notes for the gates
 
