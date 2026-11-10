@@ -109,6 +109,9 @@ class CallRecorder(BaseCallback):
         record.update(call_meta(lm, outputs))
         if exception is not None:
             record["error"] = f"{type(exception).__name__}: {exception}"
+        elif record["finish_reason"] == "length":
+            tokens = f"completion_tokens={record['completion_tokens']}, reasoning_tokens={record['reasoning_tokens']}"
+            record["error"] = f"truncated: finish_reason=length, {tokens}"
         self._pending.append(record)
 
     def commit(self, valid: bool, error: str = "") -> None:
