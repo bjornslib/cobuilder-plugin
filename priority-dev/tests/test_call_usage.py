@@ -2,6 +2,9 @@
 import json
 
 import dspy
+import pytest
+from dspy.utils.exceptions import AdapterParseError
+from pydantic import ValidationError
 
 from priority.interpreter.calls import CallRecorder, guarded
 from priority.interpreter.models import Abstain
@@ -88,3 +91,35 @@ def test_missing_usage_records_nulls_and_the_call_succeeds(tmp_path):
     assert rows[0]["prompt_tokens"] is None
     assert rows[0]["completion_tokens"] is None
     assert rows[0]["reasoning_tokens"] is None
+
+
+def test_length_reply_gets_a_truncated_error_that_a_parse_error_does_not_replace(tmp_path):
+    recorder = CallRecorder(tmp_path, adapter="chat", session_id="made-up-session")
+    predictor = dspy.Predict("question -> answer")
+    with dspy.context(lm=StubLM(response("The team must", "length", USAGE)), callbacks=[recorder]):
+        with pytest.raises((AdapterParseError, ValidationError)):
+            predictor(question="cut reply")
+    recorder.commit(False, error="AdapterParseError: reply did not parse")
+    rows = [json.loads(line) for line in (tmp_path / "calls.jsonl").read_text().splitlines()]
+    assert rows
+    for row in rows:
+        assert row["valid"] is False
+        assert row["error"].startswith("truncated:")
+        assert "finish_reason=length" in row["error"]
+
+
+def test_stop_reply_gets_no_error_from_truncation(tmp_path):
+    result, rows = call_rows(tmp_path, response(REPLY, "stop", USAGE), "stop reply")
+    assert not isinstance(result, Abstain)
+    assert len(rows) == 1
+    assert "error" not in rows[0]
+    assert rows[0]["valid"] is True
+
+
+def test_missing_finish_reason_gets_no_error_from_truncation(tmp_path):
+    result, rows = call_rows(tmp_path, response(REPLY, None, USAGE), "no finish reason")
+    assert not isinstance(result, Abstain)
+    assert len(rows) == 1
+    assert rows[0]["finish_reason"] is None
+    assert "error" not in rows[0]
+    assert rows[0]["valid"] is True
