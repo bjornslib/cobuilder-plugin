@@ -19,7 +19,7 @@ from priority.interpreter.signatures import ProposeStop
 from priority.run_folder import RunFolder
 
 INTERPRETER_MODEL = config.model()
-MAX_TOKENS = 16000  # a reasoning model spends tokens on its reasoning first, so a low cap cuts the reply
+MAX_TOKENS = 64000  # reasoning spends tokens first; at 16000 it used the whole cap on some calls. Mercury 3 allows 131072
 STAGE = "propose"
 WAITS = (5, 15, 45)  # seconds between the 4 tries of a rate-limited call
 log = logging.getLogger("priority.interpreter")
