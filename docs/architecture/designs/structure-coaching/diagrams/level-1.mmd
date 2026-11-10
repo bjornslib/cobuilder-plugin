@@ -1,0 +1,20 @@
+flowchart TB
+    Signals["shared/structure_signals.py\nthree signals, new files only\npending"]
+    Coach["coach\nplugins/implement/scripts/habit_coach.py\nGREEN filter kept"]
+    Hooks["habit-hooks\nexternal CLI"]
+    Green["GREEN agent"]
+    Validate["VALIDATE agent"]
+    Attempt["attempt file\nStructure block, outside the score"]
+    Smells["shared/habit_smells.py"]
+    Modes["review mode and maintenance mode\nepic E6"]
+    Replay["replay evaluation\nsignals on and off, epic E5"]
+
+    Coach -->|"uv run, findings JSON"| Signals
+    Coach -->|"subprocess spawn, smell findings"| Hooks
+    Coach -->|"advice, three findings at most"| Green
+    Validate -->|"uv run"| Signals
+    Validate -->|"writes Structure block"| Attempt
+    Attempt -.->|"on FAIL, next attempt"| Green
+    Smells -->|"reads findings JSON"| Signals
+    Modes -->|"calls"| Smells
+    Replay -.->|"measures folder growth"| Green

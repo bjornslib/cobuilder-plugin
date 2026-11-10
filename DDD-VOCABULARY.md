@@ -235,6 +235,11 @@ _Avoid_: implementer (the generic word, and GREEN is the named role with its own
 The third role of the slice loop in `implement`: the `implement:validate` agent, a fresh subagent that saw neither RED nor GREEN, scores the slice against the blind rubric. It is the only role that reads the rubric, and a score of 0.90 or higher accepts the slice.
 _Avoid_: draft review (the architect stage 6 pre-review, which proposes survivors and never scores a slice), auditor (the generic word)
 
+<a id="structure-signal"></a>
+**Structure signal** (`implement`):
+A report from `shared/structure_signals.py` about where a new file sits or what its name says: a crowded folder, a name-stem cluster, or a generic file name. It is advice, it fires only for a file that is new on the branch, and it stays outside the slice score (ADR-0048).
+_Avoid_: mechanical smell (a pattern inside one file that habit-sensors counts), finding (an `assessment.json` entry, judged by a curator)
+
 ## cobuilder-memory
 
 These terms come from the `cobuilder-memory` design (ADR-0039). The plugin lives in `plugins/cobuilder-memory/`.

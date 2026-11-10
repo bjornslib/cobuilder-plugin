@@ -1,0 +1,60 @@
+{
+  "stage": "design",
+  "verdict": "concerns",
+  "risk_tier": "medium",
+  "regret_risk": "If the design ships as written, the team lives with a second source of coach advice whose limits have no calibration data. A wrong percentile gives advice that GREEN learns to ignore, and the smell advice loses force with it. The Structure block stays advisory until the replay runs. If nobody runs the replay, the block is a report that nothing reads, and the scored criteria never arrive. The check of agent use adds an effect to the slice loop that each later change of the loop must keep.",
+  "summary": "The design adds three structure signals to the two points that already steer a slice: the coach and VALIDATE. It reuses the hook, the agent filter, and the evidence file, so it adds no hook and no agent. Each limit is advisory and unproven, and the replay evaluation is the only proof of effect. The spike must run first, because the habit-hooks plugin route was not tested. The verdict is concerns, not sound, for those two reasons.",
+  "constraint_introduced": "A structure signal is advice. It never blocks a write, and it enters the slice score only after a replay evaluation and an engineer decision. One script, shared/structure_signals.py, is the source of each signal for the coach, VALIDATE, review mode, and maintenance mode. A signal fires only for a file that is new on the branch. A slice is the work of the three slice agents, and a script can read which agent wrote it.",
+  "findings": [
+    {
+      "kind": "prediction",
+      "id": "F1",
+      "severity": "low",
+      "title": "The change belongs in implement and shared",
+      "detail": "The coach and the slice agents sit in the implement context, and its boundary record allows a dependency on shared. Review mode and maintenance mode sit in architect and already read smells through a shared script. One shared script therefore serves both contexts with no edge from one plugin to the other.",
+      "cites": "ADR-0025, ADR-0038, ADR-0017, context implement"
+    },
+    {
+      "kind": "prediction",
+      "id": "F2",
+      "severity": "high",
+      "title": "The delivery route is not proven",
+      "detail": "The habit-hooks documents show a sensor that gets a list of files. They do not state that a sensor can report on a folder, or that a project-local plugin runs with no installed package. The spike decides between the plugin route and a second runner in habit_coach.py. Epic E2 cannot start before it.",
+      "cites": "ADR-0025, context implement"
+    },
+    {
+      "kind": "prediction",
+      "id": "F3",
+      "severity": "medium",
+      "title": "The rubric rule on behaviour conflicts with a scored structure criterion",
+      "detail": "The rubric states behaviour, not implementation, and the orchestrating session writes it before the code exists. A structure criterion states implementation and needs output from a run. The advisory block outside the score avoids the conflict for now. A later scored criterion must amend the rubric rule.",
+      "cites": "ADR-0012, context implement"
+    },
+    {
+      "kind": "prediction",
+      "id": "F4",
+      "severity": "medium",
+      "title": "The vocabulary agent already judges folder and file names",
+      "detail": "The vocabulary agent checks six kinds of name against the glossary, and its verdict stays outside the score. The generic-name signal covers part of the same ground at write time. The design keeps both: the signal coaches during the write, and the agent judges after it. The two must use one list of avoided names, or they give GREEN two answers.",
+      "cites": "ADR-0025, ADR-0036, context implement"
+    },
+    {
+      "kind": "prediction",
+      "id": "F5",
+      "severity": "medium",
+      "title": "Text alone did not make the main agent use the agents",
+      "detail": "The slice loop reference already tells the main agent to spawn each agent by type. The engineer saw sessions that skipped them. A step with no effect that a script reads gets skipped, so E3 needs such an effect, not only stronger text. The hook cannot call the tracker, which limits the choice of effect.",
+      "cites": "ADR-0012, ADR-0042, context implement"
+    },
+    {
+      "kind": "prediction",
+      "id": "F6",
+      "severity": "low",
+      "title": "This is an extension, not a duplicate",
+      "detail": "The design slice-agents-and-vocabulary gave GREEN the coach and gave the slice a vocabulary verdict. The design habit-smells gave review mode and maintenance mode the smell scan. Neither holds a signal about a folder or a file name. This design adds that signal to both paths.",
+      "cites": "ADR-0025, ADR-0038"
+    }
+  ],
+  "boundary_checks": [],
+  "drift": []
+}

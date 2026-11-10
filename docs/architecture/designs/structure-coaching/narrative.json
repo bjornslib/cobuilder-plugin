@@ -1,0 +1,37 @@
+{
+    "intent": {
+        "tagline": "Three structure signals coach GREEN when it adds a file, and VALIDATE reports them beside the slice score.",
+        "narration": "An agent adds each new file to the nearest folder. The coach sees one file, and the rubric scores behaviour. This design adds three structure signals to both points. It also makes the main agent use the slice agents."
+    },
+    "problem_solution": {
+        "problem": "No part of the slice loop looks at where a file goes or what its name says. The coach reports smells inside one file. The rubric scores behaviour. In some sessions the main agent writes the slice itself, so no coach and no blind score run.",
+        "solution": "One shared script reports a crowded folder, a name-stem cluster, and a generic file name, only for files that are new on the branch. The coach passes them to GREEN as advice. VALIDATE writes an advisory Structure block. A script checks that the slice agents did the work.",
+        "narration": "The signals need no parser, so they work in each language. A git comparison with the branch base is the ratchet, so old debt stays silent. Each limit is advice until a replay evaluation proves an effect.",
+        "beats": [
+            {"kind": "problem", "text": "The research synthesis found that guidance at the start lowers the first level of decay, not its rate. Feedback during the write had the best evidence, and the slice loop gives none about structure."},
+            {"kind": "constraint", "text": "ADR-0025 lets the coach run for the GREEN agent only, and it never blocks a write. The design keeps both rules, so it adds no hook and no agent."},
+            {"kind": "decision", "text": "One script, shared/structure_signals.py, is the source of each signal. It prints habit-hooks findings JSON, so the coach, VALIDATE, review mode, and maintenance mode read one format."},
+            {"kind": "decision", "text": "VALIDATE writes the Structure block outside the overall score. The rubric has no weights, and an unproven limit must not fail a slice."},
+            {"kind": "risk", "text": "The habit-hooks documents do not state that a sensor can report on a folder. A spike runs first. If the plugin route fails, the coach gets a second runner."},
+            {"kind": "guard", "text": "The replay evaluation runs slice plans with the signals on and off. It records the folder growth and the follow-on resolve rate, and it decides what becomes a scored criterion."}
+        ],
+        "alternatives": [
+            {"option": "Build a new /architect:refactor command with a graph engine", "rejected_because": "It runs after the damage. The evidence favours feedback at write time, and its thresholds have no source."},
+            {"option": "Remove the GREEN filter from the coach", "rejected_because": "ADR-0025 holds the filter as a rule, and each write in each session then waits on habit-hooks. The engineer kept the filter."},
+            {"option": "Add weighted structure criteria S1 to S5 to the rubric at once", "rejected_because": "The rubric has no weights, and an unproven threshold can then fail a slice."},
+            {"option": "Keep a baseline file of old findings", "rejected_because": "A git comparison with the branch base gives the same ratchet with no state file."},
+            {"option": "Add an import check in the first version", "rejected_because": "It adds two tool dependencies and covers two languages only."},
+            {"option": "Add a PreToolUse speed bump", "rejected_because": "It is a fifth hook script and a new event under ADR-0025, and no study shows that a block works better than advice."}
+        ]
+    },
+    "architecture": {
+        "narration": "The script sits in shared. The coach and VALIDATE in implement call it, and review mode and maintenance mode in architect read its output later. No plugin names a path in another plugin.",
+        "beats": [
+            {"kind": "component", "text": "shared/structure_signals.py reads the folder tree and the git comparison with the branch base. It reports three signals, and it names each path that it did not analyse."},
+            {"kind": "seam", "text": "The findings JSON of habit-hooks is the seam. The script prints it, and each reader takes it: the coach, VALIDATE, and shared/habit_smells.py for the architect modes."},
+            {"kind": "component", "text": "habit_coach.py keeps its GREEN filter. It gains two guards: silence for a file that habit-hooks does not scan, and a cap of three structure findings with no repeat in a session."},
+            {"kind": "component", "text": "VALIDATE runs the script on the slice, judges contract drift on the diff, and adds a Structure block to the attempt file, as the vocabulary agent adds its block."},
+            {"kind": "guard", "text": "One effect that a script reads shows which agent wrote a slice. The spike picks the effect, because the hook must not call the tracker."}
+        ]
+    }
+}

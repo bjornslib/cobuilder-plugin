@@ -1,0 +1,108 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" font-family="ui-monospace, Menlo, Monaco, monospace" font-size="12" aria-labelledby="doc-title">
+  <title id="doc-title">Runtime architecture of the structure-coaching design: slice agents, coach, structure signals script, habit-hooks, architect modes</title>
+
+  <g id="bound-implement">
+    <title>implement plugin: agents and coach hook</title>
+    <rect x="20" y="40" width="440" height="270" fill="none" stroke="#3D3D3A" stroke-width="1.5" rx="8"/>
+    <text x="32" y="60" fill="#87867F">implement</text>
+    <rect x="40" y="70" width="190" height="56" rx="10" fill="#E3DACC" stroke="#3D3D3A" stroke-width="1.5"/>
+    <title>main agent: spawns RED, GREEN, and VALIDATE</title>
+    <text x="50" y="92" fill="#141413">main agent</text>
+    <text x="50" y="108" fill="#87867F" font-size="11">slice loop text</text>
+    <rect x="40" y="150" width="190" height="56" rx="10" fill="#E3DACC" stroke="#3D3D3A" stroke-width="1.5"/>
+    <title>GREEN agent: writes the code, gets coach advice</title>
+    <text x="50" y="172" fill="#141413">GREEN agent</text>
+    <text x="50" y="188" fill="#87867F" font-size="11">gets advice</text>
+    <rect x="40" y="230" width="190" height="56" rx="10" fill="#E3DACC" stroke="#3D3D3A" stroke-width="1.5"/>
+    <title>replay evaluation: signals on and off, epic E5, PENDING</title>
+    <text x="50" y="252" fill="#141413">replay evaluation</text>
+    <text x="50" y="268" fill="#87867F" font-size="11">epic E5</text>
+    <rect x="178" y="268" width="46" height="14" fill="none" stroke="#B04A3F" stroke-width="1" rx="4"/>
+    <text x="183" y="278" fill="#B04A3F" font-size="9">pending</text>
+    <rect x="250" y="70" width="190" height="56" rx="8" fill="#788C5D" fill-opacity="0.18" stroke="#788C5D" stroke-width="1.5"/>
+    <path d="M 250 78 h 190 v -8 q -95 10 -190 0 z" fill="#788C5D" fill-opacity="0.25" stroke="none"/>
+    <title>attempt file: holds the Structure block from VALIDATE</title>
+    <text x="260" y="92" fill="#141413">attempt file</text>
+    <text x="260" y="108" fill="#87867F" font-size="11">Structure block</text>
+    <rect x="250" y="150" width="190" height="56" rx="10" fill="#E3DACC" stroke="#3D3D3A" stroke-width="1.5"/>
+    <title>VALIDATE agent: runs the script, judges contract drift</title>
+    <text x="260" y="172" fill="#141413">VALIDATE agent</text>
+    <text x="260" y="188" fill="#87867F" font-size="11">contract drift on diff</text>
+    <rect x="250" y="230" width="190" height="56" rx="10" fill="#E3DACC" stroke="#3D3D3A" stroke-width="1.5"/>
+    <title>habit_coach.py: PostToolUse coach, GREEN filter kept, gains guards</title>
+    <text x="260" y="252" fill="#141413">habit_coach.py</text>
+    <text x="260" y="268" fill="#87867F" font-size="11">GREEN filter kept</text>
+    <rect x="388" y="268" width="46" height="14" fill="none" stroke="#B04A3F" stroke-width="1" rx="4"/>
+    <text x="393" y="278" fill="#B04A3F" font-size="9">pending</text>
+  </g>
+
+  <g id="bound-shared">
+    <title>shared directory: scripts that plugins call</title>
+    <rect x="500" y="40" width="440" height="170" fill="none" stroke="#3D3D3A" stroke-width="1.5" rx="8"/>
+    <text x="512" y="60" fill="#87867F">shared</text>
+    <rect x="520" y="70" width="190" height="120" rx="10" fill="#E3DACC" stroke="#3D3D3A" stroke-width="1.5"/>
+    <title>shared/structure_signals.py: crowded folder, name-stem cluster, generic name; PENDING</title>
+    <text x="530" y="92" fill="#141413">structure_signals.py</text>
+    <text x="530" y="108" fill="#87867F" font-size="11">3 signals, new files only</text>
+    <rect x="658" y="172" width="46" height="14" fill="none" stroke="#B04A3F" stroke-width="1" rx="4"/>
+    <text x="663" y="182" fill="#B04A3F" font-size="9">pending</text>
+    <rect x="730" y="70" width="190" height="56" rx="10" fill="#E3DACC" stroke="#3D3D3A" stroke-width="1.5"/>
+    <title>shared/habit_smells.py: reads findings JSON for the architect modes</title>
+    <text x="740" y="92" fill="#141413">habit_smells.py</text>
+    <text x="740" y="108" fill="#87867F" font-size="11">reads findings JSON</text>
+  </g>
+
+  <g id="bound-architect">
+    <title>architect plugin: later modes</title>
+    <rect x="640" y="260" width="300" height="100" fill="none" stroke="#3D3D3A" stroke-width="1.5" rx="8"/>
+    <text x="652" y="280" fill="#87867F">architect</text>
+    <rect x="655" y="290" width="130" height="56" rx="10" fill="#E3DACC" stroke="#3D3D3A" stroke-width="1.5"/>
+    <title>review mode, epic E6, PENDING</title>
+    <text x="665" y="312" fill="#141413">review mode</text>
+    <text x="665" y="328" fill="#87867F" font-size="11">epic E6</text>
+    <rect x="733" y="328" width="46" height="14" fill="none" stroke="#B04A3F" stroke-width="1" rx="4"/>
+    <text x="738" y="338" fill="#B04A3F" font-size="9">pending</text>
+    <rect x="800" y="290" width="130" height="56" rx="10" fill="#E3DACC" stroke="#3D3D3A" stroke-width="1.5"/>
+    <title>maintenance mode, epic E6, PENDING</title>
+    <text x="810" y="312" fill="#141413">maintenance</text>
+    <text x="810" y="328" fill="#87867F" font-size="11">epic E6</text>
+    <rect x="878" y="328" width="46" height="14" fill="none" stroke="#B04A3F" stroke-width="1" rx="4"/>
+    <text x="883" y="338" fill="#B04A3F" font-size="9">pending</text>
+  </g>
+
+  <g id="bound-external">
+    <title>external tools</title>
+    <rect x="20" y="390" width="920" height="110" fill="none" stroke="#3D3D3A" stroke-width="1.5" rx="8"/>
+    <text x="32" y="410" fill="#87867F">external</text>
+    <rect x="250" y="420" width="190" height="56" rx="10" fill="#E3DACC" stroke="#3D3D3A" stroke-width="1.5" stroke-dasharray="5 4"/>
+    <title>habit-hooks: external CLI that scans a file for smells</title>
+    <text x="260" y="442" fill="#141413">habit-hooks CLI</text>
+    <text x="260" y="458" fill="#87867F" font-size="11">scans one file</text>
+    <rect x="520" y="420" width="190" height="56" rx="10" fill="#E3DACC" stroke="#3D3D3A" stroke-width="1.5" stroke-dasharray="5 4"/>
+    <title>git: branch base comparison</title>
+    <text x="530" y="442" fill="#141413">git</text>
+    <text x="530" y="458" fill="#87867F" font-size="11">branch base</text>
+  </g>
+
+  <g id="edges" stroke="#5a5854" stroke-width="1.4" fill="none">
+    <title>edges: every edge names its protocol</title>
+    <path d="M 440 258 C 480 258, 490 200, 520 180"/>
+    <text x="452" y="246" fill="#3D3D3A" font-size="10" stroke="none">uv run</text>
+    <path d="M 440 178 C 480 178, 490 170, 520 170"/>
+    <text x="452" y="166" fill="#3D3D3A" font-size="10" stroke="none">uv run</text>
+    <path d="M 345 286 L 345 420"/>
+    <text x="352" y="350" fill="#3D3D3A" font-size="10" stroke="none">subprocess spawn</text>
+    <path d="M 560 190 L 560 420"/>
+    <text x="566" y="300" fill="#3D3D3A" font-size="10" stroke="none">git read</text>
+    <path d="M 820 126 C 820 200, 740 220, 730 290"/>
+    <text x="800" y="222" fill="#3D3D3A" font-size="10" stroke="none">findings JSON</text>
+    <path d="M 880 126 C 880 200, 870 240, 865 290"/>
+    <text x="887" y="240" fill="#3D3D3A" font-size="10" stroke="none">uv run</text>
+    <path d="M 230 190 C 250 205, 260 215, 290 230"/>
+    <text x="236" y="222" fill="#3D3D3A" font-size="10" stroke="none">PostToolUse hook</text>
+    <path d="M 300 230 C 270 200, 250 195, 230 180"/>
+    <text x="150" y="200" fill="#3D3D3A" font-size="10" stroke="none" text-anchor="end">advice text</text>
+    <path d="M 345 150 L 345 126"/>
+    <text x="352" y="142" fill="#3D3D3A" font-size="10" stroke="none">fs write</text>
+  </g>
+</svg>

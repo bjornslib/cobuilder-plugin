@@ -1,0 +1,78 @@
+{
+  "name": "structure-coaching",
+  "title": "Structure signals coach GREEN, and VALIDATE reports them beside the slice score",
+  "adr": "ADR-0048",
+  "adrs": [
+    "ADR-0048",
+    "ADR-0025",
+    "ADR-0038",
+    "ADR-0012"
+  ],
+  "created": "2026-11-10",
+  "outcome": "GREEN gets structure coaching when it adds a file, VALIDATE reports structure findings beside the slice score, and the main agent runs each slice through the RED, GREEN, and VALIDATE agents.",
+  "done_when": [
+    "A spike transcript shows one real coach message that carries a structure signal from a project-local habit-hooks plugin, or it records why that route failed",
+    "shared/structure_signals.py reports a crowded folder, a name-stem cluster, and a generic file name on synthetic folder trees, and it prints habit-hooks findings JSON",
+    "A signal fires only for a file that is new on the branch, and the output names each path that the script did not analyse",
+    "The coach is silent for a file that habit-hooks does not scan, it shows three structure findings at most, and it does not repeat a finding in one session",
+    "A blind pass of the slice loop text spawns implement:red, implement:green, and implement:validate, and one effect that a script reads shows which agent wrote the slice",
+    "The attempt file of a slice holds a Structure block from VALIDATE, outside the overall score, and a failed attempt passes the block to the next GREEN attempt",
+    "A replay of five slices or more, with the signals on and off, records the growth of the largest folder and the follow-on resolve rate",
+    "One real slice runs locally from RED to a VALIDATE score, and the transcript is kept"
+  ],
+  "abort_if": [
+    "The spike shows that neither a habit-hooks plugin nor a second runner in habit_coach.py can put a folder signal into the coach message",
+    "A hand label of the top findings on three repositories gives a precision below 50% for each of the three signals",
+    "The replay shows no difference in folder growth between the two conditions, across several runs for each condition",
+    "The structure work needs a hard block on a write, which ADR-0025 does not allow for the coach"
+  ],
+  "min_work": {
+    "derived_from": "2 districts (implement, shared), 3 colliding ADRs (ADR-0025, ADR-0012, ADR-0038), 1 boundary rule (implement allowed_dependencies), 3 signals, 6 epics",
+    "alternatives_explored": 6,
+    "boundary_rules_checked": true,
+    "challenge_stage_run": true,
+    "draft_review_run": false,
+    "note": "Decided in chat on 2026-11-10, in a cloud session with no bd binary. The engineer kept the GREEN filter, accepted the two coach guards, and asked for a later epic for review and maintenance. No program record exists in the tracker yet. The reviewer round and the runtime diagram are pending, so the stage is decided, not approved."
+  },
+  "limits": { "warn_after_rounds": 3, "cutoff_rounds": 6 },
+  "epics": [
+    {
+      "id": "E1",
+      "slug": "structure-signals",
+      "title": "The spike, then shared/structure_signals.py with its three signals and its tests.",
+      "outcome": "The script reports each of the three signals on synthetic folder trees, only for files that are new on the branch."
+    },
+    {
+      "id": "E2",
+      "slug": "coach-delivery",
+      "title": "The coach carries the signals to GREEN, with guides, a cap of three findings, no repeat, and silence for a file that habit-hooks does not scan.",
+      "outcome": "A stub-binary test shows the coach message with a structure signal, and shows no output for a file that is not scanned."
+    },
+    {
+      "id": "E3",
+      "slug": "loop-uses-agents",
+      "title": "The slice loop text makes the main agent spawn the three agents, and one effect that a script reads shows which agent wrote the slice.",
+      "outcome": "A blind pass spawns all three agents, and the check fails for a slice that the main agent wrote."
+    },
+    {
+      "id": "E4",
+      "slug": "validate-structure-block",
+      "title": "VALIDATE writes an advisory Structure block, judges contract drift on the diff, and passes the block to GREEN on a failed attempt.",
+      "outcome": "The attempt file holds a Structure block, and the overall score does not include it."
+    },
+    {
+      "id": "E5",
+      "slug": "replay-evaluation",
+      "title": "A replay of slice plans with the signals on and off, a hand label of the findings, and the decision on scored criteria.",
+      "outcome": "The evaluation record holds the folder growth, the follow-on resolve rate, and the precision of each signal."
+    },
+    {
+      "id": "E6",
+      "slug": "review-and-maintenance-signals",
+      "title": "Review mode and maintenance mode report the structure signals and their trend. This epic starts after E1 to E5.",
+      "outcome": "A review report and a maintenance report each carry the structure signals, with the four trend tags in maintenance."
+    }
+  ],
+  "supersedes": null,
+  "rounds": 0
+}

@@ -1,0 +1,65 @@
+{
+  "captured": "2026-11-10",
+  "source": "design",
+  "design_name": "structure-coaching",
+  "authorship": "agent-assisted",
+  "problem": "An agent adds each new file to the nearest folder, and no test rewards a better place. The coach reports smells inside one file only. The VALIDATE rubric scores behaviour only. In some sessions the main agent writes the slice itself, so no coach and no blind score run.",
+  "why_now": "The research synthesis of 2026-11-10 found that guidance at the start lowers the first level of decay, not its rate. Feedback during the write had the best evidence. The coach and the blind rubric already run in the slice loop.",
+  "approach": "One script, shared/structure_signals.py, holds three signals that need no parser: a crowded folder, a name-stem cluster, and a generic file name. It fires only for a file that is new on the branch, so old debt stays silent. The coach carries the signals to GREEN as short advice that names the decision to make. The GREEN filter stays. VALIDATE writes an advisory Structure block and judges contract drift on the diff. The slice loop text makes the main agent spawn the three agents, and a script checks that. A replay evaluation decides what becomes a scored criterion.",
+  "alternatives": [
+    {
+      "option": "Build a new /architect:refactor command with a graph engine, as the first research run proposed",
+      "rejected_because": "It runs after the damage. The evidence favours feedback at write time, and its thresholds have no source."
+    },
+    {
+      "option": "Remove the GREEN filter, so the coach runs for each caller in each session",
+      "rejected_because": "ADR-0025 holds the filter as a rule. Each write in each session then waits on habit-hooks. The engineer kept the filter."
+    },
+    {
+      "option": "Add weighted structure criteria S1 to S5 to the rubric at once",
+      "rejected_because": "The rubric has no weights, and a score is a plain average. An unproven threshold can then fail a slice."
+    },
+    {
+      "option": "Keep a baseline file of old findings in .cobuilder/",
+      "rejected_because": "A git comparison with the branch base gives the same ratchet. It adds no state file to keep current."
+    },
+    {
+      "option": "Add an import check with dependency-cruiser and import-linter in the first version",
+      "rejected_because": "It adds two tool dependencies and covers two languages only. The three signals work in each language."
+    },
+    {
+      "option": "Add a PreToolUse speed bump that blocks the first write of a new file",
+      "rejected_because": "It is a fifth hook script and a new event under ADR-0025. No study shows that a block works better than advice."
+    }
+  ],
+  "out_of_scope": [
+    "A scored structure criterion in the rubric, which the replay evaluation of E5 decides",
+    "An import check against the forbidden_dependencies of a boundary.yaml",
+    "A PreToolUse speed bump for a new file",
+    "A change to the GREEN filter of the coach",
+    "A /architect:refactor command",
+    "A claim about who wrote the code, a human or an agent"
+  ],
+  "risks": [
+    "habit-hooks runs a sensor for each file, and a folder signal may not fit that contract",
+    "A percentile limit gives false signals in a framework folder, a test folder, or a generated folder",
+    "GREEN splits a folder to silence the signal, and the new folders hold no single decision",
+    "A wider coach message hides the smell advice that GREEN gets today",
+    "Loop text alone does not make the main agent spawn the agents, as the past sessions show",
+    "The advisory Structure block has no effect on GREEN, because only a failed attempt passes it on"
+  ],
+  "testing": "Tests run the script on synthetic folder trees and read its JSON. A stub-binary test drives the coach. A blind pass scores the loop text, and the transcript is kept. The replay evaluation compares folder growth and the follow-on resolve rate.",
+  "reviewer_focus": [
+    "The spike first: whether a project-local habit-hooks plugin can carry a folder signal to the coach message",
+    "The effect that shows which agent wrote a slice, because the hook must not call the tracker",
+    "The percentile limit and the generic-name list, which have no calibration data"
+  ],
+  "unknowns": [
+    "Whether habit-hooks runs a project-local plugin with no installed package, and whether a sensor can report on a folder",
+    "How the snooze ratchet of habit-hooks treats a finding with a folder as its key",
+    "Which effect shows that an agent wrote the slice: the attempt file, or a role reminder from the coach hook",
+    "Which repositories and slice plans the replay uses, and how many runs the engineer accepts",
+    "Whether the signals must serve target repositories in each language, which the engineer has not confirmed",
+    "Why the main agent skipped the agents in past sessions, because no transcript of such a session was read"
+  ]
+}

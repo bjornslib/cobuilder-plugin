@@ -1,0 +1,31 @@
+sequenceDiagram
+    participant Main as main agent
+    participant Red as RED agent
+    participant Green as GREEN agent
+    participant Hook as PostToolUse hook
+    participant Coach as habit_coach.py
+    participant HH as habit-hooks
+    participant SS as structure_signals.py
+    participant Val as VALIDATE agent
+    participant Att as attempt file
+
+    Main->>Red: spawn for the slice
+    Red-->>Main: failing tests
+    Main->>Green: spawn for the slice
+    Green->>Green: write a new file
+    Green->>Hook: Write event
+    Hook->>Coach: run for the GREEN agent
+    Coach->>HH: scan the file
+    HH-->>Coach: smell findings
+    Coach->>SS: ask for structure signals
+    SS-->>Coach: findings JSON for new files
+    Coach-->>Green: advice, three findings at most, no block
+    Green-->>Main: slice done
+    Main->>Val: spawn for the slice
+    Val->>SS: run on the slice
+    SS-->>Val: findings JSON and not-analysed list
+    Val->>Val: judge contract drift on the diff
+    Val->>Att: write Structure block, outside the score
+    alt attempt FAILS
+        Att-->>Green: Structure block goes to the next attempt
+    end

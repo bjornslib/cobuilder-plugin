@@ -1,0 +1,42 @@
+classDiagram
+    class StructureSignals {
+        +run
+        +print_findings_json
+    }
+    class Signal {
+        <<interface>>
+        +check
+    }
+    class CrowdedFolder {
+        +percentile_limit
+    }
+    class NameStemCluster {
+        +shared_stem_count
+    }
+    class GenericName {
+        +generic_name_list
+    }
+    class BranchBaseRatchet {
+        +new_files_on_branch
+        +git_compare_with_base
+    }
+    class FindingsJson {
+        +habit_hooks_format
+        +path
+        +message
+    }
+    class NotAnalysedList {
+        +paths
+        +reason
+    }
+
+    Signal <|.. CrowdedFolder
+    Signal <|.. NameStemCluster
+    Signal <|.. GenericName
+    StructureSignals --> BranchBaseRatchet : keeps only new files
+    StructureSignals --> Signal : runs three
+    StructureSignals --> FindingsJson : prints
+    StructureSignals --> NotAnalysedList : prints
+
+    note for StructureSignals "member names are predictions\nthe script does not exist yet"
+    note for CrowdedFolder "the limit has no calibration data\nthe replay evaluation tunes it"
