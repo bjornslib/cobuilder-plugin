@@ -15,16 +15,25 @@ from priority.valset import METHODS, ValsetSize
 PREDICTION_FIELDS = ("status", "needs_human", "priority", "steps", "abstain")
 
 
-def interpret(transcript: Path, stop: int | None, log_dir: Path | None) -> int:
+def interpret(transcript: Path, stop: int | None, log_dir: Path | None, program: Path | None) -> int:
     """Build the brief, run the interpreter, and print the Prediction fields as one JSON object.
 
-    An Abstain also exits with 0."""
+    A saved program loads into the interpreter before the one model call. An Abstain also exits with 0."""
+    if program is not None and not program.is_file():
+        print(f"interpret failed: no program file at {program}")
+        return 1
     from priority import interpreter  # a lazy import: only this command needs dspy and the key
 
     brief = build_brief(transcript, stop=stop, previous=load_digest(log_dir, transcript.stem))
     if isinstance(brief, StopBrief):
-        result = interpreter.Interpreter(interpreter.interpreter_lm(), log_dir=log_dir,
-                                         session_id=transcript.stem)(brief_text=brief.for_model())
+        model = interpreter.Interpreter(interpreter.interpreter_lm(), log_dir=log_dir, session_id=transcript.stem)
+        if program is not None:
+            try:
+                model.load(str(program))
+            except Exception as exc:  # noqa: BLE001 (a corrupt file may raise anything)
+                print(f"interpret failed: cannot load program {program}: {exc}")
+                return 1
+        result = model(brief_text=brief.for_model())
         fields = {name: result[name] for name in PREDICTION_FIELDS}
     else:
         abstain = {"reason": brief.reason, "detail": brief.detail, "raw": ""}
@@ -128,6 +137,8 @@ def main(argv: list[str] | None = None) -> int:
         model_parser.add_argument("transcript", type=Path, help="Path to transcript JSONL")
         model_parser.add_argument("--stop", type=int, default=None, help="1-based stop number")
         model_parser.add_argument("--log-dir", type=Path, default=None, help="Folder for calls.jsonl and digests")
+    subparsers.choices["interpret"].add_argument("--program", type=Path, default=None,
+                                                 help="A saved program to load before the model call")
 
     replay_parser = subparsers.add_parser("replay", help="Replay the last stop of each transcript of a folder")
     replay_parser.add_argument("fixtures", type=Path, help="Folder with the transcripts (*.jsonl, at any depth)")
@@ -220,7 +231,7 @@ def main(argv: list[str] | None = None) -> int:
             print(res.reason)
         return 0
     if args.command == "interpret":
-        return interpret(args.transcript, args.stop, args.log_dir)
+        return interpret(args.transcript, args.stop, args.log_dir, args.program)
     if args.command == "digest":
         return digest(args.transcript, args.stop, args.log_dir)
 
