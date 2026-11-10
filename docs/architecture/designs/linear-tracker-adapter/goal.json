@@ -1,0 +1,107 @@
+{
+  "name": "linear-tracker-adapter",
+  "title": "Linear is a tracker adapter beside beads",
+  "adr": "ADR-0048",
+  "adrs": [
+    "ADR-0048",
+    "ADR-0040",
+    "ADR-0044",
+    "ADR-0047",
+    "ADR-0016",
+    "ADR-0041",
+    "ADR-0042"
+  ],
+  "created": "2026-11-02",
+  "outcome": "A repo sets adapter: linear in .cobuilder/tracker.yaml and every tracker.py operation works against Linear. People plan epics and slices in Linear, and CoBuilder builds from that plan and writes progress back. Beads stays unchanged.",
+  "done_when": [
+    "the shared contract test passes on the linear adapter over a fake Linear. Each tracker.py operation answers in the JSON shape of the fake adapter",
+    "the beads adapter files and the beads tests show no diff and no new failure",
+    "an envelope with scalars, a path, and a list of paths round-trips through an attachment, and a value-level compare finds no difference",
+    "set-slice-state moves the Linear workflow state through the states map. A skipped slice moves to the canceled state, and a renamed state of the same type still maps",
+    "a slice issue in Linear shows its state word, score, and attempts. A program issue shows its gate dates and stage. A pull request shows as a linked issue",
+    "a claim writes its attachment first. Only the earlier server time writes the assignee. The loser and a held slice get a refusal. A claim ends when in progress ends",
+    "next-ready returns a slice when each blocker is closed and its epic has no open blocker. It never returns a pull request or an unplanned issue",
+    "a reorder, rename, or re-parent in the fake Linear shows in plan_changes with the field, old value, and new value. Writes by CoBuilder alone raise none",
+    "an issue that a person creates in Linear lists as unplanned and is never ready. regenerate-status-files and the projector skip it without error",
+    "a second seed-from-files run changes nothing. The seed reports a plan field that differs from Linear as a conflict and does not overwrite it",
+    "regenerate-status-files rewrites the state lines of 00-status.md and 04-slices.md from Linear records",
+    "a full read of 265 issues makes no more than 8 requests, and a rate-limit answer gives exit 3 with the reset time",
+    "a missing LINEAR_API_KEY gives exit 3 and names the variable, and a grep finds no key in the repo",
+    "a grep finds no Linear API call outside shared/tracker_port/linear*.py, and no skill or command names one",
+    "a slice that a person moves to Done with no passing score reads as open, and next-ready does not unblock the next slice",
+    "a canceled slice reads as closed only with the outcome skipped, and an epic reads as closed only when all its slices do",
+    "a full read returns an archived closed slice, and ready counts it as a closed blocker",
+    "set-slice-state open removes the claim attachments and the assignee. A claim on a slice with a stale claim succeeds. doctor lists each held claim with its claimant and age",
+    "doctor warns when the team auto-closes child issues or stale issues, if the key can read those settings",
+    "capabilities report rich_envelope true, and native_ready, atomic_claim, and offline_read false",
+    "a live smoke test in a test workspace passes the four unverified rows and the archived read. The default run skips it, and no earlier step needs it",
+    "cobuilder-setup offers linear only after the smoke test passes. It asks for the team and project, checks the key, and asks approval before prepare. The install test passes"
+  ],
+  "abort_if": [
+    "the smoke test shows that attachment metadata cannot round-trip the envelope without loss",
+    "the smoke test shows that Linear cannot keep a program, epic, and slice tree with slice order, and the project fallback fails too",
+    "a full read of the normal backlog costs more requests or complexity than the hourly limits allow for the normal build loop",
+    "the port needs a field that only Linear can serve, and no capability flag can cover it"
+  ],
+  "min_work": {
+    "derived_from": "2 districts (shared, implement), 8 ADRs, 1 boundary rule (bd only in the beads adapter), 1 repo rule to amend (principle 7), 1 install step",
+    "alternatives_explored": 6,
+    "boundary_rules_checked": true,
+    "challenge_stage_run": true,
+    "draft_review_run": true
+  },
+  "limits": {
+    "warn_after_rounds": 3,
+    "cutoff_rounds": 6
+  },
+  "epics": [
+    {
+      "id": "E1",
+      "slug": "adapter-reads",
+      "outcome": "The linear adapter reads the plan from a fake Linear. The contract read cases pass, a close counts only with proof, archived issues stay in the read, and a full read of 265 issues takes 8 requests or fewer"
+    },
+    {
+      "id": "E2",
+      "slug": "adapter-writes",
+      "outcome": "A slice result, a program stage, an epic branch, and a pull request show in the fake Linear, and the write cases of the contract suite pass"
+    },
+    {
+      "id": "E3",
+      "slug": "ready-and-claim",
+      "outcome": "Next-ready follows the slice and epic order, one claim wins, and a crashed claim can end"
+    },
+    {
+      "id": "E4",
+      "slug": "two-authors",
+      "outcome": "A change by a person shows at the next sync, a second seed changes nothing, and shared code skips unplanned issues"
+    },
+    {
+      "id": "E5",
+      "slug": "docs-and-rules",
+      "outcome": "The adapter note, the usage keys, the boundary record, and the grep guard match the code, and principle 7 allows the tracker call"
+    },
+    {
+      "id": "E6",
+      "slug": "live-smoke-test",
+      "outcome": "The unverified rows pass in a test workspace, and the notes state whether an abort rule fires"
+    },
+    {
+      "id": "E7",
+      "slug": "install-offer",
+      "outcome": "cobuilder-setup offers linear after the smoke test passes, and asks approval before prepare"
+    }
+  ],
+  "supersedes": null,
+  "rounds": [
+    {
+      "n": 1,
+      "changed": true,
+      "feedback_class": "material"
+    },
+    {
+      "n": 2,
+      "changed": true,
+      "feedback_class": "material"
+    }
+  ]
+}

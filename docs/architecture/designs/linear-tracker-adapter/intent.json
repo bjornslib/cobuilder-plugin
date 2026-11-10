@@ -1,0 +1,83 @@
+{
+  "captured": "2026-11-02",
+  "source": "design",
+  "design_name": "linear-tracker-adapter",
+  "authorship": "agent-assisted",
+  "problem": "A team that plans in Linear cannot use CoBuilder, because the tracker port has no Linear adapter. People want to plan the backlog, epics, and slices in Linear and watch progress there. CoBuilder must build from that plan and write progress back. Today only beads can hold this state.",
+  "why_now": "ADR-0040 made the tracker port so that a second adapter could follow. Teams that already use Linear want to start with CoBuilder. A repo that uses Linear would need no beads, no bd binary, and no Dolt remote.",
+  "approach": "A linear adapter in shared/tracker_port implements the TrackerPort over the Linear GraphQL API, with the key in LINEAR_API_KEY. A repo that sets adapter: linear uses no beads. People own the plan fields in Linear. The adapter keeps the state in one attachment on each issue and moves the workflow state. A claim is a write plus a read-back. The envelope keeps each plan field as last seen, which finds changes that people make. The beads files stay unchanged.",
+  "alternatives": [
+    {
+      "option": "Keep the state in a git ref beside Linear, as event files",
+      "rejected_because": "Scores, gates, and pull request records would not show in Linear. Cloud sessions would push a custom ref that no test verifies. The engineer chose one store."
+    },
+    {
+      "option": "Keep a signed, hash-chained ledger and use Linear as a witness",
+      "rejected_because": "Cloud sessions hold no signing key. Refusing next_ready without a signed close would also change the port for every adapter."
+    },
+    {
+      "option": "Make Linear comments the source of truth and replay them on each read",
+      "rejected_because": "Every read replays all comments, people can edit or delete a comment, and machine comments clutter the issues that people read."
+    },
+    {
+      "option": "Keep all state in one JSON file in git, joined by issue id",
+      "rejected_because": "Two laptops that claim one slice collide on one file, and a cloud clone sees stale state. A failed page could mark the whole backlog closed."
+    },
+    {
+      "option": "Keep beads as the store and mirror it to Linear, or sync both ways",
+      "rejected_because": "A mirror gives no planning in Linear. Two-way sync needs a conflict rule, and the bd bridge drops the envelope (ADR-0040). The engineer chose one adapter."
+    }
+  ],
+  "out_of_scope": [
+    "Any change to the beads adapter or its tests",
+    "A Jira adapter, which stays a later program",
+    "Moving existing beads state into Linear",
+    "An MCP server, a webhook receiver, or any long-running process",
+    "Two adapters active in one repo",
+    "Linear cycles, roadmaps, and initiatives beyond the issue tree",
+    "The plan row, the rubric, and the epic design of a slice that a person creates in Linear. The gates write them"
+  ],
+  "risks": [
+    "Four Linear behaviors need a live workspace to verify. They are the claim race, a repeated issueCreate, a three-level sub-issue chain, and the GitHub login to user map",
+    "A claim is a write plus a read-back, so two sessions can both claim for a short time. The adapter reports atomic_claim false",
+    "The hourly limits allow about 400 full reads by my estimate. Many agents in one hour could reach them",
+    "Agent writes show in Linear under the owner of the API key. The engineer accepted this",
+    "A change that a person makes mid-call shows at the next call, because the repo allows no webhook server. The engineer accepted this",
+    "A person can edit or delete an attachment. A read must tolerate a missing or changed envelope",
+    "Each Linear team can rename or add workflow states. The states map in tracker.yaml and prepare must catch a mismatch",
+    "CLAUDE.md principle 7 allows two outside actions, both on GitHub. A Linear adapter adds a third, so the rule needs an amendment",
+    "Plan files and Linear are two ways to author the plan. A re-seed must not overwrite a person's edit",
+    "A person can drag a slice to Done with no passing score, and a Linear automation can close issues. The adapter counts a close only with proof in the envelope",
+    "A crashed session leaves a claim attachment. The way out is set-slice-state open, and doctor lists old claims",
+    "Linear archives closed issues, and the issues query skips them by default. The full read sets includeArchived",
+    "The early build steps run over a fake Linear, so the smoke test may show that the fake was wrong. The engineer accepts that cost"
+  ],
+  "testing": [
+    "Run the shared contract test suite against the linear adapter over a fake in-memory Linear. Check that a full read of 265 issues makes no more than 8 requests",
+    "Round-trip an envelope with scalars, a path, and a list of paths, and compare every value",
+    "Check that the beads files and the beads tests show no diff",
+    "Check that ready skips a slice whose epic has an open blocker, and that a claim attachment ends when the slice leaves in progress",
+    "Check that the projector and regenerate skip an unplanned issue without error",
+    "Move a slice to Done in the fake with no score, and check that it reads as open and that the next slice stays blocked. Cancel a slice with no outcome and check the same",
+    "Archive a closed slice in the fake, and check that a full read returns it and that ready counts it as a closed blocker",
+    "Leave a claim on a slice, run set-slice-state open, and check that the claim and assignee are gone. Check that a stale claim does not block a new claim",
+    "Run a live smoke test in a test workspace for the unverified rows. Mark it so the default run skips it. No step before it waits for the workspace"
+  ],
+  "reviewer_focus": [
+    "Does any port operation need a field that only Linear can serve, and could a capability flag replace it",
+    "Is the claim read-back safe enough when atomic_claim is false",
+    "Do the seen values ignore the changes that CoBuilder itself makes",
+    "Does the change to the outside-action rule in CLAUDE.md fit its size",
+    "Does the evidence rule for a close hide a real close, or let a false close through"
+  ],
+  "unknowns": [
+    "Whether two claim attachments on one issue keep a stable server order. A smoke test must show it",
+    "Whether a repeated issueCreate with one client id, or a repeated attachment create with one URL, updates or duplicates",
+    "Whether Linear allows a program issue, an epic, and a slice as a three-level sub-issue chain. The fallback is a Linear project for the program",
+    "How a GitHub login maps to a Linear user. The users map in tracker.yaml is the proposal",
+    "The real complexity of a page of 50 issues with nested attachments, and the maximum page size, which the docs do not state",
+    "How a plan row names an existing Linear issue, so that a gate can link a slice that a person created",
+    "Which files the beads no-diff check covers, because config.py and the shared contract suite also change. This stays a note",
+    "Whether a read by id returns an archived issue, and whether the key can read the team automation settings. The smoke test must show it"
+  ]
+}

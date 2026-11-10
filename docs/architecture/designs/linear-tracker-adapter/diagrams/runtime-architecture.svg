@@ -1,0 +1,190 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1560 700" font-family="ui-monospace, Menlo, Monaco, monospace" font-size="12" aria-labelledby="doc-title">
+  <title id="doc-title">Runtime architecture of the linear-tracker-adapter design (a prediction): people and CoBuilder sessions, tracker.py and the readers, the tracker port with the unchanged beads adapter, the proposed linear adapter modules, the repo files and the API key, and the Linear API with its board.</title>
+  <defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#3D3D3A"/></marker></defs>
+  <g id="bound-client">
+    <title>client boundary: people and CoBuilder sessions</title>
+    <rect x="20" y="100" width="190" height="540" fill="none" stroke="#3D3D3A" stroke-width="1.5" rx="8"/>
+    <text x="32" y="120" fill="#87867F">client</text>
+  </g>
+  <g id="bound-api">
+    <title>api boundary: the tracker command and the readers</title>
+    <rect x="240" y="100" width="210" height="540" fill="none" stroke="#3D3D3A" stroke-width="1.5" rx="8"/>
+    <text x="252" y="120" fill="#87867F">api: command, readers</text>
+  </g>
+  <g id="bound-port">
+    <title>tracker port boundary: shared/tracker_port, existing code</title>
+    <rect x="480" y="100" width="250" height="540" fill="none" stroke="#3D3D3A" stroke-width="1.5" rx="8"/>
+    <text x="492" y="120" fill="#87867F">shared/tracker_port</text>
+  </g>
+  <g id="bound-linear">
+    <title>linear adapter boundary: proposed modules, each near 200 lines</title>
+    <rect x="760" y="100" width="300" height="540" fill="none" stroke="#3D3D3A" stroke-width="1.5" rx="8"/>
+    <text x="772" y="120" fill="#87867F">linear*.py (proposed)</text>
+  </g>
+  <g id="bound-data">
+    <title>data boundary: repo files and the API key in the environment</title>
+    <rect x="1090" y="100" width="200" height="540" fill="none" stroke="#3D3D3A" stroke-width="1.5" rx="8"/>
+    <text x="1102" y="120" fill="#87867F">data and config</text>
+  </g>
+  <g id="bound-external">
+    <title>external boundary: the Linear service</title>
+    <rect x="1320" y="100" width="220" height="540" fill="none" stroke="#3D3D3A" stroke-width="1.5" rx="8" stroke-dasharray="6 4"/>
+    <text x="1332" y="120" fill="#87867F">external: Linear</text>
+  </g>
+  <g id="n-people">
+    <title>People: plan and watch the backlog in the Linear board</title>
+    <rect x="35" y="135" width="160" height="64" rx="10" fill="#F0EEE6" stroke="#3D3D3A" stroke-width="1.5"/>
+    <text x="47" y="159" fill="#141413">People</text>
+    <text x="47" y="175" fill="#87867F" font-size="10">plan, watch</text>
+  </g>
+  <g id="n-session">
+    <title>CoBuilder session: Claude Code with the architect and implement plugins</title>
+    <rect x="35" y="260" width="160" height="64" rx="10" fill="#F0EEE6" stroke="#3D3D3A" stroke-width="1.5"/>
+    <text x="47" y="284" fill="#141413">CoBuilder session</text>
+    <text x="47" y="300" fill="#87867F" font-size="10">runs tracker.py</text>
+  </g>
+  <g id="n-cli">
+    <title>tracker.py: the one command for agents; prints plan_changes when set</title>
+    <rect x="255" y="260" width="180" height="70" rx="10" fill="#F0EEE6" stroke="#3D3D3A" stroke-width="1.5"/>
+    <text x="267" y="284" fill="#141413">tracker.py</text>
+    <text x="267" y="300" fill="#87867F" font-size="10">prints plan_changes</text>
+    <rect x="381" y="310" width="46" height="14" fill="none" stroke="#B04A3F" stroke-width="1" rx="4"/>
+    <text x="386" y="320" fill="#B04A3F" font-size="9">pending</text>
+  </g>
+  <g id="n-readers">
+    <title>Readers: build_index, verify_gate, build_builds_view</title>
+    <rect x="255" y="400" width="180" height="64" rx="10" fill="#F0EEE6" stroke="#3D3D3A" stroke-width="1.5"/>
+    <text x="267" y="424" fill="#141413">Readers</text>
+    <text x="267" y="440" fill="#87867F" font-size="10">read through the port</text>
+  </g>
+  <g id="n-config">
+    <title>config.py: names the adapter and gains a linear branch</title>
+    <rect x="495" y="140" width="220" height="64" rx="10" fill="#F0EEE6" stroke="#3D3D3A" stroke-width="1.5"/>
+    <text x="507" y="164" fill="#141413">config.py</text>
+    <text x="507" y="180" fill="#87867F" font-size="10">gains linear branch</text>
+    <rect x="661" y="184" width="46" height="14" fill="none" stroke="#B04A3F" stroke-width="1" rx="4"/>
+    <text x="666" y="194" fill="#B04A3F" font-size="9">pending</text>
+  </g>
+  <g id="n-port">
+    <title>port.py and record.py: TrackerPort and capability flags, unchanged</title>
+    <rect x="495" y="240" width="220" height="64" rx="10" fill="#F0EEE6" stroke="#3D3D3A" stroke-width="1.5"/>
+    <text x="507" y="264" fill="#141413">port.py + record.py</text>
+    <text x="507" y="280" fill="#87867F" font-size="10">unchanged</text>
+  </g>
+  <g id="n-proj">
+    <title>projector.py: records to data/index.json; gains a skip of unplanned records</title>
+    <rect x="495" y="340" width="220" height="64" rx="10" fill="#F0EEE6" stroke="#3D3D3A" stroke-width="1.5"/>
+    <text x="507" y="364" fill="#141413">projector.py</text>
+    <text x="507" y="380" fill="#87867F" font-size="10">skips unplanned</text>
+    <rect x="661" y="384" width="46" height="14" fill="none" stroke="#B04A3F" stroke-width="1" rx="4"/>
+    <text x="666" y="394" fill="#B04A3F" font-size="9">pending</text>
+  </g>
+  <g id="n-beads">
+    <title>beads adapter: bd CLI, unchanged by this design</title>
+    <rect x="495" y="440" width="220" height="64" rx="10" fill="#F0EEE6" stroke="#3D3D3A" stroke-width="1.5"/>
+    <text x="507" y="464" fill="#141413">beads*.py</text>
+    <text x="507" y="480" fill="#87867F" font-size="10">unchanged, no diff</text>
+  </g>
+  <g id="n-core">
+    <title>linear.py: the TrackerPort methods of the adapter</title>
+    <rect x="775" y="140" width="250" height="64" rx="10" fill="#E3DACC" stroke="#3D3D3A" stroke-width="1.5"/>
+    <text x="787" y="164" fill="#141413">linear.py</text>
+    <text x="787" y="180" fill="#87867F" font-size="10">TrackerPort methods</text>
+    <rect x="971" y="184" width="46" height="14" fill="none" stroke="#B04A3F" stroke-width="1" rx="4"/>
+    <text x="976" y="194" fill="#B04A3F" font-size="9">pending</text>
+  </g>
+  <g id="n-rows">
+    <title>linear_rows.py: issue to TrackerRecord, seen values, states map</title>
+    <rect x="775" y="223" width="250" height="64" rx="10" fill="#E3DACC" stroke="#3D3D3A" stroke-width="1.5"/>
+    <text x="787" y="247" fill="#141413">linear_rows.py</text>
+    <text x="787" y="263" fill="#87867F" font-size="10">record map, seen values</text>
+    <rect x="971" y="267" width="46" height="14" fill="none" stroke="#B04A3F" stroke-width="1" rx="4"/>
+    <text x="976" y="277" fill="#B04A3F" font-size="9">pending</text>
+  </g>
+  <g id="n-claim">
+    <title>linear_claim.py: claim attachments and the read-back</title>
+    <rect x="775" y="306" width="250" height="64" rx="10" fill="#E3DACC" stroke="#3D3D3A" stroke-width="1.5"/>
+    <text x="787" y="330" fill="#141413">linear_claim.py</text>
+    <text x="787" y="346" fill="#87867F" font-size="10">claim, read-back</text>
+    <rect x="971" y="350" width="46" height="14" fill="none" stroke="#B04A3F" stroke-width="1" rx="4"/>
+    <text x="976" y="360" fill="#B04A3F" font-size="9">pending</text>
+  </g>
+  <g id="n-seed">
+    <title>linear_seed.py: seed-from-files, unplanned issues, conflicts</title>
+    <rect x="775" y="389" width="250" height="64" rx="10" fill="#E3DACC" stroke="#3D3D3A" stroke-width="1.5"/>
+    <text x="787" y="413" fill="#141413">linear_seed.py</text>
+    <text x="787" y="429" fill="#87867F" font-size="10">seed, unplanned</text>
+    <rect x="971" y="433" width="46" height="14" fill="none" stroke="#B04A3F" stroke-width="1" rx="4"/>
+    <text x="976" y="443" fill="#B04A3F" font-size="9">pending</text>
+  </g>
+  <g id="n-client">
+    <title>linear_client.py: GraphQL over urllib, paging, rate limits</title>
+    <rect x="775" y="472" width="250" height="64" rx="10" fill="#E3DACC" stroke="#3D3D3A" stroke-width="1.5"/>
+    <text x="787" y="496" fill="#141413">linear_client.py</text>
+    <text x="787" y="512" fill="#87867F" font-size="10">GraphQL, paging, limits</text>
+    <rect x="971" y="516" width="46" height="14" fill="none" stroke="#B04A3F" stroke-width="1" rx="4"/>
+    <text x="976" y="526" fill="#B04A3F" font-size="9">pending</text>
+  </g>
+  <g id="n-yaml">
+    <title>tracker.yaml: adapter, team, project, states, users</title>
+    <path d="M1105 143 a85.0 8 0 0 1 170 0 v48 a85.0 8 0 0 1 -170 0 z" fill="#F0EEE6" stroke="#3D3D3A" stroke-width="1.5"/>
+    <text x="1117" y="159" fill="#141413">.cobuilder/tracker.yaml</text>
+    <text x="1117" y="175" fill="#87867F" font-size="10">config</text>
+  </g>
+  <g id="n-plans">
+    <title>docs/plans status files: 00-status.md and 04-slices.md</title>
+    <path d="M1105 398 a85.0 8 0 0 1 170 0 v48 a85.0 8 0 0 1 -170 0 z" fill="#F0EEE6" stroke="#3D3D3A" stroke-width="1.5"/>
+    <text x="1117" y="414" fill="#141413">docs/plans</text>
+    <text x="1117" y="430" fill="#87867F" font-size="10">status files</text>
+  </g>
+  <g id="n-env">
+    <title>LINEAR_API_KEY: environment variable, never in the repo</title>
+    <rect x="1105" y="560" width="170" height="64" rx="10" fill="#F0EEE6" stroke="#3D3D3A" stroke-width="1.5"/>
+    <text x="1117" y="584" fill="#141413">LINEAR_API_KEY</text>
+    <text x="1117" y="600" fill="#87867F" font-size="10">env var</text>
+  </g>
+  <g id="n-board">
+    <title>Linear board: the plan and the progress that people see</title>
+    <path d="M1335 138 a95.0 8 0 0 1 190 0 v48 a95.0 8 0 0 1 -190 0 z" fill="#F0EEE6" stroke="#3D3D3A" stroke-width="1.5" stroke-dasharray="5 3"/>
+    <text x="1347" y="154" fill="#141413">Linear board</text>
+    <text x="1347" y="170" fill="#87867F" font-size="10">issues, attachments</text>
+  </g>
+  <g id="n-api">
+    <title>Linear GraphQL API: issues, attachments, relations</title>
+    <rect x="1335" y="472" width="190" height="64" rx="10" fill="#F0EEE6" stroke="#3D3D3A" stroke-width="1.5" stroke-dasharray="5 3"/>
+    <text x="1347" y="496" fill="#141413">Linear API</text>
+    <text x="1347" y="512" fill="#87867F" font-size="10">GraphQL over HTTPS</text>
+  </g>
+  <path d="M195 292 L255 292" fill="none" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="208" y="284" fill="#87867F" font-size="10">uv run</text>
+  <path d="M435 280 L465 280 L465 172 L495 172" fill="none" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="440" y="270" fill="#87867F" font-size="10">import</text>
+  <path d="M435 432 L465 432 L465 372 L495 372" fill="none" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="440" y="424" fill="#87867F" font-size="10">import</text>
+  <path d="M605 204 L605 240" fill="none" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="610" y="226" fill="#87867F" font-size="10">load_adapter</text>
+  <path d="M715 172 L775 172" fill="none" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)" stroke-dasharray="4 3"/>
+  <text x="724" y="164" fill="#87867F" font-size="10">builds</text>
+  <path d="M775 190 L745 190 L745 272 L715 272" fill="none" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="738" y="296" fill="#87867F" font-size="10">implements</text>
+  <path d="M1025 172 L1042 172 L1042 255 L1025 255" fill="none" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="1046" y="214" fill="#87867F" font-size="10">map</text>
+  <path d="M1042 255 L1042 338 L1025 338" fill="none" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="1046" y="300" fill="#87867F" font-size="10">claim</text>
+  <path d="M1042 338 L1042 421 L1025 421" fill="none" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="1046" y="384" fill="#87867F" font-size="10">seed</text>
+  <path d="M1042 421 L1042 504 L1025 504" fill="none" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="1046" y="466" fill="#87867F" font-size="10">request</text>
+  <path d="M605 140 L605 84 L1190 84 L1190 135" fill="none" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="900" y="78" fill="#87867F" font-size="10">fs read: config</text>
+  <path d="M1025 421 L1090 421 L1105 421" fill="none" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="1049" y="414" fill="#87867F" font-size="10">fs read</text>
+  <path d="M1105 592 L900 592 L900 536" fill="none" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="950" y="586" fill="#87867F" font-size="10">env read</text>
+  <path d="M1025 520 L1335 520" fill="none" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="1160" y="514" fill="#87867F" font-size="10">HTTPS GraphQL</text>
+  <path d="M1430 472 L1430 194" fill="none" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="1436" y="340" fill="#87867F" font-size="10">store</text>
+  <path d="M115 135 L115 66 L1430 66 L1430 130" fill="none" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)" stroke-dasharray="4 3"/>
+  <text x="600" y="60" fill="#87867F" font-size="10">browser: plan and watch</text>
+</svg>

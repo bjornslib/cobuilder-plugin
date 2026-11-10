@@ -12,9 +12,9 @@ Tracks the documentation status of each bounded context under
 | `pr` | documented | yes | yes | none anchored (see findings) | 2026-10-08 |
 | `artifact` | documented | yes | yes | none anchored (see findings) | 2026-10-08 |
 | `implement` | documented | yes | yes | none anchored (see findings) | 2026-10-08 |
-| `shared` | documented | yes | yes | none anchored (see findings) | 2026-10-08 |
+| `shared` | documented | yes | yes | ADR-0040 (decided) | 2026-11-02 |
 
-All six records carry `verified_at: d086be981401779ba4691faed31a6f64598df589`.
+Five records carry `verified_at: d086be981401779ba4691faed31a6f64598df589`. The `shared` record carries `verified_at: 36b8d802dc41dcbd1d300966249770d89c447e48` (2026-11-02), after describe mode re-ran it to add the tracker port.
 
 ## Findings of 2026-10-08
 

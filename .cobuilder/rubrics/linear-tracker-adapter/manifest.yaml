@@ -1,0 +1,46 @@
+feature: linear-tracker-adapter
+test_command: "uv run pytest tests -q"
+thresholds:
+  accept: 0.90
+  investigate: 0.70
+max_attempts: 3
+slices:
+  - id: 1
+    name: "E1 Tracer bullet: the contract read cases pass on the linear adapter"
+    weight: 0.12
+  - id: 2
+    name: "E1 A close counts only with proof, and archived issues stay in the read"
+    weight: 0.08
+  - id: 3
+    name: "E1 The key, the request budget, and prepare"
+    weight: 0.08
+  - id: 4
+    name: "E2 A slice result shows in Linear"
+    weight: 0.09
+  - id: 5
+    name: "E2 Program, epic, and pull request state show in Linear"
+    weight: 0.07
+  - id: 6
+    name: "E3 Next-ready follows the slice and epic order"
+    weight: 0.07
+  - id: 7
+    name: "E3 One claim wins, and a crashed claim can end"
+    weight: 0.1
+  - id: 8
+    name: "E4 A change by a person shows at the next sync"
+    weight: 0.08
+  - id: 9
+    name: "E4 The seed keeps the plan of Linear, and shared code skips unplanned issues"
+    weight: 0.08
+  - id: 10
+    name: "E5 The docs and the boundary match the code"
+    weight: 0.06
+  - id: 11
+    name: "E5 Principle 7 allows the tracker call"
+    weight: 0.05
+  - id: 12
+    name: "E6 The unverified rows pass in a test workspace"
+    weight: 0.08
+  - id: 13
+    name: "E7 Setup offers linear and runs prepare after approval"
+    weight: 0.04

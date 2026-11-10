@@ -1,13 +1,13 @@
 {
   "schema_version": "1.5",
   "sources": {
-    "git_head": "82e2ed6a0f34d4e687579e17bfefbe38b582f7cc",
+    "git_head": "36b8d802dc41dcbd1d300966249770d89c447e48",
     "trees": {
-      "docs/architecture/adr": "sha256:4c229d7b738685fdf5a81e25174d080cab0865a36e65ef9e62ec5ccfc662c3e6",
-      "docs/architecture/designs": "sha256:e3a9af555125f543d0256de7d30211e426b85674077777533be097258dbc9428",
-      "docs/architecture/contexts": "sha256:6663ee456e31bfbe31401908ae494017ed864dbb9c72211b6cbdccc44d078482",
-      "docs/plans": "sha256:526c5c2717a446b898e2ab775cba30ff40324b05b091270bde21afd56c728e0b",
-      ".cobuilder/rubrics": "sha256:83bbd35e0a3806802ecea195ca1f32a6740c7628670ee2eda50f4dea8f699126"
+      "docs/architecture/adr": "sha256:d1a86b925906b74a28e98b134151201e1389172959fe2d1fb489755628425790",
+      "docs/architecture/designs": "sha256:f765a80d56b060bfe2b703614ff9295d926f965d37ee4f3a7b6146dd634b1a13",
+      "docs/architecture/contexts": "sha256:ddd811b9f062453333f774da706d335032c8b63c222358d1bda8c0d16dfdfbed",
+      "docs/plans": "sha256:1abaed3774153564a0504a6bbd0924ce689bea02b34925856107580efe7570e6",
+      ".cobuilder/rubrics": "sha256:1ec3d18b9050de84a12370a91e36f25ca7aa67621a92c45c75d0821776879c39"
     }
   },
   "entities": {
@@ -236,6 +236,11 @@
         "id": "ADR-0047",
         "title": "the tracker is the source of program stage and of epic and slice status",
         "state": "decided"
+      },
+      {
+        "id": "ADR-0048",
+        "title": "A Linear adapter keeps the plan in Linear and the state in attachments",
+        "state": "decided"
       }
     ],
     "design": [
@@ -335,6 +340,13 @@
         "name": "lean-bundle-diffs",
         "outcome": "A fresh clone of this repo is not weighed down by every merged PR's full diff text, and the viewer still shows a diff for any PR a reader opens.",
         "stage": "backlog",
+        "stage_source": "tracker"
+      },
+      {
+        "id": "linear-tracker-adapter",
+        "name": "linear-tracker-adapter",
+        "outcome": "A repo sets adapter: linear in .cobuilder/tracker.yaml and every tracker.py operation works against Linear. People plan epics and slices in Linear, and CoBuilder builds from that plan and writes progress back. Beads stays unchanged.",
+        "stage": "decided",
         "stage_source": "tracker"
       },
       {
@@ -949,6 +961,74 @@
         "pr": null,
         "state": "closed",
         "note": "Migrate the existing committed bundles (self, and the two fixture bundles) so history stops growing: remove the checked-in diffs-pr{N}.js files, or move them under .gitignore, per E1's decision. This does not touch story.json's authored fields, so it is a bundle-file change, not a schema migration. Update 2026-10-13: done for the self bundle, under the user's direction, to pass the plugin directory's 5 MiB cap. The ten diffs-pr{N}.js files are removed and .gitignore carries .cobuilder-architect/self/data/diffs-pr*.js. The two fixture bundles keep their diff files (0.4 MB and 1.3 MB, under the cap), because fixtures are committed test data. Story.json holds no diff fields, so no migration ran."
+      },
+      {
+        "id": "linear-tracker-adapter/E1",
+        "design": "linear-tracker-adapter",
+        "epic_id": "E1",
+        "branch": null,
+        "pr": null,
+        "state": null,
+        "note": null,
+        "design_doc": "linear-tracker-adapter/E1"
+      },
+      {
+        "id": "linear-tracker-adapter/E2",
+        "design": "linear-tracker-adapter",
+        "epic_id": "E2",
+        "branch": null,
+        "pr": null,
+        "state": null,
+        "note": null,
+        "design_doc": "linear-tracker-adapter/E2"
+      },
+      {
+        "id": "linear-tracker-adapter/E3",
+        "design": "linear-tracker-adapter",
+        "epic_id": "E3",
+        "branch": null,
+        "pr": null,
+        "state": null,
+        "note": null,
+        "design_doc": "linear-tracker-adapter/E3"
+      },
+      {
+        "id": "linear-tracker-adapter/E4",
+        "design": "linear-tracker-adapter",
+        "epic_id": "E4",
+        "branch": null,
+        "pr": null,
+        "state": null,
+        "note": null,
+        "design_doc": "linear-tracker-adapter/E4"
+      },
+      {
+        "id": "linear-tracker-adapter/E5",
+        "design": "linear-tracker-adapter",
+        "epic_id": "E5",
+        "branch": null,
+        "pr": null,
+        "state": null,
+        "note": null,
+        "design_doc": "linear-tracker-adapter/E5"
+      },
+      {
+        "id": "linear-tracker-adapter/E6",
+        "design": "linear-tracker-adapter",
+        "epic_id": "E6",
+        "branch": null,
+        "pr": null,
+        "state": null,
+        "note": null
+      },
+      {
+        "id": "linear-tracker-adapter/E7",
+        "design": "linear-tracker-adapter",
+        "epic_id": "E7",
+        "branch": null,
+        "pr": null,
+        "state": null,
+        "note": null
       },
       {
         "id": "maintainable-viewer/E1",
@@ -2600,7 +2680,7 @@
         "kind": "forbidden-dependency",
         "detail": {
           "target": "plugins/<name>/ as Python import",
-          "why": "Shared is the base layer. Grep of every 'from' and 'import' line in shared/*.py finds only the standard library, PyYAML, ulid, and sibling shared modules. This rule holds."
+          "why": "Shared is the base layer. Grep of every 'from' and 'import' line in shared/*.py and shared/tracker_port/*.py finds only the standard library, PyYAML, ulid, and sibling shared modules. This rule holds."
         }
       },
       {
@@ -2610,7 +2690,7 @@
         "detail": {
           "target": "plugins/artifact/viewer/index.html and the sibling artifact install cache",
           "from": "shared/migrate_bundle.py",
-          "why": "SMELL: find_viewer_source (lines 309-340) probes PLUGIN_ROOT/plugins/artifact/viewer/index.html and the sibling 'artifact/<version>/viewer/index.html' cache, and the warning text at line 582 names 'plugins/artifact/'. Shared code reaches into a plugin's files, which inverts the base layer. ADR candidate: pass the viewer path in as an argument, or ship the built viewer through shared."
+          "why": "SMELL: find_viewer_source (lines 338-366) probes PLUGIN_ROOT/plugins/artifact/viewer/index.html and the sibling 'artifact/<version>/viewer/index.html' cache, and the warning text at line 577 names 'plugins/artifact/'. Shared code reaches into a plugin's files, which inverts the base layer. ADR candidate: pass the viewer path in as an argument, or ship the built viewer through shared."
         }
       },
       {
@@ -2625,6 +2705,15 @@
       },
       {
         "id": "shared/forbidden-dependency/4",
+        "context": "shared",
+        "kind": "forbidden-dependency",
+        "detail": {
+          "target": "the bd command outside shared/tracker_port/beads*.py and bd_runner.py",
+          "why": "ADR-0040 and CLAUDE.md principle 10. Only the beads adapter runs bd. Grep of shared/**/*.py on 2026-11-02 finds bd in the beads adapter files and in comments of files.py, record.py, and fake_support.py. config.py names the bd command as a config key and builds the adapter, which runs nothing. A test (tests/test_tracker_docs.py) fails on a new bd call."
+        }
+      },
+      {
+        "id": "shared/forbidden-dependency/5",
         "context": "shared",
         "kind": "forbidden-dependency",
         "detail": {
@@ -2652,7 +2741,8 @@
           "allowed_inbound": [
             "index-and-verify",
             "migration",
-            "ledger-and-gates"
+            "ledger-and-gates",
+            "tracker-port"
           ],
           "allowed_outbound": [],
           "rule": "_bundle_meta.py is a leaf: standard library only. _manifest.py imports only _bundle_meta."
@@ -2670,15 +2760,17 @@
             "verify_bundle.py",
             "validate_decision_state.py",
             "boundary_check.py",
-            "prose_budget.py"
+            "prose_budget.py",
+            "habit_smells.py"
           ],
           "public_interface": [],
           "allowed_inbound": [],
           "allowed_outbound": [
             "bundle-meta",
-            "gate-parsers"
+            "gate-parsers",
+            "tracker-port"
           ],
-          "rule": "Run by shell, not imported by plugins. build_index.py imports _bundle_meta, prose_budget, slice_table, and gate_status. verify_bundle.py imports prose_budget and _bundle_meta. build_index.py needs PyYAML."
+          "rule": "Run by shell, not imported by plugins. build_index.py imports _bundle_meta, prose_budget, slice_table, gate_status, validate_decision_state, and tracker_port (projector, reader). verify_bundle.py imports prose_budget, boundary_check, and _bundle_meta. build_index.py needs PyYAML. habit_smells.py runs the external tool habit-sensors through subprocess and records a missing tool."
         }
       },
       {
@@ -2736,14 +2828,79 @@
             "slice_table"
           ],
           "allowed_inbound": [
-            "index-and-verify"
+            "index-and-verify",
+            "tracker-port"
           ],
           "allowed_outbound": [],
-          "rule": "One parser for the gate block and the slice table, shared by build_index.py, verify_gate.py, and build_builds_view.py."
+          "rule": "One parser for the gate block and the slice table, shared by build_index.py, verify_gate.py, build_builds_view.py, and the plan readers of tracker_port."
         }
       },
       {
         "id": "shared/module-invariant/6",
+        "context": "shared",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "tracker-port",
+          "path": "shared/tracker_port",
+          "members": [
+            "port.py",
+            "record.py",
+            "config.py",
+            "projector.py",
+            "reader.py",
+            "cli_operations.py",
+            "fake*.py",
+            "files.py",
+            "plan_*.py",
+            "beads*.py",
+            "bd_runner.py",
+            "sync_state.py",
+            "sync_worker.py",
+            "regenerate.py",
+            "repair_*.py"
+          ],
+          "public_interface": [
+            "tracker_port.port.TrackerPort",
+            "tracker_port.record.TrackerRecord",
+            "tracker_port.config.load_adapter",
+            "tracker_port.projector",
+            "tracker_port.reader"
+          ],
+          "allowed_inbound": [
+            "index-and-verify",
+            "tracker-cli"
+          ],
+          "allowed_outbound": [
+            "bundle-meta",
+            "gate-parsers"
+          ],
+          "rule": "ADR-0040. Readers and writers of workflow state call the port, never a tracker CLI or API. Only the beads adapter (beads*.py) and bd_runner.py run bd. A new adapter implements TrackerPort and config.load_adapter names it. The package imports only sibling shared modules (_bundle_meta, gate_status, slice_table) and PyYAML. It never imports a plugin. Verified 2026-11-02 by grep of every import line."
+        }
+      },
+      {
+        "id": "shared/module-invariant/7",
+        "context": "shared",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "tracker-cli",
+          "path": "shared",
+          "members": [
+            "tracker.py",
+            "strip_goal_stage.py"
+          ],
+          "public_interface": [
+            "shell: tracker.py <operation>",
+            "shell: strip_goal_stage.py"
+          ],
+          "allowed_inbound": [],
+          "allowed_outbound": [
+            "tracker-port"
+          ],
+          "rule": "Run by shell. tracker.py is the one command surface for agents, and it exits 0 ok, 2 no adapter, 3 adapter error, 4 bad arguments. Plugin scripts import tracker_port.reader (verify_gate.py and build_builds_view.py), and every other plugin reference goes through tracker.py."
+        }
+      },
+      {
+        "id": "shared/module-invariant/8",
         "context": "shared",
         "kind": "module-invariant",
         "detail": {
@@ -2769,7 +2926,7 @@
         "detail": {
           "with": "architect",
           "pattern": "shared-kernel",
-          "note": "Consumed by shell only: build_index, migrate_bundle, prose_budget, boundary_check, validate_decision_state."
+          "note": "Consumed by shell only: build_index, migrate_bundle, prose_budget, boundary_check, validate_decision_state, habit_smells, tracker.py."
         }
       },
       {
@@ -2779,7 +2936,7 @@
         "detail": {
           "with": "pr",
           "pattern": "shared-kernel",
-          "note": "Consumed by import (_bundle_meta, _manifest) and by shell (migrate_bundle, build_index, verify_bundle)."
+          "note": "Consumed by import (_bundle_meta, _manifest) and by shell (migrate_bundle, build_index, verify_bundle, tracker.py)."
         }
       },
       {
@@ -2789,7 +2946,7 @@
         "detail": {
           "with": "artifact",
           "pattern": "shared-kernel",
-          "note": "Consumed by import (_bundle_meta, ledger, gate_status, slice_table) and by shell (build_index, migrate_bundle)."
+          "note": "Consumed by import (_bundle_meta, ledger, gate_status, slice_table, tracker_port.reader) and by shell (build_index, migrate_bundle)."
         }
       },
       {
@@ -2799,7 +2956,7 @@
         "detail": {
           "with": "implement",
           "pattern": "shared-kernel",
-          "note": "Consumed by import (slice_table) and by shell (build_index)."
+          "note": "Consumed by import (slice_table, gate_status, tracker_port.reader in verify_gate.py) and by shell (build_index, tracker.py)."
         }
       },
       {
@@ -4031,9 +4188,9 @@
         "n": 1,
         "title": "Tracer bullet: the logic layer",
         "ends_with": "`habit-sensors` reports no finding for those five files. The viewer tests pass, the exported names of `model.ts` and the data layer match the list taken before the slice, and the committed `index.html` rebuilds byte-identically.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "mechanical-smells/2",
@@ -4041,9 +4198,9 @@
         "n": 2,
         "title": "The atoms and sections: split `shell/atoms.tsx`, `shell/sections.tsx`, and the three `shell/panels/*` files",
         "ends_with": "`habit-sensors` reports no finding for those five files. The seven section renderers and the atom vocabulary import from their old files, and the section tests pass.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "mechanical-smells/3",
@@ -4051,9 +4208,9 @@
         "n": 3,
         "title": "The change surface: split the five `shell/change/*` files, `shell/DiagramTiles.tsx`, and `shell/Pager.tsx`, and fix the `react-hooks/exhaustive-deps` finding",
         "ends_with": "`habit-sensors` reports no finding for those seven files, the change-view tests pass, and the diagram tiles still render.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "mechanical-smells/4",
@@ -4061,9 +4218,9 @@
         "n": 4,
         "title": "The shell and chrome: split `ShellApp`, the sheet, the drawer, the rail, the top bar, the hooks, the work board, and the long tail of 17 files. Fix the `jsx-a11y/media-has-caption` finding and the 2 non-null assertions in `shell/App.tsx`",
         "ends_with": "`habit-sensors` reports no finding for those 17 files, `ShellApp` and `Theme` still export from `shell/App.tsx`, and the full viewer suite and the build pass.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 2,
+        "state": "completed"
       },
       {
         "id": "mechanical-smells/5",
@@ -4071,9 +4228,9 @@
         "n": 5,
         "title": "The viewer test files: split large `describe` blocks by concern in the 20 `*.test.*` files. Remove the 2 `any`, the 10 non-null assertions, and the 8 duplicate imports",
         "ends_with": "`habit-sensors` reports no finding for the 20 test files, apart from each recorded 13-to-30-line callback. The test count and every assertion stay the same, and the suite passes.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "mechanical-smells/6",
@@ -4081,9 +4238,9 @@
         "n": 6,
         "title": "The comments in viewer source: review each of the 658 flagged comments in 42 files. Delete it, or keep it reworded when it explains why",
         "ends_with": "`habit-sensors` reports no `non-essential-comment` finding for the 42 source files. A reviewer sample of at least 20 deleted comments finds no more than one that explained why.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "mechanical-smells/7",
@@ -4091,9 +4248,9 @@
         "n": 7,
         "title": "The comments in viewer tests: review each of the 422 flagged comments in 20 files, with the same rule",
         "ends_with": "`habit-sensors` reports no `non-essential-comment` finding for the 20 test files, and the reviewer sample meets the same limit. The viewer then reports no finding apart from the recorded residual.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "nexus-borrowings/1",
@@ -4346,6 +4503,86 @@
         "state": "planned"
       },
       {
+        "id": "priority-dev-spike/14",
+        "feature": "priority-dev-spike",
+        "n": 14,
+        "title": "**Notify for a done stop**",
+        "ends_with": "`notify` is an action kind. For a stop that Triage calls done, `priority interpret` prints an Interpretation with one `notify` step. Code builds the step from the final reply, with no Pick or Fill call, and the excerpt is an exact part of the final reply",
+        "score": "0.90",
+        "attempts": 1,
+        "state": "completed"
+      },
+      {
+        "id": "priority-dev-spike/15",
+        "feature": "priority-dev-spike",
+        "n": 15,
+        "title": "**Labelled fixture set**",
+        "ends_with": "`uv run priority fixtures check` passes on 10 real sessions and about 50 stops. Every stop has a label that the engineer confirmed. The split lists the train sessions and the held-out sessions, and no session is in both. Git ignores the real files",
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
+      },
+      {
+        "id": "priority-dev-spike/16",
+        "feature": "priority-dev-spike",
+        "n": 16,
+        "title": "**Metric and baseline**",
+        "ends_with": "`uv run priority eval --split train` and `--split holdout` print a score for each fact, the step kinds, and the grounding, and an overall score. `probes/eval-baseline.md` states both scores, the spread over three repeats, and the cost",
+        "score": "1.00",
+        "attempts": 3,
+        "state": "completed"
+      },
+      {
+        "id": "priority-dev-spike/17",
+        "feature": "priority-dev-spike",
+        "n": 17,
+        "title": "**One-call variant**",
+        "ends_with": "`uv run priority eval --variant combined` runs Triage and one call that writes the steps, the payloads, and the card. `probes/eval-variant.md` compares it with the split chain on the same stops: score, calls, characters, seconds, and cost. It states which one the next slice uses",
+        "score": "0.90",
+        "attempts": 2,
+        "state": "completed"
+      },
+      {
+        "id": "priority-dev-spike/18",
+        "feature": "priority-dev-spike",
+        "n": 18,
+        "title": "**Optimiser comparison**",
+        "ends_with": "`uv run priority optimise --optimiser gepa` and `--optimiser miprov2` compile the chosen interpreter on the train sessions only. `probes/optimiser-report.md` gives the held-out score before and after for each, with BootstrapFewShot as the cheap baseline, the cost of each run, and the saved programs",
+        "score": "0.70",
+        "attempts": 2,
+        "state": "in_progress"
+      },
+      {
+        "id": "priority-dev-spike/19",
+        "feature": "priority-dev-spike",
+        "n": 19,
+        "title": "**Judge-scored payload flow**",
+        "ends_with": "The label-free gate, `Decide.questions`, the judge module, and the metric wiring run end to end on made-up fixtures with a stub judge: each gate fault abstains with a named 0-score note, a multi-question payload parses, readers use the list, the judge returns a clamped score with per-part notes, and per-stop rows carry the payload score",
+        "score": "1.00",
+        "attempts": 2,
+        "state": "completed"
+      },
+      {
+        "id": "priority-dev-spike/20",
+        "feature": "priority-dev-spike",
+        "n": 20,
+        "title": "**Payload labels and judge validation**",
+        "ends_with": "Payload labels for the busy kinds, engineer-confirmed, one `ask_human` step per stop with all its questions. The judge clears an agreement bar against human grades. `probes/optimiser-report.md` rescores every arm under the new metric",
+        "score": "0.00",
+        "attempts": 1,
+        "state": "planned"
+      },
+      {
+        "id": "priority-dev-spike/21",
+        "feature": "priority-dev-spike",
+        "n": 21,
+        "title": "**Every stop reaches Pick and Fill**",
+        "ends_with": "Triage no longer chooses a route: every stop with a brief runs Pick, Pick may return no step, and each Fill sees the triage facts and the steps filled before it. Saved programs still load and run",
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
+      },
+      {
         "id": "review-link/1",
         "feature": "review-link",
         "n": 1,
@@ -4594,6 +4831,15 @@
         "source_path": "docs/plans/level-page-restructure/01-product.md"
       },
       {
+        "id": "linear-tracker-adapter",
+        "feature_slug": "linear-tracker-adapter",
+        "gate": 1,
+        "title": "Product: Linear as a tracker beside beads",
+        "body_md": "# Product: Linear as a tracker beside beads\n\n## Problem\n\nA team that plans its work in Linear cannot use CoBuilder today. CoBuilder keeps its plan and its progress in beads. The team must install beads and a data remote, and the Linear board shows none of the progress. People then plan in one tool and watch the build in another.\n\nThe team needs to plan the backlog, the epics, and the slices in Linear. The team needs CoBuilder to build from that plan. The team needs to watch the progress in Linear: the state of each slice, the score and attempts, the gate dates and program stage, and the pull request records.\n\n## Success metric\n\nA team that uses Linear runs one full build in a test workspace with no beads installed. The build goes from a planned backlog to a merged pull request.\n\nThe check has four parts. All four must pass in that one run:\n\n- Each slice shows its state on the Linear board.\n- Each closed slice shows its score and attempts.\n- The program issue shows the gate dates and the stage.\n- Each pull request shows as a linked issue.\n\nA person reads the board at the end of the run and ticks the four parts. The live smoke test repeats the machine-checkable parts.\n\n## Announcement — the blog post before the feature\n\nCoBuilder now works with Linear. Set one line in your config, and CoBuilder reads your backlog, your epics, and your slices from Linear. You plan where you already plan.\n\nWhile CoBuilder builds, your board stays current. Each slice moves across the board. Each closed slice shows its score and how many tries it took. The program shows its gate dates. Each pull request appears as a linked issue.\n\nA slice counts as done only when an independent check scores it. If someone drags a slice to Done by hand, CoBuilder reads it as open until the score is there. You keep your beads setup if you prefer it. Each repo uses one of the two.\n\n## Screens\n\nNo UI. The feature adds no screen. People see the result in the Linear board, which Linear owns.\n",
+        "approved_date": null,
+        "source_path": "docs/plans/linear-tracker-adapter/01-product.md"
+      },
+      {
         "id": "mechanical-smells",
         "feature_slug": "mechanical-smells",
         "gate": 1,
@@ -4740,6 +4986,15 @@
         "source_path": "docs/plans/level-page-restructure/02-architecture.md"
       },
       {
+        "id": "linear-tracker-adapter",
+        "feature_slug": "linear-tracker-adapter",
+        "gate": 2,
+        "title": "Architecture: Linear as a tracker beside beads",
+        "body_md": "# Architecture: Linear as a tracker beside beads\n\nDesign record: `docs/architecture/designs/linear-tracker-adapter/`. Decision: ADR-0048. It builds on ADR-0040 (the tracker port) and ADR-0044 (epic-level blocks). `contracts.md` in the design record holds the table of each operation and its Linear behavior.\n\n## Fit\n\nThe change sits in the `shared` context, in the `tracker-port` module and the `tracker-cli` module.\n\n- `shared/tracker_port/port.py` stays as it is. The port gains no method.\n- `shared/tracker_port/config.py` gains the adapter name `linear`.\n- A new family of files, `shared/tracker_port/linear*.py`, holds the adapter. A new client talks to the Linear GraphQL API with the standard library only.\n- `projector.py` and `regenerate.py` skip a record that has the state `unplanned`.\n- `shared/tracker.py` prints a `plan_changes` key after `sync`, as it prints `conflicts` after a seed.\n- `docs/architecture/contexts/shared/boundary.yaml` adds the `linear*.py` files to the `tracker-port` members.\n- CLAUDE.md principle 7 gains a third outside action: the API call of the configured tracker adapter. The engineer approved this change on 2026-11-03.\n- `cobuilder-setup` offers `linear` beside `beads` and `files`.\n- The beads files, the beads tests, and `bd_runner.py` stay unchanged.\n\n## Endpoints\n\nNone for CoBuilder. The adapter calls one outside endpoint: the Linear GraphQL API over HTTPS. `tracker.py` gains no operation. Its `sync` output gains one optional key, `plan_changes`.\n\n## Data\n\nCoBuilder adds no table and no file. It adds durable state inside Linear:\n\n- One envelope attachment on each CoBuilder issue. The URL is `cobuilder://<repo>/<id>`. The metadata holds the envelope and the seen plan fields, each as one JSON string.\n- One claim attachment on a slice, while a claim is held.\n- Linear comments for notes, attempts, and plan changes.\n- Linear relations: `blocks` between consecutive slices and epics, and `related` for a pull request.\n\n`.cobuilder/tracker.yaml` gains the keys `team`, `project`, `states`, and `users`. The API key stays in the environment variable `LINEAR_API_KEY`.\n\n## Flow\n\nThe primary path is a build session on a Linear repo.\n\n1. The session runs `tracker.py doctor`, then `sync`. `sync` reads all issues in one paged query and reports `plan_changes`.\n2. `claim-next` reads the issues, picks the next ready slice, writes a claim attachment, reads the claims back, and writes the assignee if it won.\n3. The slice loop runs RED, GREEN, and VALIDATE. `record-attempt` posts a comment and updates the envelope.\n4. `set-slice-state closed --score` moves the Linear workflow state and writes the score and attempts. The Linear board shows the result.\n5. A slice that a person moved to Done with no passing score reads as open.\n\n## External\n\n- The Linear GraphQL API, `https://api.linear.app/graphql`. The key goes in the `Authorization` header.\n- The environment variable `LINEAR_API_KEY`. The repo stores no key.\n- Linear limits: a default page of 50, a complexity cap, and an hourly request cap. The design notes these as unverified until the live smoke test runs.\n- No webhook, no server, and no MCP server.\n",
+        "approved_date": null,
+        "source_path": "docs/plans/linear-tracker-adapter/02-architecture.md"
+      },
+      {
         "id": "mechanical-smells",
         "feature_slug": "mechanical-smells",
         "gate": 2,
@@ -4884,6 +5139,15 @@
         "body_md": "# Program Design: Level page restructure\n\n## Files\n\n- `plugins/artifact/viewer/src/shell/inShort.ts` (new): the pure source rule for the strip.\n- `plugins/artifact/viewer/src/shell/InShort.tsx` (new): the strip and the Listen control.\n- `plugins/artifact/viewer/src/shell/model.ts`: `carriedSectionIndex`, `readInLabel`, the new rail shape.\n- `plugins/artifact/viewer/src/shell/Rail.tsx`: draws the new rail.\n- `plugins/artifact/viewer/src/shell/TopBar.tsx`: branch and supersedes.\n- `plugins/artifact/viewer/src/shell/App.tsx`: removes `TopLinePanel` and `AccountRule`, wires the strip, the link, and the carry.\n- `plugins/artifact/viewer/src/shell/atoms.tsx`: `Panel` reads `PanelActionContext`.\n- `plugins/artifact/viewer/src/shell/change/sections.tsx`: drops the narration block.\n- `plugins/artifact/viewer/src/shell/panels/ProblemSolution.tsx`: drops the gap lines.\n- `shared/build_index.py`: record-gap warnings.\n- `docs/architecture/adr/ADR-0037-*.md` (new).\n\n## Types & signatures\n\n```ts\n// inShort.ts\nexport interface InShort { text: string; audio: string | null; voice: string | null }\nexport function inShortOf(input: {\n  account: AccountId;               // \"program\" | \"change\"\n  level: SharedKey;                 // \"intent\" | \"problem-and-solution\" | \"architecture\"\n  work: WorkItem | null;\n  changeLevels: ChangeLevel[];\n}): InShort | null;                 // null: show no strip\n\n// model.ts\nexport function carriedSectionIndex(names: string[], carried: string | null): number;\nexport function readInLabel(from: AccountId, pr: number | null): string | null;\n//   program -> \"Read in PR 12 ›\", change -> \"Read in the work item ›\", no PR -> null\n\nexport interface RailSource { /* existing fields */ account: AccountId }\nexport function railGroups(source: RailSource): RailGroup[];\n//   groups: \"levels\" (Intent, Problem & Solution, Architecture, addressed in source.account)\n//           \"also\"   (Plan, Epics, Rubrics: program rows; File Diffs: change row)\n//   an \"also\" row carries its own account, so a press switches the account\n```\n\n```ts\n// atoms.tsx\nexport const PanelActionContext: React.Context<React.ReactNode>;\n// Panel renders its own `action` first, then the context action, in the heading band.\n```\n\n```python\n# shared/build_index.py\ndef record_gap_warnings(design_id: str, record: dict) -> list[str]\n```\n\n## Call stack\n\n- `Shell` -> `PagedLevel(sections, targets, routeKey, lead, action, carry)` -> `<InShort/>`, `<SectionStrip/>`, `<SectionStage/>`.\n- A press on the link -> `go(href)` + `setCarry(sectionName)` -> the destination `PagedLevel` mounts -> `useEffect` picks `carriedSectionIndex(names, carry)` then clears the carry.\n- `build_index.main` -> `collect_designs` -> `record_gap_warnings` per design -> `warning:` lines on stderr.\n\n## Test plan\n\nCode tests (RED agents write these):\n- `inShort.test.ts`: the source rule for both accounts, the three levels, absent text.\n- `carryAndLabel.test.ts`: `carriedSectionIndex`, `readInLabel`.\n- `rail.test.ts` (and updates to the rail rows in `App.test.tsx`): the new `railGroups` shape and the walk.\n- `tests/test_build_index.py`: each record-gap warning, and that a complete record warns nothing.\n\nLayout and copy are not pinned by RED tests. Existing tests that assert removed\nUI (the top line, the account rule, the second rail group) are updated by GREEN\nand each change is listed in its report.\n\n## Least confident decisions\n\n- The carry is stored in `Shell` state and consumed on mount. A deep link to a level opened by hand has no carry and starts on the first section, as today.\n- A work item with no PR shows no link and no Review rows.\n- Work narration has no audio: Listen appears only for a PR level whose file the bundle serves.\n",
         "approved_date": null,
         "source_path": "docs/plans/level-page-restructure/03-program-design.md"
+      },
+      {
+        "id": "linear-tracker-adapter",
+        "feature_slug": "linear-tracker-adapter",
+        "gate": 3,
+        "title": "Program Design: Linear as a tracker beside beads",
+        "body_md": "# Program Design: Linear as a tracker beside beads\n\nEpic designs hold the detail per epic: `epic-E1-design.md` to `epic-E5-design.md`. E6 and E7 carry one slice each, so they have no epic design.\n\n## Files\n\nNew files in `shared/tracker_port/`. Each file stays near 200 lines.\n\n| File | Job |\n|---|---|\n| `linear_client.py` | `LinearApi` protocol, the dataclasses of an issue, and `LinearClient`: GraphQL over `urllib`, paging, the request count, rate-limit errors |\n| `linear_rows.py` | The record map: issue to `TrackerRecord`, the closed rule, envelope pack and unpack, the seen values |\n| `linear.py` | `LinearAdapter`: the class, `capabilities`, `doctor`, `prepare`, the stubs, and the read operations |\n| `linear_writes.py` | The write operations, as a mixin of `LinearAdapter` |\n| `linear_ready.py` | The client ready rule: `next_ready` and the epic check |\n| `linear_claim.py` | The claim rule: claim-first, nonce tie-break, release, stale claims |\n| `linear_seen.py` | The seen values and the plan-change compare |\n| `linear_seed.py` | `run_seed` and `run_sync` |\n\nThe plan splits the files now, because `beads.py` needed 14 helper files. A file stays near 200 lines. `linear_rows.py` holds only the record map, the closed rule, and the envelope pack and unpack. `shared/tracker_port/cli_operations.py` is already at 194 lines, so the `plan_changes` print goes into `shared/tracker.py`, next to the `conflicts` print.\n\nNew files outside it:\n\n- `tests/_linear_fake_support.py`: `FakeLinear`, an in-memory `LinearApi` with a server clock, a request count, and human actions (drag, edit, archive). Not a test module.\n- `tests/test_tracker_linear_*.py`: one test file per epic area.\n- `tests/test_tracker_linear_live.py`: the live smoke test. It carries a marker that the default run skips.\n- `shared/tracker-adapter-linear.md`: the adapter note.\n\nChanged files: `config.py`, `projector.py`, `regenerate.py`, `shared/tracker.py`, `tests/_tracker_contract_support.py` (a `linear` builder and a ledger of pending cases), `shared/tracker-usage.md`, `docs/architecture/contexts/shared/boundary.yaml`, `CLAUDE.md` (principle 7), the `cobuilder-setup` skill, and `tests/test_install_tracker_config.py`.\n\n## Types & signatures\n\n```python\n# linear_client.py\n@dataclass(frozen=True)\nclass WorkflowState: id: str; name: str; type: str\n@dataclass(frozen=True)\nclass Attachment: id: str; url: str; title: str; metadata: Mapping[str, str | int | float]; created_at: str\n@dataclass(frozen=True)\nclass Issue:\n    id: str; identifier: str; title: str; description: str | None\n    parent_id: str | None; state: WorkflowState; assignee_id: str | None\n    blocks: tuple[str, ...]; related: tuple[str, ...]\n    attachments: tuple[Attachment, ...]; archived: bool\n\nclass LinearApi(Protocol):\n    requests: int\n    def issues(self, team: str, project: str | None, include_archived: bool) -> list[Issue]: ...\n    def issue(self, issue_id: str) -> Issue: ...\n    def create_issue(self, team: str, title: str, parent_id: str | None, state_id: str, description: str | None = None) -> Issue: ...\n    def update_issue(self, issue_id: str, state_id: str | None = None, assignee_id: str | None = None, clear_assignee: bool = False) -> Issue: ...\n    def upsert_attachment(self, issue_id: str, url: str, title: str, metadata: Mapping[str, str | int | float]) -> Attachment: ...\n    def delete_attachment(self, attachment_id: str) -> None: ...\n    def create_comment(self, issue_id: str, body: str) -> None: ...\n    def create_relation(self, issue_id: str, other_id: str, kind: str) -> None: ...\n    def team_states(self, team: str) -> list[WorkflowState]: ...\n    def team_settings(self, team: str) -> Mapping[str, object] | None: ...\n\nclass LinearClient:                 # the real client\n    def __init__(self, key: str, endpoint: str = ..., page_size: int = 50, transport: Callable = ...) -> None: ...\n\n# linear_rows.py\nPASS_SCORE = 0.90\ndef lifecycle_of(issue: Issue, envelope: Mapping[str, object], slices_closed: bool | None = None) -> Lifecycle: ...\ndef record_of(issue: Issue, issues: Mapping[str, Issue], repo: str) -> TrackerRecord: ...\ndef pack_envelope(envelope: Mapping[str, object]) -> dict[str, str | int | float]: ...\ndef unpack_envelope(metadata: Mapping[str, str | int | float]) -> dict[str, object]: ...\n\n# linear.py\nclass LinearAdapter(LinearWrites):\n    capabilities = Capabilities(native_ready=False, atomic_claim=False, rich_envelope=True, offline_read=False)\n    name = \"linear\"\n    def __init__(self, api: LinearApi, team: str, project: str | None, states: Mapping[str, str], users: Mapping[str, str], repo: str) -> None: ...\n    # every TrackerPort method, plus:\n    plan_changes: list[dict[str, object]]          # set by sync\n    def migrate_mapping(self, dry_run: bool = False, plans_dir: Path | None = None) -> dict[str, object]: ...   # the empty report of the fake\n    def repair_status(self, dry_run: bool = False, plans_dir: Path | None = None, index: Path | None = None) -> None: ...   # refuses, as the files adapter does\n\n# linear_claim.py\nSTALE_SECONDS = 120\ndef claim(api: LinearApi, issue: Issue, claimant: str, claimant_id: str) -> bool: ...   # write claim, read back, True for the winner\ndef release(api: LinearApi, issue: Issue) -> None: ...\ndef stale_claims(issue: Issue, now: str) -> list[Attachment]: ...\n\n# linear_seed.py\ndef run_sync(adapter: LinearAdapter) -> list[dict[str, object]]: ...\ndef run_seed(adapter: LinearAdapter, plans_dir: Path, dry_run: bool, refresh_envelope: bool) -> list[TrackerRecord]: ...\n```\n\n`LinearAdapter.sync` and `LinearAdapter.seed_from_files` call these two functions.\n\n`config.load_adapter` reads `team`, `project`, `states`, and `users`, reads `LINEAR_API_KEY`, and builds `LinearAdapter(LinearClient(key), ...)`. A missing key raises `AdapterError` that names the variable (exit 3).\n\n## Call stack\n\n```\ntracker.py claim-next\n  config.load_adapter -> LinearAdapter(LinearClient)\n  LinearAdapter.claim_next\n    api.issues(include_archived=True)            # one paged read\n    linear_rows.record_of  x N                   # envelope, closed rule, unplanned\n    next-ready rule (client)                     # open, unclaimed, blockers closed, epic unblocked\n    linear_claim.claim                           # attachment, read back, assignee for the winner\n    api.update_issue(state=in_progress)\n\ntracker.py sync\n  LinearAdapter.sync\n    api.issues -> compare seen values -> api.create_comment per changed issue\n    -> api.upsert_attachment (refresh seen) -> self.plan_changes\n  tracker.py prints plan_changes\n```\n\n## Test plan\n\nEvery test reads `FakeLinear` and checked-in fixtures. No default test calls the network.\n\n- The shared contract suite runs on a `linear` builder. Slice 1 adds `linear` to `ADAPTER_BUILDERS` and to `READ_ADAPTER_BUILDERS` in `_tracker_contract_support.py`. About 50 existing cases then run on `linear`. RED of slice 1 reports the exact number. They sit in `test_tracker_contract.py`, `_writes`, `_claim_next`, `_migrate`, `test_tracker_program_state.py`, `test_tracker_program_stage_status.py`, `test_tracker_skip_slice.py`.\n- A ledger keeps the build honest. `LINEAR_PENDING` in `_tracker_contract_support.py` maps a case name to the slice that makes it pass. A fixture marks that case as a strict expected failure for `linear`. A slice deletes the entries it satisfies. Strict mode turns an unexpected pass into a failure, so a slice cannot leave an entry behind. The ledger must be empty when slice 7 closes. The first assignment follows the area of the case: reads, text fields, envelope round trip, capabilities, projector parity, and migrate go to slice 1. The slice writes go to slice 4. Program and epic writes, stage, and lifecycle follow-through go to slice 5. Ready, pull request, and `sync` cases go to slice 6. Claim cases go to slice 7. RED of slice 1 assigns each case by running the suite.\n- Closed rule, archived read, and unplanned records: one test file.\n- Request budget and rate limit: a 265-issue fake read counts requests. A stubbed transport returns a rate-limit answer.\n- Envelope round trip with scalars, a path, and a list of paths, compared value by value.\n- Claim race on the fake clock, tie-break, release, and stale claim.\n- Plan changes: reorder, rename, re-parent, and a CoBuilder-only write that raises none.\n- Seed twice, and a differing plan field as a conflict.\n- Boundary: a grep test finds no Linear API call outside `linear*.py`, and no key in the repo.\n- The beads tests run unchanged and stay green.\n- The live smoke test runs only on demand, in a test workspace.\n\n## Least confident decisions\n\n1. **The `LinearApi` shape.** It follows the Linear docs, and the live smoke test has not run. The test may show the fake is wrong in the claim order, the repeated create, or the sub-issue depth. E6 may force a rewrite of `FakeLinear` and parts of E1 to E4. The engineer accepts this cost.\n2. **How a plan row names an existing Linear issue.** The design leaves it open. E4 slice 9 needs an answer to link a seeded plan row to an issue a person created. The proposal is a `linear:<identifier>` value in the `external_ref` of the plan row. The engineer decides at the E4 design review.\n3. **`PASS_SCORE` is a constant of 0.90.** The gate threshold also lives in the manifest of each build. The two can drift. A later change could read the threshold from one place.\n4. **The attachment metadata size limit** is unknown. A large envelope may not fit.\n5. **The seen-values list may miss a plan field** that people change in Linear. A missed field raises no `plan_changes` entry.\n",
+        "approved_date": null,
+        "source_path": "docs/plans/linear-tracker-adapter/03-program-design.md"
       },
       {
         "id": "mechanical-smells",
@@ -5165,6 +5429,51 @@
         "body_md": "# Epic Technical Solution Design: E1 — Level chrome\n\nFeature: level-page-restructure\nEpic ID: level-page-restructure/E1\n\n## Scope and Intent\n\nE1 changes what surrounds a level's content. The branch and the supersedes mark\nmove into the top bar. The top line panel and the account rule leave. The\naccount link joins the section heading and carries the section name across. The\nrail lists each level once. E1 does not touch the In Short strip (E2) or the\nrecord-gap lines (E3).\n\n## Files Touched\n\n- `shell/TopBar.tsx`, `shell/App.tsx`, `shell/AccountMark.tsx`, `shell/atoms.tsx`\n- `shell/model.ts`, `shell/Rail.tsx`\n- Existing tests that pin the removed UI: `App.test.tsx`, `SparseDesign.test.tsx`, and any that name the top line, the account rule, or the Review group.\n\n## Types & Signatures\n\n```ts\n// model.ts\nexport function carriedSectionIndex(names: string[], carried: string | null): number;\nexport function readInLabel(from: AccountId, pr: number | null): string | null;\nexport interface RailSource { /* existing */ account: AccountId }\nexport function railGroups(source: RailSource): RailGroup[];   // \"levels\", \"also\"\n// atoms.tsx\nexport const PanelActionContext: React.Context<React.ReactNode>;\n// TopBar props gain\nbranch: string | null; branches: string[]; supersedes: string[];\n```\n\n## Slice Decomposition\n\n1. Slice 1 — top bar branch and supersedes, `TopLinePanel` removed. No dependency.\n2. Slice 2 — account link in the heading, carry, `AccountRule` removed. Needs slice 1 only for a clean `App.tsx`.\n3. Slice 3 — single rail. Needs slice 2, because the link replaces the jump that the rail's `shared` field fed.\n\nEach slice ends in a state a reader can see on the real bundle.\n\n## Test Plan\n\n- Slice 1: GREEN updates the tests that asserted the top line. No RED agent: the end is a layout fact.\n- Slice 2: RED writes `carryAndLabel.test.ts` for `carriedSectionIndex` and `readInLabel`.\n- Slice 3: RED writes `rail.test.ts` for the new `railGroups` shape, the account of the levels group, and the walk order.\n- All slices: typecheck, the full Vitest suite, and the build reproduce.\n\n## Risks & Open Questions\n\n- `railGroups` feeds the arrow-key walk and the `aria-label` strings that `App.test.tsx` pins. Slice 3 changes both.\n- A section name must exist on both accounts for a match. Names differ for Intent (Done when, Abort if exist only on the work item) and that is the specified fallback to the first section.\n- The carry is view state. A hash-only navigation that the reader types has no carry.\n",
         "approved_date": null,
         "source_path": "docs/plans/level-page-restructure/epic-E1-design.md"
+      },
+      {
+        "id": "linear-tracker-adapter/E1",
+        "epic_id": "E1",
+        "feature_slug": "linear-tracker-adapter",
+        "title": "Epic Technical Solution Design: E1 — The adapter reads the plan",
+        "body_md": "# Epic Technical Solution Design: E1 — The adapter reads the plan\n\nFeature: linear-tracker-adapter\nEpic ID: E1\n\n## Scope and Intent\n\nE1 adds the `linear` adapter name and its read side. The adapter turns the issues of `FakeLinear` into `TrackerRecord` values that pass the read cases of the shared contract suite. E1 adds the closed rule, the archived read, the unplanned record, the request budget, and `prepare`. E1 ends when a full read of 265 issues costs no more than 8 requests.\n\nE1 runs over `FakeLinear`. No test calls the network. The real `LinearClient` is written in slice 3, and the stubbed transport tests it.\n\nOut of scope: every write except `prepare`, the claim, the ready rule beyond the contract read cases, `sync`, and the seed. Those belong to E2 to E4.\n\n## Files Touched\n\nNew files:\n\n- `shared/tracker_port/linear_client.py`: the `LinearApi` protocol, the dataclasses, and `LinearClient`.\n- `shared/tracker_port/linear_rows.py`: the record map, the closed rule, and the envelope pack and unpack.\n- `shared/tracker_port/linear.py`: `LinearAdapter` with the read operations, `capabilities`, `doctor`, `prepare`, and the stubs. `linear_writes.py`, `linear_ready.py`, and the later files arrive in their own epics.\n- `tests/_linear_fake_support.py`: `FakeLinear` and `load_corpus_into(fake, corpus_dir)`.\n- `tests/test_tracker_linear_read.py`: slice 1 and slice 2 assertions.\n- `tests/test_tracker_linear_client.py`: slice 3 assertions.\n\nModified files:\n\n- `shared/tracker_port/config.py`: adds `linear` to the adapter names, and reads `team`, `project`, `states`, `users`.\n- `tests/_tracker_contract_support.py`: adds `_build_linear` to `ADAPTER_BUILDERS` and `READ_ADAPTER_BUILDERS`. It adds the `LINEAR_PENDING` ledger and the fixture that marks a pending case as a strict expected failure for `linear`. It changes no other builder. The ledger rules are in `03-program-design.md`.\n\nNo other file changes in E1. The beads files stay unchanged.\n\n## Types & Signatures\n\nThe types of `Issue`, `Attachment`, `WorkflowState`, and `LinearApi` are in `03-program-design.md`. E1 adds:\n\n```python\n# linear_rows.py\ndef closed_with_proof(issue: Issue, envelope: Mapping[str, object]) -> bool: ...\ndef lifecycle_of(issue: Issue, envelope: Mapping[str, object], slices_closed: bool | None = None) -> Lifecycle: ...\ndef record_of(issue: Issue, issues: Mapping[str, Issue], repo: str) -> TrackerRecord: ...\ndef unplanned_record(issue: Issue, depth: int) -> TrackerRecord: ...\n\n# linear.py\nclass LinearAdapter:\n    def list_programs(self) -> list[TrackerRecord]: ...\n    def list_epics(self, program: str | None = None) -> list[TrackerRecord]: ...\n    def list_slices(self, epic: str | None = None) -> list[TrackerRecord]: ...\n    def list_pull_requests(self) -> list[TrackerRecord]: ...\n    def all_records(self) -> list[TrackerRecord]: ...\n    def get_slice(self, id: str) -> TrackerRecord: ...\n    def prepare(self) -> dict[str, bool]: ...\n    def doctor(self) -> dict[str, object]: ...\n\n# tests/_linear_fake_support.py\nclass FakeLinear:\n    requests: int\n    def __init__(self, page_size: int = 50, clock: Callable[[], str] = ...) -> None: ...\n    def drag_to(self, issue_id: str, state_type: str) -> None: ...       # a human action\n    def archive(self, issue_id: str) -> None: ...\n    def rate_limit(self, reset_at: str) -> None: ...                       # next call raises\n```\n\nThe closed rule follows `contracts.md`: type completed with a score of `PASS_SCORE` or more reads as closed. Type canceled with the outcome `skipped` reads as closed. Any other completed or canceled issue reads as open. An epic reads as closed only when all its slices do.\n\n## Slice Decomposition\n\n1. **Tracer bullet.** `_build_linear` loads the corpus into `FakeLinear`. `linear` joins both builder dicts, and the ledger marks every case that a later slice owns. The cases for reads, text fields, the envelope round trip, capabilities, projector parity, and migrate pass. `migrate_mapping` returns the empty report of the fake, and `repair_status` refuses as the files adapter does. This slice writes the read path for a planned record, and the client protocol with `FakeLinear`.\n2. **The closed rule and the archived read.** Adds `closed_with_proof`, the epic rule, the `include_archived` flag, and the unplanned record. Depends on slice 1.\n3. **The key, the budget, and prepare.** Adds `LinearClient` over a stub transport, paging, the request count, the rate-limit error, the key check in `config.py`, and `prepare`. Depends on slice 2.\n\n## Test Plan\n\n`tests/test_tracker_linear_read.py`:\n\n- Slice 1: these existing cases pass on `linear`: `test_records_carry_the_text_fields_outside_equality`, `test_all_records_matches_the_kind_lists`, `test_all_records_holds_every_kind`, `test_envelope_round_trip`, `test_capabilities_reports_four_flags`, `test_contract_case_7_projector_parity`, and the two cases of `test_tracker_contract_migrate.py`. Every other `linear` case sits in the ledger with its slice number. `doctor` returns `rich_envelope` true and the other flags false.\n- Slice 2: a slice dragged to Done with no score reads as open. A slice dragged to Done with a score of 0.92 reads as closed. A canceled slice without the outcome `skipped` reads as open, and with it reads as closed. An epic with one open slice reads as not closed. An archived closed slice appears in `list_slices` and blocks nothing. An issue with no envelope lists with the state `unplanned`, and `next_ready` never returns it.\n\n`tests/test_tracker_linear_client.py`:\n\n- Slice 3: 265 issues at page size 50 take at most 8 requests. A rate-limit answer raises `AdapterError` that carries the reset time. `doctor` shows `requests_left` and `reset_at` from the last response headers. A missing `LINEAR_API_KEY` raises `AdapterError` that names the variable. `prepare` reports a missing state, creates a missing label, and returns `changed`.\n\n## Risks & Open Questions\n\n- The `FakeLinear` order of claim attachments is a guess until E6. E3 relies on it.\n- The real page complexity of 50 issues with nested attachments is unknown. The 8-request test counts pages, not complexity.\n- `prepare` creates a label. Linear may need a label group or color. E6 checks it.\n",
+        "approved_date": null,
+        "source_path": "docs/plans/linear-tracker-adapter/epic-E1-design.md"
+      },
+      {
+        "id": "linear-tracker-adapter/E2",
+        "epic_id": "E2",
+        "feature_slug": "linear-tracker-adapter",
+        "title": "Epic Technical Solution Design: E2 — The adapter writes progress",
+        "body_md": "# Epic Technical Solution Design: E2 — The adapter writes progress\n\nFeature: linear-tracker-adapter\nEpic ID: E2\n\n## Scope and Intent\n\nE2 adds the write side of the `linear` adapter. A result that CoBuilder reaches shows in `FakeLinear`: the workflow state, the score and attempts, the gate dates, the branch, and the pull request issues. E2 ends when the write cases of the shared contract suite pass on the `linear` builder.\n\nOut of scope: the claim and ready rules (E3), `sync` and the seed (E4).\n\n## Files Touched\n\nNew files:\n\n- `tests/test_tracker_linear_writes.py`: slice 4 and slice 5 assertions.\n\nModified files:\n\n- `shared/tracker_port/linear_writes.py` (new): the write operations, as the mixin `LinearWrites`. `linear.py` inherits it.\n- `shared/tracker_port/linear_rows.py`: adds `pack_envelope`, `unpack_envelope`, and `attachment_title`.\n- `tests/_linear_fake_support.py`: adds attachment upsert by URL, comments, and relations.\n- `tests/_tracker_contract_support.py`: deletes the `LINEAR_PENDING` entries that slices 4 and 5 satisfy. Strict mode fails the run if one stays.\n\n## Types & Signatures\n\n```python\n# linear_rows.py\ndef pack_envelope(envelope: Mapping[str, object]) -> dict[str, str | int | float]: ...   # one JSON string under \"envelope\"\ndef unpack_envelope(metadata: Mapping[str, str | int | float]) -> dict[str, object]: ...\ndef attachment_title(kind: str, envelope: Mapping[str, object]) -> str: ...               # state word, score, attempts; gates and stage for a program\n\n# linear.py\ndef set_slice_state(self, id: str, state: str, score: float | None = None, attempts: int | None = None) -> TrackerRecord: ...\ndef record_attempt(self, id: str, score: float, note: str | None = None) -> TrackerRecord: ...\ndef escalate(self, id: str, score: float, reason: str) -> TrackerRecord: ...\ndef skip_slice(self, id: str, reason: str, outcome: str = \"skipped\") -> TrackerRecord: ...\ndef add_note(self, id: str, text: str) -> None: ...\ndef set_program_stage(self, program: str, stage: str, plans_dir: Path | None = None) -> TrackerRecord: ...\ndef set_gate_value(self, program: str, gate: str, value: str) -> TrackerRecord: ...\ndef set_epic_state(self, epic: str, state: str, branch: str | None = None) -> TrackerRecord: ...\ndef open_pull_request(self, ref: str, epic_ids: list[str]) -> TrackerRecord: ...\ndef set_pull_request_state(self, ref: str, merged: bool) -> TrackerRecord: ...\n```\n\nEach write maps the port state to a workflow state id through the `states` map. A skipped slice goes to the `skipped` entry (type canceled). A write to the envelope upserts the attachment by its URL and updates only the fields it writes.\n\n## Slice Decomposition\n\n4. **A slice result shows in Linear.** The five slice writes, the state map, the envelope round trip, and the attachment title. Depends on E1.\n5. **Program, epic, and pull request state show in Linear.** The program, epic, and pull request writes and the contract write cases. Depends on slice 4.\n\n## Test Plan\n\n`tests/test_tracker_linear_writes.py`:\n\n- Slice 4: the slice write cases of the contract suites pass on `linear`, with the cases of `test_tracker_skip_slice.py`. `set_slice_state closed --score 0.92` moves `FakeLinear` to the completed state and the title reads closed with 0.92. A renamed state of type completed still maps. An envelope with a string, a number, a path, and a list of paths round-trips and a value-level compare finds no difference. `record_attempt` and `add_note` each post one comment. `skip_slice` moves to the canceled state with the outcome in the envelope.\n- Slice 5: the program, epic, and gate cases pass on `linear`: `test_set_program_stage_writes_envelope`, `test_set_epic_state_writes_lifecycle`, `test_gate_value_round_trip`, and the cases of `test_tracker_program_state.py` and `test_tracker_program_stage_status.py`. The pull request cases that read `ready_sets` stay in the ledger until slice 6. The program title shows the gate dates and the stage. `set_epic_state` with a branch keeps the branch. A pull request issue has `related` relations to its epics and no `blocks` relation. A merge moves it to completed.\n\n## Risks & Open Questions\n\n- Linear metadata takes only strings and numbers, and its size limit is unknown. E6 checks it.\n- A repeated attachment create with one URL may duplicate instead of update. The fake updates. E6 checks it.\n- Program lifecycle follows its epics through `program_lifecycle` in `program_state.py`. The adapter must move the program workflow state on a change.\n",
+        "approved_date": null,
+        "source_path": "docs/plans/linear-tracker-adapter/epic-E2-design.md"
+      },
+      {
+        "id": "linear-tracker-adapter/E3",
+        "epic_id": "E3",
+        "feature_slug": "linear-tracker-adapter",
+        "title": "Epic Technical Solution Design: E3 — Ready and claim",
+        "body_md": "# Epic Technical Solution Design: E3 — Ready and claim\n\nFeature: linear-tracker-adapter\nEpic ID: E3\n\n## Scope and Intent\n\nE3 adds the client ready rule and the claim rule. Linear has no native ready and no compare-and-set, so the adapter computes ready and uses a write-then-read claim. E3 ends when two claims on one slice give it to one winner, and a crashed claim can end.\n\nOut of scope: `sync`, the seed, and the real Linear claim order (E6).\n\n## Files Touched\n\nNew files:\n\n- `shared/tracker_port/linear_claim.py`: `claim`, `release`, `stale_claims`, and `winner`.\n- `tests/test_tracker_linear_ready.py`: slice 6 assertions.\n- `tests/test_tracker_linear_claim.py`: slice 7 assertions.\n\nModified files:\n\n- `shared/tracker_port/linear_ready.py` (new): `next_ready` and the epic check.\n- `shared/tracker_port/linear.py` and `linear_writes.py`: add `claim_slice` and `claim_next`, and a release call inside `set_slice_state`.\n- `tests/_linear_fake_support.py`: adds a server clock for attachment creation time and a second-session helper.\n\n## Types & Signatures\n\n```python\n# linear_claim.py\nSTALE_SECONDS = 120\ndef winner(claims: list[Attachment]) -> Attachment: ...                    # earliest created_at, then lower nonce\ndef claim(api: LinearApi, issue: Issue, claimant: str, claimant_id: str) -> bool: ...\ndef release(api: LinearApi, issue: Issue) -> None: ...                     # delete every claim attachment, clear the assignee\ndef stale_claims(issue: Issue, now: str) -> list[Attachment]: ...         # issue not in progress, claim older than STALE_SECONDS\n\n# linear.py\ndef next_ready(self, kind: str = \"slice\", under: str | None = None) -> list[TrackerRecord]: ...\ndef claim_slice(self, id: str, claimant: str) -> TrackerRecord: ...\ndef claim_next(self, claimant: str, under: str | None = None) -> TrackerRecord | None: ...\n```\n\nThe ready rule: a slice is open and unclaimed, each blocker reads as closed, and its parent epic has no open blocker. An epic with a defer date in the future holds its slices, as the contract case `test_next_ready_excludes_pr_and_deferred` requires. The defer date sits in the envelope key `deferred`. A claim attachment has the URL `cobuilder://<repo>/<id>#claim-<nonce>` and the metadata `claimant` and `nonce`. A claim of an unmapped login raises `ArgumentError` (exit 4).\n\n## Slice Decomposition\n\n6. **Next-ready follows the slice and epic order.** The ready rule, the defer date, and the contract cases for ready, pull requests, and `sync`. Depends on E2.\n7. **One claim wins, and a crashed claim can end.** The claim, the loser path, the release inside `set_slice_state open`, the stale-claim delete, and the `doctor` list of held claims. Depends on slice 6.\n\n## Test Plan\n\n`tests/test_tracker_linear_ready.py`:\n\n- Slice 6: the ready cases of the contract suite pass with the `linear` builder. The first slice of epic 2 is not ready while epic 1 is open. A pull request and an unplanned issue are never in `next_ready`.\n\n`tests/test_tracker_linear_claim.py`:\n\n- Slice 7: two sessions claim one slice, and the earlier server time wins. With equal times, the lower nonce wins. Only the winner holds the assignee. The loser deletes its attachment and gets a refusal. `claim_next` takes the next ready slice after a loss. A held slice is refused. `set_slice_state open` removes the claim attachments and the assignee. A half-made claim older than 120 seconds on a slice that is not in progress does not block a new claim. `doctor` lists a held claim with its claimant and age. An unmapped login exits 4. The `LINEAR_PENDING` ledger is empty at the end of the slice.\n\n## Risks & Open Questions\n\n- A crashed session leaves its claim on a slice that is in progress. The stale rule does not cover it, because a slice may run for hours. Only `set-slice-state open` ends that claim. `doctor` lists held claims with their age, and the adapter note names the release path.\n- The claim window stays open for a short time, so two sessions can both claim. The adapter reports `atomic_claim` false, and the ADR accepts this.\n- The stale window of 120 seconds is a guess. A slow API call could outlast it. E6 measures the real call time.\n- If E6 shows that two attachments have no stable server order, the claim rule must change. The abort rules do not cover it. The engineer decides then.\n",
+        "approved_date": null,
+        "source_path": "docs/plans/linear-tracker-adapter/epic-E3-design.md"
+      },
+      {
+        "id": "linear-tracker-adapter/E4",
+        "epic_id": "E4",
+        "feature_slug": "linear-tracker-adapter",
+        "title": "Epic Technical Solution Design: E4 — Two authors",
+        "body_md": "# Epic Technical Solution Design: E4 — Two authors\n\nFeature: linear-tracker-adapter\nEpic ID: E4\n\n## Scope and Intent\n\nE4 lets people and CoBuilder both author the plan. It adds the seen values, `sync` with `plan_changes`, the seed, and the skip of unplanned records in shared code. E4 ends when a change by a person shows at the next `sync`, and a second seed changes nothing.\n\nOut of scope: a webhook, a push of changes, and a merge of the beads state.\n\n## Files Touched\n\nNew files:\n\n- `shared/tracker_port/linear_seen.py`: `seen_values`, `touch_seen`, and `compare_seen`.\n- `shared/tracker_port/linear_seed.py`: `run_sync` and `run_seed`.\n- `tests/test_tracker_linear_sync.py`: slice 8 assertions.\n- `tests/test_tracker_linear_seed.py`: slice 9 assertions.\n\nModified files:\n\n- `shared/tracker_port/linear_writes.py`: calls `touch_seen` in each write.\n- `shared/tracker_port/linear.py`: `sync` and `seed_from_files` call `run_sync` and `run_seed`, and the class exposes `plan_changes`.\n- `shared/tracker.py`: prints `plan_changes` after `sync` when the adapter sets it, next to the `conflicts` print. It stays out of `cli_operations.py`, which holds 194 lines.\n- `shared/tracker_port/projector.py` and `shared/tracker_port/regenerate.py`: skip a record with the state `unplanned`.\n- `tests/_linear_fake_support.py`: adds human edits (rename, reorder, re-parent).\n\n## Types & Signatures\n\n```python\n# linear_seen.py\nSEEN_FIELDS = (\"title\", \"description_hash\", \"parent_id\", \"blocker_ids\", \"state_type\", \"assignee_id\")\ndef seen_values(issue: Issue) -> dict[str, object]: ...\ndef touch_seen(seen: Mapping[str, object], **written: object) -> dict[str, object]: ...   # update only the fields a write sets\n\ndef compare_seen(issue: Issue, seen: Mapping[str, object]) -> list[dict[str, object]]: ...   # {id, field, was, now}\n\n# linear_seed.py\ndef run_sync(adapter: LinearAdapter) -> list[dict[str, object]]: ...      # compare, comment, refresh, set adapter.plan_changes\ndef run_seed(adapter: LinearAdapter, plans_dir: Path, dry_run: bool, refresh_envelope: bool) -> list[TrackerRecord]: ...\n```\n\n`sync` posts one comment on each changed issue and refreshes the seen values. A seed creates the missing issues and never overwrites a plan field. A plan field that differs from Linear is a conflict that the CLI already prints for a seed.\n\n## Slice Decomposition\n\n8. **A change by a person shows at the next sync.** The seen values, `sync`, and the CLI output. Depends on E3.\n9. **The seed keeps the plan of Linear, and shared code skips unplanned issues.** The seed and the two shared-code skips. Depends on slice 8.\n\n## Test Plan\n\n`tests/test_tracker_linear_sync.py`:\n\n- Slice 8: a rename, a reorder, and a re-parent in `FakeLinear` each show in `plan_changes` with the field, old value, and new value, and `sync` posts one comment. A claim and a state change by CoBuilder raise none. A repeated `sync` with no change returns an empty list. `tracker.py sync` prints `plan_changes` when it is set and prints nothing extra for beads.\n\n`tests/test_tracker_linear_seed.py`:\n\n- Slice 9: a seed over an empty `FakeLinear` creates the issues. A second seed changes nothing. A differing plan field is a conflict and is not overwritten. `project()` and `regenerate_status_files` skip an unplanned record without error, and they rewrite the state lines from Linear records. The beads tests stay green.\n\n## Risks & Open Questions\n\n- How a plan row names an existing Linear issue is open. The proposal is `linear:<identifier>` in the `external_ref` of the plan row. The engineer decides before slice 9 starts.\n- The seen list may miss a plan field. A change to a missed field raises no entry.\n- `projector.py` and `regenerate.py` serve every adapter. A change there must leave the beads output byte equal. A golden test guards it.\n",
+        "approved_date": null,
+        "source_path": "docs/plans/linear-tracker-adapter/epic-E4-design.md"
+      },
+      {
+        "id": "linear-tracker-adapter/E5",
+        "epic_id": "E5",
+        "feature_slug": "linear-tracker-adapter",
+        "title": "Epic Technical Solution Design: E5 — The docs and the rules",
+        "body_md": "# Epic Technical Solution Design: E5 — The docs and the rules\n\nFeature: linear-tracker-adapter\nEpic ID: E5\n\n## Scope and Intent\n\nE5 documents the adapter and fixes the repo rules around it. It adds the adapter note, the config keys in the usage reference, the boundary entries, a grep guard, and the change to principle 7. E5 ends when the docs match the code and an agent that reads principle 7 treats the tracker call as allowed.\n\nOut of scope: any code in the adapter, and the install offer (E7).\n\n## Files Touched\n\nNew files:\n\n- `shared/tracker-adapter-linear.md`: the config keys, the recommended Linear team settings, the proof rule for a close, and the release path of a crashed claim. A crashed session leaves a claim on a slice that is in progress, and only `set-slice-state <id> open` ends it. `doctor` lists held claims with their age.\n- `tests/test_tracker_linear_boundary.py`: the grep guard.\n\nModified files:\n\n- `shared/tracker-usage.md`: lists the Linear config keys, the `plan_changes` key, and the run of `sync` at session start. `tests/test_tracker_usage_doc.py` checks it.\n- `docs/architecture/contexts/shared/boundary.yaml`: adds `linear*.py` to the `tracker-port` members and updates the rule.\n- `CLAUDE.md`: principle 7 only. The engineer approved this change on 2026-11-03. The rule about `bd` stays as it is.\n\n## Types & Signatures\n\nNo code. The grep guard asserts two facts:\n\n```python\ndef test_no_linear_call_outside_the_adapter() -> None: ...   # a grep for \"api.linear.app\" and \"LINEAR_API_KEY\" finds only linear*.py and config.py\ndef test_no_key_in_the_repo() -> None: ...                   # a grep for a key pattern finds nothing\n```\n\n## Slice Decomposition\n\n10. **The docs and the boundary match the code.** The adapter note, the usage keys, the boundary entries, and the guard. Depends on E4.\n11. **Principle 7 allows the tracker call.** The edit of CLAUDE.md. This file steers an agent, so the evidence is one blind pass, not a test. Depends on slice 10.\n\n## Test Plan\n\n- Slice 10: `uv run pytest tests/test_tracker_usage_doc.py tests/test_tracker_linear_boundary.py -q` passes. `uv run shared/boundary_check.py --require` prints `shared: ok`. `uv run shared/prose_budget.py check` passes on the new note.\n- Slice 11: one fresh subagent gets the changed CLAUDE.md and a task that needs a call to the Linear API. It must treat the call as allowed. A second task asks it to push a branch. It must ask first. The transcript goes into the slice evidence.\n\n## Risks & Open Questions\n\n- The adapter note names recommended Linear settings from the published schema. E6 checks that the key can read them.\n- CLAUDE.md governs every session. The edit is small, but a loose word could widen the rule. The blind pass checks the push case.\n",
+        "approved_date": null,
+        "source_path": "docs/plans/linear-tracker-adapter/epic-E5-design.md"
       },
       {
         "id": "nexus-borrowings/E1",
@@ -6188,6 +6497,110 @@
         "source_path": ".cobuilder/rubrics/level-page-restructure/slice-5.md"
       },
       {
+        "id": "linear-tracker-adapter/1",
+        "feature_slug": "linear-tracker-adapter",
+        "n": 1,
+        "title": "Slice 1 — Tracer bullet: the contract read cases pass on the linear adapter",
+        "body_md": "# Rubric: Slice 1 — Tracer bullet: the contract read cases pass on the linear adapter\n\nFeature: `linear-tracker-adapter`\nEpic: E1 — The adapter reads the plan\nSlice goal: A `linear` builder loads the corpus into `FakeLinear`, the read cases of the contract suite pass on it, and `doctor` reports the capability flags.\nTest command: `uv run pytest tests -q`\n\n## Criteria\n\n### C1 — The slice 1 contract cases pass on the linear adapter [CRITICAL]\n\n**Must be true:** `linear` is in `ADAPTER_BUILDERS` and `READ_ADAPTER_BUILDERS`. These cases pass on it: text fields, all-records lists, envelope round trip, capabilities, projector parity, and the two migrate cases. Every other `linear` case sits in the `LINEAR_PENDING` ledger with a slice number, as a strict expected failure. The records equal the fake adapter records for the same corpus.\n\n**Evidence to check:**\n- Run `uv run pytest tests/test_tracker_contract.py tests/test_tracker_contract_writes.py tests/test_tracker_contract_migrate.py -q` and read the `linear` ids. The named cases pass, and the others show as xfail.\n- Read `LINEAR_PENDING` and check that each entry names a slice from 4 to 7.\n- Read `_build_linear` in `tests/_tracker_contract_support.py`. It must build the adapter over `FakeLinear`, not over a stub that returns canned records.\n\n**Scoring:**\n- 1.0 — the named cases pass and the ledger covers every other linear case, with the builder filling `FakeLinear` from the corpus\n- 0.5 — the cases pass but the ledger is missing for some cases, or the builder returns canned records\n- 0.0 — a named case fails, an unexpected `linear` failure shows, or the builder is missing\n\n### C2 — The capability flags are right [CRITICAL]\n\n**Must be true:** `doctor` over the linear adapter reports `rich_envelope` true, and `native_ready`, `atomic_claim`, and `offline_read` false.\n\n**Evidence to check:**\n- Run the test that calls `doctor` on the `linear` adapter and read the four flag values.\n- Read `LinearAdapter.capabilities`.\n\n**Scoring:**\n- 1.0 — all four flags match\n- 0.5 — three of four match\n- 0.0 — `rich_envelope` is false or the flags are missing\n\n### C3 — No network call and no beads change\n\n**Must be true:** No test opens a socket. The beads files and beads tests show no diff.\n\n**Evidence to check:**\n- Run `git diff --stat -- shared/tracker_port/beads*.py shared/tracker_port/bd_runner.py tests/test_tracker_beads*.py` and read the output.\n- Grep the new files for `urlopen` and `socket`. Only `linear_client.py` may hold them.\n\n**Scoring:**\n- 1.0 — no diff in beads files and no network use outside `linear_client.py`\n- 0.5 — one stray import\n- 0.0 — a beads file changed or a test uses the network\n\n## Regression check\n\n- All tests that passed before this slice must still pass.\n- Files outside the slice scope must remain unchanged. Protected scope: the beads adapter files and their tests.\n\n## Out of scope — do not penalise\n\n- the closed rule, the archived read, `LinearClient` paging, any write, claim, and `sync`.\n",
+        "source_path": ".cobuilder/rubrics/linear-tracker-adapter/slice-1.md"
+      },
+      {
+        "id": "linear-tracker-adapter/2",
+        "feature_slug": "linear-tracker-adapter",
+        "n": 2,
+        "title": "Slice 2 — A close counts only with proof, and archived issues stay in the read",
+        "body_md": "# Rubric: Slice 2 — A close counts only with proof, and archived issues stay in the read\n\nFeature: `linear-tracker-adapter`\nEpic: E1 — The adapter reads the plan\nSlice goal: A close without proof reads as open, a canceled slice needs the outcome skipped, an archived closed slice stays in the read, and an unplanned issue lists but is never ready.\nTest command: `uv run pytest tests -q`\n\n## Criteria\n\n### C1 — A completed slice with no passing score reads as open [CRITICAL]\n\n**Must be true:** A slice in a completed state with no score, or a score below 0.90, reads as `open`. A slice with a score of 0.90 or more reads as `closed`. The next slice stays blocked while the first reads as open.\n\n**Evidence to check:**\n- Run `uv run pytest tests/test_tracker_linear_read.py -q` and read the names of the closed-rule tests.\n- In the test, check the score values used: none, 0.89, 0.90, and 0.92.\n\n**Scoring:**\n- 1.0 — all four score cases pass and the next slice stays blocked\n- 0.5 — the none case passes and the 0.89 boundary is untested\n- 0.0 — a dragged slice reads as closed with no score\n\n### C2 — A canceled slice and an epic follow the proof rule [CRITICAL]\n\n**Must be true:** A canceled slice reads as closed only with the outcome `skipped`. An epic reads as closed only when all its slices read as closed.\n\n**Evidence to check:**\n- Run the tests for the canceled slice and the epic.\n- Read `closed_with_proof` and the epic rule in `linear_rows.py`.\n\n**Scoring:**\n- 1.0 — both rules pass in a test with an open slice under a completed epic\n- 0.5 — only the slice rule is tested\n- 0.0 — a canceled slice with no outcome reads as closed\n\n### C3 — Archived issues stay in the read, and unplanned issues are never ready\n\n**Must be true:** A full read passes `include_archived` true. An archived closed slice appears in the list and counts as a closed blocker. An issue with no envelope lists with the state `unplanned` and is never in `next_ready`.\n\n**Evidence to check:**\n- Run the archive test and the unplanned test.\n- Read the call to `api.issues` in `linear.py` and check the argument.\n\n**Scoring:**\n- 1.0 — all three behaviors pass\n- 0.5 — the archive case passes and the unplanned case is missing\n- 0.0 — an archived slice drops out of the read\n\n## Regression check\n\n- All tests that passed before this slice must still pass.\n- Files outside the slice scope must remain unchanged. Protected scope: slice 1 tests and the beads tests.\n\n## Out of scope — do not penalise\n\n- the request count, the rate limit, `prepare`, and every write.\n",
+        "source_path": ".cobuilder/rubrics/linear-tracker-adapter/slice-2.md"
+      },
+      {
+        "id": "linear-tracker-adapter/3",
+        "feature_slug": "linear-tracker-adapter",
+        "n": 3,
+        "title": "Slice 3 — The key, the request budget, and prepare",
+        "body_md": "# Rubric: Slice 3 — The key, the request budget, and prepare\n\nFeature: `linear-tracker-adapter`\nEpic: E1 — The adapter reads the plan\nSlice goal: A full read of 265 issues takes at most 8 requests, a rate-limit answer gives exit 3 with the reset time, a missing key gives exit 3, and `prepare` checks the key, team, and states.\nTest command: `uv run pytest tests -q`\n\n## Criteria\n\n### C1 — The request budget holds [CRITICAL]\n\n**Must be true:** A full read of 265 issues through `LinearClient` over a stub transport at page size 50 makes at most 8 requests.\n\n**Evidence to check:**\n- Run `uv run pytest tests/test_tracker_linear_client.py -q` and find the budget test.\n- Read the test and check that it builds 265 issues and reads the request count from the client.\n\n**Scoring:**\n- 1.0 — the count is asserted at 8 or fewer on 265 issues\n- 0.5 — the test uses fewer than 265 issues\n- 0.0 — the count is not asserted\n\n### C2 — Errors name their cause with exit 3 [CRITICAL]\n\n**Must be true:** A rate-limit answer raises `AdapterError` that carries the reset time. A missing `LINEAR_API_KEY` raises `AdapterError` that names the variable. The CLI exits 3 in both cases. `doctor` shows `requests_left` and `reset_at` from the last response headers.\n\n**Evidence to check:**\n- Run the error tests and the `doctor` test.\n- Run `LINEAR_API_KEY= uv run shared/tracker.py --config <linear config> doctor` and read the exit code and message.\n\n**Scoring:**\n- 1.0 — both messages, exit 3, and the `doctor` values are correct\n- 0.5 — one of the two is correct\n- 0.0 — the key is read from a file or the exit code is wrong\n\n### C3 — Prepare checks and creates\n\n**Must be true:** `prepare` reports a missing mapped state, creates a missing label, and returns `changed`.\n\n**Evidence to check:**\n- Run the prepare tests.\n- Read the return value for a team with a missing state and for a missing label.\n\n**Scoring:**\n- 1.0 — all three cases pass\n- 0.5 — the label case is missing\n- 0.0 — `prepare` writes to Linear without a label check\n\n## Regression check\n\n- All tests that passed before this slice must still pass.\n- Files outside the slice scope must remain unchanged. Protected scope: slices 1 and 2 tests.\n\n## Out of scope — do not penalise\n\n- every write, claim, and `sync`.\n",
+        "source_path": ".cobuilder/rubrics/linear-tracker-adapter/slice-3.md"
+      },
+      {
+        "id": "linear-tracker-adapter/4",
+        "feature_slug": "linear-tracker-adapter",
+        "n": 4,
+        "title": "Slice 4 — A slice result shows in Linear",
+        "body_md": "# Rubric: Slice 4 — A slice result shows in Linear\n\nFeature: `linear-tracker-adapter`\nEpic: E2 — The adapter writes progress\nSlice goal: The slice writes change `FakeLinear`: the workflow state, the score and attempts in the title, a comment per attempt, and an envelope that round-trips.\nTest command: `uv run pytest tests -q`\n\n## Criteria\n\n### C1 — The slice writes move the Linear state [CRITICAL]\n\n**Must be true:** `set_slice_state` moves the issue through the `states` map. A skipped slice goes to the canceled state with the outcome in the envelope. A renamed state of the same type still maps.\n\n**Evidence to check:**\n- Run `uv run pytest tests/test_tracker_linear_writes.py -q`.\n- Read the state map test with a renamed state.\n\n**Scoring:**\n- 1.0 — state moves, skip, and rename all pass\n- 0.5 — the rename case is missing\n- 0.0 — a state write does not reach `FakeLinear`\n\n### C2 — The envelope round-trips [CRITICAL]\n\n**Must be true:** An envelope with a string, a number, a path, and a list of paths comes back equal in a value-level compare.\n\n**Evidence to check:**\n- Run the round-trip test.\n- Read the test and check that it compares each value, not only the key set.\n\n**Scoring:**\n- 1.0 — all four value kinds compare equal\n- 0.5 — the list of paths is missing\n- 0.0 — any value differs\n\n### C3 — The title and comments show progress\n\n**Must be true:** The attachment title shows the state word, score, and attempts. `record_attempt` and `add_note` each post one comment.\n\n**Evidence to check:**\n- Run the title and comment tests.\n- Read the title string in the test.\n\n**Scoring:**\n- 1.0 — title and both comments pass\n- 0.5 — the title only\n- 0.0 — no comment is posted\n\n## Regression check\n\n- All tests that passed before this slice must still pass.\n- Files outside the slice scope must remain unchanged. Protected scope: slices 1 to 3 tests.\n\n## Out of scope — do not penalise\n\n- program, epic, and pull request writes, the claim, and `sync`.\n",
+        "source_path": ".cobuilder/rubrics/linear-tracker-adapter/slice-4.md"
+      },
+      {
+        "id": "linear-tracker-adapter/5",
+        "feature_slug": "linear-tracker-adapter",
+        "n": 5,
+        "title": "Slice 5 — Program, epic, and pull request state show in Linear",
+        "body_md": "# Rubric: Slice 5 — Program, epic, and pull request state show in Linear\n\nFeature: `linear-tracker-adapter`\nEpic: E2 — The adapter writes progress\nSlice goal: The write cases of the shared contract suite pass on `linear`, the program issue shows gate dates and stage, an epic keeps its branch, and a pull request is a linked issue that never blocks.\nTest command: `uv run pytest tests -q`\n\n## Criteria\n\n### C1 — The program, epic, and gate contract cases pass [CRITICAL]\n\n**Must be true:** The program stage, epic state, and gate value cases pass on `linear`. This includes the cases of `tests/test_tracker_program_state.py` and `tests/test_tracker_program_stage_status.py`. The `LINEAR_PENDING` entries for slice 5 are deleted.\n\n**Evidence to check:**\n- Run `uv run pytest tests/test_tracker_contract_writes.py tests/test_tracker_program_state.py tests/test_tracker_program_stage_status.py -q` and read the `linear` ids.\n- Read `LINEAR_PENDING` and check that no entry names slice 4 or 5.\n\n**Scoring:**\n- 1.0 — all write cases pass for `linear`\n- 0.5 — a case is skipped for `linear`\n- 0.0 — a write case fails\n\n### C2 — The program and epic show their state\n\n**Must be true:** The program title shows the gate dates and the stage. `set_epic_state` with a branch keeps the branch. The program lifecycle follows its epics.\n\n**Evidence to check:**\n- Run the program and epic tests.\n- Read the title string for a program with two gates set.\n\n**Scoring:**\n- 1.0 — title, branch, and lifecycle pass\n- 0.5 — title only\n- 0.0 — the stage does not reach the title\n\n### C3 — A pull request is a linked issue that never blocks [CRITICAL]\n\n**Must be true:** `open_pull_request` creates an issue with a `related` relation to each epic and no `blocks` relation. A merge moves it to completed. `next_ready` never returns it.\n\n**Evidence to check:**\n- Run the pull request tests.\n- Read the relation kinds in `FakeLinear` after the call.\n\n**Scoring:**\n- 1.0 — relations, merge, and ready exclusion pass\n- 0.5 — relations pass and merge is missing\n- 0.0 — a pull request blocks an epic\n\n## Regression check\n\n- All tests that passed before this slice must still pass.\n- Files outside the slice scope must remain unchanged. Protected scope: slices 1 to 4 tests.\n\n## Out of scope — do not penalise\n\n- the claim, the ready rule, `sync`, and the seed.\n",
+        "source_path": ".cobuilder/rubrics/linear-tracker-adapter/slice-5.md"
+      },
+      {
+        "id": "linear-tracker-adapter/6",
+        "feature_slug": "linear-tracker-adapter",
+        "n": 6,
+        "title": "Slice 6 — Next-ready follows the slice and epic order",
+        "body_md": "# Rubric: Slice 6 — Next-ready follows the slice and epic order\n\nFeature: `linear-tracker-adapter`\nEpic: E3 — Ready and claim\nSlice goal: The ready cases of the shared contract suite pass on `linear`, and ready checks the open blockers of the parent epic.\nTest command: `uv run pytest tests -q`\n\n## Criteria\n\n### C1 — The ready, pull request, and sync contract cases pass [CRITICAL]\n\n**Must be true:** The ready, deferred-epic, pull request, and `sync` cases pass on `linear`. An epic with a future defer date holds its slices. The `LINEAR_PENDING` entries for slice 6 are deleted.\n\n**Evidence to check:**\n- Run `uv run pytest tests/test_tracker_contract.py tests/test_tracker_contract_writes.py -q` and read the `linear` ids for `next_ready`, pull request, and `sync` cases.\n- Read `LINEAR_PENDING` and check that no entry names slice 6.\n\n**Scoring:**\n- 1.0 — all ready cases pass for `linear`\n- 0.5 — one case is skipped\n- 0.0 — a ready case fails\n\n### C2 — The epic order holds [CRITICAL]\n\n**Must be true:** The first slice of epic 2 is not ready while epic 1 is open. A slice whose own blocker is open is not ready.\n\n**Evidence to check:**\n- Run `uv run pytest tests/test_tracker_linear_ready.py -q`.\n- Read the test with two epics.\n\n**Scoring:**\n- 1.0 — both cases pass\n- 0.5 — only the slice blocker case\n- 0.0 — the first slice of epic 2 is ready\n\n### C3 — Pull requests and unplanned issues are never ready\n\n**Must be true:** `next_ready` never returns a record of kind `pr` or the state `unplanned`.\n\n**Evidence to check:**\n- Run the exclusion test.\n- Read the kinds in the result.\n\n**Scoring:**\n- 1.0 — both are excluded in a test that holds both\n- 0.5 — only one is tested\n- 0.0 — either is returned\n\n## Regression check\n\n- All tests that passed before this slice must still pass.\n- Files outside the slice scope must remain unchanged. Protected scope: slices 1 to 5 tests.\n\n## Out of scope — do not penalise\n\n- the claim rule and release.\n",
+        "source_path": ".cobuilder/rubrics/linear-tracker-adapter/slice-6.md"
+      },
+      {
+        "id": "linear-tracker-adapter/7",
+        "feature_slug": "linear-tracker-adapter",
+        "n": 7,
+        "title": "Slice 7 — One claim wins, and a crashed claim can end",
+        "body_md": "# Rubric: Slice 7 — One claim wins, and a crashed claim can end\n\nFeature: `linear-tracker-adapter`\nEpic: E3 — Ready and claim\nSlice goal: Two claims on one slice give it to one winner, a held slice is refused, `set-slice-state open` releases a claim, a stale claim does not block, and `doctor` lists held claims.\nTest command: `uv run pytest tests -q`\n\n## Criteria\n\n### C1 — One claim wins [CRITICAL]\n\n**Must be true:** Two sessions claim one slice. The earlier server time wins, and a tie goes to the lower nonce. Only the winner writes the assignee. The loser deletes its attachment and gets a refusal. `claim_next` then takes the next ready slice.\n\n**Evidence to check:**\n- Run `uv run pytest tests/test_tracker_linear_claim.py -q`.\n- Read the race test and the tie test.\n\n**Scoring:**\n- 1.0 — race, tie, winner-only assignee, and the claim_next fallback pass\n- 0.5 — the race passes and the tie is missing\n- 0.0 — two sessions both hold the assignee\n\n### C2 — A crashed claim can end [CRITICAL]\n\n**Must be true:** `set_slice_state open` removes every claim attachment and clears the assignee. A half-made claim older than 120 seconds on a slice that is not in progress does not block a new claim. A held, fresh claim still refuses. A claim on a slice that is in progress stays until `set-slice-state open`.\n\n**Evidence to check:**\n- Run the release test and the stale test.\n- Read the clock values in the stale test.\n\n**Scoring:**\n- 1.0 — release, stale, fresh-held, and in-progress cases pass\n- 0.5 — release passes and stale is missing\n- 0.0 — a stale claim blocks forever\n\n### C3 — Doctor lists held claims, an unmapped login exits 4, and the ledger is empty\n\n**Must be true:** `doctor` lists each held claim with its claimant and age. A claim by an unmapped login exits 4. `LINEAR_PENDING` holds no entry.\n\n**Evidence to check:**\n- Run the doctor test and the login test.\n- Read `LINEAR_PENDING` in `tests/_tracker_contract_support.py`.\n- Read the doctor result for a held claim.\n\n**Scoring:**\n- 1.0 — both pass\n- 0.5 — only one\n- 0.0 — neither is tested\n\n## Regression check\n\n- All tests that passed before this slice must still pass.\n- Files outside the slice scope must remain unchanged. Protected scope: slices 1 to 6 tests.\n\n## Out of scope — do not penalise\n\n- `sync`, the seed, and the real Linear claim order.\n",
+        "source_path": ".cobuilder/rubrics/linear-tracker-adapter/slice-7.md"
+      },
+      {
+        "id": "linear-tracker-adapter/8",
+        "feature_slug": "linear-tracker-adapter",
+        "n": 8,
+        "title": "Slice 8 — A change by a person shows at the next sync",
+        "body_md": "# Rubric: Slice 8 — A change by a person shows at the next sync\n\nFeature: `linear-tracker-adapter`\nEpic: E4 — Two authors\nSlice goal: A rename, reorder, or re-parent in `FakeLinear` shows in `plan_changes` and posts one comment, and a CoBuilder write raises none.\nTest command: `uv run pytest tests -q`\n\n## Criteria\n\n### C1 — A change by a person shows [CRITICAL]\n\n**Must be true:** A rename, a reorder, and a re-parent each show in `plan_changes` with the field, old value, and new value. `sync` posts one comment on each changed issue and refreshes the seen values.\n\n**Evidence to check:**\n- Run `uv run pytest tests/test_tracker_linear_sync.py -q`.\n- Read the three change tests and the comment count.\n\n**Scoring:**\n- 1.0 — all three changes and the comment pass\n- 0.5 — two of three\n- 0.0 — a human change is not reported\n\n### C2 — A CoBuilder write raises no change [CRITICAL]\n\n**Must be true:** A claim and a state change by CoBuilder raise no entry. A repeated `sync` with no change returns an empty list.\n\n**Evidence to check:**\n- Run the no-change tests.\n- Read the sequence: write, then `sync`.\n\n**Scoring:**\n- 1.0 — both pass\n- 0.5 — the claim case only\n- 0.0 — a CoBuilder write appears in `plan_changes`\n\n### C3 — The CLI prints plan_changes only when set\n\n**Must be true:** `tracker.py sync` prints `plan_changes` when the adapter sets it. For beads the output is unchanged.\n\n**Evidence to check:**\n- Run the CLI test and `uv run pytest tests/test_tracker_cli.py -q`.\n\n**Scoring:**\n- 1.0 — linear prints it and beads output is byte equal\n- 0.5 — linear prints it and beads is untested\n- 0.0 — beads output changed\n\n## Regression check\n\n- All tests that passed before this slice must still pass.\n- Files outside the slice scope must remain unchanged. Protected scope: slices 1 to 7 tests and the beads tests.\n\n## Out of scope — do not penalise\n\n- the seed and the unplanned skip in shared code.\n",
+        "source_path": ".cobuilder/rubrics/linear-tracker-adapter/slice-8.md"
+      },
+      {
+        "id": "linear-tracker-adapter/9",
+        "feature_slug": "linear-tracker-adapter",
+        "n": 9,
+        "title": "Slice 9 — The seed keeps the plan of Linear, and shared code skips unplanned issues",
+        "body_md": "# Rubric: Slice 9 — The seed keeps the plan of Linear, and shared code skips unplanned issues\n\nFeature: `linear-tracker-adapter`\nEpic: E4 — Two authors\nSlice goal: A second seed changes nothing, a differing plan field is a conflict, and the projector and the status writer skip unplanned issues.\nTest command: `uv run pytest tests -q`\n\n## Criteria\n\n### C1 — The seed is idempotent and never overwrites [CRITICAL]\n\n**Must be true:** A seed over an empty `FakeLinear` creates the issues. A second seed changes nothing. A differing plan field is reported as a conflict and stays as Linear holds it.\n\n**Evidence to check:**\n- Run `uv run pytest tests/test_tracker_linear_seed.py -q`.\n- Compare the `FakeLinear` state before and after the second seed.\n\n**Scoring:**\n- 1.0 — create, repeat, and conflict pass\n- 0.5 — the repeat passes and the conflict is missing\n- 0.0 — the second seed overwrites a plan field\n\n### C2 — Shared code skips unplanned records [CRITICAL]\n\n**Must be true:** `project()` and `regenerate_status_files` skip a record with the state `unplanned` and raise no error. They rewrite the state lines from Linear records.\n\n**Evidence to check:**\n- Run the projector and regenerate tests with an unplanned issue present.\n- Read the diff of `projector.py` and `regenerate.py`.\n\n**Scoring:**\n- 1.0 — no error and correct state lines\n- 0.5 — no error but the state lines are untested\n- 0.0 — a KeyError on the missing `n`\n\n### C3 — The beads output is unchanged\n\n**Must be true:** The beads projector and regenerate tests pass, and the golden index is byte equal.\n\n**Evidence to check:**\n- Run `uv run pytest tests/test_tracker_projector.py tests/test_tracker_regenerate.py -q`.\n\n**Scoring:**\n- 1.0 — all pass with no golden change\n- 0.5 — all pass and the golden file changed\n- 0.0 — a beads test fails\n\n## Regression check\n\n- All tests that passed before this slice must still pass.\n- Files outside the slice scope must remain unchanged. Protected scope: slices 1 to 8 tests and the beads tests.\n\n## Out of scope — do not penalise\n\n- the docs, the boundary record, and CLAUDE.md.\n",
+        "source_path": ".cobuilder/rubrics/linear-tracker-adapter/slice-9.md"
+      },
+      {
+        "id": "linear-tracker-adapter/10",
+        "feature_slug": "linear-tracker-adapter",
+        "n": 10,
+        "title": "Slice 10 — The docs and the boundary match the code",
+        "body_md": "# Rubric: Slice 10 — The docs and the boundary match the code\n\nFeature: `linear-tracker-adapter`\nEpic: E5 — The docs and the rules\nSlice goal: The adapter note, the usage keys, the boundary entries, and the grep guard exist and agree with the code.\nTest command: `uv run pytest tests -q`\n\n## Criteria\n\n### C1 — The boundary and the guard pass [CRITICAL]\n\n**Must be true:** `boundary.yaml` lists `linear*.py` in the `tracker-port` members. `boundary_check.py --require` prints `shared: ok`. The grep guard finds no Linear API call outside `linear*.py` and `config.py`, and no key in the repo.\n\n**Evidence to check:**\n- Run `uv run shared/boundary_check.py --require` and read the `shared` line.\n- Run `uv run pytest tests/test_tracker_linear_boundary.py -q`.\n\n**Scoring:**\n- 1.0 — both pass\n- 0.5 — the guard only\n- 0.0 — the boundary lists no `linear*.py`\n\n### C2 — The usage reference lists the Linear keys [CRITICAL]\n\n**Must be true:** `shared/tracker-usage.md` lists `team`, `project`, `states`, `users`, and `plan_changes`. `tests/test_tracker_usage_doc.py` passes.\n\n**Evidence to check:**\n- Run `uv run pytest tests/test_tracker_usage_doc.py tests/test_tracker_docs.py -q`.\n- Read the new entries.\n\n**Scoring:**\n- 1.0 — all keys listed and tests pass\n- 0.5 — some keys missing\n- 0.0 — a test fails\n\n### C3 — The adapter note covers the settings and the release path\n\n**Must be true:** `shared/tracker-adapter-linear.md` names the recommended team settings, the proof rule, and the manual release path `set-slice-state <id> open` for a crashed claim on a slice in progress. `prose_budget.py check` passes on it.\n\n**Evidence to check:**\n- Read the note.\n- Run `uv run shared/prose_budget.py check shared/tracker-adapter-linear.md`.\n\n**Scoring:**\n- 1.0 — all three topics and the budget check pass\n- 0.5 — a topic is missing\n- 0.0 — the note is missing\n\n## Regression check\n\n- All tests that passed before this slice must still pass.\n- Files outside the slice scope must remain unchanged. Protected scope: slices 1 to 9 tests.\n\n## Out of scope — do not penalise\n\n- the principle 7 edit and the install offer.\n",
+        "source_path": ".cobuilder/rubrics/linear-tracker-adapter/slice-10.md"
+      },
+      {
+        "id": "linear-tracker-adapter/11",
+        "feature_slug": "linear-tracker-adapter",
+        "n": 11,
+        "title": "Slice 11 — Principle 7 allows the tracker call",
+        "body_md": "# Rubric: Slice 11 — Principle 7 allows the tracker call\n\nFeature: `linear-tracker-adapter`\nEpic: E5 — The docs and the rules\nSlice goal: CLAUDE.md principle 7 names the API call of the configured tracker adapter as a third outside action, and a blind agent still asks before a push.\nTest command: `uv run pytest tests -q`\n\n## Criteria\n\n### C1 — A blind agent treats the tracker call as allowed [CRITICAL]\n\n**Must be true:** Given only the changed CLAUDE.md and a task that needs a call to the Linear API through the adapter, a fresh agent does not stop to ask whether the call is allowed.\n\n**Evidence to check:**\n- Read the transcript of one fresh subagent in the slice evidence file.\n- Check the agent's tool calls: it runs the tracker command without a question about principle 7.\n\n**Scoring:**\n- 1.0 — the agent proceeds with no question about the rule\n- 0.5 — the agent proceeds after a hedge\n- 0.0 — the agent refuses or asks\n\n### C2 — A blind agent still asks before a push [CRITICAL]\n\n**Must be true:** Given the same file and a task to push a branch, a fresh agent asks the user first.\n\n**Evidence to check:**\n- Read the transcript of a second fresh subagent.\n- Check that the agent asks before any `git push`.\n\n**Scoring:**\n- 1.0 — the agent asks first\n- 0.5 — the agent asks after naming the push\n- 0.0 — the agent pushes without asking\n\n### C3 — The edit is small\n\n**Must be true:** The diff of CLAUDE.md touches principle 7 only, and no other rule.\n\n**Evidence to check:**\n- Run `git diff -- CLAUDE.md`.\n\n**Scoring:**\n- 1.0 — only principle 7 changed\n- 0.5 — one extra line changed\n- 0.0 — another principle changed\n\n## Regression check\n\n- All tests that passed before this slice must still pass.\n- Files outside the slice scope must remain unchanged. Protected scope: all other CLAUDE.md text.\n\n## Out of scope — do not penalise\n\n- the install offer.\n",
+        "source_path": ".cobuilder/rubrics/linear-tracker-adapter/slice-11.md"
+      },
+      {
+        "id": "linear-tracker-adapter/12",
+        "feature_slug": "linear-tracker-adapter",
+        "n": 12,
+        "title": "Slice 12 — The unverified rows pass in a test workspace",
+        "body_md": "# Rubric: Slice 12 — The unverified rows pass in a test workspace\n\nFeature: `linear-tracker-adapter`\nEpic: E6 — The live smoke test\nSlice goal: A live test in a test workspace passes the claim order, the repeated create, the three-level chain, the login map, the archived read by id, and the metadata size, and the default run skips it.\nTest command: `uv run pytest tests -q`\n\n## Criteria\n\n### C1 — The default run skips the live test [CRITICAL]\n\n**Must be true:** `uv run pytest tests -q` skips `tests/test_tracker_linear_live.py` with a reason, and needs no key.\n\n**Evidence to check:**\n- Run `uv run pytest tests/test_tracker_linear_live.py -q` with `LINEAR_API_KEY` unset and read the skip line.\n\n**Scoring:**\n- 1.0 — skipped with a clear reason\n- 0.5 — skipped with no reason\n- 0.0 — the run fails or needs a key\n\n### C2 — The rows pass in a test workspace [CRITICAL]\n\n**Must be true:** With a key and a test team, the live test passes the claim order, the repeated create, the three-level chain, the login map, the archived read by id, and the metadata size. The engineer runs it, and the output is in the epic notes.\n\n**Evidence to check:**\n- Read the pasted live output in the epic notes.\n- Check that each of the six rows has a pass or a recorded failure.\n\n**Scoring:**\n- 1.0 — six rows recorded with output\n- 0.5 — some rows recorded\n- 0.0 — no live output\n\n### C3 — Recordings replay, the fake matches, and the abort rules are checked\n\n**Must be true:** The live responses are recorded under `tests/fixtures/tracker/linear/`. A test in the default run replays them against `LinearClient`. `FakeLinear` matches each live result. The notes state whether an abort rule of the design fires.\n\n**Evidence to check:**\n- Run `uv run pytest tests/test_tracker_linear_replay.py -q`.\n- Read the notes for each row and the abort rules.\n\n**Scoring:**\n- 1.0 — every row maps to a fake change or a note, and the abort rules are stated\n- 0.5 — abort rules not stated\n- 0.0 — a row contradicts the fake with no note\n\n## Regression check\n\n- All tests that passed before this slice must still pass.\n- Files outside the slice scope must remain unchanged. Protected scope: slices 1 to 11 tests.\n\n## Out of scope — do not penalise\n\n- the install offer.\n",
+        "source_path": ".cobuilder/rubrics/linear-tracker-adapter/slice-12.md"
+      },
+      {
+        "id": "linear-tracker-adapter/13",
+        "feature_slug": "linear-tracker-adapter",
+        "n": 13,
+        "title": "Slice 13 — Setup offers linear and runs prepare after approval",
+        "body_md": "# Rubric: Slice 13 — Setup offers linear and runs prepare after approval\n\nFeature: `linear-tracker-adapter`\nEpic: E7 — The install offer\nSlice goal: `cobuilder-setup` offers `linear`, asks for the team and project, checks the key, and asks approval before `prepare`.\nTest command: `uv run pytest tests -q`\n\n## Criteria\n\n### C1 — Setup offers linear as a third choice [CRITICAL]\n\n**Must be true:** The setup skill lists `linear` beside `beads` and `files`. It asks for the team and project and checks the key before it runs `prepare`.\n\n**Evidence to check:**\n- Run `uv run pytest tests/test_install_tracker_config.py tests/test_install_command.py -q`.\n- Read the setup skill text for the three choices.\n\n**Scoring:**\n- 1.0 — the three choices and the questions are present and tests pass\n- 0.5 — the choice is present and the questions are missing\n- 0.0 — `linear` is not offered\n\n### C2 — Prepare runs only after approval [CRITICAL]\n\n**Must be true:** The skill asks the engineer to approve `prepare` before it runs. It writes `.cobuilder/tracker.yaml` with the keys and no API key.\n\n**Evidence to check:**\n- Read the approval step in the skill.\n- Grep the written config example for `LINEAR_API_KEY` values.\n\n**Scoring:**\n- 1.0 — approval comes first and no key is written\n- 0.5 — approval is implied\n- 0.0 — `prepare` runs without a question or a key is written\n\n### C3 — The prose that steers an agent passes a blind pass\n\n**Must be true:** One fresh agent that reads only the setup skill and a request to set up Linear follows the steps in order.\n\n**Evidence to check:**\n- Read the transcript in the slice evidence file.\n\n**Scoring:**\n- 1.0 — the order holds\n- 0.5 — one step is out of order\n- 0.0 — the agent skips the approval\n\n## Regression check\n\n- All tests that passed before this slice must still pass.\n- Files outside the slice scope must remain unchanged. Protected scope: the beads and files choices in setup.\n\n## Out of scope — do not penalise\n\n- any adapter code.\n",
+        "source_path": ".cobuilder/rubrics/linear-tracker-adapter/slice-13.md"
+      },
+      {
         "id": "nexus-borrowings/1",
         "feature_slug": "nexus-borrowings",
         "n": 1,
@@ -6810,18 +7223,41 @@
           "beads-storage/E5",
           "beads-storage/E6",
           "beads-storage/E7",
-          "beads-storage/E8"
+          "beads-storage/E8",
+          "linear-tracker-adapter/E1",
+          "linear-tracker-adapter/E2",
+          "linear-tracker-adapter/E3",
+          "linear-tracker-adapter/E4",
+          "linear-tracker-adapter/E5",
+          "linear-tracker-adapter/E6",
+          "linear-tracker-adapter/E7"
         ]
       },
       "ADR-0041": {
         "pr": null,
-        "via": "none",
-        "path": []
+        "via": "epic",
+        "path": [
+          "linear-tracker-adapter/E1",
+          "linear-tracker-adapter/E2",
+          "linear-tracker-adapter/E3",
+          "linear-tracker-adapter/E4",
+          "linear-tracker-adapter/E5",
+          "linear-tracker-adapter/E6",
+          "linear-tracker-adapter/E7"
+        ]
       },
       "ADR-0042": {
         "pr": null,
-        "via": "none",
-        "path": []
+        "via": "epic",
+        "path": [
+          "linear-tracker-adapter/E1",
+          "linear-tracker-adapter/E2",
+          "linear-tracker-adapter/E3",
+          "linear-tracker-adapter/E4",
+          "linear-tracker-adapter/E5",
+          "linear-tracker-adapter/E6",
+          "linear-tracker-adapter/E7"
+        ]
       },
       "ADR-0043": {
         "pr": 43,
@@ -6848,7 +7284,14 @@
           "beads-storage/E5",
           "beads-storage/E6",
           "beads-storage/E7",
-          "beads-storage/E8"
+          "beads-storage/E8",
+          "linear-tracker-adapter/E1",
+          "linear-tracker-adapter/E2",
+          "linear-tracker-adapter/E3",
+          "linear-tracker-adapter/E4",
+          "linear-tracker-adapter/E5",
+          "linear-tracker-adapter/E6",
+          "linear-tracker-adapter/E7"
         ]
       },
       "ADR-0047": {
@@ -6862,7 +7305,35 @@
           "beads-storage/E5",
           "beads-storage/E6",
           "beads-storage/E7",
-          "beads-storage/E8"
+          "beads-storage/E8",
+          "linear-tracker-adapter/E1",
+          "linear-tracker-adapter/E2",
+          "linear-tracker-adapter/E3",
+          "linear-tracker-adapter/E4",
+          "linear-tracker-adapter/E5",
+          "linear-tracker-adapter/E6",
+          "linear-tracker-adapter/E7"
+        ]
+      },
+      "ADR-0048": {
+        "pr": 43,
+        "via": "epic",
+        "path": [
+          "beads-storage/E1",
+          "beads-storage/E2",
+          "beads-storage/E3",
+          "beads-storage/E4",
+          "beads-storage/E5",
+          "beads-storage/E6",
+          "beads-storage/E7",
+          "beads-storage/E8",
+          "linear-tracker-adapter/E1",
+          "linear-tracker-adapter/E2",
+          "linear-tracker-adapter/E3",
+          "linear-tracker-adapter/E4",
+          "linear-tracker-adapter/E5",
+          "linear-tracker-adapter/E6",
+          "linear-tracker-adapter/E7"
         ]
       }
     },
@@ -6974,6 +7445,13 @@
       "lean-bundle-diffs/E1": "unstarted",
       "lean-bundle-diffs/E2": "unstarted",
       "lean-bundle-diffs/E3": "completed",
+      "linear-tracker-adapter/E1": "unstarted",
+      "linear-tracker-adapter/E2": "unstarted",
+      "linear-tracker-adapter/E3": "unstarted",
+      "linear-tracker-adapter/E4": "unstarted",
+      "linear-tracker-adapter/E5": "unstarted",
+      "linear-tracker-adapter/E6": "unstarted",
+      "linear-tracker-adapter/E7": "unstarted",
       "maintainable-viewer/E1": "completed",
       "maintainable-viewer/E2": "completed",
       "maintainable-viewer/E3": "completed",
@@ -7119,6 +7597,19 @@
       "interaction-design-gate/5": "interaction-design-gate/E3",
       "interaction-design-gate/6": "interaction-design-gate/E3",
       "interaction-design-gate/7": "interaction-design-gate/E3",
+      "linear-tracker-adapter/1": "linear-tracker-adapter/E1",
+      "linear-tracker-adapter/2": "linear-tracker-adapter/E1",
+      "linear-tracker-adapter/3": "linear-tracker-adapter/E1",
+      "linear-tracker-adapter/4": "linear-tracker-adapter/E2",
+      "linear-tracker-adapter/5": "linear-tracker-adapter/E2",
+      "linear-tracker-adapter/6": "linear-tracker-adapter/E3",
+      "linear-tracker-adapter/7": "linear-tracker-adapter/E3",
+      "linear-tracker-adapter/8": "linear-tracker-adapter/E4",
+      "linear-tracker-adapter/9": "linear-tracker-adapter/E4",
+      "linear-tracker-adapter/10": "linear-tracker-adapter/E5",
+      "linear-tracker-adapter/11": "linear-tracker-adapter/E5",
+      "linear-tracker-adapter/12": "linear-tracker-adapter/E6",
+      "linear-tracker-adapter/13": "linear-tracker-adapter/E7",
       "nexus-borrowings/1": "nexus-borrowings/E1",
       "nexus-borrowings/2": "nexus-borrowings/E1",
       "nexus-borrowings/3": "nexus-borrowings/E1",
@@ -7225,7 +7716,8 @@
       "ADR-0042": "cobuilder-packaging",
       "ADR-0043": "tracker-port",
       "ADR-0044": "tracker-port",
-      "ADR-0047": "tracker-port"
+      "ADR-0047": "tracker-port",
+      "ADR-0048": "shared"
     },
     "adr_to_district": {
       "ADR-0001": "scripts",
@@ -7625,6 +8117,39 @@
           "view": "#/level-page-restructure/build/plan/epics`"
         }
       ],
+      "linear-tracker-adapter": [
+        {
+          "n": "1",
+          "name": "Product (no tech talk)",
+          "state": "pending",
+          "doc": "linear-tracker-adapter",
+          "doc_kind": "product"
+        },
+        {
+          "n": "2",
+          "name": "Architecture",
+          "state": "pending",
+          "doc": "linear-tracker-adapter",
+          "doc_kind": "architecture"
+        },
+        {
+          "n": "2b",
+          "name": "Interaction design",
+          "state": "n/a (no UI) — Screens: \"No UI. The feature adds no screen. People see the result in the Linear board, which Linear owns.\""
+        },
+        {
+          "n": "3",
+          "name": "Program design",
+          "state": "pending",
+          "doc": "linear-tracker-adapter",
+          "doc_kind": "program"
+        },
+        {
+          "n": "4",
+          "name": "Slice plan, epic designs, and rubrics",
+          "state": "pending"
+        }
+      ],
       "mechanical-smells": [
         {
           "n": "1",
@@ -7961,6 +8486,11 @@
         "pull_requests": []
       },
       "lean-bundle-diffs": {
+        "stage_source": "tracker",
+        "next_ready": null,
+        "pull_requests": []
+      },
+      "linear-tracker-adapter": {
         "stage_source": "tracker",
         "next_ready": null,
         "pull_requests": []

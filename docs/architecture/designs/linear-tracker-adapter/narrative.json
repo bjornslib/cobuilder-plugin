@@ -1,0 +1,89 @@
+{
+  "intent": {
+    "tagline": "Plan in Linear. Build with CoBuilder. See both.",
+    "narration": "Teams that live in Linear could not use CoBuilder, because only beads held the state. This design adds a second adapter behind the same port. People plan in Linear, and CoBuilder builds from that plan and shows its progress there.",
+    "beats": []
+  },
+  "problem_solution": {
+    "problem": "The tracker port has one real adapter, beads. A team that plans in Linear cannot use CoBuilder without beads, a bd binary, and a Dolt remote. People want the backlog, epics, and slices in Linear, and they want to watch progress there.",
+    "solution": "A linear adapter implements the same port over the Linear GraphQL API. People own the plan fields. The adapter keeps the CoBuilder state in one attachment on each issue and moves the workflow state. The envelope keeps each plan field as last seen, which finds the changes that people make.",
+    "narration": "One repo uses one adapter. The beads files stay as they are. Linear holds both the plan and the state, so the board shows what CoBuilder knows. The cost is a claim that is not exact, and a smoke test before any build.",
+    "beats": [
+      {
+        "kind": "problem",
+        "text": "Only beads holds real state today. A Linear team would install beads, bd, and a Dolt remote just to use CoBuilder, and the Linear board would show none of the progress."
+      },
+      {
+        "kind": "decision",
+        "text": "A linear adapter lives in shared/tracker_port and implements the TrackerPort. A repo sets adapter: linear and uses no beads. The key comes from LINEAR_API_KEY and never enters the repo."
+      },
+      {
+        "kind": "decision",
+        "text": "A program is a top-level issue, an epic is its sub-issue, and a slice is a sub-issue of an epic. A pull request is an issue that relates to its epics and never blocks. The workflow state type gives the lifecycle."
+      },
+      {
+        "kind": "constraint",
+        "text": "One attachment on each issue holds the envelope as a JSON string, because Linear metadata takes only strings and numbers. Its title shows the lifecycle, score, and attempts, so people see progress on the board."
+      },
+      {
+        "kind": "risk",
+        "text": "A claim is a write plus a read-back, so a short double-claim window stays open. Four Linear behaviors need a live workspace to verify, and the engineer has none yet. The smoke test runs third, so no early step waits on a workspace. The design aborts if the envelope cannot round-trip."
+      }
+    ],
+    "alternatives": [
+      {
+        "option": "Keep the state in a git ref beside Linear, as event files",
+        "rejected_because": "Scores, gates, and pull request records would not show in Linear. Cloud sessions would push a custom ref that no test verifies. The engineer chose one store."
+      },
+      {
+        "option": "Keep a signed, hash-chained ledger and use Linear as a witness",
+        "rejected_because": "Cloud sessions hold no signing key. Refusing next_ready without a signed close would also change the port for every adapter."
+      },
+      {
+        "option": "Make Linear comments the source of truth and replay them on each read",
+        "rejected_because": "Every read replays all comments, people can edit or delete a comment, and machine comments clutter the issues that people read."
+      },
+      {
+        "option": "Keep all state in one JSON file in git, joined by issue id",
+        "rejected_because": "Two laptops that claim one slice collide on one file, and a cloud clone sees stale state. A failed page could mark the whole backlog closed."
+      },
+      {
+        "option": "Keep beads as the store and mirror it to Linear, or sync both ways",
+        "rejected_because": "A mirror gives no planning in Linear. Two-way sync needs a conflict rule, and the bd bridge drops the envelope. The engineer chose one adapter."
+      }
+    ]
+  },
+  "architecture": {
+    "narration": "The adapter sits behind the existing port, so callers see no change. Agents still use shared/tracker.py. The adapter turns each port call into a few GraphQL requests, and the projector builds the same index as before.",
+    "beats": [
+      {
+        "kind": "read",
+        "text": "One paged query returns the issues of the configured project with their parent, relations, assignee, workflow state, and attachments. The query sets includeArchived, so closed slices stay in the read. About 265 issues need about 6 requests, by estimate. A read by id needs one."
+      },
+      {
+        "kind": "write",
+        "text": "A state write updates the envelope attachment and moves the workflow state through the states map in tracker.yaml. The prepare operation checks that the mapped states exist and that the key works."
+      },
+      {
+        "kind": "ready",
+        "text": "The client computes ready. A slice is ready when it is open and unclaimed, each blocker is closed, and its epic has no open blocker. A pull request or an unplanned issue is never ready."
+      },
+      {
+        "kind": "close",
+        "text": "A close counts only with proof in the envelope: a score of 0.90 or more, or the outcome skipped. A slice that a person drags to Done with no score reads as open, and the next slice stays blocked."
+      },
+      {
+        "kind": "claim",
+        "text": "claim_slice writes a claim attachment with a nonce, then reads all claim attachments. The earliest server time wins, with a nonce tie-break, and only the winner writes the assignee. A loser deletes its attachment. The claim ends when the slice leaves in progress."
+      },
+      {
+        "kind": "sync",
+        "text": "The sync operation compares each plan field with the value seen last. A difference posts a comment on the issue and sets plan_changes with the field, old value, and new value. Writes by CoBuilder update only the fields they write. The comment stays in Linear if the output is lost."
+      },
+      {
+        "kind": "files",
+        "text": "seed-from-files creates the missing issues, and Linear wins after the first seed. regenerate-status-files writes the state lines of 00-status.md and 04-slices.md. An issue that a person creates lists as unplanned, and shared code skips it until a gate links it."
+      }
+    ]
+  }
+}

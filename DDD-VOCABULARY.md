@@ -71,7 +71,7 @@ _Avoid_: issue (an issue is a beads, Linear, or Jira record, and the tracker rec
 
 <a id="tracker-adapter"></a>
 **Tracker adapter** (`cobuilder-packaging`):
-One implementation of the tracker port for one tracker: `beads` comes first, `files` reads today's files, and `fake` keeps records in memory. The `linear` and `jira` adapters are later programs.
+One implementation of the tracker port for one tracker: `beads` comes first, `files` reads today's files, and `fake` keeps records in memory. ADR-0048 designs the `linear` adapter, and the `jira` adapter is a later program.
 _Avoid_: connector (a loose word for any tool that moves data, and an adapter must pass the contract test)
 
 <a id="projector"></a>
@@ -83,6 +83,16 @@ _Avoid_: reader (a reader gets records from the port and feeds the projector, an
 **Tracker CLI** (`cobuilder-packaging`):
 The one command, `shared/tracker.py`, that an agent calls to read or write workflow state (ADR-0040). It has one subcommand for each port operation, prints JSON on stdout, and exits 2 when no adapter is configured.
 _Avoid_: bd, gh (the own CLI of a tracker, which only an adapter calls), the `bd` bridges (a different tool with its own sync)
+
+<a id="plan-change"></a>
+**Plan change** (`cobuilder-packaging`):
+A difference between the plan fields of a tracker issue now and the values that the last sync stored. The `linear` adapter lists each one in `plan_changes` (ADR-0048).
+_Avoid_: conflict (a conflict is a difference between a plan file and the tracker that a seed reports, and a plan change is an edit by a person)
+
+<a id="unplanned-issue"></a>
+**Unplanned issue** (`cobuilder-packaging`):
+An issue that a person creates in the tracker with no envelope. It lists with the state `unplanned`, the projector skips it, and it is never ready until a gate links its plan row (ADR-0048).
+_Avoid_: foreign issue (the beads adapter ignores a foreign issue and the `linear` adapter lists an unplanned one), backlog item (backlog is a design stage)
 
 ## architect
 
