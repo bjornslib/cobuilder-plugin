@@ -237,7 +237,7 @@ _Avoid_: draft review (the architect stage 6 pre-review, which proposes survivor
 
 <a id="structure-signal"></a>
 **Structure signal** (`implement`):
-A report from `shared/structure_signals.py` about where a new file sits or what its name says: a crowded folder, a name-stem cluster, or a generic file name. It is advice, it fires only for a file that is new on the branch, and it stays outside the slice score (ADR-0048).
+A report from `shared/structure_signals.py` about where a new file sits or what its name says: a crowded folder, a name-stem cluster, or a generic file name. It is advice, it fires only for a file that is untracked or added since the merge-base, and it stays outside the slice score (ADR-0048).
 _Avoid_: mechanical smell (a pattern inside one file that habit-sensors counts), finding (an `assessment.json` entry, judged by a curator)
 
 ## cobuilder-memory

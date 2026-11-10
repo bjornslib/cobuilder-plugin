@@ -1,13 +1,13 @@
 {
   "schema_version": "1.5",
   "sources": {
-    "git_head": "7305ce87e207a9351556ada1ac8277eb2a26c6ac",
+    "git_head": "d1e3f100411d9ce6165b6cfc27e4faa643c898eb",
     "trees": {
-      "docs/architecture/adr": "sha256:a305fe9bf8e85df82ab7a47275ca93bdb79a5221b085cb30a73f987e251453d1",
-      "docs/architecture/designs": "sha256:001b9993e695763364fe8202fed4481d994101a0463c6903770d7bd04f4aa95b",
-      "docs/architecture/contexts": "sha256:6663ee456e31bfbe31401908ae494017ed864dbb9c72211b6cbdccc44d078482",
-      "docs/plans": "sha256:0429cdba8dbd223e0645e2cd7b1cfe592b204e36311599be080ea80e5187a95c",
-      ".cobuilder/rubrics": "sha256:a8dd0f1c696b75fc70fdf4e32c7ca9789d052e59e9232b5d37e52c0b7952e778"
+      "docs/architecture/adr": "sha256:89147724af4c26ca7dd08830afdd717b103db3ee46803e96d136fb342c8cea30",
+      "docs/architecture/designs": "sha256:2618c6de61ad2f5f64305b88c94453fd802461cca08f31599e29ddff87c43794",
+      "docs/architecture/contexts": "sha256:aaf923ca84433a8c5a152bf846f749e852a293aca14e38801bf9a3c84faba20a",
+      "docs/plans": "sha256:cb9d3c236b9bd991eb695a5e6aa1c49daa332c80e39536e7f4a9d74876bb711e",
+      ".cobuilder/rubrics": "sha256:091c7844d732911660ea984a850432e9af5e55a5560f8caf8595f926a32986c9"
     }
   },
   "entities": {
@@ -241,6 +241,11 @@
         "id": "ADR-0047",
         "title": "the tracker is the source of program stage and of epic and slice status",
         "state": "decided"
+      },
+      {
+        "id": "ADR-0048",
+        "title": "structure signals coach GREEN, and VALIDATE reports them beside the slice score",
+        "state": "decided"
       }
     ],
     "design": [
@@ -403,6 +408,13 @@
         "name": "slice-agents-and-vocabulary",
         "outcome": "A slice built with /implement:start gets structural coaching while GREEN writes, and a vocabulary verdict beside its score, against one root glossary that design mode keeps current.",
         "stage": "decided",
+        "stage_source": "tracker"
+      },
+      {
+        "id": "structure-coaching",
+        "name": "structure-coaching",
+        "outcome": "GREEN gets structure coaching when it adds a file, VALIDATE reports structure findings beside the slice score, and the main agent runs each slice through the RED, GREEN, and VALIDATE agents.",
+        "stage": "backlog",
         "stage_source": "tracker"
       },
       {
@@ -1338,6 +1350,60 @@
         "design_doc": "slice-agents-and-vocabulary/E4"
       },
       {
+        "id": "structure-coaching/E1",
+        "design": "structure-coaching",
+        "epic_id": "E1",
+        "branch": null,
+        "pr": null,
+        "state": null,
+        "note": null
+      },
+      {
+        "id": "structure-coaching/E2",
+        "design": "structure-coaching",
+        "epic_id": "E2",
+        "branch": null,
+        "pr": null,
+        "state": null,
+        "note": null
+      },
+      {
+        "id": "structure-coaching/E3",
+        "design": "structure-coaching",
+        "epic_id": "E3",
+        "branch": null,
+        "pr": null,
+        "state": null,
+        "note": null
+      },
+      {
+        "id": "structure-coaching/E4",
+        "design": "structure-coaching",
+        "epic_id": "E4",
+        "branch": null,
+        "pr": null,
+        "state": null,
+        "note": null
+      },
+      {
+        "id": "structure-coaching/E5",
+        "design": "structure-coaching",
+        "epic_id": "E5",
+        "branch": null,
+        "pr": null,
+        "state": null,
+        "note": null
+      },
+      {
+        "id": "structure-coaching/E6",
+        "design": "structure-coaching",
+        "epic_id": "E6",
+        "branch": null,
+        "pr": null,
+        "state": null,
+        "note": null
+      },
+      {
         "id": "ubiquitous-language/E1",
         "design": "ubiquitous-language",
         "epic_id": "E1",
@@ -2209,7 +2275,7 @@
         "detail": {
           "target": "plugins/artifact/scripts/build_builds_view.py",
           "from": "plugins/implement/scripts/verify_gate.py",
-          "why": "SMELL: a comment at verify_gate.py:98-100 names the path plugins/artifact/scripts/build_builds_view.py. It is a comment, not an import, so nothing breaks. It still names another plugin's path, which ADR-0016 forbids. Name shared/slice_table.py as the shared parser and drop the artifact path."
+          "why": "SMELL: a comment at verify_gate.py:101-102 names the path plugins/artifact/scripts/build_builds_view.py. It is a comment, not an import, so nothing breaks. It still names another plugin's path, which ADR-0016 forbids. Name shared/slice_table.py as the shared parser and drop the artifact path."
         }
       },
       {
@@ -2227,8 +2293,37 @@
         "context": "implement",
         "kind": "forbidden-dependency",
         "detail": {
-          "target": "agents and hook of another plugin",
-          "why": "CLAUDE.md principle 5 and ADR-0025: only implement ships agents and a hook. Verified: this plugin owns all four agents (green, red, validate, vocabulary) and the one hooks.json, and no other plugin has either."
+          "target": "Skill(\"cobuilder-setup\") of the cobuilder-full-lifecycle plugin, in commands/install.md",
+          "from": "plugins/implement/commands",
+          "why": "SMELL: install.md:16 calls Skill(\"cobuilder-setup\") with no plugin prefix. The skill sits in cobuilder-full-lifecycle, which lists implement as a dependency in its plugin.json. So the edge runs against the manifest direction and makes a soft cycle. implement/plugin.json does not declare it, and no allowed_dependencies entry covers it. The call has a fallback that tells the user to install the umbrella. Either sanction the handoff in an ADR and use the cobuilder-full-lifecycle: prefix, or move the install command to the umbrella."
+        }
+      },
+      {
+        "id": "implement/forbidden-dependency/5",
+        "context": "implement",
+        "kind": "forbidden-dependency",
+        "detail": {
+          "target": "any plugin other than implement that ships agents/",
+          "why": "CLAUDE.md principle 5 and ADR-0025: only implement ships agents. Verified: plugins/implement/agents holds red, green, validate, and vocabulary, and no other plugin has an agents/ folder."
+        }
+      },
+      {
+        "id": "implement/forbidden-dependency/6",
+        "context": "implement",
+        "kind": "forbidden-dependency",
+        "detail": {
+          "target": "any plugin other than implement and cobuilder-memory that ships hooks/",
+          "why": "ADR-0025, ADR-0039, ADR-0041, ADR-0042: implement owns hooks/hooks.json with four hooks, and the cobuilder-memory mod owns its own hooks module. No other plugin has a hooks/ folder. The 2026-10-12 record said implement alone owns hooks. That text was out of date."
+        }
+      },
+      {
+        "id": "implement/forbidden-dependency/7",
+        "context": "implement",
+        "kind": "forbidden-dependency",
+        "detail": {
+          "target": "bd",
+          "from": "plugins/implement/scripts",
+          "why": "CLAUDE.md principle 10 and the sync rule: only the beads adapter and sync_worker.py name bd or run a sync. Verified: no script or reference in plugins/implement names a bd call. The three tracker hooks run shared/tracker.py only."
         }
       },
       {
@@ -2243,7 +2338,7 @@
           ],
           "allowed_inbound": [],
           "allowed_outbound": [],
-          "rule": "Static JSON. Declares architect and artifact as dependencies. Version 0.7.0 must match marketplace.json."
+          "rule": "Static JSON. Declares architect and artifact as dependencies. Version 0.15.3 must match marketplace.json."
         }
       },
       {
@@ -2263,7 +2358,7 @@
           "allowed_outbound": [
             "skill-build"
           ],
-          "rule": "start and install call Skill(\"build\"). debug calls the architect plugin's debug mode by name (see SMELL)."
+          "rule": "start calls Skill(\"build\") and runs tracker.py doctor first. debug calls the architect plugin's debug mode by name. install calls Skill(\"cobuilder-setup\") of the umbrella (see both SMELL entries)."
         }
       },
       {
@@ -2282,13 +2377,37 @@
           "allowed_outbound": [
             "agents",
             "scripts",
-            "shared-scripts"
+            "shared-scripts",
+            "skill-design-to-code",
+            "slice-loop-workflow"
           ],
-          "rule": "Owns the four gates and the slice loop. Calls Skill(\"cobuilder-artifacts\") by name. 12 reference files plus workflows/."
+          "rule": "Owns the four gates and the slice loop. Calls Skill(\"cobuilder-artifacts\") by name. Reads and writes workflow state through shared/tracker.py only. Holds SKILL.md and 3 reference files (rubric-authoring, slice-loop, validation-scoring). The goal-sync and hindsight-routine references are gone."
         }
       },
       {
         "id": "implement/module-invariant/4",
+        "context": "implement",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "slice-loop-workflow",
+          "path": "plugins/implement/skills/build/workflows",
+          "members": [
+            "slice-loop.js"
+          ],
+          "public_interface": [
+            "Workflow slice-loop"
+          ],
+          "allowed_inbound": [
+            "skill-build"
+          ],
+          "allowed_outbound": [
+            "agents"
+          ],
+          "rule": "A script with no imports and no file access. It spawns implement:red, implement:green, implement:validate, and implement:vocabulary by agentType. The orchestrating session runs the tracker calls."
+        }
+      },
+      {
+        "id": "implement/module-invariant/5",
         "context": "implement",
         "kind": "module-invariant",
         "detail": {
@@ -2305,7 +2424,7 @@
         }
       },
       {
-        "id": "implement/module-invariant/5",
+        "id": "implement/module-invariant/6",
         "context": "implement",
         "kind": "module-invariant",
         "detail": {
@@ -2324,14 +2443,15 @@
             "implement:vocabulary"
           ],
           "allowed_inbound": [
-            "skill-build"
+            "skill-build",
+            "slice-loop-workflow"
           ],
           "allowed_outbound": [],
           "rule": "Leaf. The only agents in the family (ADR-0025). VALIDATE scores blind against a rubric and needs 0.90."
         }
       },
       {
-        "id": "implement/module-invariant/6",
+        "id": "implement/module-invariant/7",
         "context": "implement",
         "kind": "module-invariant",
         "detail": {
@@ -2341,17 +2461,21 @@
             "hooks.json"
           ],
           "public_interface": [
-            "PostToolUse on Write|Edit"
+            "SessionStart",
+            "PostToolUse on Write|Edit",
+            "Stop",
+            "SessionEnd"
           ],
           "allowed_inbound": [],
           "allowed_outbound": [
-            "scripts"
+            "scripts",
+            "tracker-hooks"
           ],
-          "rule": "Runs scripts/habit_coach.py through uv. The only hook in the family."
+          "rule": "Runs one script per event through uv: habit_coach.py on PostToolUse, tracker_reminder.py on SessionStart, tracker_sync_check.py on Stop, and tracker_sync_flush.py on SessionEnd with a 60 second timeout."
         }
       },
       {
-        "id": "implement/module-invariant/7",
+        "id": "implement/module-invariant/8",
         "context": "implement",
         "kind": "module-invariant",
         "detail": {
@@ -2371,11 +2495,38 @@
           "allowed_outbound": [
             "shared-scripts"
           ],
-          "rule": "habit_coach.py is stdlib only. verify_gate.py imports only slice_table from shared."
+          "rule": "habit_coach.py is stdlib only and acts for implement:green only. verify_gate.py imports slice_table, gate_status, and tracker_port.reader from shared and nothing else outside the standard library."
         }
       },
       {
-        "id": "implement/module-invariant/8",
+        "id": "implement/module-invariant/9",
+        "context": "implement",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "tracker-hooks",
+          "path": "plugins/implement/scripts",
+          "members": [
+            "tracker_reminder.py",
+            "tracker_sync_check.py",
+            "tracker_sync_common.py",
+            "tracker_sync_flush.py"
+          ],
+          "public_interface": [
+            "tracker_reminder.py",
+            "tracker_sync_check.py",
+            "tracker_sync_flush.py"
+          ],
+          "allowed_inbound": [
+            "hook"
+          ],
+          "allowed_outbound": [
+            "shared-scripts"
+          ],
+          "rule": "Stdlib only, always exit 0, never call bd, and use no network. tracker_sync_common.py imports tracker_reminder.payload_cwd. The sync scripts reach the tracker only by starting shared/tracker.py as a subprocess. tracker_reminder.py starts no process."
+        }
+      },
+      {
+        "id": "implement/module-invariant/10",
         "context": "implement",
         "kind": "module-invariant",
         "detail": {
@@ -2384,6 +2535,7 @@
           "public_interface": [],
           "allowed_inbound": [
             "scripts",
+            "tracker-hooks",
             "skill-build"
           ],
           "allowed_outbound": [],
@@ -2398,9 +2550,11 @@
           "with": "shared",
           "pattern": "shared-kernel",
           "shared": [
-            "slice_table"
+            "slice_table",
+            "gate_status",
+            "tracker_port.reader"
           ],
-          "note": "verify_gate.py adds the plugin's shared symlink to sys.path and imports slice_table. The skill also runs shared/build_index.py by shell."
+          "note": "verify_gate.py adds the plugin's shared symlink to sys.path and imports slice_table, gate_status, and tracker_port.reader. The skill and the references run shared/tracker.py and shared/build_index.py by shell. The three tracker hooks start shared/tracker.py as a subprocess and import nothing from shared."
         }
       },
       {
@@ -2420,7 +2574,7 @@
         "detail": {
           "with": "artifact",
           "pattern": "open-host-service",
-          "note": "The skill calls Skill(\"cobuilder-artifacts\") three times to show a gate and the epics route. No import and no path."
+          "note": "The skill and validation-scoring.md call Skill(\"cobuilder-artifacts\") to show a gate and the epics route. No import and no path."
         }
       },
       {
@@ -2631,7 +2785,7 @@
         "kind": "forbidden-dependency",
         "detail": {
           "target": "plugins/<name>/ as Python import",
-          "why": "Shared is the base layer. Grep of every 'from' and 'import' line in shared/*.py finds only the standard library, PyYAML, ulid, and sibling shared modules. This rule holds."
+          "why": "Shared is the base layer. Grep of every 'from' and 'import' line in shared/**/*.py finds only the standard library, PyYAML, ulid, PIL (lazy, in migrate_png_assets_to_webp.py), and sibling shared modules. This rule holds."
         }
       },
       {
@@ -2641,7 +2795,7 @@
         "detail": {
           "target": "plugins/artifact/viewer/index.html and the sibling artifact install cache",
           "from": "shared/migrate_bundle.py",
-          "why": "SMELL: find_viewer_source (lines 309-340) probes PLUGIN_ROOT/plugins/artifact/viewer/index.html and the sibling 'artifact/<version>/viewer/index.html' cache, and the warning text at line 582 names 'plugins/artifact/'. Shared code reaches into a plugin's files, which inverts the base layer. ADR candidate: pass the viewer path in as an argument, or ship the built viewer through shared."
+          "why": "SMELL: find_viewer_source (lines 338-369) probes PLUGIN_ROOT/viewer/index.html, PLUGIN_ROOT/plugins/artifact/viewer/index.html, and the sibling 'artifact/<version>/viewer/index.html' cache. The warning text at line 577 names 'plugins/artifact/'. Shared code reaches into a plugin's files, which inverts the base layer. ADR candidate: pass the viewer path in as an argument, or ship the built viewer through shared."
         }
       },
       {
@@ -2659,8 +2813,28 @@
         "context": "shared",
         "kind": "forbidden-dependency",
         "detail": {
+          "target": "the bd name outside beads*.py and bd_runner.py",
+          "from": "shared/tracker_port/config.py",
+          "why": "SMELL (rule wording): CLAUDE.md says only shared/tracker_port/beads*.py and bd_runner.py name bd. Verified, bd_runner.py is the only file that runs the bd command (subprocess.run, line 47), and beads*.py build its arguments. But config.py reads the 'bd' key of tracker.yaml (lines 45-51) and builds BdRunner(bd=bd) and BeadsAdapter. No bd command runs there. Comments in fake_support.py:91 and record.py:23 also say bd. ADR candidate: either name config.py as the adapter factory in the rule, or move the beads branch into a beads module. tests/test_tracker_docs.py scans plugins/ and shared/ and skips shared/tracker_port/, so it does not enforce the narrower rule."
+        }
+      },
+      {
+        "id": "shared/forbidden-dependency/5",
+        "context": "shared",
+        "kind": "forbidden-dependency",
+        "detail": {
+          "target": "sync runs outside the beads adapter and sync_worker.py",
+          "from": "shared/tracker_port/cli_operations.py",
+          "why": "SMELL (rule wording): CLAUDE.md says only the beads adapter and sync_worker.py run a sync. Verified, bd sync runs only in BeadsAdapter.sync (beads.py:178). Its callers are beads_sync._publish (write and async modes), sync_state.sync_once (called by sync_worker.run), and the cli_operations 'sync' operation (line 151, which calls sync_once directly). sync_state.py also holds spawn_worker, which starts 'tracker.py sync-worker' detached. So two modules outside the stated pair take part in a sync. ADR candidate: widen the rule to name sync_state.py and the CLI 'sync' operation, or route the CLI call through the worker. No hook script calls bd: tracker_sync_check.py and tracker_sync_flush.py run tracker.py only."
+        }
+      },
+      {
+        "id": "shared/forbidden-dependency/6",
+        "context": "shared",
+        "kind": "forbidden-dependency",
+        "detail": {
           "target": "authored content",
-          "why": "CLAUDE.md principle 2: a script moves data and never authors judgment. build_index.py is the only writer of data/adrs.json and data/index.json."
+          "why": "CLAUDE.md principle 2: a script moves data and never authors judgment. build_index.py is the only writer of data/adrs.json and data/index.json (write_text calls at build_index.py lines 1739 and 1748)."
         }
       },
       {
@@ -2677,16 +2851,18 @@
           "public_interface": [
             "_bundle_meta.SCHEMA_VERSION",
             "_bundle_meta.CURRENT_BUNDLE_FORMAT",
+            "_bundle_meta.DESIGN_STAGES",
             "_bundle_meta.require_compatible",
             "_manifest.rewrite_manifest"
           ],
           "allowed_inbound": [
             "index-and-verify",
             "migration",
-            "ledger-and-gates"
+            "tracker-port",
+            "tracker-cli"
           ],
           "allowed_outbound": [],
-          "rule": "_bundle_meta.py is a leaf: standard library only. _manifest.py imports only _bundle_meta."
+          "rule": "_bundle_meta.py is a leaf: standard library only. _manifest.py imports only _bundle_meta. tracker_port reads DESIGN_STAGES from it."
         }
       },
       {
@@ -2701,15 +2877,17 @@
             "verify_bundle.py",
             "validate_decision_state.py",
             "boundary_check.py",
-            "prose_budget.py"
+            "prose_budget.py",
+            "habit_smells.py"
           ],
           "public_interface": [],
           "allowed_inbound": [],
           "allowed_outbound": [
             "bundle-meta",
-            "gate-parsers"
+            "gate-parsers",
+            "tracker-port"
           ],
-          "rule": "Run by shell, not imported by plugins. build_index.py imports _bundle_meta, prose_budget, slice_table, and gate_status. verify_bundle.py imports prose_budget and _bundle_meta. build_index.py needs PyYAML."
+          "rule": "Run by shell, not imported by plugins. build_index.py imports _bundle_meta, prose_budget, slice_table, gate_status, validate_decision_state, and tracker_port (projector, reader). verify_bundle.py imports _bundle_meta, boundary_check, and prose_budget. boundary_check.py, prose_budget.py, validate_decision_state.py, and habit_smells.py import no sibling module. build_index.py and validate_decision_state.py need PyYAML. habit_smells.py runs the habit-sensors tool and git by subprocess."
         }
       },
       {
@@ -2721,14 +2899,16 @@
           "path": "shared",
           "members": [
             "migrate_bundle.py",
-            "migrate_png_assets_to_webp.py"
+            "migrate_png_assets_to_webp.py",
+            "strip_goal_stage.py"
           ],
           "public_interface": [],
           "allowed_inbound": [],
           "allowed_outbound": [
-            "bundle-meta"
+            "bundle-meta",
+            "tracker-port"
           ],
-          "rule": "SMELL: migrate_bundle.py probes the artifact plugin's viewer path (see forbidden_dependencies). Append a ladder step to change data or layout, and never call extract_story.py."
+          "rule": "SMELL: migrate_bundle.py probes the artifact plugin's viewer path (see forbidden_dependencies). migrate_bundle.py imports _bundle_meta. migrate_png_assets_to_webp.py imports _manifest. strip_goal_stage.py imports tracker_port.reader. Append a ladder step to change data or layout, and never call extract_story.py."
         }
       },
       {
@@ -2767,14 +2947,61 @@
             "slice_table"
           ],
           "allowed_inbound": [
-            "index-and-verify"
+            "index-and-verify",
+            "tracker-port"
           ],
           "allowed_outbound": [],
-          "rule": "One parser for the gate block and the slice table, shared by build_index.py, verify_gate.py, and build_builds_view.py."
+          "rule": "Leaves: standard library only. One parser for the gate block and the slice table, shared by build_index.py, tracker_port, verify_gate.py, and build_builds_view.py."
         }
       },
       {
         "id": "shared/module-invariant/6",
+        "context": "shared",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "tracker-cli",
+          "path": "shared",
+          "members": [
+            "tracker.py"
+          ],
+          "public_interface": [
+            "tracker.py operations (uv run shared/tracker.py <operation>)"
+          ],
+          "allowed_inbound": [],
+          "allowed_outbound": [
+            "tracker-port"
+          ],
+          "rule": "Run by shell only. No plugin imports it. It imports tracker_port.cli_operations, tracker_port.config, and tracker_port.port. The implement hooks and the four main skills call it. shared/tracker-usage.md lists each operation."
+        }
+      },
+      {
+        "id": "shared/module-invariant/7",
+        "context": "shared",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "tracker-port",
+          "path": "shared/tracker_port",
+          "public_interface": [
+            "tracker_port.reader",
+            "tracker_port.TrackerPort",
+            "tracker_port.TrackerRecord",
+            "tracker_port.project",
+            "tracker_port.FakeAdapter"
+          ],
+          "allowed_inbound": [
+            "index-and-verify",
+            "migration",
+            "tracker-cli"
+          ],
+          "allowed_outbound": [
+            "bundle-meta",
+            "gate-parsers"
+          ],
+          "rule": "The tracker port, its adapters (beads, files, fake), the projector, and the sync worker. Outside shared it is reached by import only through tracker_port.reader (verify_gate.py, build_builds_view.py). Imports of shared modules are limited to _bundle_meta (DESIGN_STAGES), gate_status, and slice_table. The bd command runs only in bd_runner.py, and bd sync runs only in BeadsAdapter.sync (see forbidden_dependencies for the two wording gaps). config.py is the one factory that builds a BeadsAdapter, a FilesAdapter, or a FakeAdapter."
+        }
+      },
+      {
+        "id": "shared/module-invariant/8",
         "context": "shared",
         "kind": "module-invariant",
         "detail": {
@@ -2800,7 +3027,7 @@
         "detail": {
           "with": "architect",
           "pattern": "shared-kernel",
-          "note": "Consumed by shell only: build_index, migrate_bundle, prose_budget, boundary_check, validate_decision_state."
+          "note": "Consumed by shell only: build_index, migrate_bundle, prose_budget, boundary_check, validate_decision_state, tracker, habit_smells."
         }
       },
       {
@@ -2810,7 +3037,7 @@
         "detail": {
           "with": "pr",
           "pattern": "shared-kernel",
-          "note": "Consumed by import (_bundle_meta, _manifest) and by shell (migrate_bundle, build_index, verify_bundle)."
+          "note": "Consumed by import (_bundle_meta, _manifest) and by shell (migrate_bundle, build_index, verify_bundle, tracker)."
         }
       },
       {
@@ -2820,7 +3047,7 @@
         "detail": {
           "with": "artifact",
           "pattern": "shared-kernel",
-          "note": "Consumed by import (_bundle_meta, ledger, gate_status, slice_table) and by shell (build_index, migrate_bundle)."
+          "note": "Consumed by import (_bundle_meta, ledger, gate_status, slice_table, tracker_port.reader) and by shell (build_index, migrate_bundle, tracker)."
         }
       },
       {
@@ -2830,7 +3057,7 @@
         "detail": {
           "with": "implement",
           "pattern": "shared-kernel",
-          "note": "Consumed by import (slice_table) and by shell (build_index)."
+          "note": "Consumed by import (slice_table, gate_status, tracker_port.reader in verify_gate.py) and by shell (build_index, tracker). The tracker hook scripts run tracker.py by subprocess."
         }
       },
       {
@@ -2840,7 +3067,7 @@
         "detail": {
           "with": "cobuilder-packaging",
           "pattern": "shared-kernel",
-          "note": "The umbrella plugin cobuilder-full-lifecycle imports ledger in watch_feedback.py."
+          "note": "The umbrella plugin cobuilder-full-lifecycle imports ledger in watch_feedback.py. Its install command and setup skill run tracker.py by shell."
         }
       }
     ],
@@ -4251,7 +4478,7 @@
         "feature": "priority-dev-spike",
         "n": 1,
         "title": "**Model probe**",
-        "ends_with": "`uv run python priority-dev/probes/model_probe.py <transcript>` runs Nemo on three redacted real transcripts and prints the five facts, an action kind, a quote, and whether the quote is in the text. `probes/model-probe.md` states the JSON validity and the rate-limit count",
+        "ends_with": "`uv run python priority-dev/probes/model_probe.py <transcript> [--model interpreter\\|digest] [--repeat N]` runs the model on three redacted real transcripts and prints the five facts, an action kind, a quote, and whether the quote is in the text, plus the agreement across repeats. `probes/model-probe.md` states the JSON validity, the rate-limit count, the agreement, and one full prompt with its replies. The call log stores the prompt text",
         "score": "0.875",
         "attempts": 5,
         "state": "in_progress"
@@ -4260,8 +4487,8 @@
         "id": "priority-dev-spike/2",
         "feature": "priority-dev-spike",
         "n": 2,
-        "title": "**Hook probe**",
-        "ends_with": "In a scratch tmux session, Stop, PermissionRequest, and AskUserQuestion hooks append lines to a local file. `probes/hook-probe.md` states whether `$TMUX_PANE` is set, the fields seen, and the transcript lag. The report also states what the transcript holds when `/goal` clears. A failing hook exits 0 within 5 seconds, and the bypass file makes every hook a no-op",
+        "title": "**Hook command and scratch-session probe**",
+        "ends_with": "The command `priority-hook` reads a hook event on stdin and appends one line, with `$TMUX_PANE` and a time, to a local file. An installer writes marked entries for Stop, PermissionRequest, and PreToolUse on AskUserQuestion into the settings file of a scratch project, and the uninstall removes only those entries. A scratch Claude Code session in a tmux pane triggers each event. `probes/hook-probe.md` states whether `$TMUX_PANE` was set, the fields seen, the transcript lag after Stop, what the transcript holds when `/goal` clears, and whether the permission dialog shows while a PermissionRequest hook waits and closes after an allow. A failing hook exits 0 within 5 seconds, and the bypass file makes every hook a no-op",
         "score": "1.00",
         "attempts": 1,
         "state": "completed"
@@ -4270,8 +4497,8 @@
         "id": "priority-dev-spike/3",
         "feature": "priority-dev-spike",
         "n": 3,
-        "title": "**Tmux probe**",
-        "ends_with": "`probes/tmux-probe.md` states whether a paste is lost in an idle pane and in a busy pane, whether newlines survive, and whether the permission dialog shows while a PermissionRequest hook waits 20 seconds",
+        "title": "**Tmux paste probe**",
+        "ends_with": "`probes/tmux-probe.md` states, for 10 trials in an idle pane and 10 in a busy pane, whether a paste is lost and how newlines arrive. It uses `tmux load-buffer` and `paste-buffer`, and only on the scratch pane",
         "score": "1.00",
         "attempts": 1,
         "state": "completed"
@@ -4281,7 +4508,7 @@
         "feature": "priority-dev-spike",
         "n": 4,
         "title": "**Stop brief**",
-        "ends_with": "`uv run priority brief fixtures/run-3.jsonl --stop 2` prints a stop brief that equals the stored snapshot. Replies group by message id, results pair by id, a duplicate message id is handled, and a planted key is redacted",
+        "ends_with": "`uv run priority brief fixtures/run-3.jsonl --stop 2` prints a stop brief that equals the stored snapshot. Replies group by message id, results pair by id, a duplicate message id is handled, and a planted key is redacted. A client message never becomes the stop: it fills a `CLIENT MESSAGE:` section, and the run stays full after a bare `continue`. Nothing is clipped below the size budget, and the final reply, the human ask, and the last three exchanges are never clipped. Over the budget, the builder gives an Abstain `brief_too_large`, never a cut",
         "score": "1.00",
         "attempts": 3,
         "state": "completed"
@@ -4291,7 +4518,7 @@
         "feature": "priority-dev-spike",
         "n": 5,
         "title": "**Interpret a stop**",
-        "ends_with": "`uv run priority interpret` runs Triage, Pick, Fill, and Card on Nemo through DSPy. It prints an Interpretation or an Abstain. Each call is stored with its model id, prompt hash, and raw reply",
+        "ends_with": "`uv run priority interpret` runs Triage, Pick, Fill, and Card on the interpreter model through DSPy. Pick returns one to three steps, and Fill runs once for each step. It prints an Interpretation with a Proposal of one to three steps, or an Abstain. Code checks the kind and the quote of each step. A step that fails a check gives an Abstain that names the step. Each call is stored with its model id, prompt hash, and raw reply",
         "score": "1.00",
         "attempts": 1,
         "state": "completed"
@@ -4301,7 +4528,7 @@
         "feature": "priority-dev-spike",
         "n": 6,
         "title": "**Digest a run**",
-        "ends_with": "`uv run priority digest` calls Inkling and prints a RunDigest that validates. The next stop brief of the same session carries it as `previous`",
+        "ends_with": "`uv run priority digest` calls the digest model and prints a RunDigest that validates. The next stop brief of the same session carries it as `previous`. A brief over the size budget has its largest older tool inputs and results shortened by the digest model, and the brief records each one. Over the budget after that, it is still an Abstain",
         "score": "1.00",
         "attempts": 1,
         "state": "completed"
@@ -4311,7 +4538,7 @@
         "feature": "priority-dev-spike",
         "n": 7,
         "title": "**Replay report with failure drills**",
-        "ends_with": "`uv run priority replay fixtures/` writes `report.md` with the valid-output rate, the quote-found rate, the abstain reasons, the kinds picked, and the characters, seconds, and cost for each stage. A replay at the event rate of 5 sessions counts the free-tier limit errors. An injected 429, malformed JSON, empty quote, and timeout each end as an Abstain with a logged reason",
+        "ends_with": "`uv run priority replay fixtures/` writes `report.md` with the valid-output rate, the quote-found rate, the abstain reasons, the kinds picked, the count of proposals for each step count, and the characters, seconds, and cost for each stage. A replay at the event rate of 5 sessions counts the rate-limit errors. An injected 429, malformed JSON, empty quote, and timeout each end as an Abstain with a logged reason",
         "score": "1.00",
         "attempts": 1,
         "state": "completed"
@@ -4424,7 +4651,137 @@
         "ends_with": "`uv run priority optimise --optimiser gepa` and `--optimiser miprov2` compile the chosen interpreter on the train sessions only. `probes/optimiser-report.md` gives the held-out score before and after for each, with BootstrapFewShot as the cheap baseline, the cost of each run, and the saved programs",
         "score": "0.70",
         "attempts": 2,
-        "state": "in_progress"
+        "state": "completed"
+      },
+      {
+        "id": "priority-dev-spike/19",
+        "feature": "priority-dev-spike",
+        "n": 19,
+        "title": "**Judge-scored payload flow**",
+        "ends_with": "The label-free gate, `Decide.questions`, the judge module, and the metric wiring run end to end on made-up fixtures with a stub judge: each gate fault abstains with a named 0-score note, a multi-question payload parses, readers use the list, the judge returns a clamped score with per-part notes, and per-stop rows carry the payload score",
+        "score": "1.00",
+        "attempts": 2,
+        "state": "completed"
+      },
+      {
+        "id": "priority-dev-spike/20",
+        "feature": "priority-dev-spike",
+        "n": 20,
+        "title": "**Reference payloads and judge validation**",
+        "ends_with": "Every stop has an engineer-confirmed reference payload drafted from the brief only. The judge scores the payload only, and it clears an agreement bar against human grades. `probes/optimiser-report.md` rescores every arm under the new metric. The live runs need slice 21",
+        "score": "0.786",
+        "attempts": 2,
+        "state": "planned"
+      },
+      {
+        "id": "priority-dev-spike/21",
+        "feature": "priority-dev-spike",
+        "n": 21,
+        "title": "**One typed call**",
+        "ends_with": "One predictor, `ProposeStop`, reads the stop brief and returns the status, `needs_human`, 0 to 3 typed steps, and one priority (P1, P2, or P3) for the whole payload. Schema validation is the only gate. Eval and GEPA score the same prediction object, and GEPA tunes one component. The chain, its routing, and its gates are gone. Design: `priority-dev/probes/program-flow-v2.svg`",
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
+      },
+      {
+        "id": "priority-dev-spike/22",
+        "feature": "priority-dev-spike",
+        "n": 22,
+        "title": "**Complete reflection evidence**",
+        "ends_with": "An optimiser run on made-up fixtures with stub models keeps its reflection prompts and candidate stats on disk. In the saved prompt, each stop that failed to parse shows its raw reply, the validation error, the judge note, and the score 0, and every other stop shows its score. Closes gaps 2, 3, and 7",
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
+      },
+      {
+        "id": "priority-dev-spike/23",
+        "feature": "priority-dev-spike",
+        "n": 23,
+        "title": "**Whole proposals from the reflection model**",
+        "ends_with": "An optimiser run on made-up fixtures saves a proposal longer than 4000 characters unchanged. `priority optimise` prints the reflection model id, which comes from the `REFLECTION_*` settings (default NVIDIA Mistral), and a judge set to Mercury 3 leaves it unchanged. Closes gaps 1 and 6",
+        "score": "0.90",
+        "attempts": 1,
+        "state": "completed"
+      },
+      {
+        "id": "priority-dev-spike/24",
+        "feature": "priority-dev-spike",
+        "n": 24,
+        "title": "**General instructions only**",
+        "ends_with": "The rendered `ProposeStop` prompt shows an example with a non-null `agent_recommendation`. The reflection model is told to write general rules, and a proposal that quotes an option label or a file name from a trainset reference is rejected with a printed reason. Closes gaps 8 and 9",
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
+      },
+      {
+        "id": "priority-dev-spike/25",
+        "feature": "priority-dev-spike",
+        "n": 25,
+        "title": "**Compact stop brief**",
+        "ends_with": "First, a digest report on Mercury 3 covers at least three human-chat training sessions with three or more stops each (such as `fe9bb39f` and `fece50d8`). It shows a valid `RunDigest` per stop, `PREVIOUS RUN:` in each later brief, a filled `HUMAN ASKED:`, and one shrink call. Then `priority eval --brief compact` builds each stop brief from the human message, the digest of the run, and the final reply, and a report gives the size of both brief forms per stop and the arm A score on the test set for both forms. The live runs need the engineer's go. Answers gap 10",
+        "score": "1.00",
+        "attempts": 3,
+        "state": "completed"
+      },
+      {
+        "id": "priority-dev-spike/26",
+        "feature": "priority-dev-spike",
+        "n": 26,
+        "title": "**Live smoke run**",
+        "ends_with": "A live optimiser run with a valset of 1 or 2 sessions, a minibatch of 3 trainset stops that scored low on C2 (at least one a parse failure), and a `max_metric_calls` that covers the seed score on the valset plus two minibatch runs. It uses the brief form that slice 25 chose. The call logs show Mercury 3 as task model and judge, and at least one NVIDIA Mistral reflection call; the slice fails if no reflection call shows. The saved reflection prompt holds each stop with its score, and the failed stop with its error text. The proposal is saved whole. The run finishes with no model or judge failure. The live run needs the engineer's go",
+        "score": "0.875",
+        "attempts": 4,
+        "state": "completed"
+      },
+      {
+        "id": "priority-dev-spike/27",
+        "feature": "priority-dev-spike",
+        "n": 27,
+        "title": "**Optimiser run C3**",
+        "ends_with": "`priority optimise` prints the trainset, valset, and minibatch sizes in the glossary terms. Arm C3 is seeded from a copy of C2 with its cut sentence repaired, with a larger valset and minibatch (gaps 4 and 5). A report compares arm A, run again after slice 24, with C3 on the test set. Starts only after slice 26 passes. The live runs need the engineer's go",
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
+      },
+      {
+        "id": "priority-dev-spike/28",
+        "feature": "priority-dev-spike",
+        "n": 28,
+        "title": "**Proposer prompt and reference material**",
+        "ends_with": "`priority optimise --proposer v2` passes `PROPOSER_BASE`, `GENERAL_RULES`, a schema reference built from the code, and `max_chars=6000` to the dspy `InstructionProposer`; `--proposer v1` keeps the E7 proposer. The run prints the proposer and each reflection file records it",
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
+      },
+      {
+        "id": "priority-dev-spike/29",
+        "feature": "priority-dev-spike",
+        "n": 29,
+        "title": "**Reference and structural diff in the feedback**",
+        "ends_with": "With `--proposer v2`, each stop's feedback holds the score line, the judge notes, a `Structure:` block from `structure_diff`, and a `Reference:` block with the reference answer. The diff holds no payload text. The score value does not change",
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
+      },
+      {
+        "id": "priority-dev-spike/30",
+        "feature": "priority-dev-spike",
+        "n": 30,
+        "title": "**Live smoke run of the v2 proposer**",
+        "ends_with": "One live run on the slice 26 setup shows the v2 input in the reflection files, proposals within 6000 characters, and the number of proposals that the trainset-detail check rejected",
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
+      },
+      {
+        "id": "priority-dev-spike/31",
+        "feature": "priority-dev-spike",
+        "n": 31,
+        "title": "**Arms D1 and D2**",
+        "ends_with": "D1 (`--proposer v1`) and D2 (`--proposer v2`) run with the same seed program, seed, valset, minibatch, and budget. `probes/proposer-report.md` compares D1, D2, and arm A on the 56 test-set stops",
+        "score": "0.50",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "review-link/1",
@@ -6605,7 +6962,13 @@
         "via": "epic",
         "path": [
           "cobuilder-implement/E1",
-          "cobuilder-implement/E2"
+          "cobuilder-implement/E2",
+          "structure-coaching/E1",
+          "structure-coaching/E2",
+          "structure-coaching/E3",
+          "structure-coaching/E4",
+          "structure-coaching/E5",
+          "structure-coaching/E6"
         ]
       },
       "ADR-0013": {
@@ -6757,7 +7120,13 @@
           "slice-agents-and-vocabulary/E1",
           "slice-agents-and-vocabulary/E2",
           "slice-agents-and-vocabulary/E3",
-          "slice-agents-and-vocabulary/E4"
+          "slice-agents-and-vocabulary/E4",
+          "structure-coaching/E1",
+          "structure-coaching/E2",
+          "structure-coaching/E3",
+          "structure-coaching/E4",
+          "structure-coaching/E5",
+          "structure-coaching/E6"
         ]
       },
       "ADR-0026": {
@@ -6941,7 +7310,13 @@
           "habit-smells/E2",
           "habit-smells/E3",
           "mechanical-smells/E1",
-          "mechanical-smells/E2"
+          "mechanical-smells/E2",
+          "structure-coaching/E1",
+          "structure-coaching/E2",
+          "structure-coaching/E3",
+          "structure-coaching/E4",
+          "structure-coaching/E5",
+          "structure-coaching/E6"
         ]
       },
       "ADR-0039": {
@@ -7021,6 +7396,18 @@
           "beads-storage/E6",
           "beads-storage/E7",
           "beads-storage/E8"
+        ]
+      },
+      "ADR-0048": {
+        "pr": null,
+        "via": "epic",
+        "path": [
+          "structure-coaching/E1",
+          "structure-coaching/E2",
+          "structure-coaching/E3",
+          "structure-coaching/E4",
+          "structure-coaching/E5",
+          "structure-coaching/E6"
         ]
       }
     },
@@ -7172,6 +7559,12 @@
       "slice-agents-and-vocabulary/E2": "unstarted",
       "slice-agents-and-vocabulary/E3": "unstarted",
       "slice-agents-and-vocabulary/E4": "unstarted",
+      "structure-coaching/E1": "unstarted",
+      "structure-coaching/E2": "unstarted",
+      "structure-coaching/E3": "unstarted",
+      "structure-coaching/E4": "unstarted",
+      "structure-coaching/E5": "unstarted",
+      "structure-coaching/E6": "unstarted",
       "ubiquitous-language/E1": "unstarted",
       "ubiquitous-language/E2": "unstarted",
       "ubiquitous-language/E3": "unstarted",
@@ -7386,7 +7779,8 @@
       "ADR-0043": "tracker-port",
       "ADR-0044": "tracker-port",
       "ADR-0046": "artifact",
-      "ADR-0047": "tracker-port"
+      "ADR-0047": "tracker-port",
+      "ADR-0048": "implement"
     },
     "adr_to_district": {
       "ADR-0001": "scripts",
@@ -8138,7 +8532,16 @@
       "mechanical-smells": {
         "stage_source": "tracker",
         "next_ready": null,
-        "pull_requests": []
+        "pull_requests": [
+          {
+            "ref": "55",
+            "number": 55,
+            "state": "open",
+            "epics": [
+              "mechanical-smells/E1"
+            ]
+          }
+        ]
       },
       "nexus-borrowings": {
         "stage_source": "tracker",
@@ -8171,6 +8574,11 @@
         "pull_requests": []
       },
       "slice-agents-and-vocabulary": {
+        "stage_source": "tracker",
+        "next_ready": null,
+        "pull_requests": []
+      },
+      "structure-coaching": {
         "stage_source": "tracker",
         "next_ready": null,
         "pull_requests": []

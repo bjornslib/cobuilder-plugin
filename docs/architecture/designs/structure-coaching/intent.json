@@ -5,7 +5,7 @@
   "authorship": "agent-assisted",
   "problem": "An agent adds each new file to the nearest folder, and no test rewards a better place. The coach reports smells inside one file only. The VALIDATE rubric scores behaviour only. In some sessions the main agent writes the slice itself, so no coach and no blind score run.",
   "why_now": "The research synthesis of 2026-11-10 found that guidance at the start lowers the first level of decay, not its rate. Feedback during the write had the best evidence. The coach and the blind rubric already run in the slice loop.",
-  "approach": "One script, shared/structure_signals.py, holds three signals that need no parser: a crowded folder, a name-stem cluster, and a generic file name. It fires only for a file that is new on the branch, so old debt stays silent. The coach carries the signals to GREEN as short advice that names the decision to make. The GREEN filter stays. VALIDATE writes an advisory Structure block and judges contract drift on the diff. The slice loop text makes the main agent spawn the three agents, and a script checks that. A replay evaluation decides what becomes a scored criterion.",
+  "approach": "One stdlib script, shared/structure_signals.py, holds three signals that need no parser: a crowded folder, a name-stem cluster, and a generic file name. A signal fires only for a file that is untracked or added since the merge-base. One config file, .cobuilder/structure-signals.json, holds each limit. The coach gives GREEN the signals for each file extension, as advice that names the decision. The GREEN filter stays. VALIDATE writes an advisory Structure block and judges contract drift. The main agent spawns the three agents, and a script checks one effect. A replay decides what the rubric scores.",
   "alternatives": [
     {
       "option": "Build a new /architect:refactor command with a graph engine, as the first research run proposed",
@@ -21,7 +21,7 @@
     },
     {
       "option": "Keep a baseline file of old findings in .cobuilder/",
-      "rejected_because": "A git comparison with the branch base gives the same ratchet. It adds no state file to keep current."
+      "rejected_because": "A git comparison with the merge-base, with untracked files included, gives the same ratchet. It adds no state file to keep current."
     },
     {
       "option": "Add an import check with dependency-cruiser and import-linter in the first version",
@@ -30,6 +30,22 @@
     {
       "option": "Add a PreToolUse speed bump that blocks the first write of a new file",
       "rejected_because": "It is a fifth hook script and a new event under ADR-0025. No study shows that a block works better than advice."
+    },
+    {
+      "option": "Make slice-loop.js the default way to run each slice, so code enforces the agent order",
+      "rejected_because": "It is too heavy for a small build, and each run needs the engineer to opt in. Code cannot enforce agent use in each session."
+    },
+    {
+      "option": "Show agent use with a marker that the coach hook writes",
+      "rejected_because": "The coach ignores each caller except GREEN. A missing marker then means a main-agent slice or a silent coach, and the check cannot tell them apart."
+    },
+    {
+      "option": "Silence the coach on the habit-hooks markers for an unscanned file",
+      "rejected_because": "For a scanned extension, those markers show a misconfiguration that GREEN must report. The guard keys on the file extension instead."
+    },
+    {
+      "option": "Run the script from the coach with uv run, and read a YAML config",
+      "rejected_because": "The coach is stdlib only, and two coach tests fail when it runs uv. A uv start on each write also adds delay."
     }
   ],
   "out_of_scope": [
@@ -45,21 +61,23 @@
     "A percentile limit gives false signals in a framework folder, a test folder, or a generated folder",
     "GREEN splits a folder to silence the signal, and the new folders hold no single decision",
     "A wider coach message hides the smell advice that GREEN gets today",
-    "Loop text alone does not make the main agent spawn the agents, as the past sessions show",
-    "The advisory Structure block has no effect on GREEN, because only a failed attempt passes it on"
+    "The advisory Structure block has no effect on GREEN, because only a failed attempt passes it on",
+    "Neither text nor the effect check forces the main agent to spawn the agents. The check finds a skipped agent only after the slice",
+    "The stem rule flags a test folder, where files share a prefix such as test_ by convention"
   ],
   "testing": "Tests run the script on synthetic folder trees and read its JSON. A stub-binary test drives the coach. A blind pass scores the loop text, and the transcript is kept. The replay evaluation compares folder growth and the follow-on resolve rate.",
   "reviewer_focus": [
     "The spike first: whether a project-local habit-hooks plugin can carry a folder signal to the coach message",
-    "The effect that shows which agent wrote a slice, because the hook must not call the tracker",
+    "The effect that shows which agent wrote a slice. The hook must not call the tracker, and a coach marker cannot work",
     "The percentile limit and the generic-name list, which have no calibration data"
   ],
   "unknowns": [
     "Whether habit-hooks runs a project-local plugin with no installed package, and whether a sensor can report on a folder",
     "How the snooze ratchet of habit-hooks treats a finding with a folder as its key",
-    "Which effect shows that an agent wrote the slice: the attempt file, or a role reminder from the coach hook",
+    "Which effect shows that the agents ran the slice. The candidates are the VALIDATE attempt file and the tracker attempt record. The spike decides",
     "Which repositories and slice plans the replay uses, and how many runs the engineer accepts",
     "Whether the signals must serve target repositories in each language, which the engineer has not confirmed",
-    "Why the main agent skipped the agents in past sessions, because no transcript of such a session was read"
+    "Why the main agent skipped the agents in past sessions, because no transcript of such a session was read",
+    "How a check finds a partial skip, where the main agent writes the code and spawns only VALIDATE. Neither candidate effect shows it"
   ]
 }

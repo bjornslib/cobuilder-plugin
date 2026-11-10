@@ -9,10 +9,10 @@ flowchart TB
     Modes["review mode and maintenance mode\nepic E6"]
     Replay["replay evaluation\nsignals on and off, epic E5"]
 
-    Coach -->|"uv run, findings JSON"| Signals
+    Coach -->|"import or sys.executable, findings JSON"| Signals
     Coach -->|"subprocess spawn, smell findings"| Hooks
     Coach -->|"advice, three findings at most"| Green
-    Validate -->|"uv run"| Signals
+    Validate -->|"sys.executable"| Signals
     Validate -->|"writes Structure block"| Attempt
     Attempt -.->|"on FAIL, next attempt"| Green
     Smells -->|"reads findings JSON"| Signals

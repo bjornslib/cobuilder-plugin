@@ -12,47 +12,51 @@
   "outcome": "GREEN gets structure coaching when it adds a file, VALIDATE reports structure findings beside the slice score, and the main agent runs each slice through the RED, GREEN, and VALIDATE agents.",
   "done_when": [
     "A spike transcript shows one real coach message that carries a structure signal from a project-local habit-hooks plugin, or it records why that route failed",
-    "shared/structure_signals.py reports a crowded folder, a name-stem cluster, and a generic file name on synthetic folder trees, and it prints habit-hooks findings JSON",
-    "A signal fires only for a file that is new on the branch, and the output names each path that the script did not analyse",
-    "The coach is silent for a file that habit-hooks does not scan, it shows three structure findings at most, and it does not repeat a finding in one session",
-    "A blind pass of the slice loop text spawns implement:red, implement:green, and implement:validate, and one effect that a script reads shows which agent wrote the slice",
+    "shared/structure_signals.py reports a crowded folder, a name-stem cluster, and a generic file name on synthetic folder trees, including a test folder, and it reads its limits from .cobuilder/structure-signals.json",
+    "A signal fires only for a file that is untracked or added since the merge-base. Tests cover an uncommitted file and a branch with no merge-base",
+    "The output of shared/structure_signals.py names each path that the script did not analyse",
+    "The coach gives structure signals for each extension, stays silent about smells for an unscanned extension, shows three findings at most, and repeats none in a session",
+    "A test of the effect check covers no attempt file, a pass at attempt 1, and workflow mode, and the check fails for a main-agent slice",
     "The attempt file of a slice holds a Structure block from VALIDATE, outside the overall score, and a failed attempt passes the block to the next GREEN attempt",
-    "A replay of five slices or more, with the signals on and off, records the growth of the largest folder and the follow-on resolve rate",
+    "A replay of three runs or more for each condition, five slices each, records the growth of the largest folder and the follow-on resolve rate",
     "One real slice runs locally from RED to a VALIDATE score, and the transcript is kept"
   ],
   "abort_if": [
     "The spike shows that neither a habit-hooks plugin nor a second runner in habit_coach.py can put a folder signal into the coach message",
-    "A hand label of the top findings on three repositories gives a precision below 50% for each of the three signals",
-    "The replay shows no difference in folder growth between the two conditions, across several runs for each condition",
+    "A hand label on three repositories gives each of the three signals a precision below 50%. A single signal below 50% is dropped instead",
+    "The replay shows a fall of less than 20% in the growth of the largest folder with the signals on, across three runs or more for each condition",
     "The structure work needs a hard block on a write, which ADR-0025 does not allow for the coach"
   ],
   "min_work": {
     "derived_from": "2 districts (implement, shared), 3 colliding ADRs (ADR-0025, ADR-0012, ADR-0038), 1 boundary rule (implement allowed_dependencies), 3 signals, 6 epics",
-    "alternatives_explored": 6,
+    "alternatives_explored": 10,
     "boundary_rules_checked": true,
     "challenge_stage_run": true,
-    "draft_review_run": false,
-    "note": "Decided in chat on 2026-11-10, in a cloud session with no bd binary. The engineer kept the GREEN filter, accepted the two coach guards, and asked for a later epic for review and maintenance. No program record exists in the tracker yet. The reviewer round and the runtime diagram are pending, so the stage is decided, not approved."
+    "draft_review_run": true,
+    "note": "Decided in chat on 2026-11-10. The engineer kept the GREEN filter, accepted the two coach guards, kept the agent-use effect open for the spike, and rejected slice-loop.js as the default run mode. Draft review round 1 scored 0.63 and round 2 scored 0.75. The session applied the material findings of both rounds."
   },
-  "limits": { "warn_after_rounds": 3, "cutoff_rounds": 6 },
+  "limits": {
+    "warn_after_rounds": 3,
+    "cutoff_rounds": 6
+  },
   "epics": [
     {
       "id": "E1",
       "slug": "structure-signals",
       "title": "The spike, then shared/structure_signals.py with its three signals and its tests.",
-      "outcome": "The script reports each of the three signals on synthetic folder trees, only for files that are new on the branch."
+      "outcome": "The stdlib script reports each of the three signals on synthetic folder trees, only for files that are untracked or added since the merge-base."
     },
     {
       "id": "E2",
       "slug": "coach-delivery",
-      "title": "The coach carries the signals to GREEN, with guides, a cap of three findings, no repeat, and silence for a file that habit-hooks does not scan.",
-      "outcome": "A stub-binary test shows the coach message with a structure signal, and shows no output for a file that is not scanned."
+      "title": "The coach carries the signals to GREEN, with guides, a cap of three, no repeat in a session, and no smell output for an unscanned extension. The install writes the default config.",
+      "outcome": "A stub-binary test shows a structure signal for each extension, no smell output for an unscanned extension, and no repeat on a second write."
     },
     {
       "id": "E3",
       "slug": "loop-uses-agents",
-      "title": "The slice loop text makes the main agent spawn the three agents, and one effect that a script reads shows which agent wrote the slice.",
-      "outcome": "A blind pass spawns all three agents, and the check fails for a slice that the main agent wrote."
+      "title": "The slice loop text makes the main agent spawn the three agents, and verify_gate.py checks one effect that shows the agents ran each slice.",
+      "outcome": "A blind pass spawns all three agents in manual mode and in workflow mode, and the check fails for a slice that the main agent wrote."
     },
     {
       "id": "E4",

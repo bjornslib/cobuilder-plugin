@@ -20,9 +20,11 @@ behaviour only. In some sessions the main agent wrote the slice itself.
 - Step 0, the spike: prove that a project-local habit-hooks plugin carries a
   folder signal to the coach message, and run one real slice.
 - E1 structure-signals: the script and its tests.
-- E2 coach-delivery: guides, a cap of three findings, no repeat, and silence
-  for a file that habit-hooks does not scan. The GREEN filter stays.
-- E3 loop-uses-agents: the loop text and one effect that a script reads.
+- E2 coach-delivery: guides, a cap of three findings, no repeat in a session,
+  and no smell output for an unscanned extension. The install writes the
+  default config. The GREEN filter stays.
+- E3 loop-uses-agents: the loop text, and a check in `verify_gate.py` that reads
+  one effect.
 - E4 validate-structure-block: the advisory block and the contract-drift
   judgment.
 - E5 replay-evaluation: signals on and off, and the decision on scored
@@ -32,9 +34,13 @@ behaviour only. In some sessions the main agent wrote the slice itself.
 ## Done when
 
 - The spike transcript shows one coach message with a structure signal.
-- The script reports each signal on synthetic folder trees, only for files new
-  on the branch.
-- A blind pass of the loop text spawns all three agents.
+- The stdlib script reports each signal on synthetic folder trees, only for
+  files that are untracked or added since the merge-base.
+- The script names each path that it did not analyse.
+- The coach gives structure signals for each extension, no smell output for an
+  unscanned extension, three findings at most, and no repeat in a session.
+- A blind pass of the loop text spawns all three agents, and the effect check
+  fails for a slice that the main agent wrote.
 - The attempt file holds a Structure block outside the overall score.
 - The replay records the folder growth and the follow-on resolve rate.
 

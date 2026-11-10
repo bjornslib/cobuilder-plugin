@@ -1,23 +1,26 @@
 # Boundary record for the implement bounded context.
 # Machine-diffable architecture baseline — ../../standard.md §5.2.
 # Authoring procedure: plugins/architect/skills/architecture/references/architecture-documentation.md.
-# Every edge below was checked against code (grep of imports, Skill calls, and path strings).
-# Grounded in code as of 2026-10-12.
+# Every edge below was checked against code (grep of imports, Skill calls, subprocess paths, and path strings).
+# Grounded in code as of 2026-11-10.
 
 id: implement
 path: plugins/implement
 name: "Implement: four gates and a RED, GREEN, VALIDATE loop per slice"
-verified_at: d397e1317323d1ab64591e808d92382434f930d3
+verified_at: d1e3f100411d9ce6165b6cfc27e4faa643c898eb
 
 public_interface:
   - commands/start.md
   - commands/debug.md
   - commands/install.md
-  - "Skill(\"implement:build\", args=\"implement|install ...\")"
+  - "Skill(\"implement:build\", args=\"implement ...\")"
   - "Skill(\"implement:design-to-code\")"
   - "agents implement:red, implement:green, implement:validate, implement:vocabulary"
   - scripts/verify_gate.py
-  - "hooks/hooks.json PostToolUse hook, run through scripts/habit_coach.py"
+  - "hooks/hooks.json PostToolUse hook (Write|Edit), run through scripts/habit_coach.py"
+  - "hooks/hooks.json SessionStart hook (startup|resume|clear|compact), run through scripts/tracker_reminder.py (ADR-0041)"
+  - "hooks/hooks.json Stop hook, run through scripts/tracker_sync_check.py (ADR-0042)"
+  - "hooks/hooks.json SessionEnd hook, run through scripts/tracker_sync_flush.py (ADR-0042)"
 
 allowed_dependencies:
   - shared
@@ -27,14 +30,14 @@ allowed_dependencies:
 context_map:
   - with: shared
     pattern: shared-kernel
-    shared: [slice_table]
-    note: "verify_gate.py adds the plugin's shared symlink to sys.path and imports slice_table. The skill also runs shared/build_index.py by shell."
+    shared: [slice_table, gate_status, tracker_port.reader]
+    note: "verify_gate.py adds the plugin's shared symlink to sys.path and imports slice_table, gate_status, and tracker_port.reader. The skill and the references run shared/tracker.py and shared/build_index.py by shell. The three tracker hooks start shared/tracker.py as a subprocess and import nothing from shared."
   - with: architect
     pattern: open-host-service
     note: "commands/debug.md calls Skill(\"architecture\", args=\"debug ...\"). The skill reads a design record from docs/ when one exists. It names /architect:design by mode only."
   - with: artifact
     pattern: open-host-service
-    note: "The skill calls Skill(\"cobuilder-artifacts\") three times to show a gate and the epics route. No import and no path."
+    note: "The skill and validation-scoring.md call Skill(\"cobuilder-artifacts\") to show a gate and the epics route. No import and no path."
 
 forbidden_dependencies:
   - target: "plugins/architect/**, plugins/pr/**"
@@ -42,14 +45,25 @@ forbidden_dependencies:
 
   - target: "plugins/artifact/scripts/build_builds_view.py"
     from: plugins/implement/scripts/verify_gate.py
-    why: "SMELL: a comment at verify_gate.py:98-100 names the path plugins/artifact/scripts/build_builds_view.py. It is a comment, not an import, so nothing breaks. It still names another plugin's path, which ADR-0016 forbids. Name shared/slice_table.py as the shared parser and drop the artifact path."
+    why: "SMELL: a comment at verify_gate.py:101-102 names the path plugins/artifact/scripts/build_builds_view.py. It is a comment, not an import, so nothing breaks. It still names another plugin's path, which ADR-0016 forbids. Name shared/slice_table.py as the shared parser and drop the artifact path."
 
   - target: "bare Skill name 'architecture' in commands/debug.md"
     from: plugins/implement/commands
     why: "SMELL (minor): line 26 calls Skill(\"architecture\") with no plugin prefix, while pr uses Skill(\"architect:architecture\"). An unprefixed name can bind to the wrong plugin or to none. Use the architect: prefix."
 
-  - target: "agents and hook of another plugin"
-    why: "CLAUDE.md principle 5 and ADR-0025: only implement ships agents and a hook. Verified: this plugin owns all four agents (green, red, validate, vocabulary) and the one hooks.json, and no other plugin has either."
+  - target: "Skill(\"cobuilder-setup\") of the cobuilder-full-lifecycle plugin, in commands/install.md"
+    from: plugins/implement/commands
+    why: "SMELL: install.md:16 calls Skill(\"cobuilder-setup\") with no plugin prefix. The skill sits in cobuilder-full-lifecycle, which lists implement as a dependency in its plugin.json. So the edge runs against the manifest direction and makes a soft cycle. implement/plugin.json does not declare it, and no allowed_dependencies entry covers it. The call has a fallback that tells the user to install the umbrella. Either sanction the handoff in an ADR and use the cobuilder-full-lifecycle: prefix, or move the install command to the umbrella."
+
+  - target: "any plugin other than implement that ships agents/"
+    why: "CLAUDE.md principle 5 and ADR-0025: only implement ships agents. Verified: plugins/implement/agents holds red, green, validate, and vocabulary, and no other plugin has an agents/ folder."
+
+  - target: "any plugin other than implement and cobuilder-memory that ships hooks/"
+    why: "ADR-0025, ADR-0039, ADR-0041, ADR-0042: implement owns hooks/hooks.json with four hooks, and the cobuilder-memory mod owns its own hooks module. No other plugin has a hooks/ folder. The 2026-10-12 record said implement alone owns hooks. That text was out of date."
+
+  - target: "bd"
+    from: plugins/implement/scripts
+    why: "CLAUDE.md principle 10 and the sync rule: only the beads adapter and sync_worker.py name bd or run a sync. Verified: no script or reference in plugins/implement names a bd call. The three tracker hooks run shared/tracker.py only."
 
 modules:
   - id: plugin-manifest
@@ -57,7 +71,7 @@ modules:
     public_interface: [plugin.json]
     allowed_inbound: []
     allowed_outbound: []
-    rule: "Static JSON. Declares architect and artifact as dependencies. Version 0.7.0 must match marketplace.json."
+    rule: "Static JSON. Declares architect and artifact as dependencies. Version 0.15.3 must match marketplace.json."
 
   - id: commands
     path: plugins/implement/commands
@@ -65,14 +79,22 @@ modules:
     public_interface: []
     allowed_inbound: []
     allowed_outbound: [skill-build]
-    rule: "start and install call Skill(\"build\"). debug calls the architect plugin's debug mode by name (see SMELL)."
+    rule: "start calls Skill(\"build\") and runs tracker.py doctor first. debug calls the architect plugin's debug mode by name. install calls Skill(\"cobuilder-setup\") of the umbrella (see both SMELL entries)."
 
   - id: skill-build
     path: plugins/implement/skills/build
     public_interface: ["Skill(\"implement:build\")"]
     allowed_inbound: [commands]
-    allowed_outbound: [agents, scripts, shared-scripts]
-    rule: "Owns the four gates and the slice loop. Calls Skill(\"cobuilder-artifacts\") by name. 12 reference files plus workflows/."
+    allowed_outbound: [agents, scripts, shared-scripts, skill-design-to-code, slice-loop-workflow]
+    rule: "Owns the four gates and the slice loop. Calls Skill(\"cobuilder-artifacts\") by name. Reads and writes workflow state through shared/tracker.py only. Holds SKILL.md and 3 reference files (rubric-authoring, slice-loop, validation-scoring). The goal-sync and hindsight-routine references are gone."
+
+  - id: slice-loop-workflow
+    path: plugins/implement/skills/build/workflows
+    members: [slice-loop.js]
+    public_interface: ["Workflow slice-loop"]
+    allowed_inbound: [skill-build]
+    allowed_outbound: [agents]
+    rule: "A script with no imports and no file access. It spawns implement:red, implement:green, implement:validate, and implement:vocabulary by agentType. The orchestrating session runs the tracker calls."
 
   - id: skill-design-to-code
     path: plugins/implement/skills/design-to-code
@@ -85,17 +107,17 @@ modules:
     path: plugins/implement/agents
     members: [red.md, green.md, validate.md, vocabulary.md]
     public_interface: ["implement:red", "implement:green", "implement:validate", "implement:vocabulary"]
-    allowed_inbound: [skill-build]
+    allowed_inbound: [skill-build, slice-loop-workflow]
     allowed_outbound: []
     rule: "Leaf. The only agents in the family (ADR-0025). VALIDATE scores blind against a rubric and needs 0.90."
 
   - id: hook
     path: plugins/implement/hooks
     members: [hooks.json]
-    public_interface: ["PostToolUse on Write|Edit"]
+    public_interface: ["SessionStart", "PostToolUse on Write|Edit", "Stop", "SessionEnd"]
     allowed_inbound: []
-    allowed_outbound: [scripts]
-    rule: "Runs scripts/habit_coach.py through uv. The only hook in the family."
+    allowed_outbound: [scripts, tracker-hooks]
+    rule: "Runs one script per event through uv: habit_coach.py on PostToolUse, tracker_reminder.py on SessionStart, tracker_sync_check.py on Stop, and tracker_sync_flush.py on SessionEnd with a 60 second timeout."
 
   - id: scripts
     path: plugins/implement/scripts
@@ -103,12 +125,20 @@ modules:
     public_interface: [verify_gate.py]
     allowed_inbound: [skill-build, hook]
     allowed_outbound: [shared-scripts]
-    rule: "habit_coach.py is stdlib only. verify_gate.py imports only slice_table from shared."
+    rule: "habit_coach.py is stdlib only and acts for implement:green only. verify_gate.py imports slice_table, gate_status, and tracker_port.reader from shared and nothing else outside the standard library."
+
+  - id: tracker-hooks
+    path: plugins/implement/scripts
+    members: [tracker_reminder.py, tracker_sync_check.py, tracker_sync_common.py, tracker_sync_flush.py]
+    public_interface: [tracker_reminder.py, tracker_sync_check.py, tracker_sync_flush.py]
+    allowed_inbound: [hook]
+    allowed_outbound: [shared-scripts]
+    rule: "Stdlib only, always exit 0, never call bd, and use no network. tracker_sync_common.py imports tracker_reminder.payload_cwd. The sync scripts reach the tracker only by starting shared/tracker.py as a subprocess. tracker_reminder.py starts no process."
 
   - id: shared-scripts
     path: plugins/implement/shared
     public_interface: []
-    allowed_inbound: [scripts, skill-build]
+    allowed_inbound: [scripts, tracker-hooks, skill-build]
     allowed_outbound: []
     rule: "A symlink to ../../shared."
 
@@ -116,4 +146,5 @@ verifies:
   - skills
   - scripts
 
-governed_by: []
+governed_by:
+  - ADR-0048

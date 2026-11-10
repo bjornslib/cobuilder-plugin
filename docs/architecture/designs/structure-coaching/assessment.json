@@ -4,7 +4,7 @@
   "risk_tier": "medium",
   "regret_risk": "If the design ships as written, the team lives with a second source of coach advice whose limits have no calibration data. A wrong percentile gives advice that GREEN learns to ignore, and the smell advice loses force with it. The Structure block stays advisory until the replay runs. If nobody runs the replay, the block is a report that nothing reads, and the scored criteria never arrive. The check of agent use adds an effect to the slice loop that each later change of the loop must keep.",
   "summary": "The design adds three structure signals to the two points that already steer a slice: the coach and VALIDATE. It reuses the hook, the agent filter, and the evidence file, so it adds no hook and no agent. Each limit is advisory and unproven, and the replay evaluation is the only proof of effect. The spike must run first, because the habit-hooks plugin route was not tested. The verdict is concerns, not sound, for those two reasons.",
-  "constraint_introduced": "A structure signal is advice. It never blocks a write, and it enters the slice score only after a replay evaluation and an engineer decision. One script, shared/structure_signals.py, is the source of each signal for the coach, VALIDATE, review mode, and maintenance mode. A signal fires only for a file that is new on the branch. A slice is the work of the three slice agents, and a script can read which agent wrote it.",
+  "constraint_introduced": "A structure signal is advice. It never blocks a write, and it enters the slice score only after a replay evaluation and an engineer decision. One script, shared/structure_signals.py, is the source of each signal for the coach, VALIDATE, review mode, and maintenance mode. A signal fires only for a file that is untracked or added since the merge-base. A slice is the work of the three slice agents, and a script can read which agent wrote it.",
   "findings": [
     {
       "kind": "prediction",
@@ -55,6 +55,31 @@
       "cites": "ADR-0025, ADR-0038"
     }
   ],
-  "boundary_checks": [],
+  "boundary_checks": [
+    {
+      "rule": "implement depends only on shared, architect, and artifact (implement boundary.yaml, allowed_dependencies).",
+      "source": "implement boundary.yaml",
+      "result": "pass",
+      "evidence": "The coach and VALIDATE call shared/structure_signals.py. The design adds no edge to another plugin. boundary_check.py exited 0 for both contexts after the refresh."
+    },
+    {
+      "rule": "Only implement ships agents/ and hooks/, and the coach runs for implement:green only.",
+      "source": "ADR-0025",
+      "result": "pass",
+      "evidence": "The design adds no agent, no hook script, and no hook event. The GREEN filter stays."
+    },
+    {
+      "rule": "A hook script never calls bd or the tracker.",
+      "source": "ADR-0042",
+      "result": "pass",
+      "evidence": "The agent-use effect reads files after the slice. A coach marker was rejected, and the hook calls no tracker operation."
+    },
+    {
+      "rule": "Shared code goes in shared/, and a plugin never names another plugin's path.",
+      "source": "ADR-0017",
+      "result": "pass",
+      "evidence": "structure_signals.py sits in shared/ and depends on no plugin. Its module entry joins the shared record when the file exists."
+    }
+  ],
   "drift": []
 }
