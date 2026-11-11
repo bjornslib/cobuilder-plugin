@@ -27,11 +27,13 @@ behaviour only. In some sessions the main agent wrote the slice itself.
   default config. The GREEN filter stays.
 - E3 loop-uses-agents: the loop text, and a check in `verify_gate.py` that reads
   one effect.
-- E4 validate-structure-block: the advisory block and the contract-drift
-  judgment.
+- E4 validate-structure-block: the advisory block, and the judgments of
+  contract drift, cohesion, and dependencies across a boundary.
 - E5 replay-evaluation: signals on and off, and the decision on scored
   criteria.
 - E6 review-and-maintenance-signals: a later epic, after E1 to E5.
+- E7 import-graph: a backlog epic for an import parser and a dependency
+  diagram.
 
 ## Done when
 

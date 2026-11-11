@@ -100,10 +100,11 @@ A read of this repository on the same day gave these facts.
 6. **Filter and guards.** The coach still runs for `implement:green` only. It gives structure signals for each file extension. It stays silent about smells for an extension outside the habit-hooks set, which is `.py`, `.ts`, `.tsx`, `.php`, `.java`, and `.rb` today. For an extension in that set, a habit-hooks failure still reaches GREEN as a report. Its messages do not depend on the name of the caller.
 7. **Delivery route.** `habit_coach.py` gets a second runner that calls `shared/structure_signals.py` after habit-hooks and joins the two outputs. The two checks stay apart. The design uses no habit-hooks plugin.
 7a. **Coaching language.** The first slice of E2 writes the message for each signal and the format of the Structure block. The engineer reviews and approves it before the coach and VALIDATE use it.
-8. **VALIDATE.** VALIDATE runs the script on the slice and judges contract drift on the diff. It adds a `### Structure` block to the attempt file, outside `overall_score`. A failed attempt passes the block to the next GREEN attempt.
+8. **VALIDATE.** VALIDATE runs the script on the slice. On the diff, it judges contract drift, cohesion, and each new dependency against the `forbidden_dependencies` of `boundary.yaml` and the glossary. These are judgments, not checks. It adds a `### Structure` block to the attempt file, outside `overall_score`. A failed attempt passes the block to the next GREEN attempt.
 9. **Agent use.** The slice loop text states that the main agent spawns the three agents and writes no slice code itself. One effect that a script reads shows that the agents ran the slice. The effect must hold in manual mode and in workflow mode. The spike picks it from two candidates: the VALIDATE attempt file and the tracker attempt record. A marker from the coach cannot work, and the hook does not call the tracker. `verify_gate.py` runs the check before the slice loop closes a slice. Its tests cover no attempt file, a pass at attempt 1, and workflow mode. A partial skip, where the main agent writes the code and spawns only VALIDATE, is an open question for the spike. Neither text nor the check forces agent use, and the check finds a skipped agent only after the slice.
 10. **Evaluation.** A replay runs slice plans with the signals on and off, three runs or more for each condition, five slices each. It records the folder growth and the follow-on resolve rate. The engineer then decides on scored criteria.
 11. **Later epic.** Review mode and maintenance mode report the signals and their trend after the work for GREEN and VALIDATE is complete.
+12. **Import parser.** A backlog epic, E7, builds a parser that reads the imports, checks each edge against `boundary.yaml`, and draws the dependency diagram. It replaces the dependency judgment of decision 8 with a check only after its own decision record.
 
 ## Obsolete after this ADR
 
@@ -121,4 +122,4 @@ A read of this repository on the same day gave these facts.
 - A scored structure criterion later needs a change to the rubric rule on behaviour, and a new decision record.
 - An install must put the signals where the coach finds them. E2 owns it: the `cobuilder-setup` skill writes the default `.cobuilder/structure-signals.json`.
 - The Java, PHP, and Ruby suffix convention, as in `UserService` and `UserRepository`, can give name-stem clusters. E5 hand-labels them, and the excluded stems in the config can silence them.
-- An import check and a speed bump stay open as later decisions. Each needs its own record.
+- The import check is now backlog epic E7. A speed bump stays open as a later decision. Each needs its own record.

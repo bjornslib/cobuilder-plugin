@@ -1,0 +1,34 @@
+feature: structure-coaching
+test_command: "uv run pytest tests -q"
+thresholds:
+  accept: 0.90
+  investigate: 0.70
+max_attempts: 3
+slices:
+  - id: 1
+    name: "Tracer bullet: a crowded folder reaches GREEN"
+    weight: 0.12
+  - id: 2
+    name: "The name-stem cluster, the generic name, the config, and the paths not analysed"
+    weight: 0.12
+  - id: 3
+    name: "The coaching language"
+    weight: 0.1
+  - id: 4
+    name: "The coach uses the wording, repeats nothing, and is silent about smells for an unscanned extension"
+    weight: 0.14
+  - id: 5
+    name: "The install writes the default config"
+    weight: 0.06
+  - id: 6
+    name: "The agent-use check"
+    weight: 0.12
+  - id: 7
+    name: "The loop text makes the main agent use the three agents"
+    weight: 0.12
+  - id: 8
+    name: "VALIDATE writes the Structure block"
+    weight: 0.12
+  - id: 9
+    name: "The replay evaluation"
+    weight: 0.1

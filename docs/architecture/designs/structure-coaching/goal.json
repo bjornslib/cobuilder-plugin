@@ -18,7 +18,7 @@
     "The coach gives structure signals for each extension, stays silent about smells for an unscanned extension, and repeats no finding in a session. It has no cap on structure findings",
     "The engineer approves the coaching language, the message for each signal and the Structure block format, before the coach and VALIDATE use it",
     "A test of the effect check covers no attempt file, a pass at attempt 1, and workflow mode, and the check fails for a main-agent slice",
-    "The attempt file of a slice holds a Structure block from VALIDATE, outside the overall score, and a failed attempt passes the block to the next GREEN attempt",
+    "The attempt file holds a Structure block outside the overall score. It judges contract drift, cohesion, and new dependencies against boundary.yaml, and a failed attempt passes it to GREEN",
     "A replay of three runs or more for each condition, five slices each, records the growth of the largest folder and the follow-on resolve rate",
     "One real slice runs locally from RED to a VALIDATE score, and the transcript is kept"
   ],
@@ -34,7 +34,7 @@
     "boundary_rules_checked": true,
     "challenge_stage_run": true,
     "draft_review_run": true,
-    "note": "Decided in chat on 2026-11-10. The engineer kept the GREEN filter, accepted the two coach guards, kept the agent-use effect open for the spike, and rejected slice-loop.js as the default run mode. Draft review round 1 scored 0.63 and round 2 scored 0.75. The session applied the material findings of both rounds. Round 3 in chat on 2026-11-11: the engineer removed the cap, chose the second runner as the only route, added a coaching-language slice for engineer approval, approved the design, and chose one PR."
+    "note": "Decided in chat on 2026-11-10. The engineer kept the GREEN filter, accepted the two coach guards, kept the agent-use effect open for the spike, and rejected slice-loop.js as the default run mode. Draft review round 1 scored 0.63 and round 2 scored 0.75. The session applied the material findings of both rounds. Round 3 in chat on 2026-11-11: the engineer removed the cap, chose the second runner as the only route, added a coaching-language slice for engineer approval, approved the design, and chose one PR. Gate 1 on 2026-11-11: the engineer widened the problem past folders. VALIDATE also judges cohesion and dependencies across a boundary, and a backlog epic E7 builds an import parser and a dependency diagram."
   },
   "limits": {
     "warn_after_rounds": 3,
@@ -62,8 +62,8 @@
     {
       "id": "E4",
       "slug": "validate-structure-block",
-      "title": "VALIDATE writes an advisory Structure block, judges contract drift on the diff, and passes the block to GREEN on a failed attempt.",
-      "outcome": "The attempt file holds a Structure block, and the overall score does not include it."
+      "title": "VALIDATE writes an advisory Structure block. It judges contract drift, cohesion, and each new dependency against boundary.yaml on the diff, and it passes the block to GREEN on a failed attempt.",
+      "outcome": "The attempt file holds a Structure block with the three judgments, and the overall score does not include it."
     },
     {
       "id": "E5",
@@ -76,6 +76,12 @@
       "slug": "review-and-maintenance-signals",
       "title": "Review mode and maintenance mode report the structure signals and their trend. This epic starts after E1 to E5.",
       "outcome": "A review report and a maintenance report each carry the structure signals, with the four trend tags in maintenance."
+    },
+    {
+      "id": "E7",
+      "slug": "import-graph",
+      "title": "A parser reads the imports of each file, checks each edge against boundary.yaml, and draws the dependency diagram. This epic is in the backlog, after E5.",
+      "outcome": "The parser reports each import that crosses a forbidden boundary on fixture repositories, and it writes a dependency diagram that a test can parse."
     }
   ],
   "supersedes": null,

@@ -1,13 +1,13 @@
 {
   "schema_version": "1.5",
   "sources": {
-    "git_head": "aef6ad32684129b453badc234c3c1ed9acc3a577",
+    "git_head": "7c9d23189508201409e3645588f274511e1c407a",
     "trees": {
-      "docs/architecture/adr": "sha256:b25cb50ddcc3a433e88bbfc6b65dd33bfc6094bf5de6ea95e9c08803c201d5e8",
-      "docs/architecture/designs": "sha256:41425b729e00fcf0ddafe90ba89bd197697f581436419b86044ff5fcedb70903",
+      "docs/architecture/adr": "sha256:33aceef11ab8621d50050399041d3695eddf2c98aa96c945a8a4f5d2dff325c9",
+      "docs/architecture/designs": "sha256:a843649424b0f7b2a110ae496db2eae50866f6bfb976ffbd806bf99643e139e9",
       "docs/architecture/contexts": "sha256:aaf923ca84433a8c5a152bf846f749e852a293aca14e38801bf9a3c84faba20a",
-      "docs/plans": "sha256:cb9d3c236b9bd991eb695a5e6aa1c49daa332c80e39536e7f4a9d74876bb711e",
-      ".cobuilder/rubrics": "sha256:091c7844d732911660ea984a850432e9af5e55a5560f8caf8595f926a32986c9"
+      "docs/plans": "sha256:a8bb9485d66e70d3b413a86ad3a7ff435911bde2da3e2b88b1055e0fbf8c06c0",
+      ".cobuilder/rubrics": "sha256:e7f0e01ad4455ffb7c5f57c0f22779a50ee37b912a00e2008a15bf3535457a1c"
     }
   },
   "entities": {
@@ -1355,8 +1355,9 @@
         "epic_id": "E1",
         "branch": null,
         "pr": null,
-        "state": null,
-        "note": null
+        "state": "open",
+        "note": null,
+        "design_doc": "structure-coaching/E1"
       },
       {
         "id": "structure-coaching/E2",
@@ -1364,8 +1365,9 @@
         "epic_id": "E2",
         "branch": null,
         "pr": null,
-        "state": null,
-        "note": null
+        "state": "open",
+        "note": null,
+        "design_doc": "structure-coaching/E2"
       },
       {
         "id": "structure-coaching/E3",
@@ -1373,8 +1375,9 @@
         "epic_id": "E3",
         "branch": null,
         "pr": null,
-        "state": null,
-        "note": null
+        "state": "open",
+        "note": null,
+        "design_doc": "structure-coaching/E3"
       },
       {
         "id": "structure-coaching/E4",
@@ -1382,7 +1385,7 @@
         "epic_id": "E4",
         "branch": null,
         "pr": null,
-        "state": null,
+        "state": "open",
         "note": null
       },
       {
@@ -1391,7 +1394,7 @@
         "epic_id": "E5",
         "branch": null,
         "pr": null,
-        "state": null,
+        "state": "open",
         "note": null
       },
       {
@@ -1400,7 +1403,16 @@
         "epic_id": "E6",
         "branch": null,
         "pr": null,
-        "state": null,
+        "state": "open",
+        "note": null
+      },
+      {
+        "id": "structure-coaching/E7",
+        "design": "structure-coaching",
+        "epic_id": "E7",
+        "branch": null,
+        "pr": null,
+        "state": "open",
         "note": null
       },
       {
@@ -4894,6 +4906,96 @@
         "state": "completed"
       },
       {
+        "id": "structure-coaching/1",
+        "feature": "structure-coaching",
+        "n": 1,
+        "title": "Tracer bullet: a crowded folder reaches GREEN",
+        "ends_with": "A GREEN write of a new file into a crowded folder gives a coach message that names the folder, its file count, and the limit. A write of an old file gives no structure text. The spike transcript is kept.",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
+        "id": "structure-coaching/2",
+        "feature": "structure-coaching",
+        "n": 2,
+        "title": "The name-stem cluster and the generic name, with the token split, the config file, and the list of paths not analysed",
+        "ends_with": "The script reports each of the three signals on synthetic trees, reads its limits from `.cobuilder/structure-signals.json`, skips test-name prefixes, and names each excluded path.",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
+        "id": "structure-coaching/3",
+        "feature": "structure-coaching",
+        "n": 3,
+        "title": "The coaching language: one message for each signal and the format of the Structure block",
+        "ends_with": "The engineer approves `shared/structure-messages.json` and the block format. A blind GREEN agent that gets one message makes the decision that the message names.",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
+        "id": "structure-coaching/4",
+        "feature": "structure-coaching",
+        "n": 4,
+        "title": "The coach uses the approved wording, repeats no finding in a session, and gives no smell output for an unscanned extension",
+        "ends_with": "A `.go` write gives a structure message and no habit-hooks call. A second write in the same session gives no repeat. The coach always exits 0.",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
+        "id": "structure-coaching/5",
+        "feature": "structure-coaching",
+        "n": 5,
+        "title": "The install writes the default config",
+        "ends_with": "The setup step writes `.cobuilder/structure-signals.json` in a temp repo after approval, and the coach reads it on the next write.",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
+        "id": "structure-coaching/6",
+        "feature": "structure-coaching",
+        "n": 6,
+        "title": "The agent-use check: the effect is chosen from the spike, and `verify_gate.py --slice` reads it",
+        "ends_with": "The check passes for a pass at attempt 1 and for a workflow-mode slice, and it fails for no attempt file and for a slice that the main agent wrote.",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
+        "id": "structure-coaching/7",
+        "feature": "structure-coaching",
+        "n": 7,
+        "title": "The slice loop text makes the main agent spawn RED, GREEN, and VALIDATE, and run the check before it closes a slice",
+        "ends_with": "A blind main agent with a small design spawns the three agents in order and runs the check. One real slice runs from RED to a VALIDATE score, and the transcript is kept.",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
+        "id": "structure-coaching/8",
+        "feature": "structure-coaching",
+        "n": 8,
+        "title": "VALIDATE writes the Structure block: contract drift, cohesion, and each new dependency against `boundary.yaml`",
+        "ends_with": "A blind VALIDATE on a fixture slice writes the block with the three judgments outside `overall_score`, and a FAIL puts the block in the feedback file.",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
+        "id": "structure-coaching/9",
+        "feature": "structure-coaching",
+        "n": 9,
+        "title": "The replay with the signals on and off, and the hand label of the findings",
+        "ends_with": "`evaluation.md` holds, for each condition, three runs or more of five slices, the follow-on success rate, the folder growth, and the precision of each signal, with a decision on scored criteria.",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
         "id": "work-drawer/1",
         "feature": "work-drawer",
         "n": 1,
@@ -5077,6 +5179,15 @@
         "source_path": "docs/plans/slice-agents-and-vocabulary/01-product.md"
       },
       {
+        "id": "structure-coaching",
+        "feature_slug": "structure-coaching",
+        "gate": 1,
+        "title": "Product: Structure signals coach GREEN, and VALIDATE reports them beside the slice score (structure-coaching)",
+        "body_md": "# Product: Structure signals coach GREEN, and VALIDATE reports them beside the slice score (structure-coaching)\n\n## Problem\n\nAn engineer who builds a feature with the slice loop gets code that works, but\neach change makes the code harder to maintain. The research of 2026-11-10 shows\nthis decay in several forms:\n\n- The code grows more verbose, and functions and files grow too large.\n- The agent writes new code instead of reusing code, so duplication grows.\n- The agent splits code into files that still depend on each other, so a\n  module hides no single decision.\n- Dependencies cross the boundaries that the project set.\n- Names move away from the language of the domain, and generic names appear.\n- New files pile up in the nearest folder.\n- Inputs and error handling change in silence. This form predicted the failure\n  of the next task better than any size or complexity measure.\n\nRules at the start of a session lower the first level of this decay, but not\nits rate, and reviewers miss much of it. Today the coach reports only problems\ninside one file, and the slice score checks only behaviour. In some sessions\nthe main agent writes a slice itself, so the coach and the blind score do not\nrun at all. The engineer finds the damage later, when each change costs more.\n\n## Success metric\n\nThe engineer replays the same slice plans with the new advice on and off,\nthree runs or more for each condition and five slices each. The main measure\nis the rate at which a second agent completes a follow-on task on the result.\nThe other measures are the growth of the largest folder, new duplication,\nsilent contract changes, and new dependencies across a boundary. Each slice in\nthe replay must also show evidence that the RED, GREEN, and VALIDATE agents ran\nit.\n\n## Announcement — the blog post before the feature\n\nA codebase that agents build does not break in one day. It erodes slowly\nand steadily. Each change passes its tests, but files pile into one folder,\nnames drift from the glossary, modules lose their single job, and inputs and\nerror handling change in silence. After many changes, the code is hard to\nread, hard to change, and hard for the next agent to build on. CoBuilder now\nhelps engineers stop this erosion of quality and cohesion while the work\nhappens, not after the damage.\n\nWhen the building agent writes a file, it gets advice on the structure next to\nthe advice on large functions and duplication. The advice never stops the\nwrite. After each slice, the score report shows a structure section. It names\nsilent changes to inputs and error handling, new dependencies that cross a\nboundary, and modules that hide no single decision. The engineer sees these\nbeside the score and decides what to do. The loop also checks that its three\nagents ran each slice.\n\n## Screens\n\nno UI: the advice appears in agent messages and in the slice evidence files\n",
+        "approved_date": null,
+        "source_path": "docs/plans/structure-coaching/01-product.md"
+      },
+      {
         "id": "work-drawer",
         "feature_slug": "work-drawer",
         "gate": 1,
@@ -5221,6 +5332,15 @@
         "body_md": "# Architecture: Slice agents, coding habits, and a DDD vocabulary\n\n## Fit\n\n| Existing part | Role today | Change |\n|---|---|---|\n| `plugins/implement/skills/build/` | Runs the gates and the RED, GREEN, VALIDATE slice loop. The three roles are prompt text in `references/slice-loop.md` and `workflows/slice-loop.js`. | The prompts move into agent definitions. The loop spawns agents by name. The prerequisite check gains `habit-hooks`. |\n| `plugins/implement/.claude-plugin/plugin.json` | Manifest, version 0.2.0. | Version 0.3.0. No new manifest key: Claude Code finds `agents/` and `hooks/hooks.json` by convention. |\n| `tests/test_plugin_manifests.py` | Fails if any plugin ships `agents/`, `hooks/`, or an MCP server. | Allows `agents/` and `hooks/` for `implement` only. The MCP ban stays for all five plugins. |\n| `CLAUDE.md` | States \"no agents, no hooks, no MCP servers\" for all five plugins, and holds the Vocabulary table. | Narrowed install-surface rule, citing the new ADR. The Vocabulary table becomes a pointer to `DDD-VOCABULARY.md`. |\n| `plugins/architect/skills/architecture/references/design-mode.md` | Design mode stages 0 to 7. | Stage 1 reads the vocabulary. Stage 5 adds or sharpens terms. |\n| `plugins/architect/skills/architecture/references/templates/canvas-template.md` and `docs/architecture/contexts/*/canvas.md` | Each canvas holds its own \"Ubiquitous language\" table. | Each term links to its entry in `DDD-VOCABULARY.md`. The canvas keeps the context-specific meaning. |\n\nNew parts:\n\n- `plugins/implement/agents/red.md`, `green.md`, `validate.md`, `vocabulary.md`: four agent definitions.\n- `plugins/implement/hooks/hooks.json`: one `PostToolUse` hook on `Write|Edit`.\n- `plugins/implement/scripts/habit_coach.py`: the hook command.\n- `plugins/implement/NOTICE.md`: credit for habit-hooks.\n- `DDD-VOCABULARY.md` at the repository root.\n- `docs/architecture/adr/ADR-0025-implement-ships-slice-agents-and-a-coaching-hook.md`.\n\n## Endpoints\n\nnone\n\n## Data\n\nNo database. Two file formats are new.\n\n1. **`DDD-VOCABULARY.md`.** One entry per term: the term, a one- or\n   two-sentence definition, the bounded context or district that owns it, and\n   an `_Avoid_:` list of rejected synonyms. Terms group under one heading per\n   bounded context. The format merges Matt Pocock's `CONTEXT.md` glossary\n   format with the canvas \"Ubiquitous language\" table.\n2. **Hook output.** `habit_coach.py` writes one JSON object to stdout:\n   `{\"hookSpecificOutput\": {\"hookEventName\": \"PostToolUse\", \"additionalContext\": \"<coaching text>\"}}`.\n\n## Flow\n\n**Coaching during GREEN:**\n\n1. The orchestrator spawns `implement:green` for a slice.\n2. GREEN writes or edits a file.\n3. Claude Code fires `PostToolUse` for `Write|Edit` with the payload on stdin.\n4. `habit_coach.py` reads `agent_type`. If the value does not name the\n   GREEN agent, the script exits 0 with no output.\n5. The script runs `habit-hooks --file <tool_input.file_path>`.\n6. Exit 0: no output. Exit 1: the coaching text goes back as\n   `additionalContext`. Exit 2: a one-line note that the tool failed goes\n   back as `additionalContext`, with the reason.\n7. GREEN reads the coaching and fixes the smell before its report.\n\n**Vocabulary check during VALIDATE:**\n\n1. After GREEN reports, the orchestrator spawns `implement:validate` and\n   `implement:vocabulary` in parallel.\n2. `implement:vocabulary` reads `DDD-VOCABULARY.md` and the slice diff. It\n   checks district, directory, file, class, and method names, and prose\n   terms. It reports each finding with the entry it breaks.\n3. VALIDATE keeps its rubric score. The vocabulary verdict appears beside\n   it in the evidence file. It is a separate axis, not merged into the score.\n\n**Vocabulary during design:**\n\n1. `/architect:design` stage 1 reads `DDD-VOCABULARY.md` with the districts.\n2. Stage 5 writes each term that the interview resolved or sharpened, and\n   flags a term that conflicts with an entry.\n\n## External\n\n- **habit-hooks** (MIT, https://github.com/habit-hooks/habit-hooks, by Ivett\n  Ördög and contributors). A required command-line tool, version 1.5.0 or\n  later. The build skill checks `habit-hooks --version` before the first\n  slice and stops with install steps if it is missing.\n- **Claude Code hook contract.** Plugin agents ignore a `hooks` frontmatter\n  field, so the hook lives in the plugin's `hooks/hooks.json`. The hook input\n  carries `agent_type` for a tool call made inside a subagent.\n- No new environment variable.\n",
         "approved_date": null,
         "source_path": "docs/plans/slice-agents-and-vocabulary/02-architecture.md"
+      },
+      {
+        "id": "structure-coaching",
+        "feature_slug": "structure-coaching",
+        "gate": 2,
+        "title": "Architecture: Structure signals coach GREEN, and VALIDATE reports them beside the slice score",
+        "body_md": "# Architecture: Structure signals coach GREEN, and VALIDATE reports them beside the slice score\n\nDesign record: `docs/architecture/designs/structure-coaching/`, decided in ADR-0048.\n\n## Fit\n\n| Module | Role today | Change |\n|---|---|---|\n| `shared/structure_signals.py` | None. A new file. | Finds three structure signals for one written file: a crowded folder, a name-stem cluster, and a generic name. Standard library only. |\n| `plugins/implement/scripts/habit_coach.py` | The `PostToolUse` coach. It filters on `implement:green` and runs habit-hooks on one file. | Gets a second runner. The coach joins the habit-hooks text and the structure text into one message. The GREEN filter stays. |\n| `plugins/implement/scripts/structure_runner.py` | None. A new file. | Calls `structure_signals.py`, applies the approved wording, and drops a finding that the session already showed. It keeps the coach file inside the size limit. |\n| `plugins/implement/scripts/verify_gate.py` | Checks the gate files before slices start. | Gets an agent-use check for one slice, which runs before the slice closes. |\n| `plugins/implement/agents/validate.md` | Scores a slice and writes the attempt file. | Adds a `### Structure` block outside the score. |\n| `plugins/implement/skills/build/references/slice-loop.md` and `SKILL.md` | The loop procedure for the main agent. | Stronger text on the use of the three agents, and the agent-use check before a slice closes. |\n| `plugins/cobuilder-full-lifecycle/skills/cobuilder-setup/` | Installs habit-hooks and checks the coach. | Writes the default `.cobuilder/structure-signals.json`. |\n| `docs/architecture/contexts/implement/boundary.yaml` | The implement boundary record. | No new edge. `implement` already depends on `shared`. |\n\n## Endpoints\n\nNone. The work changes a hook, two scripts, an agent body, and the loop prose.\n\n## Data\n\n| Store | Owner | Content |\n|---|---|---|\n| `.cobuilder/structure-signals.json` | The engineer. The install writes the default. | The folder limit, the percentile, the generic-name list, the excluded paths, and the test-name prefixes. Committed. |\n| `shared/structure-messages.json` | The plugin. The engineer approves it in slice 3. | One message template for each signal, with the decision that the message asks GREEN to make. |\n| `<temp dir>/cobuilder-coach-<session_id>.json` | The coach | The keys of the findings that this session already showed. Outside the repo. |\n| `.cobuilder/rubrics/<slug>/evidence/slice-<N>-attempt-<M>.md` | VALIDATE | Gets a `### Structure` block. Git ignores the folder. |\n| `docs/plans/structure-coaching/evaluation.md` | The engineer and the main agent | The replay results and the hand labels (E5). |\n\nNo database. No schema migration. No change to the bundle format.\n\n## Flow\n\nThe primary path is a GREEN write.\n\n1. GREEN calls `Write` or `Edit`.\n2. Claude Code runs `habit_coach.py` on `PostToolUse` with the payload.\n3. The coach stops when `agent_type` is not `implement:green`, or when the payload has no file path.\n4. When the extension is one of the six habit-hooks extensions, the coach runs `habit-hooks --file <path>`. For another extension, it skips habit-hooks and gives no smell output.\n5. The coach calls `structure_runner.run(path, session_id)`.\n6. `structure_runner` calls `structure_signals.signals_for(path, root, config)`. The script returns findings only when the file is untracked or added since the merge-base.\n7. `structure_runner` applies the message templates and removes each finding that the session record already holds. It adds the new keys to the record.\n8. The coach joins the two texts and writes one `additionalContext` message. It returns 0, so the write always goes ahead.\n\nThe second path is the end of a slice.\n\n1. The main agent spawns VALIDATE and VOCABULARY in parallel.\n2. VALIDATE scores the rubric, then writes the `### Structure` block. The block reads the diff, the `forbidden_dependencies` of the touched contexts, and the glossary. It judges contract drift, cohesion, and each new dependency.\n3. On a FAIL, the block goes to the feedback file, and GREEN reads it in the next attempt.\n4. Before the slice closes, the main agent runs `verify_gate.py --plan <dir> --slice <N>`. The check fails when the agent-use effect is absent.\n\n## External\n\n| Item | Use |\n|---|---|\n| habit-hooks CLI | Unchanged. The coach still runs it for the six extensions. |\n| git | `git ls-files --others --exclude-standard`, `git merge-base`, and `git diff --name-status` give the new files. |\n| Environment | No new variable. The coach reads `session_id` from the hook payload and the temp folder from `tempfile.gettempdir()`. |\n| Webhooks | None. |\n",
+        "approved_date": null,
+        "source_path": "docs/plans/structure-coaching/02-architecture.md"
       }
     ],
     "program_design": [
@@ -5367,6 +5487,15 @@
         "body_md": "# Program Design: Slice agents, coding habits, and a DDD vocabulary\n\n## Files\n\n| File | Epic | Why |\n|---|---|---|\n| `docs/architecture/adr/ADR-0025-implement-ships-slice-agents-and-a-coaching-hook.md` | E1 | Records the narrowed install-surface rule. |\n| `tests/test_plugin_manifests.py` | E1 | Allows `agents/` and `hooks/` in `implement` only. |\n| `CLAUDE.md` | E1, E4 | Install-surface rule (E1). Vocabulary pointer (E4 final slice). |\n| `plugins/implement/agents/{red,green,validate}.md` | E2 | The three roles as named agents. |\n| `plugins/implement/skills/build/references/slice-loop.md` | E2, E4 | Spawns agents by name. Adds the vocabulary step. |\n| `plugins/implement/skills/build/workflows/slice-loop.js` | E2, E4 | Same change for the scripted path. |\n| `plugins/implement/hooks/hooks.json` | E3 | The PostToolUse registration. |\n| `plugins/implement/scripts/habit_coach.py` | E3 | The hook command. |\n| `plugins/implement/NOTICE.md` | E3 | Credit and licence of habit-hooks. |\n| `plugins/implement/skills/build/SKILL.md` | E3 | Prerequisite check for `habit-hooks`. |\n| `plugins/implement/.claude-plugin/plugin.json` | E3 | Version 0.3.0. |\n| `DDD-VOCABULARY.md` | E4 | The one glossary. |\n| `plugins/implement/agents/vocabulary.md` | E4 | The vocabulary reviewer. |\n| `plugins/architect/skills/architecture/references/design-mode.md` | E4 | Stage 1 reads, stage 5 writes. |\n| `plugins/architect/skills/architecture/references/templates/canvas-template.md`, `docs/architecture/contexts/cobuilder-packaging/canvas.md` | E4 | Link canvas terms to the glossary. |\n| `tests/test_slice_agents.py`, `tests/test_habit_coach.py`, `tests/test_ddd_vocabulary.py` | E2 to E4 | Written by RED. |\n\n## Types & signatures\n\n```python\n# plugins/implement/scripts/habit_coach.py  (PEP 723, stdlib only)\nGREEN_AGENT_TYPES: frozenset[str]   # {\"implement:green\"}\n\ndef is_green(payload: dict) -> bool: ...\ndef target_path(payload: dict) -> str | None: ...        # tool_input.file_path\ndef run_habit_hooks(path: str) -> tuple[int, str]: ...   # (exit code, stdout+stderr)\ndef render(code: int, text: str) -> dict | None: ...     # hook JSON or None\ndef main(stdin: TextIO, stdout: TextIO, runner=run_habit_hooks) -> int: ...  # always 0\n```\n\nAgent definition frontmatter (each of the four files):\n\n```yaml\nname: green            # red | green | validate | vocabulary\ndescription: <one line: the role and when the build skill spawns it>\ntools: <role-specific list; vocabulary and validate get no Write/Edit on source>\nmodel: sonnet          # red and green only. validate and vocabulary inherit.\n```\n\n`DDD-VOCABULARY.md` entry shape:\n\n```markdown\n## <Bounded context or district name>\n\n**<Term>** (`<context-id>`):\n<One or two sentences: what it IS.>\n_Avoid_: <synonym>, <synonym>\n```\n\n## Call stack\n\n```\n/implement:start → Skill(\"build\")\n  prerequisite check → habit-hooks --version        (E3)\n  slice N:\n    Agent(subagent_type=\"implement:red\")             (E2)\n    Agent(subagent_type=\"implement:green\")           (E2)\n      Write|Edit → hooks.json → habit_coach.py main()  (E3)\n        is_green → target_path → run_habit_hooks → render\n    parallel:\n      Agent(subagent_type=\"implement:validate\")      (E2)\n      Agent(subagent_type=\"implement:vocabulary\")    (E4)\n/architect:design\n  stage 1 → read DDD-VOCABULARY.md                   (E4)\n  stage 5 → add or sharpen entries                   (E4)\n```\n\n## Test plan\n\n- **Packaging:** `implement` may ship `agents/` and `hooks/`. The other four\n  may not. No plugin ships an MCP server. Each agent file parses, carries\n  `name` and `description`, and uses no ignored field (`hooks`,\n  `mcpServers`, `permissionMode`).\n- **Prompt parity:** each agent body holds the scope contract and the blind\n  rule that `slice-loop.md` held. `slice-loop.md` and `slice-loop.js` name\n  the agents and no longer paste the role prompts.\n- **Hook, with a fake runner:** a non-GREEN payload gives no output. A GREEN\n  payload with exit 0 gives no output. Exit 1 gives `additionalContext` with\n  the coaching text. Exit 2 gives a tool-failure note. A missing binary gives\n  a note and exit 0. A payload with no `file_path` gives no output.\n  `hooks.json` registers `PostToolUse` with matcher `Write|Edit` and a\n  command under `${CLAUDE_PLUGIN_ROOT}`.\n- **Credit:** `NOTICE.md` names habit-hooks, its MIT licence, its URL, and\n  its author.\n- **Vocabulary:** every entry parses into the shape above. Every term from\n  the old `CLAUDE.md` table exists. Every canvas term links to an entry.\n  `design-mode.md` names the file in stage 1 and stage 5.\n- **Behavioural (Gate 4c special case):** the agent prompts and\n  `design-mode.md` govern agent behaviour, so their rubrics use one blind\n  subagent pass.\n\n## Least confident decisions\n\n1. **The value of `agent_type` for a plugin agent.** The docs show\n   `agent_type` in the hook input, but not the exact string for a\n   namespaced plugin agent. The script accepts `implement:green` and\n   `green`. Slice 5 confirms the real value in a live run.\n2. **The Workflow tool path.** It is not known whether `agent()` in\n   `slice-loop.js` can spawn a named plugin agent. If it cannot, the\n   scripted path cannot receive coaching. Slice 3 checks this. The\n   fallback is that the script tells the orchestrator to use Manual mode.\n3. **A required tool in a plugin family with no other install step.**\n   Making habit-hooks required means `/implement:start` stops on a machine\n   without it. You asked for this. The stop message gives the one-line\n   install.\n4. **Vocabulary as a separate axis.** VALIDATE's score does not include the\n   vocabulary verdict. A slice can pass at 0.95 with a vocabulary finding.\n   The finding routes through the gap tree like any other gap.\n",
         "approved_date": null,
         "source_path": "docs/plans/slice-agents-and-vocabulary/03-program-design.md"
+      },
+      {
+        "id": "structure-coaching",
+        "feature_slug": "structure-coaching",
+        "gate": 3,
+        "title": "Program Design: Structure signals coach GREEN, and VALIDATE reports them beside the slice score",
+        "body_md": "# Program Design: Structure signals coach GREEN, and VALIDATE reports them beside the slice score\n\nMemory before Gate 3: absent. The `consult` tool answered that the Hindsight server is not found.\n\n## Files\n\n| File | New or changed | Reason |\n|---|---|---|\n| `shared/structure_signals.py` | New | The three signals and the new-file rule. Standard library only, so the coach can import it without `uv`. About 180 lines. |\n| `shared/structure-messages.json` | New | The approved message template for each signal. Data, not prose that steers the script. |\n| `plugins/implement/scripts/structure_runner.py` | New | The bridge between the coach and the script: wording, the session record, and the text. `habit_coach.py` already has 240 lines, so the new code goes here. |\n| `plugins/implement/scripts/habit_coach.py` | Changed | Skips habit-hooks for an extension outside `SOURCE_EXTENSIONS`, calls the second runner, and joins the two texts. About 15 new lines. |\n| `plugins/implement/scripts/agent_use.py` | New | The agent-use check for one slice. `verify_gate.py` has 569 lines, so the check goes in its own module. |\n| `plugins/implement/scripts/verify_gate.py` | Changed | A `--slice <N>` option that runs only the agent-use check. |\n| `plugins/implement/agents/validate.md` | Changed | The `### Structure` block step and its format. |\n| `plugins/implement/skills/build/references/slice-loop.md` | Changed | Stronger agent-use text, and the check before a slice closes. |\n| `plugins/implement/skills/build/SKILL.md` | Changed | One line that points to the check in the slice loop. |\n| `plugins/cobuilder-full-lifecycle/skills/cobuilder-setup/SKILL.md` | Changed | A step that writes the default config, after the engineer approves it. |\n| `tests/test_structure_signals.py` | New | Synthetic folder trees in `tmp_path` git repos. |\n| `tests/test_structure_runner.py` | New | Wording, the session record, and no repeat. |\n| `tests/test_habit_coach.py` | Changed | New cases for an unscanned extension and for the joined text. The existing tests stay. |\n| `tests/test_agent_use.py` | New | The four cases of the effect check. |\n| `docs/plans/structure-coaching/evaluation.md` | New | The replay record (E5). |\n| `plugin.json` and `marketplace.json` of `implement` and `cobuilder-full-lifecycle` | Changed | The version bump, so installed copies get the change. |\n\n## Types & signatures\n\n`shared/structure_signals.py`:\n\n```python\n@dataclass(frozen=True)\nclass Config:\n    folder_limit: int | None        # engineer limit; None means percentile only\n    percentile: int                 # default 90\n    generic_names: frozenset[str]   # default: utils, helpers, common, misc, manager, base\n    excluded_paths: tuple[str, ...] # glob patterns, such as \"**/node_modules/**\"\n    test_prefixes: tuple[str, ...]  # default: (\"test\", \"spec\")\n\n@dataclass(frozen=True)\nclass Finding:\n    signal: str        # \"crowded-folder\" | \"name-stem-cluster\" | \"generic-name\"\n    path: str          # repo-relative path of the written file\n    folder: str        # repo-relative folder\n    facts: dict[str, int | str]   # such as {\"count\": 24, \"limit\": 11}\n\n    def key(self) -> str: ...     # signal + folder + stem, for the session record\n\n@dataclass(frozen=True)\nclass Report:\n    findings: tuple[Finding, ...]\n    not_analysed: tuple[str, ...] # excluded paths and reasons\n\ndef load_config(root: Path) -> Config: ...\ndef new_files(root: Path) -> frozenset[str]: ...\ndef split_tokens(stem: str) -> list[str]: ...\ndef folder_limit(root: Path, config: Config) -> int: ...\ndef crowded_folder(rel: str, root: Path, config: Config, limit: int) -> Finding | None: ...\ndef stem_cluster(rel: str, root: Path, config: Config) -> Finding | None: ...\ndef generic_name(rel: str, config: Config) -> Finding | None: ...\ndef signals_for(path: str, root: Path, config: Config) -> Report: ...\ndef to_findings_json(report: Report) -> str: ...   # habit-hooks findings shape, for E6\ndef main(argv: list[str]) -> int: ...              # --file <path> prints the JSON\n```\n\n`plugins/implement/scripts/structure_runner.py`:\n\n```python\ndef load_messages(path: Path) -> dict[str, str]: ...\ndef render(finding: Finding, messages: dict[str, str]) -> str: ...\ndef seen_keys(session_id: str | None) -> set[str]: ...\ndef remember(session_id: str | None, keys: set[str]) -> None: ...\ndef run(path: str, session_id: str | None) -> tuple[int, str]: ...  # (1, text) or (0, \"\")\n```\n\n`plugins/implement/scripts/habit_coach.py`:\n\n```python\ndef scanned(path: str) -> bool: ...   # extension in SOURCE_EXTENSIONS\ndef main(stdin, stdout, runner=run_habit_hooks, structure=structure_runner.run, argv=None) -> int: ...\n```\n\n`plugins/implement/scripts/agent_use.py`:\n\n```python\ndef check_slice(plan_dir: Path, rubrics_dir: Path, slice_id: int) -> str: ...  # \"ok\" or a reason\n```\n\nThe effect that `check_slice` reads is an open decision. Slice 6 settles it from the spike, as ADR-0048 decision 9 says.\n\n## Call stack\n\nGREEN write:\n\n```\nhabit_coach.main\n├── is_green, target_path\n├── scanned(path) ? run_habit_hooks(path) : (0, \"\")\n├── structure_runner.run(path, payload[\"session_id\"])\n│   ├── structure_signals.load_config(root)\n│   ├── structure_signals.signals_for(path, root, config)\n│   │   ├── new_files(root)   # returns early when path is not new\n│   │   ├── crowded_folder / stem_cluster / generic_name\n│   ├── seen_keys / render / remember\n└── render(code, joined_message) -> additionalContext JSON, exit 0\n```\n\nSlice close:\n\n```\nmain agent -> verify_gate.py --plan <dir> --slice <N>\n└── agent_use.check_slice(plan_dir, rubrics_dir, N) -> \"ok\" | reason, exit 0 or 1\n```\n\n## Test plan\n\n| Test file | Cases |\n|---|---|\n| `test_structure_signals.py` | A crowded folder over the limit and over the percentile. No finding under either. A name-stem cluster of three siblings. No cluster when a sub-folder has the stem. No cluster for `test_*` files. A generic name. `split_tokens` for `snake_case`, `kebab-case`, `camelCase`, and `PascalCase`. An untracked file counts as new. A committed old file gives no finding. A repo with no merge-base uses untracked and staged files. An excluded path appears in `not_analysed`. A missing config gives the defaults. |\n| `test_structure_runner.py` | Each signal renders with its template. A second call in the same session gives no text. A new session gives the text again. A missing `session_id` gives the text with no record. A bad record file does not raise. |\n| `test_habit_coach.py` | A `.go` file gives a structure message and no habit-hooks call. A `.py` file gives the joined text. The coach still returns 0. The existing cases, which include the two cases where the hook must not run `uv`, still pass. |\n| `test_agent_use.py` | No attempt file fails. A pass at attempt 1 passes. A workflow-mode slice passes. A slice that the main agent wrote fails. |\n| Blind passes | The coaching language (slice 3), the loop text (slice 7), and the Structure block (slice 8). Each transcript stays in the slice evidence. |\n\nTest rules from the repo: test effects and structure, not wording. Use `tmp_path` git repos for the folder trees. Do not run a real `bd` in the fast suite.\n\n## Least confident decisions\n\n1. **The agent-use effect.** It is still open. The VALIDATE attempt file cannot see a main agent that writes the code and then spawns only VALIDATE.\n2. **The percentile on small repos.** The 90th percentile of a repo with eight folders is a weak base. The engineer limit may need to be the main rule.\n3. **The import path from the coach to `shared/`.** The coach reaches the script through the `plugins/implement/shared` symlink. A cache install must keep that symlink.\n4. **The no-repeat key.** A key of signal, folder, and stem may hide a second real problem in the same folder.\n5. **The cost per write.** `new_files` runs git three times for each write. The spike measures the time.\n",
+        "approved_date": null,
+        "source_path": "docs/plans/structure-coaching/03-program-design.md"
       },
       {
         "id": "work-drawer",
@@ -5693,6 +5822,33 @@
         "body_md": "# Epic Technical Solution Design: E4 — One DDD vocabulary\n\nFeature: slice-agents-and-vocabulary\nEpic ID: E4\n\n## Scope and Intent\n\nCreate `DDD-VOCABULARY.md` at the repository root as the one glossary. It\nmerges Matt Pocock's glossary format (term, short definition, `_Avoid_`\nlist) with this repository's DDD canvases (each term belongs to one bounded\ncontext or district). Design mode reads and writes it. A vocabulary agent\nchecks each slice against it. Finally, the `CLAUDE.md` Vocabulary table\nmoves into it.\n\n## Files Touched\n\n- `DDD-VOCABULARY.md` (new)\n- `plugins/architect/skills/architecture/references/templates/canvas-template.md`\n- `docs/architecture/contexts/cobuilder-packaging/canvas.md`\n- `plugins/implement/agents/vocabulary.md` (new)\n- `plugins/implement/skills/build/references/slice-loop.md`\n- `plugins/implement/skills/build/workflows/slice-loop.js`\n- `plugins/architect/skills/architecture/references/design-mode.md`\n- `CLAUDE.md` (slice 8 only)\n- `tests/test_ddd_vocabulary.py` (new, written by RED)\n\n## Types & Signatures\n\nFile header: a two-sentence purpose, then a \"How to use\" list: one name per\nconcept, a term belongs to one context, add a term when it is resolved, and\nlist rejected synonyms under `_Avoid_`. Then one `## <context>` heading per\nbounded context or district, and a `## Cross-cutting` heading for terms\nthat span the plugin family.\n\nEntry:\n\n```markdown\n<a id=\"<term-slug>\"></a>\n**<Term>** (`<context-id>`):\n<One or two sentences: what it IS, not what it does.>\n_Avoid_: <synonym>, <synonym>\n```\n\nA homonym gets one entry per context, and each entry names the other.\nThe anchor line gives each entry a stable link target, because a bold line\nmakes no heading anchor. The context id must match the enclosing `##`\nheading, except under `## Cross-cutting`. A definition holds at most two\nsentences. (Tightened after slice 6 attempt 1.)\n\nCanvas link: in the \"Ubiquitous language\" table, each term cell becomes\n`[**Term**](../../../../DDD-VOCABULARY.md#<anchor>)`.\n\n`implement:vocabulary` agent: `tools: Read, Grep, Glob, Bash`, inherits the\nmodel. Input: slice number, slug, and the diff command. It checks district,\ndirectory, file, class, function, and method names, plus changed prose.\nFindings: `[AVOID]` a word from an `_Avoid_` list, `[UNDEFINED]` a new\ndomain concept with no entry, `[CONFLICT]` a term used with a different\nmeaning than its entry. Output appends a `### Vocabulary` section to the\nslice evidence file, with a verdict of `CLEAN` or `FINDINGS`. It does not\nscore and does not edit code.\n\n`design-mode.md`: stage 1 loads `DDD-VOCABULARY.md` next to the districts.\nStage 5 adds or sharpens each term the interview resolved, and flags a\nconflict with an entry to the engineer as a question.\n\n## Slice Decomposition\n\n- Slice 6 (tracer bullet): the file, its header, every canvas term, canvas\n  links.\n- Slice 7 (real content): the vocabulary agent, the loop step, and design\n  mode. Depends on slice 6.\n- Slice 8 (the move): the `CLAUDE.md` table into the glossary, a pointer\n  left behind. Depends on slice 6. Runs last, as you asked.\n\n## Test Plan\n\n`tests/test_ddd_vocabulary.py`:\n\n- Slice 6: the file exists. Every entry matches the entry regex. Every term\n  in each canvas \"Ubiquitous language\" table has an entry, and each canvas\n  term cell links to `DDD-VOCABULARY.md`.\n- Slice 7: `agents/vocabulary.md` parses, has no ignored key, and names the\n  three finding tags. `slice-loop.md` and `slice-loop.js` name\n  `implement:vocabulary`. `design-mode.md` names `DDD-VOCABULARY.md` in\n  the stage 1 and stage 5 sections. Behavioural criterion: a blind agent\n  given a seeded diff with an `_Avoid_` term reports `[AVOID]`.\n- Slice 8: every bold term in the old table has an entry. `CLAUDE.md` has\n  no `| Term | Meaning |` table and links to `DDD-VOCABULARY.md`.\n\n## Risks & Open Questions\n\n- The `CLAUDE.md` table carries \"Not to confuse with\" text. That text maps\n  to `_Avoid_` for synonyms and to the homonym note for collisions. It must\n  not be lost.\n- `docs/architecture/contexts/` has one context today. Other terms belong\n  to districts, which are inferred. Terms with no context go under\n  `## Cross-cutting`.\n",
         "approved_date": null,
         "source_path": "docs/plans/slice-agents-and-vocabulary/epic-E4-design.md"
+      },
+      {
+        "id": "structure-coaching/E1",
+        "epic_id": "E1",
+        "feature_slug": "structure-coaching",
+        "title": "Epic Technical Solution Design: E1 — Structure signals",
+        "body_md": "# Epic Technical Solution Design: E1 — Structure signals\n\nFeature: structure-coaching\nEpic ID: E1\n\n## Scope and Intent\n\nE1 builds `shared/structure_signals.py`, the one source of the three signals. Slice 1 is also the spike. It proves that a second runner in the coach can carry a folder signal to GREEN. If it cannot, the first abort rule of the design applies, and the work stops. E1 does not apply the approved wording. Slice 1 uses a plain text that slice 4 replaces.\n\n## Files Touched\n\n- `shared/structure_signals.py` (new)\n- `plugins/implement/scripts/structure_runner.py` (new, a plain `run` only in slice 1)\n- `plugins/implement/scripts/habit_coach.py` (the second runner call)\n- `tests/test_structure_signals.py` (new)\n- `tests/test_habit_coach.py` (one new case for the joined text)\n\n## Types & Signatures\n\nAs in `03-program-design.md`. Slice 1 adds `Config`, `Finding`, `Report`, `new_files`, `folder_limit`, `crowded_folder`, `signals_for`, and a plain `structure_runner.run`. Slice 2 adds `split_tokens`, `stem_cluster`, `generic_name`, `load_config`, `to_findings_json`, and `main`.\n\n`new_files(root)` returns the union of:\n\n1. `git ls-files --others --exclude-standard` (untracked files).\n2. `git diff --name-only --diff-filter=A --cached` (staged new files).\n3. `git diff --name-only --diff-filter=A <merge-base>..HEAD`, when a merge-base with the default branch exists.\n\nA rename into a folder counts as new for that folder. `git diff -M` reports it as `R`, so the third call also reads `R` targets.\n\n`folder_limit(root, config)` returns the larger of the engineer limit and the percentile file count over all folders that are not excluded. With no engineer limit, it returns the percentile.\n\n## Slice Decomposition\n\n1. **Slice 1, the tracer bullet.** Depends on nothing. Ends with a real coach message for a crowded folder.\n2. **Slice 2.** Depends on slice 1. Ends with all three signals, the config, and `not_analysed` on synthetic trees.\n\n## Test Plan\n\n- Slice 1: `test_structure_signals.py` cases for a crowded folder, an old file, an untracked file, and no merge-base. A `test_habit_coach.py` case shows the joined text with a fake habit-hooks runner. The spike transcript is the evidence that the real hook delivers the text.\n- Slice 2: the cases for the stem cluster, the generic name, the four token-split forms, the test prefix, the sub-folder exclusion, the config file, the defaults, and `not_analysed`.\n\n## Risks & Open Questions\n\n- The cost of three git calls per write. The spike records the time for one write on this repo.\n- The percentile on a repo with few folders.\n- The symlink import path in a cache install.\n",
+        "approved_date": null,
+        "source_path": "docs/plans/structure-coaching/epic-E1-design.md"
+      },
+      {
+        "id": "structure-coaching/E2",
+        "epic_id": "E2",
+        "feature_slug": "structure-coaching",
+        "title": "Epic Technical Solution Design: E2 — Coach delivery",
+        "body_md": "# Epic Technical Solution Design: E2 — Coach delivery\n\nFeature: structure-coaching\nEpic ID: E2\n\n## Scope and Intent\n\nE2 turns the signals into coaching that GREEN acts on. Slice 3 writes the wording, and the engineer approves it before any code uses it. Slice 4 applies the wording in the coach, with no repeat in a session and no smell output for an unscanned extension. Slice 5 makes the install write the default config. The coach has no cap on structure findings, as ADR-0048 decision 5 says.\n\n## Files Touched\n\n- `shared/structure-messages.json` (new, slice 3)\n- `plugins/implement/agents/validate.md` (the Structure block format only, slice 3)\n- `plugins/implement/scripts/structure_runner.py` (slice 4)\n- `plugins/implement/scripts/habit_coach.py` (`scanned`, slice 4)\n- `plugins/cobuilder-full-lifecycle/skills/cobuilder-setup/SKILL.md` (slice 5)\n- `tests/test_structure_runner.py` (new), `tests/test_habit_coach.py`, `tests/test_install_command.py`\n- The version fields of `implement` and `cobuilder-full-lifecycle` in `plugin.json` and `marketplace.json`\n\n## Types & Signatures\n\n`shared/structure-messages.json`:\n\n```json\n{\n  \"crowded-folder\": \"<template with {folder}, {count}, {limit}, and the decision to make>\",\n  \"name-stem-cluster\": \"<template with {folder}, {stem}, {count}>\",\n  \"generic-name\": \"<template with {path}>\"\n}\n```\n\nEach template names one decision, as the research found that a message that names the decision works better than a bare number. Each template gives two choices: move the files now, or keep the layout and give the reason in one line of the GREEN report.\n\nThe session record is a JSON list of finding keys at `<tempfile.gettempdir()>/cobuilder-coach-<session_id>.json`. A missing or bad file counts as empty. With no `session_id`, the runner keeps no record.\n\n## Slice Decomposition\n\n3. **Slice 3, the coaching language.** Depends on slice 2. Ends with the engineer approval and one blind GREEN pass.\n4. **Slice 4.** Depends on slice 3. Ends with the coach tests.\n5. **Slice 5.** Depends on slice 4. Ends with the install test.\n\n## Test Plan\n\n- Slice 3: a blind pass. A fresh GREEN agent gets a small task and one rendered message. The evidence is its transcript: does it move the files or give a reason? A structure test checks that each signal of `structure_signals.py` has a key in the JSON file.\n- Slice 4: `test_structure_runner.py` and the new `test_habit_coach.py` cases from `03-program-design.md`.\n- Slice 5: a temp-repo test that the setup step writes a config that `load_config` reads. `test_install_command.py` stays green.\n\n## Risks & Open Questions\n\n- The wording may need two rounds of engineer review.\n- The no-repeat key may hide a second problem in the same folder.\n- No cap on findings may give long messages on an old, flat repo. The ratchet limits this to new files.\n",
+        "approved_date": null,
+        "source_path": "docs/plans/structure-coaching/epic-E2-design.md"
+      },
+      {
+        "id": "structure-coaching/E3",
+        "epic_id": "E3",
+        "feature_slug": "structure-coaching",
+        "title": "Epic Technical Solution Design: E3 — The loop uses the agents",
+        "body_md": "# Epic Technical Solution Design: E3 — The loop uses the agents\n\nFeature: structure-coaching\nEpic ID: E3\n\n## Scope and Intent\n\nThe engineer saw sessions where the main agent wrote a slice itself. Then the coach and the blind score did not run. Text alone cannot force the agent use, and `slice-loop.js` is not the default mode. E3 therefore adds one effect that a script reads before a slice closes, and it makes the loop text stronger. The effect is still open. Slice 6 settles it from the spike.\n\n## Files Touched\n\n- `plugins/implement/scripts/agent_use.py` (new, slice 6)\n- `plugins/implement/scripts/verify_gate.py` (`--slice`, slice 6)\n- `tests/test_agent_use.py` (new, slice 6)\n- `plugins/implement/skills/build/references/slice-loop.md` (slice 7)\n- `plugins/implement/skills/build/SKILL.md` (slice 7)\n\n## Types & Signatures\n\n```python\ndef check_slice(plan_dir: Path, rubrics_dir: Path, slice_id: int) -> str: ...\n```\n\n`verify_gate.py --plan <dir> --slice <N>` runs only this check. It prints `ok` or the reason, and it exits 0 or 1.\n\nThe two candidate effects, from ADR-0048 decision 9:\n\n| Candidate | Reads | Gap |\n|---|---|---|\n| A. The VALIDATE attempt file | `evidence/slice-<N>-attempt-<M>.md` written by VALIDATE | Cannot see a main agent that writes the code and spawns only VALIDATE |\n| B. A role line in each agent report | A line that RED, GREEN, and VALIDATE each add to the evidence | Needs a change to three agent bodies |\n\nThe check must hold in manual mode and in workflow mode. The coach must not write a marker, because the coach ignores every caller but GREEN.\n\n## Slice Decomposition\n\n6. **Slice 6.** Depends on slice 1, which holds the spike. Ends with the four check tests.\n7. **Slice 7.** Depends on slice 6. Ends with a blind main-agent pass and one real slice transcript.\n\n## Test Plan\n\n- Slice 6: `test_agent_use.py` with no attempt file, a pass at attempt 1, a workflow-mode slice, and a main-agent slice.\n- Slice 7: a blind pass. A fresh main agent gets the changed loop text and a two-slice design. The evidence is its transcript: the spawn order and the check call.\n\n## Risks & Open Questions\n\n- Neither candidate sees every skip. The design accepts a gap that the engineer can see in the transcript.\n- A check that the main agent must call can itself be skipped. The `SKILL.md` line and the close step in `slice-loop.md` both name it.\n",
+        "approved_date": null,
+        "source_path": "docs/plans/structure-coaching/epic-E3-design.md"
       }
     ],
     "interaction_design": [
@@ -6875,6 +7031,78 @@
         "source_path": ".cobuilder/rubrics/slice-agents-and-vocabulary/slice-8.md"
       },
       {
+        "id": "structure-coaching/1",
+        "feature_slug": "structure-coaching",
+        "n": 1,
+        "title": "Slice 1 — Tracer bullet: a crowded folder reaches GREEN",
+        "body_md": "# Rubric: Slice 1 — Tracer bullet: a crowded folder reaches GREEN\n\nFeature: structure-coaching\nEpic: E1\nSlice goal: see row 1 of docs/plans/structure-coaching/04-slices.md\nTest command: uv run pytest tests -q\n\n## Criteria\n\n### C1 — A new file in a crowded folder gives a coach message [CRITICAL]\n**Must be true:** A PostToolUse payload from implement:green for an untracked file in a folder over the limit gives additionalContext that names the folder, the file count, and the limit.\n**Evidence to check:**\n- Run the test command.\n- Read tests/test_structure_signals.py and tests/test_habit_coach.py for a crowded-folder case that asserts on the JSON output, not on prose.\n**Scoring:**\n- 1.0 — the case exists, runs the real signal code, and passes\n- 0.5 — the case passes but uses a fake signal result\n- 0.0 — no such case, or it fails\n\n### C2 — An old file gives no structure text [CRITICAL]\n**Must be true:** A committed file that is not added since the merge-base gives no structure finding, also in a crowded folder.\n**Evidence to check:**\n- Find the test for a committed old file in a crowded folder.\n- Check that a repo with no merge-base still counts untracked and staged files as new.\n**Scoring:**\n- 1.0 — both cases are tested and pass\n- 0.5 — one case only\n- 0.0 — neither\n\n### C3 — The coach never blocks and keeps its GREEN filter\n**Must be true:** habit_coach.main returns 0 for every input, and a caller other than implement:green gets no output.\n**Evidence to check:**\n- Run tests/test_habit_coach.py.\n- Read habit_coach.py for the agent_type filter.\n**Scoring:**\n- 1.0 — all existing coach tests pass and the filter is unchanged\n- 0.5 — tests pass but the filter moved\n- 0.0 — a test fails or the filter is gone\n\n### C4 — The spike evidence is kept\n**Must be true:** A transcript or log shows one real hook run, not a unit test, that delivered a crowded-folder message, with the time for that write.\n**Evidence to check:**\n- Look in the slice evidence folder and the GREEN report for the spike transcript.\n**Scoring:**\n- 1.0 — transcript with the message and the time\n- 0.5 — transcript without the time\n- 0.0 — no transcript\n\n## Regression check\n- All tests that passed before this slice must still pass.\n- Files outside the slice scope in the epic design must remain unchanged.\n\n## Out of scope — do not penalise\n- The name-stem cluster and generic-name signals (slice 2)\n- The approved wording (slice 3)\n- No repeat in a session (slice 4)\n",
+        "source_path": ".cobuilder/rubrics/structure-coaching/slice-1.md"
+      },
+      {
+        "id": "structure-coaching/2",
+        "feature_slug": "structure-coaching",
+        "n": 2,
+        "title": "Slice 2 — The name-stem cluster, the generic name, the config, and the paths not analysed",
+        "body_md": "# Rubric: Slice 2 — The name-stem cluster, the generic name, the config, and the paths not analysed\n\nFeature: structure-coaching\nEpic: E1\nSlice goal: see row 2 of docs/plans/structure-coaching/04-slices.md\nTest command: uv run pytest tests -q\n\n## Criteria\n\n### C1 — Three signals on synthetic trees [CRITICAL]\n**Must be true:** structure_signals reports a crowded folder, a name-stem cluster of three or more siblings, and a generic file name, each on a synthetic git tree.\n**Evidence to check:**\n- Run the test command.\n- Read tests/test_structure_signals.py for one passing case per signal.\n**Scoring:**\n- 1.0 — one case per signal, all pass\n- 0.5 — two of three\n- 0.0 — fewer\n\n### C2 — The token split and the exclusions\n**Must be true:** Stems split on _, -, ., and case changes. Siblings with a test prefix do not form a cluster. A stem that already has a sub-folder does not form a cluster.\n**Evidence to check:**\n- Find cases for snake_case, kebab-case, camelCase, PascalCase, a test_ cluster, and a sub-folder.\n**Scoring:**\n- 1.0 — all six cases\n- 0.5 — four or five\n- 0.0 — fewer\n\n### C3 — The config file [CRITICAL]\n**Must be true:** The script reads its limits and the generic-name list from .cobuilder/structure-signals.json, and uses defaults when the file is absent or bad.\n**Evidence to check:**\n- Find a test with a custom config that changes a result, and a test with no config file.\n**Scoring:**\n- 1.0 — both tested and pass\n- 0.5 — one\n- 0.0 — neither\n\n### C4 — Paths not analysed\n**Must be true:** The output names each excluded path that the script did not analyse, so a clean result is not a false pass.\n**Evidence to check:**\n- Find a test that asserts an excluded path appears in the not-analysed list.\n**Scoring:**\n- 1.0 — tested and passes\n- 0.5 — listed but not tested\n- 0.0 — absent\n\n### C5 — Standard library only\n**Must be true:** shared/structure_signals.py imports only the standard library, so the coach runs it without uv.\n**Evidence to check:**\n- Read the imports of shared/structure_signals.py.\n- Run tests/test_habit_coach.py, which holds the two no-uv cases.\n**Scoring:**\n- 1.0 — stdlib only and no-uv tests pass\n- 0.5 — stdlib only, tests not run\n- 0.0 — a third-party import\n\n## Regression check\n- All tests that passed before this slice must still pass.\n- Files outside the slice scope in the epic design must remain unchanged.\n\n## Out of scope — do not penalise\n- The approved message wording (slice 3)\n- The install step (slice 5)\n",
+        "source_path": ".cobuilder/rubrics/structure-coaching/slice-2.md"
+      },
+      {
+        "id": "structure-coaching/3",
+        "feature_slug": "structure-coaching",
+        "n": 3,
+        "title": "Slice 3 — The coaching language",
+        "body_md": "# Rubric: Slice 3 — The coaching language\n\nFeature: structure-coaching\nEpic: E2\nSlice goal: see row 3 of docs/plans/structure-coaching/04-slices.md\nTest command: uv run pytest tests -q\n\n## Criteria\n\n### C1 — The engineer approved the wording [CRITICAL]\n**Must be true:** 00-status.md or the slice evidence records the engineer approval of shared/structure-messages.json and the Structure block format, with a date.\n**Evidence to check:**\n- Read the slice evidence and 00-status.md notes for the approval.\n**Scoring:**\n- 1.0 — approval with a date\n- 0.5 — approval without the files named\n- 0.0 — no approval\n\n### C2 — Each signal has a message that names a decision [CRITICAL]\n**Must be true:** shared/structure-messages.json has one template per signal of the script, and each template names the decision for GREEN: move the files now, or keep the layout and give a reason.\n**Evidence to check:**\n- Run the structure test that matches the JSON keys to the signal names.\n- Read each template.\n**Scoring:**\n- 1.0 — every signal, every template names both choices\n- 0.5 — a template lacks a choice\n- 0.0 — a signal has no template\n\n### C3 — A blind GREEN acts on a message\n**Must be true:** A fresh GREEN agent that got one rendered message, and not the rubric, either moved the files or gave a one-line reason. The transcript is kept.\n**Evidence to check:**\n- Read the blind-pass transcript in the slice evidence.\n**Scoring:**\n- 1.0 — the agent acted on the decision\n- 0.5 — the agent saw it but did not act\n- 0.0 — no transcript\n\n## Regression check\n- All tests that passed before this slice must still pass.\n- Files outside the slice scope in the epic design must remain unchanged.\n\n## Out of scope — do not penalise\n- The coach code that applies the wording (slice 4)\n- The VALIDATE step that writes the block (slice 8)\n",
+        "source_path": ".cobuilder/rubrics/structure-coaching/slice-3.md"
+      },
+      {
+        "id": "structure-coaching/4",
+        "feature_slug": "structure-coaching",
+        "n": 4,
+        "title": "Slice 4 — The coach uses the wording, repeats nothing, and is silent about smells for an unscanned extension",
+        "body_md": "# Rubric: Slice 4 — The coach uses the wording, repeats nothing, and is silent about smells for an unscanned extension\n\nFeature: structure-coaching\nEpic: E2\nSlice goal: see row 4 of docs/plans/structure-coaching/04-slices.md\nTest command: uv run pytest tests -q\n\n## Criteria\n\n### C1 — Structure text for every extension [CRITICAL]\n**Must be true:** A GREEN write of a .go file gives a structure message and makes no habit-hooks call.\n**Evidence to check:**\n- Run tests/test_habit_coach.py and find the unscanned-extension case.\n**Scoring:**\n- 1.0 — tested and passes\n- 0.5 — message but habit-hooks still called\n- 0.0 — absent\n\n### C2 — No repeat in a session [CRITICAL]\n**Must be true:** A second write in the same session_id gives no repeat of the same finding. A new session gives it again. A missing session_id or a bad record file does not raise.\n**Evidence to check:**\n- Run tests/test_structure_runner.py.\n**Scoring:**\n- 1.0 — all four cases\n- 0.5 — two or three\n- 0.0 — fewer\n\n### C3 — The approved wording is used\n**Must be true:** The rendered text comes from shared/structure-messages.json, and no message text is hardcoded in the scripts.\n**Evidence to check:**\n- Read structure_runner.py and habit_coach.py for message strings.\n- Find a test that changes a template and sees the new text.\n**Scoring:**\n- 1.0 — templates only, tested\n- 0.5 — templates only, not tested\n- 0.0 — hardcoded text\n\n### C4 — The coach still never blocks\n**Must be true:** The coach returns 0 in every hook-mode case, and the real habit-hooks failure message for a scanned file stays.\n**Evidence to check:**\n- Run tests/test_habit_coach.py.\n**Scoring:**\n- 1.0 — all pass\n- 0.5 — —\n- 0.0 — a failure\n\n## Regression check\n- All tests that passed before this slice must still pass.\n- Files outside the slice scope in the epic design must remain unchanged.\n\n## Out of scope — do not penalise\n- The install step (slice 5)\n- Any cap on findings, which the design rules out\n",
+        "source_path": ".cobuilder/rubrics/structure-coaching/slice-4.md"
+      },
+      {
+        "id": "structure-coaching/5",
+        "feature_slug": "structure-coaching",
+        "n": 5,
+        "title": "Slice 5 — The install writes the default config",
+        "body_md": "# Rubric: Slice 5 — The install writes the default config\n\nFeature: structure-coaching\nEpic: E2\nSlice goal: see row 5 of docs/plans/structure-coaching/04-slices.md\nTest command: uv run pytest tests -q\n\n## Criteria\n\n### C1 — The setup step writes the config [CRITICAL]\n**Must be true:** The cobuilder-setup skill has a step that writes .cobuilder/structure-signals.json after the engineer approves it, and load_config reads the result.\n**Evidence to check:**\n- Run the temp-repo test for the written config.\n- Read the setup skill step.\n**Scoring:**\n- 1.0 — step and test pass\n- 0.5 — step without a test\n- 0.0 — no step\n\n### C2 — Versions are bumped and match\n**Must be true:** implement and cobuilder-full-lifecycle have a new version in plugin.json and marketplace.json, and the two match.\n**Evidence to check:**\n- Run tests/test_plugin_manifests.py and the version-match test.\n**Scoring:**\n- 1.0 — bumped and matching\n- 0.5 — one bumped\n- 0.0 — none\n\n## Regression check\n- All tests that passed before this slice must still pass.\n- Files outside the slice scope in the epic design must remain unchanged.\n\n## Out of scope — do not penalise\n- The agent-use check (slice 6)\n",
+        "source_path": ".cobuilder/rubrics/structure-coaching/slice-5.md"
+      },
+      {
+        "id": "structure-coaching/6",
+        "feature_slug": "structure-coaching",
+        "n": 6,
+        "title": "Slice 6 — The agent-use check",
+        "body_md": "# Rubric: Slice 6 — The agent-use check\n\nFeature: structure-coaching\nEpic: E3\nSlice goal: see row 6 of docs/plans/structure-coaching/04-slices.md\nTest command: uv run pytest tests -q\n\n## Criteria\n\n### C1 — The effect is chosen and recorded [CRITICAL]\n**Must be true:** 00-status.md notes or the ADR record which effect the check reads, and why, from the spike.\n**Evidence to check:**\n- Read the notes and ADR-0048 decision 9.\n**Scoring:**\n- 1.0 — chosen with a reason\n- 0.5 — chosen with no reason\n- 0.0 — still open\n\n### C2 — The four cases [CRITICAL]\n**Must be true:** check_slice passes for a pass at attempt 1 and for a workflow-mode slice, and fails for no attempt file and for a slice that the main agent wrote.\n**Evidence to check:**\n- Run tests/test_agent_use.py.\n**Scoring:**\n- 1.0 — all four pass\n- 0.5 — three\n- 0.0 — fewer\n\n### C3 — verify_gate.py --slice runs the check\n**Must be true:** verify_gate.py --plan <dir> --slice <N> runs only the agent-use check and exits 1 with a reason when it fails.\n**Evidence to check:**\n- Run the command on a fixture plan.\n**Scoring:**\n- 1.0 — works with a reason\n- 0.5 — works without a reason\n- 0.0 — absent\n\n## Regression check\n- All tests that passed before this slice must still pass.\n- Files outside the slice scope in the epic design must remain unchanged.\n\n## Out of scope — do not penalise\n- The loop text (slice 7)\n",
+        "source_path": ".cobuilder/rubrics/structure-coaching/slice-6.md"
+      },
+      {
+        "id": "structure-coaching/7",
+        "feature_slug": "structure-coaching",
+        "n": 7,
+        "title": "Slice 7 — The loop text makes the main agent use the three agents",
+        "body_md": "# Rubric: Slice 7 — The loop text makes the main agent use the three agents\n\nFeature: structure-coaching\nEpic: E3\nSlice goal: see row 7 of docs/plans/structure-coaching/04-slices.md\nTest command: uv run pytest tests -q\n\n## Criteria\n\n### C1 — A blind main agent spawns the three agents [CRITICAL]\n**Must be true:** A fresh main agent that got the changed loop text and a small design spawned RED, GREEN, and VALIDATE by agent type, in that order, for each slice.\n**Evidence to check:**\n- Read the blind-pass transcript in the slice evidence.\n**Scoring:**\n- 1.0 — every slice, in order\n- 0.5 — one slice skipped or out of order\n- 0.0 — the main agent wrote code itself\n\n### C2 — The check runs before a slice closes [CRITICAL]\n**Must be true:** In the same transcript, the main agent ran verify_gate.py --slice before set-slice-state closed.\n**Evidence to check:**\n- Read the transcript for the order of the two calls.\n**Scoring:**\n- 1.0 — every slice\n- 0.5 — some slices\n- 0.0 — never\n\n### C3 — One real slice ran locally\n**Must be true:** A transcript shows one real slice of this repo from RED to a VALIDATE score.\n**Evidence to check:**\n- Read the slice evidence.\n**Scoring:**\n- 1.0 — kept\n- 0.5 — partial\n- 0.0 — absent\n\n## Regression check\n- All tests that passed before this slice must still pass.\n- Files outside the slice scope in the epic design must remain unchanged.\n\n## Out of scope — do not penalise\n- slice-loop.js as the default mode, which the engineer ruled out\n",
+        "source_path": ".cobuilder/rubrics/structure-coaching/slice-7.md"
+      },
+      {
+        "id": "structure-coaching/8",
+        "feature_slug": "structure-coaching",
+        "n": 8,
+        "title": "Slice 8 — VALIDATE writes the Structure block",
+        "body_md": "# Rubric: Slice 8 — VALIDATE writes the Structure block\n\nFeature: structure-coaching\nEpic: E4\nSlice goal: see row 8 of docs/plans/structure-coaching/04-slices.md\nTest command: uv run pytest tests -q\n\n## Criteria\n\n### C1 — The block holds the three judgments [CRITICAL]\n**Must be true:** A blind VALIDATE on a fixture slice wrote a ### Structure block that judges contract drift, cohesion, and each new dependency against the forbidden_dependencies of boundary.yaml, with a cited line for each finding.\n**Evidence to check:**\n- Read the fixture attempt file in the slice evidence.\n**Scoring:**\n- 1.0 — three judgments with citations\n- 0.5 — two, or no citations\n- 0.0 — no block\n\n### C2 — The block stays outside the score [CRITICAL]\n**Must be true:** overall_score in the attempt file is the plain average of the rubric criteria only.\n**Evidence to check:**\n- Recompute the average from the criterion scores in the fixture attempt file.\n**Scoring:**\n- 1.0 — equal\n- 0.5 — —\n- 0.0 — the block changed the score\n\n### C3 — A FAIL passes the block to GREEN\n**Must be true:** On a failed fixture attempt, slice-N-feedback.md holds the block.\n**Evidence to check:**\n- Read the fixture feedback file.\n**Scoring:**\n- 1.0 — present\n- 0.5 — partial\n- 0.0 — absent\n\n## Regression check\n- All tests that passed before this slice must still pass.\n- Files outside the slice scope in the epic design must remain unchanged.\n\n## Out of scope — do not penalise\n- An import parser (E7)\n- Scored structure criteria (E5 decides)\n",
+        "source_path": ".cobuilder/rubrics/structure-coaching/slice-8.md"
+      },
+      {
+        "id": "structure-coaching/9",
+        "feature_slug": "structure-coaching",
+        "n": 9,
+        "title": "Slice 9 — The replay evaluation",
+        "body_md": "# Rubric: Slice 9 — The replay evaluation\n\nFeature: structure-coaching\nEpic: E5\nSlice goal: see row 9 of docs/plans/structure-coaching/04-slices.md\nTest command: uv run pytest tests -q\n\n## Criteria\n\n### C1 — The record holds the measures [CRITICAL]\n**Must be true:** docs/plans/structure-coaching/evaluation.md holds, for each condition, three runs or more of five slices, the follow-on success rate, the growth of the largest folder, and the precision of each signal from a hand label.\n**Evidence to check:**\n- Read evaluation.md and count the runs and slices.\n**Scoring:**\n- 1.0 — all measures, enough runs\n- 0.5 — a measure missing\n- 0.0 — no record\n\n### C2 — A decision follows the abort rule [CRITICAL]\n**Must be true:** evaluation.md states the result against the abort rule of goal.json, and the decision on scored criteria.\n**Evidence to check:**\n- Compare the stated result with goal.json abort_if.\n**Scoring:**\n- 1.0 — decision consistent with the rule\n- 0.5 — decision without the rule\n- 0.0 — no decision\n\n## Regression check\n- All tests that passed before this slice must still pass.\n- Files outside the slice scope in the epic design must remain unchanged.\n\n## Out of scope — do not penalise\n- E6 and E7 work\n",
+        "source_path": ".cobuilder/rubrics/structure-coaching/slice-9.md"
+      },
+      {
         "id": "work-drawer/1",
         "feature_slug": "work-drawer",
         "n": 1,
@@ -6968,7 +7196,8 @@
           "structure-coaching/E3",
           "structure-coaching/E4",
           "structure-coaching/E5",
-          "structure-coaching/E6"
+          "structure-coaching/E6",
+          "structure-coaching/E7"
         ]
       },
       "ADR-0013": {
@@ -7126,7 +7355,8 @@
           "structure-coaching/E3",
           "structure-coaching/E4",
           "structure-coaching/E5",
-          "structure-coaching/E6"
+          "structure-coaching/E6",
+          "structure-coaching/E7"
         ]
       },
       "ADR-0026": {
@@ -7316,7 +7546,8 @@
           "structure-coaching/E3",
           "structure-coaching/E4",
           "structure-coaching/E5",
-          "structure-coaching/E6"
+          "structure-coaching/E6",
+          "structure-coaching/E7"
         ]
       },
       "ADR-0039": {
@@ -7407,7 +7638,8 @@
           "structure-coaching/E3",
           "structure-coaching/E4",
           "structure-coaching/E5",
-          "structure-coaching/E6"
+          "structure-coaching/E6",
+          "structure-coaching/E7"
         ]
       }
     },
@@ -7565,6 +7797,7 @@
       "structure-coaching/E4": "unstarted",
       "structure-coaching/E5": "unstarted",
       "structure-coaching/E6": "unstarted",
+      "structure-coaching/E7": "unstarted",
       "ubiquitous-language/E1": "unstarted",
       "ubiquitous-language/E2": "unstarted",
       "ubiquitous-language/E3": "unstarted",
@@ -7702,6 +7935,15 @@
       "slice-agents-and-vocabulary/6": "slice-agents-and-vocabulary/E4",
       "slice-agents-and-vocabulary/7": "slice-agents-and-vocabulary/E4",
       "slice-agents-and-vocabulary/8": "slice-agents-and-vocabulary/E4",
+      "structure-coaching/1": "structure-coaching/E1",
+      "structure-coaching/2": "structure-coaching/E1",
+      "structure-coaching/3": "structure-coaching/E2",
+      "structure-coaching/4": "structure-coaching/E2",
+      "structure-coaching/5": "structure-coaching/E2",
+      "structure-coaching/6": "structure-coaching/E3",
+      "structure-coaching/7": "structure-coaching/E3",
+      "structure-coaching/8": "structure-coaching/E4",
+      "structure-coaching/9": "structure-coaching/E5",
       "work-drawer/1": "work-drawer/E1",
       "work-drawer/2": "work-drawer/E2"
     },
@@ -8375,6 +8617,39 @@
           "state": "APPROVED 2026-09-27"
         }
       ],
+      "structure-coaching": [
+        {
+          "n": "1",
+          "name": "Product",
+          "state": "2026-11-11",
+          "doc": "structure-coaching",
+          "doc_kind": "product"
+        },
+        {
+          "n": "2",
+          "name": "Architecture",
+          "state": "pending",
+          "doc": "structure-coaching",
+          "doc_kind": "architecture"
+        },
+        {
+          "n": "2b",
+          "name": "Interaction design",
+          "state": "n/a"
+        },
+        {
+          "n": "3",
+          "name": "Program Design",
+          "state": "pending",
+          "doc": "structure-coaching",
+          "doc_kind": "program"
+        },
+        {
+          "n": "4",
+          "name": "Slice plan, epic designs, and rubrics",
+          "state": "pending"
+        }
+      ],
       "work-drawer": [
         {
           "n": "1",
@@ -8580,7 +8855,7 @@
       },
       "structure-coaching": {
         "stage_source": "tracker",
-        "next_ready": null,
+        "next_ready": "structure-coaching/1",
         "pull_requests": []
       },
       "ubiquitous-language": {
