@@ -11,7 +11,7 @@ flowchart TB
 
     Coach -->|"import or sys.executable, findings JSON"| Signals
     Coach -->|"subprocess spawn, smell findings"| Hooks
-    Coach -->|"advice, three findings at most"| Green
+    Coach -->|"advice, no block"| Green
     Validate -->|"sys.executable"| Signals
     Validate -->|"writes Structure block"| Attempt
     Attempt -.->|"on FAIL, next attempt"| Green

@@ -17,11 +17,13 @@ behaviour only. In some sessions the main agent wrote the slice itself.
 
 ## Scope
 
-- Step 0, the spike: prove that a project-local habit-hooks plugin carries a
-  folder signal to the coach message, and run one real slice.
+- Step 0, the spike: prove that the second runner in `habit_coach.py` carries a
+  folder signal to the coach message, pick the agent-use effect, and run one
+  real slice.
 - E1 structure-signals: the script and its tests.
-- E2 coach-delivery: guides, a cap of three findings, no repeat in a session,
-  and no smell output for an unscanned extension. The install writes the
+- E2 coach-delivery: first a coaching-language slice that the engineer reviews
+  and approves. Then the second runner, no repeat in a session, and no smell
+  output for an unscanned extension. No cap at first. The install writes the
   default config. The GREEN filter stays.
 - E3 loop-uses-agents: the loop text, and a check in `verify_gate.py` that reads
   one effect.
@@ -38,7 +40,8 @@ behaviour only. In some sessions the main agent wrote the slice itself.
   files that are untracked or added since the merge-base.
 - The script names each path that it did not analyse.
 - The coach gives structure signals for each extension, no smell output for an
-  unscanned extension, three findings at most, and no repeat in a session.
+  unscanned extension, and no repeat in a session.
+- The engineer approves the coaching language before the coach uses it.
 - A blind pass of the loop text spawns all three agents, and the effect check
   fails for a slice that the main agent wrote.
 - The attempt file holds a Structure block outside the overall score.

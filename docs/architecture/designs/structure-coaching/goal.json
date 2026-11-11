@@ -11,29 +11,30 @@
   "created": "2026-11-10",
   "outcome": "GREEN gets structure coaching when it adds a file, VALIDATE reports structure findings beside the slice score, and the main agent runs each slice through the RED, GREEN, and VALIDATE agents.",
   "done_when": [
-    "A spike transcript shows one real coach message that carries a structure signal from a project-local habit-hooks plugin, or it records why that route failed",
+    "A spike transcript shows one real coach message that carries a structure signal from the second runner in habit_coach.py",
     "shared/structure_signals.py reports a crowded folder, a name-stem cluster, and a generic file name on synthetic folder trees, including a test folder, and it reads its limits from .cobuilder/structure-signals.json",
     "A signal fires only for a file that is untracked or added since the merge-base. Tests cover an uncommitted file and a branch with no merge-base",
     "The output of shared/structure_signals.py names each path that the script did not analyse",
-    "The coach gives structure signals for each extension, stays silent about smells for an unscanned extension, shows three findings at most, and repeats none in a session",
+    "The coach gives structure signals for each extension, stays silent about smells for an unscanned extension, and repeats no finding in a session. It has no cap on structure findings",
+    "The engineer approves the coaching language, the message for each signal and the Structure block format, before the coach and VALIDATE use it",
     "A test of the effect check covers no attempt file, a pass at attempt 1, and workflow mode, and the check fails for a main-agent slice",
     "The attempt file of a slice holds a Structure block from VALIDATE, outside the overall score, and a failed attempt passes the block to the next GREEN attempt",
     "A replay of three runs or more for each condition, five slices each, records the growth of the largest folder and the follow-on resolve rate",
     "One real slice runs locally from RED to a VALIDATE score, and the transcript is kept"
   ],
   "abort_if": [
-    "The spike shows that neither a habit-hooks plugin nor a second runner in habit_coach.py can put a folder signal into the coach message",
+    "The spike shows that a second runner in habit_coach.py cannot put a folder signal into the coach message",
     "A hand label on three repositories gives each of the three signals a precision below 50%. A single signal below 50% is dropped instead",
     "The replay shows a fall of less than 20% in the growth of the largest folder with the signals on, across three runs or more for each condition",
     "The structure work needs a hard block on a write, which ADR-0025 does not allow for the coach"
   ],
   "min_work": {
     "derived_from": "2 districts (implement, shared), 3 colliding ADRs (ADR-0025, ADR-0012, ADR-0038), 1 boundary rule (implement allowed_dependencies), 3 signals, 6 epics",
-    "alternatives_explored": 10,
+    "alternatives_explored": 11,
     "boundary_rules_checked": true,
     "challenge_stage_run": true,
     "draft_review_run": true,
-    "note": "Decided in chat on 2026-11-10. The engineer kept the GREEN filter, accepted the two coach guards, kept the agent-use effect open for the spike, and rejected slice-loop.js as the default run mode. Draft review round 1 scored 0.63 and round 2 scored 0.75. The session applied the material findings of both rounds."
+    "note": "Decided in chat on 2026-11-10. The engineer kept the GREEN filter, accepted the two coach guards, kept the agent-use effect open for the spike, and rejected slice-loop.js as the default run mode. Draft review round 1 scored 0.63 and round 2 scored 0.75. The session applied the material findings of both rounds. Round 3 in chat on 2026-11-11: the engineer removed the cap, chose the second runner as the only route, added a coaching-language slice for engineer approval, approved the design, and chose one PR."
   },
   "limits": {
     "warn_after_rounds": 3,
@@ -49,8 +50,8 @@
     {
       "id": "E2",
       "slug": "coach-delivery",
-      "title": "The coach carries the signals to GREEN, with guides, a cap of three, no repeat in a session, and no smell output for an unscanned extension. The install writes the default config.",
-      "outcome": "A stub-binary test shows a structure signal for each extension, no smell output for an unscanned extension, and no repeat on a second write."
+      "title": "A coaching-language slice for engineer approval, then the second runner in habit_coach.py carries the signals to GREEN, with no repeat in a session and no smell output for an unscanned extension. The install writes the default config.",
+      "outcome": "The engineer approves the coaching language, and a stub-binary test shows a structure signal for each extension, no smell output for an unscanned extension, and no repeat on a second write."
     },
     {
       "id": "E3",

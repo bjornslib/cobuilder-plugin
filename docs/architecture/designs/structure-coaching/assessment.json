@@ -18,8 +18,8 @@
       "kind": "prediction",
       "id": "F2",
       "severity": "high",
-      "title": "The delivery route is not proven",
-      "detail": "The habit-hooks documents show a sensor that gets a list of files. They do not state that a sensor can report on a folder, or that a project-local plugin runs with no installed package. The spike decides between the plugin route and a second runner in habit_coach.py. Epic E2 cannot start before it.",
+      "title": "The second runner is not proven in a real session",
+      "detail": "The coach has one call site for habit-hooks. The second runner calls shared/structure_signals.py after it and joins the two outputs. No real session has run it, so the spike shows one coach message before E2 starts.",
       "cites": "ADR-0025, context implement"
     },
     {

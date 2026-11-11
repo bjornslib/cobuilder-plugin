@@ -46,6 +46,10 @@
     {
       "option": "Run the script from the coach with uv run, and read a YAML config",
       "rejected_because": "The coach is stdlib only, and two coach tests fail when it runs uv. A uv start on each write also adds delay."
+    },
+    {
+      "option": "Deliver the signals as a sensor in a project-local habit-hooks plugin",
+      "rejected_because": "habit-hooks finds smells inside one file, and the signals judge folders and names. The engineer keeps the two jobs apart. A sensor also runs for six extensions only."
     }
   ],
   "out_of_scope": [
@@ -57,23 +61,23 @@
     "A claim about who wrote the code, a human or an agent"
   ],
   "risks": [
-    "habit-hooks runs a sensor for each file, and a folder signal may not fit that contract",
+    "The coach message grows with no cap, and noise hides the smell advice. A cap is added only if the replay or the engineer finds noise",
     "A percentile limit gives false signals in a framework folder, a test folder, or a generated folder",
     "GREEN splits a folder to silence the signal, and the new folders hold no single decision",
-    "A wider coach message hides the smell advice that GREEN gets today",
+    "The coaching language does not change what GREEN does, so the engineer reviews it before the coach uses it",
     "The advisory Structure block has no effect on GREEN, because only a failed attempt passes it on",
     "Neither text nor the effect check forces the main agent to spawn the agents. The check finds a skipped agent only after the slice",
     "The stem rule flags a test folder, where files share a prefix such as test_ by convention"
   ],
   "testing": "Tests run the script on synthetic folder trees and read its JSON. A stub-binary test drives the coach. A blind pass scores the loop text, and the transcript is kept. The replay evaluation compares folder growth and the follow-on resolve rate.",
   "reviewer_focus": [
-    "The spike first: whether a project-local habit-hooks plugin can carry a folder signal to the coach message",
+    "The spike first: one real coach message from the second runner, and the agent-use effect",
     "The effect that shows which agent wrote a slice. The hook must not call the tracker, and a coach marker cannot work",
     "The percentile limit and the generic-name list, which have no calibration data"
   ],
   "unknowns": [
-    "Whether habit-hooks runs a project-local plugin with no installed package, and whether a sensor can report on a folder",
-    "How the snooze ratchet of habit-hooks treats a finding with a folder as its key",
+    "Whether one runner call on each write adds a delay that GREEN notices",
+    "Whether the structure findings need a cap, which the replay and the engineer decide",
     "Which effect shows that the agents ran the slice. The candidates are the VALIDATE attempt file and the tracker attempt record. The spike decides",
     "Which repositories and slice plans the replay uses, and how many runs the engineer accepts",
     "Whether the signals must serve target repositories in each language, which the engineer has not confirmed",

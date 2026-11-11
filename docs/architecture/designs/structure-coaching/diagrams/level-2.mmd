@@ -19,7 +19,7 @@ sequenceDiagram
     HH-->>Coach: smell findings
     Coach->>SS: ask for structure signals
     SS-->>Coach: findings JSON for new files
-    Coach-->>Green: advice, three findings at most, no block
+    Coach-->>Green: advice, no cap, no block
     Green-->>Main: slice done
     Main->>Val: spawn for the slice
     Val->>SS: run on the slice

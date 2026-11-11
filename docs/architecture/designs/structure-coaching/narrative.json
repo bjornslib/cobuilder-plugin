@@ -26,7 +26,7 @@
       },
       {
         "kind": "risk",
-        "text": "The habit-hooks documents do not state that a sensor can report on a folder, and a sensor runs only for six extensions. A spike runs first. The coach needs a second runner for each other extension."
+        "text": "The second runner in habit_coach.py is the one route. It keeps the smell check and the structure check apart. A spike shows one real coach message first."
       },
       {
         "kind": "guard",
@@ -73,6 +73,10 @@
       {
         "option": "Run the script from the coach with uv run, and read a YAML config",
         "rejected_because": "The coach is stdlib only, and two coach tests fail when it runs uv. A uv start on each write also adds delay."
+      },
+      {
+        "option": "Deliver the signals as a sensor in a project-local habit-hooks plugin",
+        "rejected_because": "habit-hooks finds smells inside one file, and the signals judge folders and names. The engineer keeps the two jobs apart. A sensor also runs for six extensions only."
       }
     ]
   },
@@ -89,7 +93,7 @@
       },
       {
         "kind": "component",
-        "text": "habit_coach.py keeps its GREEN filter and stays stdlib only. It gives structure signals for each extension, no smell output for an unscanned extension, three findings at most, and no repeat in a session."
+        "text": "habit_coach.py keeps its GREEN filter and stays stdlib only. It gives structure signals for each extension, no smell output for an unscanned extension, and no repeat in a session. It has no cap at first."
       },
       {
         "kind": "component",

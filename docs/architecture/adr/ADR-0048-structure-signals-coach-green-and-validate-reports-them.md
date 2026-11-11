@@ -22,10 +22,12 @@ forces:
   - "ADR-0025 lets the coach run for the implement:green agent only, and it never blocks a write. The hook fires on each Write or Edit in a session."
   - "The rubric has no weights. The slice score is a plain average, and the orchestrating session writes the rubric before the code exists."
   - "The rubric rule says to state behaviour, not implementation. A structure criterion states implementation."
-  - "habit-hooks takes a project-local plugin with sensors and guides. Its documents show a sensor that gets a list of files, and they do not state that a sensor can report on a folder."
+  - "habit-hooks finds smells inside one file. The structure signals judge folders and names, and the engineer keeps the two jobs apart."
   - "The vocabulary agent already checks folder names and file names against the glossary, outside the score."
   - "The engineer saw sessions in which the main agent did not spawn the slice agents. The slice loop reference already names each agent type."
 alternatives:
+  - option: "Deliver the signals as a sensor in a project-local habit-hooks plugin"
+    rejected_because: "habit-hooks finds smells inside one file, and the signals judge folders and names. The engineer keeps the two jobs apart. A sensor also runs for six extensions only."
   - option: "Build a new /architect:refactor command with a graph engine, as the first research run proposed"
     rejected_because: "It runs after the damage. The evidence favours feedback at write time, and its thresholds have no source."
   - option: "Remove the GREEN filter, so the coach runs for each caller in each session"
@@ -94,9 +96,10 @@ A read of this repository on the same day gave these facts.
 2a. **Config.** `.cobuilder/structure-signals.json` holds the folder limit, the percentile, the generic names, the excluded stems, and the excluded paths. JSON keeps the script stdlib only. Each value has a default, and the engineer can change it.
 3. **Ratchet on git.** A signal fires only for a file that is untracked, or added since the merge-base with the default branch. The working tree counts, so a file that GREEN has not committed counts. On a branch with no merge-base, only untracked and staged files count. The script keeps no baseline file.
 4. **Not analysed.** The output names each path that the script did not analyse, so a clean result is not a false pass.
-5. **Coach.** The coach passes the signals to GREEN as advice that names the decision to make. It shows three structure findings at most, and it does not repeat a finding in one session. Each hook call is a new process, so the coach keeps the findings it showed in a file in the system temp folder, keyed by the `session_id` of the payload.
+5. **Coach.** The coach passes the signals to GREEN as advice that names the decision to make. It has no cap on structure findings at first. A cap comes only if the replay or the engineer finds noise. It does not repeat a finding in one session. Each hook call is a new process, so the coach keeps the findings it showed in a file in the system temp folder, keyed by the `session_id` of the payload.
 6. **Filter and guards.** The coach still runs for `implement:green` only. It gives structure signals for each file extension. It stays silent about smells for an extension outside the habit-hooks set, which is `.py`, `.ts`, `.tsx`, `.php`, `.java`, and `.rb` today. For an extension in that set, a habit-hooks failure still reaches GREEN as a report. Its messages do not depend on the name of the caller.
-7. **Delivery route.** A spike picks the route. The first choice is a project-local habit-hooks plugin with a sensor and guides. The second choice is a second runner in `habit_coach.py` that calls the script. A plugin sensor runs only for the habit-hooks extensions, so the second runner is needed for each other extension.
+7. **Delivery route.** `habit_coach.py` gets a second runner that calls `shared/structure_signals.py` after habit-hooks and joins the two outputs. The two checks stay apart. The design uses no habit-hooks plugin.
+7a. **Coaching language.** The first slice of E2 writes the message for each signal and the format of the Structure block. The engineer reviews and approves it before the coach and VALIDATE use it.
 8. **VALIDATE.** VALIDATE runs the script on the slice and judges contract drift on the diff. It adds a `### Structure` block to the attempt file, outside `overall_score`. A failed attempt passes the block to the next GREEN attempt.
 9. **Agent use.** The slice loop text states that the main agent spawns the three agents and writes no slice code itself. One effect that a script reads shows that the agents ran the slice. The effect must hold in manual mode and in workflow mode. The spike picks it from two candidates: the VALIDATE attempt file and the tracker attempt record. A marker from the coach cannot work, and the hook does not call the tracker. `verify_gate.py` runs the check before the slice loop closes a slice. Its tests cover no attempt file, a pass at attempt 1, and workflow mode. A partial skip, where the main agent writes the code and spawns only VALIDATE, is an open question for the spike. Neither text nor the check forces agent use, and the check finds a skipped agent only after the slice.
 10. **Evaluation.** A replay runs slice plans with the signals on and off, three runs or more for each condition, five slices each. It records the folder growth and the follow-on resolve rate. The engineer then decides on scored criteria.
@@ -112,10 +115,10 @@ A read of this repository on the same day gave these facts.
 
 ## Consequences
 
-- GREEN gets one more kind of advice in the coach message. The cap keeps it short, but it shares the space with the smell advice.
+- GREEN gets one more kind of advice in the coach message. With no cap, it can hide the smell advice. A cap comes if the replay or the engineer finds noise.
 - Each limit is unproven. A wrong limit gives advice that GREEN ignores, so E5 must run before any limit enters the score.
 - The Structure block has no effect on a slice that passes at the first attempt, apart from the report to the engineer.
 - A scored structure criterion later needs a change to the rubric rule on behaviour, and a new decision record.
-- An install must put the signals where the coach finds them. E2 owns it: the `cobuilder-setup` skill writes the default `.cobuilder/structure-signals.json`, and for the plugin route the files in `.habit-hooks/`.
+- An install must put the signals where the coach finds them. E2 owns it: the `cobuilder-setup` skill writes the default `.cobuilder/structure-signals.json`.
 - The Java, PHP, and Ruby suffix convention, as in `UserService` and `UserRepository`, can give name-stem clusters. E5 hand-labels them, and the excluded stems in the config can silence them.
 - An import check and a speed bump stay open as later decisions. Each needs its own record.
