@@ -1,11 +1,11 @@
 {
   "schema_version": "1.4",
   "sources": {
-    "git_head": "e26e472c6152a3762550217e63f82cadce383345",
+    "git_head": "4cf849b81e97ea6db59772100b2ddd50b46caf72",
     "trees": {
-      "docs/architecture/adr": "sha256:2db8d2e9a5fb5ee2e27f6091cbda3ae193c349e8e5c29b807d8e34ade7cef5a0",
-      "docs/architecture/designs": "sha256:1fa2051bc6a30499a42339b3a2053979b0ed88bc6c15337d2f845027a9d2c7ab",
-      "docs/architecture/contexts": "sha256:6663ee456e31bfbe31401908ae494017ed864dbb9c72211b6cbdccc44d078482",
+      "docs/architecture/adr": "sha256:01555580c88a7b97578b4cc8f8ed0ee23039ff9e730c228a177db6bbade3c07d",
+      "docs/architecture/designs": "sha256:8d41c5a853a145b0ca91512c53949d91d988aa32c0bc0f0eb549b2a5ec8e8e5f",
+      "docs/architecture/contexts": "sha256:855a1a12706fbb9f39f9bc366bfe94e60a8271afe291a0ac3131ecc794d0f024",
       "docs/plans": "sha256:59009083e5abb7b6391af2e29ee9d3fa30581a7e9d63cb18a803030eb05f1cfd",
       ".cobuilder/rubrics": "sha256:90d2396b0a34d85ece07a8eef3df300e7f7dbe1dee123084de92b3879c1e33bf"
     }
@@ -231,6 +231,11 @@
         "id": "ADR-0045",
         "title": "The priority-dev spike measures its unknowns, probes first",
         "state": "decided"
+      },
+      {
+        "id": "ADR-0049",
+        "title": "cobuilder-priority reads each stop of a live session",
+        "state": "decided"
       }
     ],
     "design": [
@@ -341,6 +346,12 @@
         "name": "plugin-split",
         "outcome": "A user installs one stage of the architecture lifecycle without the other three, and four independently-installed plugins write into one bundle without a stale copy destroying authored or paid content.",
         "stage": "implemented"
+      },
+      {
+        "id": "priority-dev-cc-plugin",
+        "name": "priority-dev-cc-plugin",
+        "outcome": "In a Claude Code session where the person switched the reader on, each main-loop stop gets a D1 reading in a pane, and the session does not wait. The person marks each reading right or wrong, with a note, and the marks stay on this machine.",
+        "stage": "review"
       },
       {
         "id": "priority-dev-spike",
@@ -1071,6 +1082,24 @@
         "note": "The cobuilder- prefix drops from the four non-umbrella plugins named in E1's table (cobuilder-architect, cobuilder-pr, cobuilder-artifact, cobuilder-implement become architect, pr, artifact, implement), since it duplicates the marketplace repo's own name. cobuilder-full-lifecycle keeps its prefix, being the umbrella the repo's own name already carries. Merged as PR #17, then a same-epic follow-up (uncommitted at the time this entry was written) fixes a second-order bug the rename introduced: two of the four renamed plugins (implement, artifact) already shipped a skill folder named after themselves, and once the plugin took that same name too, Skill() resolution inside Claude Code broke -- reproduced directly, not environment-specific. Fixed by renaming the colliding skill folders (implement's skill to build, its command to start; artifact's skill to cobuilder-artifacts) and, for consistency, cobuilder-full-lifecycle's orientation skill to cobuilder-full. See ADR-0016's addendum."
       },
       {
+        "id": "priority-dev-cc-plugin/E1",
+        "design": "priority-dev-cc-plugin",
+        "epic_id": "E1",
+        "branch": null,
+        "pr": null,
+        "state": null,
+        "note": null
+      },
+      {
+        "id": "priority-dev-cc-plugin/E2",
+        "design": "priority-dev-cc-plugin",
+        "epic_id": "E2",
+        "branch": null,
+        "pr": null,
+        "state": null,
+        "note": null
+      },
+      {
         "id": "priority-dev-spike/E1",
         "design": "priority-dev-spike",
         "epic_id": "E1",
@@ -1439,6 +1468,12 @@
         ]
       },
       {
+        "id": "cobuilder-priority",
+        "name": "cobuilder-priority: a live reader of session stops, with a pane for marks",
+        "path": "plugins/cobuilder-priority",
+        "verifies": []
+      },
+      {
         "id": "implement",
         "name": "Implement: four gates and a RED, GREEN, VALIDATE loop per slice",
         "path": "plugins/implement",
@@ -1454,6 +1489,14 @@
         "verifies": [
           "skills",
           "scripts"
+        ]
+      },
+      {
+        "id": "priority-dev",
+        "name": "priority.dev: stop-brief interpreter, evaluation, optimiser, and replay for coding sessions",
+        "path": "priority-dev",
+        "verifies": [
+          "tests"
         ]
       },
       {
@@ -2200,6 +2243,102 @@
         }
       },
       {
+        "id": "cobuilder-priority/forbidden-dependency/1",
+        "context": "cobuilder-priority",
+        "kind": "forbidden-dependency",
+        "detail": {
+          "target": "priority-dev/src as an import or a file read",
+          "why": "The hooks module has no Node or filesystem access to the package. It reaches priority-dev only through $.process.run."
+        }
+      },
+      {
+        "id": "cobuilder-priority/forbidden-dependency/2",
+        "context": "cobuilder-priority",
+        "kind": "forbidden-dependency",
+        "detail": {
+          "target": "plugins/<other>/ paths",
+          "why": "Plugins meet at the bundle and by name. A grep of the hooks folder finds no other plugin path."
+        }
+      },
+      {
+        "id": "cobuilder-priority/module-invariant/1",
+        "context": "cobuilder-priority",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "register",
+          "path": "plugins/cobuilder-priority/hooks/register.ts",
+          "public_interface": [
+            "register (the hooks module entry)"
+          ],
+          "allowed_inbound": [],
+          "allowed_outbound": [
+            "reader",
+            "pane"
+          ],
+          "rule": "Registers the commands, the Stop hook, and the pane render. Holds the reader switch atom."
+        }
+      },
+      {
+        "id": "cobuilder-priority/module-invariant/2",
+        "context": "cobuilder-priority",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "reader",
+          "path": "plugins/cobuilder-priority/hooks/reader.ts",
+          "public_interface": [
+            "enqueue",
+            "readingsKey"
+          ],
+          "allowed_inbound": [
+            "register",
+            "pane"
+          ],
+          "allowed_outbound": [],
+          "rule": "One reading at a time. Runs the priority CLI and stores each reading in $.store."
+        }
+      },
+      {
+        "id": "cobuilder-priority/module-invariant/3",
+        "context": "cobuilder-priority",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "pane",
+          "path": "plugins/cobuilder-priority/hooks/pane.tsx",
+          "public_interface": [
+            "PANE_ID",
+            "openPane",
+            "renderPane"
+          ],
+          "allowed_inbound": [
+            "register"
+          ],
+          "allowed_outbound": [
+            "reader"
+          ],
+          "rule": "Draws one card per reading and stores the marks in $.store."
+        }
+      },
+      {
+        "id": "cobuilder-priority/context-map/1",
+        "context": "cobuilder-priority",
+        "kind": "context-map",
+        "detail": {
+          "with": "priority-dev",
+          "pattern": "conformist",
+          "note": "Runs `uv run priority digest` and `uv run priority interpret --digest` as a process in the priority-dev folder, and reads their JSON output. Never imports the package (ADR-0045, ADR-0049)."
+        }
+      },
+      {
+        "id": "cobuilder-priority/context-map/2",
+        "context": "cobuilder-priority",
+        "kind": "context-map",
+        "detail": {
+          "with": "cobuilder-packaging",
+          "pattern": "open-host-service",
+          "note": "marketplace.json lists the plugin. The packaging test allows its hooks/ folder."
+        }
+      },
+      {
         "id": "implement/forbidden-dependency/1",
         "context": "implement",
         "kind": "forbidden-dependency",
@@ -2629,6 +2768,207 @@
           "with": "artifact",
           "pattern": "open-host-service",
           "note": "Hands the engineer to /artifact:view and /artifact:publish by mode name in prose. No Skill call and no import. The artifact scripts name /pr:baseline and /pr:generate in error text in return."
+        }
+      },
+      {
+        "id": "priority-dev/forbidden-dependency/1",
+        "context": "priority-dev",
+        "kind": "forbidden-dependency",
+        "detail": {
+          "target": "plugins/<name>/ and shared/ as Python import or path",
+          "why": "Grep of every .py file in priority-dev/src, tools, and tests finds no plugins/ or shared/ path. The package imports only priority.* and third-party packages."
+        }
+      },
+      {
+        "id": "priority-dev/forbidden-dependency/2",
+        "context": "priority-dev",
+        "kind": "forbidden-dependency",
+        "detail": {
+          "target": "priority-dev/.env and fixtures/real as a read at import time",
+          "why": "config.py names ENV_PATH = priority-dev/.env and cli.py defaults --labels to fixtures/real. Both are read only when a command runs, never at import."
+        }
+      },
+      {
+        "id": "priority-dev/forbidden-dependency/3",
+        "context": "priority-dev",
+        "kind": "forbidden-dependency",
+        "detail": {
+          "target": "other repo contexts importing priority.* (inbound)",
+          "why": "Zero inbound imports from outside priority-dev/. The context is a leaf in the repo graph."
+        }
+      },
+      {
+        "id": "priority-dev/module-invariant/1",
+        "context": "priority-dev",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "config",
+          "path": "priority-dev/src/priority/config.py",
+          "public_interface": [
+            "priority.config (model, base_url, judge_*, reflection_*, load_key)"
+          ],
+          "allowed_inbound": [
+            "brief",
+            "interpreter",
+            "evaluation",
+            "optimiser",
+            "gepa_log",
+            "cli"
+          ],
+          "allowed_outbound": [],
+          "rule": "Reads environment and .env at call time. Many modules read it. optimise_report.py reads it lazily."
+        }
+      },
+      {
+        "id": "priority-dev/module-invariant/2",
+        "context": "priority-dev",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "shared-leaves",
+          "path": "priority-dev/src/priority",
+          "members": [
+            "run_folder.py",
+            "redact.py",
+            "models.py",
+            "labels.py",
+            "split.py",
+            "evaluation/payload_rules.py",
+            "evaluation/judge_probe.py",
+            "evaluation/judge_check_store.py",
+            "replay/store.py"
+          ],
+          "allowed_inbound": [
+            "all modules"
+          ],
+          "allowed_outbound": [],
+          "rule": "Leaves: no import of another priority module, except where a module imports one of these."
+        }
+      },
+      {
+        "id": "priority-dev/module-invariant/3",
+        "context": "priority-dev",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "brief",
+          "path": "priority-dev/src/priority/brief",
+          "public_interface": [
+            "priority.brief.StopBrief",
+            "priority.brief.build_brief"
+          ],
+          "allowed_inbound": [
+            "cli",
+            "interpreter",
+            "evaluation",
+            "replay",
+            "trainset"
+          ],
+          "allowed_outbound": [
+            "config"
+          ],
+          "rule": "Builds the stop brief from a coding transcript."
+        }
+      },
+      {
+        "id": "priority-dev/module-invariant/4",
+        "context": "priority-dev",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "interpreter",
+          "path": "priority-dev/src/priority/interpreter",
+          "public_interface": [
+            "priority.interpreter.Interpreter"
+          ],
+          "allowed_inbound": [
+            "cli",
+            "evaluation",
+            "replay",
+            "optimiser"
+          ],
+          "allowed_outbound": [
+            "brief",
+            "config"
+          ],
+          "rule": "Imports dspy. Its digest and module files read config at import time."
+        }
+      },
+      {
+        "id": "priority-dev/module-invariant/5",
+        "context": "priority-dev",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "evaluation",
+          "path": "priority-dev/src/priority/evaluation",
+          "public_interface": [
+            "priority.evaluation.check",
+            "priority.evaluation.runner",
+            "priority.evaluation.judge_check"
+          ],
+          "allowed_inbound": [
+            "cli",
+            "optimiser"
+          ],
+          "allowed_outbound": [
+            "config",
+            "interpreter",
+            "brief"
+          ],
+          "rule": "Scores interpreter output against labels."
+        }
+      },
+      {
+        "id": "priority-dev/module-invariant/6",
+        "context": "priority-dev",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "replay",
+          "path": "priority-dev/src/priority/replay",
+          "public_interface": [
+            "priority.replay.options",
+            "priority.replay.runner"
+          ],
+          "allowed_inbound": [
+            "cli"
+          ],
+          "allowed_outbound": [
+            "brief",
+            "interpreter",
+            "config"
+          ],
+          "rule": "replay/drills.py imports litellm. Its importers are not yet traced."
+        }
+      },
+      {
+        "id": "priority-dev/module-invariant/7",
+        "context": "priority-dev",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "optimiser",
+          "path": "priority-dev/src/priority/optimise*.py",
+          "members": [
+            "optimise.py",
+            "optimise_report.py",
+            "gepa_log.py",
+            "gepa_proposer.py",
+            "proposer_reference.py",
+            "trainset.py",
+            "valset.py",
+            "valset_mix.py",
+            "digest_store.py",
+            "structure_diff.py"
+          ],
+          "public_interface": [
+            "priority.optimise"
+          ],
+          "allowed_inbound": [
+            "cli"
+          ],
+          "allowed_outbound": [
+            "config",
+            "evaluation",
+            "brief",
+            "interpreter"
+          ],
+          "rule": "Runs the GEPA search for one optimiser run. optimise_report.py probes optuna with find_spec only."
         }
       },
       {
@@ -4671,6 +5011,96 @@
         "score": "1.00",
         "attempts": 2,
         "state": "completed"
+      },
+      {
+        "id": "structure-coaching/1",
+        "feature": "structure-coaching",
+        "n": 1,
+        "title": "Tracer bullet: a crowded folder reaches GREEN",
+        "ends_with": "A GREEN write of a new file into a crowded folder gives a coach message that names the folder, its file count, and the limit. A write of an old file gives no structure text. The spike transcript is kept.",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
+        "id": "structure-coaching/2",
+        "feature": "structure-coaching",
+        "n": 2,
+        "title": "The name-stem cluster and the generic name, with the token split, the config file, and the list of paths not analysed",
+        "ends_with": "The script reports each of the three signals on synthetic trees, reads its limits from `.cobuilder/structure-signals.json`, skips test-name prefixes, and names each excluded path.",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
+        "id": "structure-coaching/3",
+        "feature": "structure-coaching",
+        "n": 3,
+        "title": "The coaching language: one message for each signal and the format of the Structure block",
+        "ends_with": "The engineer approves `shared/structure-messages.json` and the block format. A blind GREEN agent that gets one message makes the decision that the message names.",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
+        "id": "structure-coaching/4",
+        "feature": "structure-coaching",
+        "n": 4,
+        "title": "The coach uses the approved wording, repeats no finding in a session, and gives no smell output for an unscanned extension",
+        "ends_with": "A `.go` write gives a structure message and no habit-hooks call. A second write in the same session gives no repeat. The coach always exits 0.",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
+        "id": "structure-coaching/5",
+        "feature": "structure-coaching",
+        "n": 5,
+        "title": "The install writes the default config",
+        "ends_with": "The setup step writes `.cobuilder/structure-signals.json` in a temp repo after approval, and the coach reads it on the next write.",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
+        "id": "structure-coaching/6",
+        "feature": "structure-coaching",
+        "n": 6,
+        "title": "The agent-use check: the effect is chosen from the spike, and `verify_gate.py --slice` reads it",
+        "ends_with": "The check passes for a pass at attempt 1 and for a workflow-mode slice, and it fails for no attempt file and for a slice that the main agent wrote.",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
+        "id": "structure-coaching/7",
+        "feature": "structure-coaching",
+        "n": 7,
+        "title": "The slice loop text makes the main agent spawn RED, GREEN, and VALIDATE, and run the check before it closes a slice",
+        "ends_with": "A blind main agent with a small design spawns the three agents in order and runs the check. One real slice runs from RED to a VALIDATE score, and the transcript is kept.",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
+        "id": "structure-coaching/8",
+        "feature": "structure-coaching",
+        "n": 8,
+        "title": "VALIDATE writes the Structure block: contract drift, cohesion, and each new dependency against `boundary.yaml`",
+        "ends_with": "A blind VALIDATE on a fixture slice writes the block with the three judgments outside `overall_score`, and a FAIL puts the block in the feedback file.",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
+        "id": "structure-coaching/9",
+        "feature": "structure-coaching",
+        "n": 9,
+        "title": "The replay with the signals on and off, and the hand label of the findings",
+        "ends_with": "`evaluation.md` holds, for each condition, three runs or more of five slices, the follow-on success rate, the folder growth, and the precision of each signal, with a decision on scored criteria.",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
       },
       {
         "id": "work-drawer/1",
@@ -7005,6 +7435,8 @@
           "habit-smells/E1",
           "habit-smells/E2",
           "habit-smells/E3",
+          "priority-dev-cc-plugin/E1",
+          "priority-dev-cc-plugin/E2",
           "slice-agents-and-vocabulary/E1",
           "slice-agents-and-vocabulary/E2",
           "slice-agents-and-vocabulary/E3",
@@ -7248,6 +7680,8 @@
         "pr": null,
         "via": "epic",
         "path": [
+          "priority-dev-cc-plugin/E1",
+          "priority-dev-cc-plugin/E2",
           "priority-dev-spike/E1",
           "priority-dev-spike/E2",
           "priority-dev-spike/E3",
@@ -7256,6 +7690,14 @@
           "priority-dev-spike/E6",
           "priority-dev-spike/E7",
           "priority-dev-spike/E8"
+        ]
+      },
+      "ADR-0049": {
+        "pr": null,
+        "via": "epic",
+        "path": [
+          "priority-dev-cc-plugin/E1",
+          "priority-dev-cc-plugin/E2"
         ]
       }
     },
@@ -7380,6 +7822,8 @@
       "plugin-split/E6": "completed",
       "plugin-split/E7": "completed",
       "plugin-split/E8": "completed",
+      "priority-dev-cc-plugin/E1": "unstarted",
+      "priority-dev-cc-plugin/E2": "unstarted",
       "priority-dev-spike/E1": "no-pull-request",
       "priority-dev-spike/E2": "no-pull-request",
       "priority-dev-spike/E3": "no-pull-request",
@@ -7594,6 +8038,9 @@
         "skills",
         "scripts"
       ],
+      "priority-dev": [
+        "tests"
+      ],
       "shared": [
         "scripts"
       ]
@@ -7629,7 +8076,8 @@
       "ADR-0041": "cobuilder-packaging",
       "ADR-0042": "cobuilder-packaging",
       "ADR-0043": "tracker-port",
-      "ADR-0045": "cobuilder-packaging"
+      "ADR-0045": "cobuilder-packaging",
+      "ADR-0049": "cobuilder-packaging"
     },
     "adr_to_district": {
       "ADR-0001": "scripts",

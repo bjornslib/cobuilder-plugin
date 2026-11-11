@@ -15,7 +15,11 @@ from priority.valset import METHODS, ValsetSize
 PREDICTION_FIELDS = ("status", "needs_human", "priority", "steps", "abstain")
 
 
-def interpret(transcript: Path, stop: int | None, log_dir: Path | None, program: Path | None) -> int:
+DIGEST_LABELS = {"previous": "PREVIOUS RUN", "current": "CURRENT RUN"}
+
+
+def interpret(transcript: Path, stop: int | None, log_dir: Path | None, program: Path | None,
+              digest: str = "previous") -> int:
     """Build the brief, run the interpreter, and print the Prediction fields as one JSON object.
 
     A saved program loads into the interpreter before the one model call. An Abstain also exits with 0."""
@@ -24,7 +28,8 @@ def interpret(transcript: Path, stop: int | None, log_dir: Path | None, program:
         return 1
     from priority import interpreter  # a lazy import: only this command needs dspy and the key
 
-    brief = build_brief(transcript, stop=stop, previous=load_digest(log_dir, transcript.stem))
+    brief = build_brief(transcript, stop=stop, previous=load_digest(log_dir, transcript.stem),
+                        digest_label=DIGEST_LABELS[digest])
     if isinstance(brief, StopBrief):
         model = interpreter.Interpreter(interpreter.interpreter_lm(), log_dir=log_dir, session_id=transcript.stem)
         if program is not None:
@@ -139,6 +144,8 @@ def main(argv: list[str] | None = None) -> int:
         model_parser.add_argument("--log-dir", type=Path, default=None, help="Folder for calls.jsonl and digests")
     subparsers.choices["interpret"].add_argument("--program", type=Path, default=None,
                                                  help="A saved program to load before the model call")
+    subparsers.choices["interpret"].add_argument("--digest", choices=tuple(DIGEST_LABELS), default="previous",
+                                                 help="Whether the stored digest is of the run before or of this run")
 
     replay_parser = subparsers.add_parser("replay", help="Replay the last stop of each transcript of a folder")
     replay_parser.add_argument("fixtures", type=Path, help="Folder with the transcripts (*.jsonl, at any depth)")
@@ -231,7 +238,7 @@ def main(argv: list[str] | None = None) -> int:
             print(res.reason)
         return 0
     if args.command == "interpret":
-        return interpret(args.transcript, args.stop, args.log_dir, args.program)
+        return interpret(args.transcript, args.stop, args.log_dir, args.program, args.digest)
     if args.command == "digest":
         return digest(args.transcript, args.stop, args.log_dir)
 

@@ -1,0 +1,34 @@
+{
+  "name": "cobuilder-priority",
+  "version": "0.1.0",
+  "description": "Read each stop of a live session with the priority-dev interpreter, and mark each reading",
+  "author": { "name": "Bjorn Schliebitz" },
+  "repository": "https://github.com/bjornslib/cobuilder-plugin",
+  "license": "MIT",
+  "keywords": ["priority-dev", "interpreter", "cobuilder"],
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "priority_dev_dir": {
+      "type": "string",
+      "title": "priority-dev folder",
+      "description": "The priority-dev checkout. The priority CLI runs here."
+    },
+    "program": {
+      "type": "string",
+      "title": "Program file",
+      "description": "The saved program to read with, such as D1. A relative path starts at the priority-dev folder."
+    },
+    "timeout_seconds": {
+      "type": "number",
+      "title": "Timeout (seconds)",
+      "description": "The limit for each of the two CLI commands, at most 600.",
+      "default": 180
+    },
+    "llm_api_key": {
+      "type": "string",
+      "title": "LLM API key",
+      "description": "Optional. Without it, the CLI reads priority-dev/.env.",
+      "sensitive": true
+    }
+  }
+}

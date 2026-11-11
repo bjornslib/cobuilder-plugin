@@ -1,0 +1,52 @@
+# Boundary record for the cobuilder-priority bounded context.
+# Machine-diffable architecture baseline — ../../standard.md §5.2.
+# Edges checked against code: the imports of plugins/cobuilder-priority/hooks and a grep of its path strings. Grounded as of 2026-11-11.
+
+id: cobuilder-priority
+path: plugins/cobuilder-priority
+name: "cobuilder-priority: a live reader of session stops, with a pane for marks"
+verified_at: 4cf849b
+
+public_interface:
+  - "plugins/cobuilder-priority/.claude-plugin/plugin.json (userConfig: priority_dev_dir, program, timeout_seconds, llm_api_key)"
+  - "slash commands: /priority-on, /priority-off, /priority-pane"
+  - "hook: classic.Stop (main loop only)"
+  - "pane: requestId priority-reader"
+
+# The mod imports only the engine API and its own files.
+allowed_dependencies:
+  - "claude-code (the engine's hooks API, types only at run time)"
+
+context_map:
+  - with: priority-dev
+    pattern: conformist
+    note: "Runs `uv run priority digest` and `uv run priority interpret --digest` as a process in the priority-dev folder, and reads their JSON output. Never imports the package (ADR-0045, ADR-0049)."
+  - with: cobuilder-packaging
+    pattern: open-host-service
+    note: "marketplace.json lists the plugin. The packaging test allows its hooks/ folder."
+
+forbidden_dependencies:
+  - target: "priority-dev/src as an import or a file read"
+    why: "The hooks module has no Node or filesystem access to the package. It reaches priority-dev only through $.process.run."
+  - target: "plugins/<other>/ paths"
+    why: "Plugins meet at the bundle and by name. A grep of the hooks folder finds no other plugin path."
+
+modules:
+  - id: register
+    path: plugins/cobuilder-priority/hooks/register.ts
+    public_interface: ["register (the hooks module entry)"]
+    allowed_inbound: []
+    allowed_outbound: [reader, pane]
+    rule: "Registers the commands, the Stop hook, and the pane render. Holds the reader switch atom."
+  - id: reader
+    path: plugins/cobuilder-priority/hooks/reader.ts
+    public_interface: ["enqueue", "readingsKey"]
+    allowed_inbound: [register, pane]
+    allowed_outbound: []
+    rule: "One reading at a time. Runs the priority CLI and stores each reading in $.store."
+  - id: pane
+    path: plugins/cobuilder-priority/hooks/pane.tsx
+    public_interface: ["PANE_ID", "openPane", "renderPane"]
+    allowed_inbound: [register]
+    allowed_outbound: [reader]
+    rule: "Draws one card per reading and stores the marks in $.store."

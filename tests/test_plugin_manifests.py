@@ -20,10 +20,10 @@ FORBIDDEN_DIR_NAMES = {"agents", "hooks"}
 FORBIDDEN_MANIFEST_KEYS = {"agents", "hooks", "mcpServers", "mcp"}
 
 # Only implement may ship agents/ (ADR-0025). Only implement and the
-# cobuilder-memory mod may ship hooks/. MCP servers stay forbidden for every
-# plugin, including these.
+# cobuilder-memory and cobuilder-priority mods may ship hooks/ (ADR-0039,
+# ADR-0049). MCP servers stay forbidden for every plugin, including these.
 PLUGINS_ALLOWED_AGENTS = {"implement"}
-PLUGINS_ALLOWED_HOOKS = {"implement", "cobuilder-memory"}
+PLUGINS_ALLOWED_HOOKS = {"implement", "cobuilder-memory", "cobuilder-priority"}
 
 
 def plugin_dirs() -> list[Path]:
@@ -38,7 +38,7 @@ def check_install_surface(plugin_dir: Path, manifest_data: dict) -> list[str]:
     """Return a list of install-surface violations for one plugin directory.
 
     An empty list means the plugin's install surface is compliant. Only
-    ``implement`` may ship ``agents/``. Only ``implement`` and ``cobuilder-memory``
+    ``implement`` may ship ``agents/``. Only the plugins in ``PLUGINS_ALLOWED_HOOKS``
     may ship ``hooks/``. No plugin may ship an MCP server declaration or manifest key.
     """
     violations: list[str] = []
@@ -136,7 +136,7 @@ def test_check_install_surface_still_rejects_mcp_server_for_implement(
     assert any("MCP server" in v for v in violations)
 
 
-def test_marketplace_lists_all_six_plugins() -> None:
+def test_marketplace_lists_all_seven_plugins() -> None:
     marketplace = json.loads((REPO_ROOT / ".claude-plugin" / "marketplace.json").read_text())
     listed = [p["name"] for p in marketplace["plugins"]]
     assert len(listed) == len(set(listed)), f"a plugin is listed twice: {listed}"
@@ -148,7 +148,15 @@ def test_marketplace_lists_all_six_plugins() -> None:
         "implement",
         "cobuilder-full-lifecycle",
         "cobuilder-memory",
+        "cobuilder-priority",
     }
+
+
+def test_cobuilder_priority_with_hooks_passes_install_surface(tmp_path: Path) -> None:
+    fake_plugin = tmp_path / "cobuilder-priority"
+    (fake_plugin / "hooks").mkdir(parents=True)
+    violations = check_install_surface(fake_plugin, {"name": "cobuilder-priority"})
+    assert not violations, f"cobuilder-priority with hooks/ should pass, got: {violations}"
 
 
 def test_marketplace_entry_for_cobuilder_memory_matches_its_manifest_version() -> None:

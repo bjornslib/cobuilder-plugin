@@ -36,7 +36,7 @@ def test_build_brief_signature():
     mod = brief_api()
     sig = inspect.signature(mod.build_brief)
     params = list(sig.parameters.values())
-    assert [p.name for p in params] == ["transcript", "stop", "previous", "shrink_lm", "log_dir"]
+    assert [p.name for p in params] == ["transcript", "stop", "previous", "shrink_lm", "log_dir", "digest_label"]
     assert params[1].default is None
     assert params[2].default is None
 

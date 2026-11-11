@@ -1,0 +1,51 @@
+{
+  "name": "priority-dev-cc-plugin",
+  "title": "A plugin reads each stop of a live session with D1",
+  "adr": "ADR-0049",
+  "adrs": ["ADR-0049", "ADR-0045", "ADR-0039", "ADR-0025"],
+  "created": "2026-11-11",
+  "outcome": "In a Claude Code session where the person switched the reader on, each main-loop stop gets a D1 reading in a pane, and the session does not wait. The person marks each reading right or wrong, with a note, and the marks stay on this machine.",
+  "done_when": [
+    "With the switch on, a main-loop stop leads to a card in the pane with the status, the priority, and each step with its content, or the abstain reason",
+    "The session takes its next prompt while the reading runs",
+    "A right, wrong, or note mark on a card is still in the store after a restart of the session",
+    "With the switch off, a stop starts no process",
+    "priority interpret --digest current labels the digest CURRENT RUN, and every other command still shows PREVIOUS RUN"
+  ],
+  "abort_if": [
+    "After one week of use, fewer than half of the marked readings are right, or the readings do not change which part of the prompt the engineer works on next"
+  ],
+  "min_work": {
+    "derived_from": "2 districts (scripts, docs), 3 ADRs (ADR-0025, ADR-0039, ADR-0045), 1 boundary rule (hooks only in named plugins), 1 uncovered path",
+    "alternatives_explored": 11,
+    "boundary_rules_checked": true,
+    "challenge_stage_run": true,
+    "draft_review_run": true,
+    "note": "Taken over from an OMP session on 2026-11-11. Stages 3 and 4 ran inline in this session, with no subagents."
+  },
+  "limits": { "warn_after_rounds": 3, "cutoff_rounds": 6 },
+  "epics": [
+    {
+      "id": "E1",
+      "slug": "reader",
+      "title": "Reader: the switch, the Stop hook, the CLI flag, and the store.",
+      "outcome": "With the switch on, a main-loop stop leads to a stored reading, and the session does not wait."
+    },
+    {
+      "id": "E2",
+      "slug": "pane",
+      "title": "Pane: one card per stop, with right, wrong, and note marks.",
+      "outcome": "The pane shows each stored reading, and each mark stays after a restart."
+    }
+  ],
+  "stage": "review",
+  "supersedes": null,
+  "rounds": [
+    {
+      "n": 1,
+      "changed": true,
+      "feedback_class": "cosmetic",
+      "note": "Blind draft review scored 0.81 and found no survivor. It confirmed five defects, fixed in code: off drops a waiting stop, a no-digest brief shape, the reading number label, the switch state in the pane, and diagram drift. A reload can still run two readings side by side, and the contract accepts it."
+    }
+  ]
+}

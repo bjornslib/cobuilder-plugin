@@ -84,6 +84,7 @@ class StopBrief:
     shrunk: tuple[ShrunkEntry, ...] = ()
     session_id: str = ""
     stop: str = ""
+    digest_label: str = "PREVIOUS RUN"  # "CURRENT RUN" when the digest is of this stop's own run
 
     def for_model(self) -> str:
         return BriefText(self._render(exclude_older_payloads=False))
@@ -129,7 +130,7 @@ class StopBrief:
     def _render_previous(self) -> list[str]:
         if self.previous is None:
             return []
-        return ["PREVIOUS RUN:", *_digest_lines(self.previous)]
+        return [f"{self.digest_label}:", *_digest_lines(self.previous)]
 
 
 def _digest_lines(digest: Any) -> list[str]:

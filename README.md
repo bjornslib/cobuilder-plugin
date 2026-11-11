@@ -55,6 +55,7 @@ To start with one job, install one plugin. For example, `/plugin install archite
 | `artifact` | Read the results in the viewer, publish a PR as a Claude Artifact, or draw a design as a tldraw canvas | `/artifact:view`, `publish`, `canvas` |
 | `cobuilder-full-lifecycle` | Get all four, a routing guide, and the one setup command | `/cobuilder-full-lifecycle:install` |
 | `cobuilder-memory` | Opt-in. Ask Hindsight what the project decided before, through the `consult` tool and a side pane | `/memory-recall`, `/memory-check` |
+| `cobuilder-priority` | Opt-in. Read each stop of a session with the priority-dev interpreter, and mark each reading right or wrong in a side pane | `/priority-on`, `/priority-off`, `/priority-pane` |
 
 `architect` and `pr` need `artifact`, so installing either one also installs `artifact`. `implement` needs `architect`, because `/implement:debug` hands off to it. `/implement:install` hands over to `/cobuilder-full-lifecycle:install`. Without the umbrella plugin, it tells you how to install it.
 
@@ -289,9 +290,10 @@ plugins/
   implement/                       start, debug, the coach check, the install hand-over, and the slice agents and hooks
   cobuilder-full-lifecycle/        the umbrella plugin and the install command
   cobuilder-memory/                the opt-in memory mod: a TypeScript hooks module and its tests
+  cobuilder-priority/              the opt-in reader mod: a TypeScript hooks module and its tests
 ```
 
-Only `implement` ships agents. Only `implement` and the `cobuilder-memory` mod ship hooks (ADR-0025, ADR-0039). The `implement` plugin ships four hook scripts: the `PostToolUse` habit coach, the `SessionStart` tracker reminder (ADR-0041), the `Stop` sync check, and the `SessionEnd` sync flush (ADR-0042). No plugin ships an MCP server. The commands in each plugin are thin. The skills hold the procedures.
+Only `implement` ships agents. Only `implement` and the `cobuilder-memory` and `cobuilder-priority` mods ship hooks (ADR-0025, ADR-0039, ADR-0049). The `implement` plugin ships four hook scripts: the `PostToolUse` habit coach, the `SessionStart` tracker reminder (ADR-0041), the `Stop` sync check, and the `SessionEnd` sync flush (ADR-0042). No plugin ships an MCP server. The commands in each plugin are thin. The skills hold the procedures.
 
 ### Use the skills in another harness
 

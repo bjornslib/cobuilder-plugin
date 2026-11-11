@@ -1,0 +1,43 @@
+%% Sequence: the switch, one stop, one reading, and one mark.
+%% The Stop hook never awaits the reading. Names follow contracts.md.
+sequenceDiagram
+    actor Person as Engineer
+    participant CC as Claude Code session
+    participant Mod as Hooks module
+    participant CLI as priority CLI
+    participant LLM as Mercury model service
+    participant Store as $.store
+    participant Pane as Priority pane
+
+    Person->>CC: /priority-on
+    CC->>Mod: command.run
+    Mod->>Mod: Switch on in $.state
+    Mod->>Pane: Opens the pane, title Priority reader
+
+    CC->>Mod: classic.Stop, main loop only
+    Mod->>Mod: Puts the stop in the queue
+    Mod-->>CC: next(e) at once, no block, no context
+
+    Mod->>CLI: $.process.run priority digest, timeoutMs
+    CLI->>LLM: Digest call
+    LLM-->>CLI: Digest
+    CLI-->>Mod: Exit 0, digest saved in reports/logs/live
+    Mod->>CLI: $.process.run priority interpret --program D1 --digest current
+    CLI->>LLM: Reading call, brief with CURRENT RUN
+
+    opt A stop comes while the reading runs
+        CC->>Mod: classic.Stop
+        Mod->>Mod: Replaces the one waiting stop
+        Mod-->>CC: next(e) at once
+    end
+
+    LLM-->>CLI: Reading
+    CLI-->>Mod: JSON with status, priority, steps, abstain
+
+    Mod->>Store: Adds the reading to readings:session id
+    Store-->>Pane: ui.render redraws, newest card first
+    Note over Mod: The module then starts the waiting stop, if one waits
+
+    Person->>Pane: Marks right, wrong, or a note
+    Pane->>Store: Writes marks:session id, by reading number
+    Note over Mod,Pane: A failed command stores state failed with its error, and the card shows it

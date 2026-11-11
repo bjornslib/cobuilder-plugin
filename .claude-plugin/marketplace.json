@@ -41,6 +41,12 @@
       "description": "Consult the project's Hindsight memory before a design or build decision",
       "source": "./plugins/cobuilder-memory",
       "version": "0.2.0"
+    },
+    {
+      "name": "cobuilder-priority",
+      "description": "Read each stop of a live session with the priority-dev interpreter, and mark each reading",
+      "source": "./plugins/cobuilder-priority",
+      "version": "0.1.0"
     }
   ]
 }

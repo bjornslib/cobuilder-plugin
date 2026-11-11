@@ -1,0 +1,89 @@
+# Boundary record for the priority-dev bounded context.
+# Machine-diffable architecture baseline — ../../standard.md §5.2.
+# Edges checked against code: AST import graph of priority-dev/src/priority and grep of path strings. Grounded as of 2026-11-10.
+
+id: priority-dev
+path: priority-dev
+name: "priority.dev: stop-brief interpreter, evaluation, optimiser, and replay for coding sessions"
+verified_at: 4cf849b
+
+public_interface:
+  - "console script: priority = priority.cli:main"
+  - "priority.brief.StopBrief, priority.brief.build_brief"
+  - "priority.interpreter.Interpreter"
+  - "priority.optimise (optimiser run; imported lazily by cli.py)"
+  - "priority.replay.options, priority.replay.runner"
+  - "priority.evaluation.check, priority.evaluation.runner, priority.evaluation.judge_check"
+
+# priority-dev is self-contained: it imports no plugin and no shared module.
+allowed_dependencies:
+  - "dspy==3.4.1 (declared in priority-dev/pyproject.toml)"
+  - "litellm, pydantic (imported; not declared in pyproject.toml, so they arrive through dspy [INFERENCE])"
+
+context_map: []
+
+forbidden_dependencies:
+  - target: "plugins/<name>/ and shared/ as Python import or path"
+    why: "Grep of every .py file in priority-dev/src, tools, and tests finds no plugins/ or shared/ path. The package imports only priority.* and third-party packages."
+
+  - target: "priority-dev/.env and fixtures/real as a read at import time"
+    why: "config.py names ENV_PATH = priority-dev/.env and cli.py defaults --labels to fixtures/real. Both are read only when a command runs, never at import."
+
+  - target: "other repo contexts importing priority.* (inbound)"
+    why: "Zero inbound imports from outside priority-dev/. The context is a leaf in the repo graph."
+
+modules:
+  - id: config
+    path: priority-dev/src/priority/config.py
+    public_interface: ["priority.config (model, base_url, judge_*, reflection_*, load_key)"]
+    allowed_inbound: [brief, interpreter, evaluation, optimiser, gepa_log, cli]
+    allowed_outbound: []
+    rule: "Reads environment and .env at call time. Many modules read it. optimise_report.py reads it lazily."
+
+  - id: shared-leaves
+    path: priority-dev/src/priority
+    members: [run_folder.py, redact.py, models.py, labels.py, split.py, evaluation/payload_rules.py, evaluation/judge_probe.py, evaluation/judge_check_store.py, replay/store.py]
+    allowed_inbound: [all modules]
+    allowed_outbound: []
+    rule: "Leaves: no import of another priority module, except where a module imports one of these."
+
+  - id: brief
+    path: priority-dev/src/priority/brief
+    public_interface: ["priority.brief.StopBrief", "priority.brief.build_brief"]
+    allowed_inbound: [cli, interpreter, evaluation, replay, trainset]
+    allowed_outbound: [config]
+    rule: "Builds the stop brief from a coding transcript."
+
+  - id: interpreter
+    path: priority-dev/src/priority/interpreter
+    public_interface: ["priority.interpreter.Interpreter"]
+    allowed_inbound: [cli, evaluation, replay, optimiser]
+    allowed_outbound: [brief, config]
+    rule: "Imports dspy. Its digest and module files read config at import time."
+
+  - id: evaluation
+    path: priority-dev/src/priority/evaluation
+    public_interface: ["priority.evaluation.check", "priority.evaluation.runner", "priority.evaluation.judge_check"]
+    allowed_inbound: [cli, optimiser]
+    allowed_outbound: [config, interpreter, brief]
+    rule: "Scores interpreter output against labels."
+
+  - id: replay
+    path: priority-dev/src/priority/replay
+    public_interface: ["priority.replay.options", "priority.replay.runner"]
+    allowed_inbound: [cli]
+    allowed_outbound: [brief, interpreter, config]
+    rule: "replay/drills.py imports litellm. Its importers are not yet traced."
+
+  - id: optimiser
+    path: priority-dev/src/priority/optimise*.py
+    members: [optimise.py, optimise_report.py, gepa_log.py, gepa_proposer.py, proposer_reference.py, trainset.py, valset.py, valset_mix.py, digest_store.py, structure_diff.py]
+    public_interface: ["priority.optimise"]
+    allowed_inbound: [cli]
+    allowed_outbound: [config, evaluation, brief, interpreter]
+    rule: "Runs the GEPA search for one optimiser run. optimise_report.py probes optuna with find_spec only."
+
+verifies:
+  - tests
+
+governed_by: []

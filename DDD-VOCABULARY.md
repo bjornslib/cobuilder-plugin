@@ -21,7 +21,7 @@ How to use this glossary:
 
 <a id="plugin"></a>
 **Plugin** (`cobuilder-packaging`):
-The single installable unit declared in a `.claude-plugin/plugin.json` manifest. Six plugins exist today under `plugins/`: `architect`, `pr`, `artifact`, `implement`, the umbrella `cobuilder-full-lifecycle`, and the opt-in mod `cobuilder-memory`.
+The single installable unit declared in a `.claude-plugin/plugin.json` manifest. Seven plugins exist today under `plugins/`: `architect`, `pr`, `artifact`, `implement`, the umbrella `cobuilder-full-lifecycle`, and the opt-in mods `cobuilder-memory` and `cobuilder-priority`.
 
 <a id="command"></a>
 **Command** (`cobuilder-packaging`):
@@ -42,7 +42,7 @@ _Avoid_: docs/ (authored source, never derived), story.json (one file inside the
 
 <a id="vendoring"></a>
 **Vendoring** (`cobuilder-packaging`):
-The mechanism, decided in ADR-0017, that shares code between the six plugins: a `shared/` directory at the marketplace root, symlinked into each plugin's own root and dereferenced into that plugin's install cache.
+The mechanism, decided in ADR-0017, that shares code between the seven plugins: a `shared/` directory at the marketplace root, symlinked into each plugin's own root and dereferenced into that plugin's install cache.
 
 <a id="envelope"></a>
 **Envelope** (`cobuilder-packaging`):
@@ -256,12 +256,43 @@ The fixed text at the top of a memory run's result that tells the main agent to 
 **Memory pane** (`cobuilder-memory`):
 The side pane, id `memory-run` and title `🧠 CoBuilder Memory: Hindsight Run`, that shows the newest memory run's steps while it runs and its result when it is done. It adds no fact that the result lacks.
 
+## cobuilder-priority
+
+These terms come from the `priority-dev-cc-plugin` design (ADR-0049). The plugin lives in `plugins/cobuilder-priority/`.
+
+<a id="live-reading"></a>
+**Live reading** (`cobuilder-priority`):
+What `priority interpret` prints for one main-loop stop of a live session, stored with the stop number, the program, and the brief shape. The plugin shows it and carries out none of its steps.
+_Avoid_: replay result (a reading of a recorded transcript), prediction (the assessment word for a design claim)
+
+<a id="reader-switch"></a>
+**Reader switch** (`cobuilder-priority`):
+The per-session value that `/priority-on` and `/priority-off` set. It is off in each new session, and a stop with the switch off starts no process.
+
+<a id="reading-mark"></a>
+**Reading mark** (`cobuilder-priority`):
+The person's verdict on one live reading, `right` or `wrong`, with a note, kept in `$.store` on this machine. It is not a confirmed label.
+_Avoid_: label (a confirmed entry of the labelled fixture set)
+
+<a id="reader-pane"></a>
+**Reader pane** (`cobuilder-priority`):
+The side pane that shows one card per live reading of the session, newest first, each with its reading marks.
+
 ## priority-dev
 
 <a id="stop-brief"></a>
 **Stop brief** (`priority-dev`):
-The exact input that the interpreter reads for one stop of a coding session: the run in order, with each tool result in full, and a digest of the run before. Code builds it from the transcript and stores it once.
+The exact input that the interpreter reads for one stop of a coding session: the run in order, with each tool result in full, and a digest of the run before, or of this run under `--digest current`. Code builds it from the transcript and stores it once.
 _Avoid_: slice, turn slice (a Slice in `implement` is a vertical unit of build work, scored by a validator)
+
+<a id="interpreter"></a>
+**Interpreter** (`priority-dev`):
+The dspy module that reads one stop brief and returns a status, a priority, needs-human, and the steps, or an Abstain. A saved program, such as D1, sets its prompt.
+
+<a id="label"></a>
+**Label** (`priority-dev`):
+The reference answer for one stop in the labelled fixture set, confirmed by the engineer. Eval and the optimiser score the interpreter against it.
+_Avoid_: mark (a reading mark of `cobuilder-priority`, which is not confirmed)
 
 <a id="abstain"></a>
 **Abstain** (`priority-dev`):
@@ -282,7 +313,7 @@ An exchange is a tool call and its matching result in a run. The brief keeps the
 
 <a id="brief-size-budget"></a>
 **Brief size budget** (`priority-dev`):
-The maximum character count of rendered stop-brief text that the interpreter reads. Prompt instructions are excluded. Over-limit briefs return `brief_too_large`.
+The maximum character count of rendered stop-brief text that the interpreter reads, prompt instructions excluded. Over-limit briefs return `brief_too_large`.
 
 <a id="probe"></a>
 **Probe** (`priority-dev`):
@@ -316,12 +347,12 @@ _Avoid_: reflection set
 
 <a id="valset"></a>
 **Valset** (`priority-dev`):
-The training stops that score each kept candidate in full, build the Pareto front, and choose the best candidate. DSPy term. Set by `--val-sessions`.
+The training stops that score each kept candidate in full, build the Pareto front, and choose the best candidate. It is a DSPy term, set by `--val-sessions`.
 _Avoid_: selection set, validation examples
 
 <a id="test-set"></a>
 **Test set** (`priority-dev`):
-Stops that no optimiser run sees. They compare the arms after the optimiser run. Test set 1 holds the first 30 stops, and test set 2 holds the 26 stops from three other repositories.
+Stops that no optimiser run sees, which compare the arms after the optimiser run. Test set 1 holds the first 30 stops, and test set 2 holds the 26 stops from three other repositories.
 _Avoid_: holdout, holdout 1, holdout 2
 
 <a id="minibatch"></a>
@@ -331,7 +362,7 @@ _Avoid_: subsample, batch
 
 <a id="rollout"></a>
 **Rollout** (`priority-dev`):
-One task-model call on one stop plus one judge score. The budget of an optimiser run counts rollouts. DSPy also calls it a metric call.
+One task-model call on one stop plus one judge score, which DSPy also calls a metric call. The budget of an optimiser run counts rollouts.
 _Avoid_: sample
 
 <a id="full-evaluation"></a>

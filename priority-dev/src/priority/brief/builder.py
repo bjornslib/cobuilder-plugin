@@ -107,7 +107,8 @@ def _check_budget(brief: StopBrief) -> Abstain | None:
 
 
 def build_brief(transcript: Path, stop: int | None = None, previous: Any = None, *,
-                shrink_lm: Any = None, log_dir: Path | str | None = None) -> StopBrief | Abstain:
+                shrink_lm: Any = None, log_dir: Path | str | None = None,
+                digest_label: str = "PREVIOUS RUN") -> StopBrief | Abstain:
     """Build a StopBrief from a transcript path and optional 1-based stop index.
 
     `previous` is the RunDigest of the run before. With `shrink_lm`, an over-budget brief shrinks its largest
@@ -145,6 +146,7 @@ def build_brief(transcript: Path, stop: int | None = None, previous: Any = None,
         after_stop=tuple(after_stop),
         redactions=after_redactions + ask_redactions + item_redactions,
         previous=previous,
+        digest_label=digest_label,
         session_id=transcript.stem,
         stop=f"{stop:03d}",
     )

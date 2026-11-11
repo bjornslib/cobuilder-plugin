@@ -1,0 +1,40 @@
+{
+  "intent": {
+    "tagline": "Read each stop of a session you remember",
+    "narration": "The interpreter learns from old sessions, and the engineer no longer remembers them. This plugin reads each stop of a live session with D1, and shows the reading beside the session. The engineer marks each reading right or wrong while the work is fresh."
+  },
+  "problem_solution": {
+    "problem": "The priority-dev interpreter improves only on recorded transcripts. The optimiser runs on old sessions no longer give useful feedback.",
+    "solution": "An opt-in plugin, cobuilder-priority, reads each main-loop stop of a session that the person switched on. It runs digest and interpret as a process, stores the reading, and shows it in a pane with marks.",
+    "narration": "The plugin does not act on a reading. It shows each step, and the person judges it. The switch is off in each new session, because each reading sends the transcript to an outside service.",
+    "beats": [
+      { "kind": "problem", "text": "Readings of old sessions no longer tell the engineer what to improve." },
+      { "kind": "decision", "text": "One hooks module starts the reading and draws the pane." },
+      { "kind": "decision", "text": "Digest runs first, and interpret labels its digest CURRENT RUN." },
+      { "kind": "constraint", "text": "The switch is off by default in each session." },
+      { "kind": "outcome", "text": "Each stop gets a card, and each mark stays on this machine." }
+    ],
+    "alternatives": [
+      {
+        "option": "A Stop command hook with async true, plus a mod pane that reads its files",
+        "rejected_because": "Two mechanisms meet through a data folder. One hooks module can start the process and draw the pane."
+      },
+      {
+        "option": "Interpret only, one model call per stop",
+        "rejected_because": "The engineer wants the digest of the run in the brief."
+      },
+      {
+        "option": "Read every session in every repo",
+        "rejected_because": "Each transcript goes to an outside model service. The engineer chose a per-session switch."
+      }
+    ]
+  },
+  "architecture": {
+    "narration": "The plugin is one hooks module beside the other plugins. It starts the priority CLI as a process, so priority-dev stays apart. The store holds readings and marks, and the pane reads the store.",
+    "beats": [
+      { "kind": "constraint", "text": "ADR-0045: the plugin never imports priority-dev." },
+      { "kind": "decision", "text": "ADR-0049 amends ADR-0025 and ADR-0039 to let cobuilder-priority ship hooks/." },
+      { "kind": "risk", "text": "D1 was never scored on a brief with a CURRENT RUN digest." }
+    ]
+  }
+}

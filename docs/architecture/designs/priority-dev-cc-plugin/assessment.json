@@ -1,0 +1,78 @@
+{
+  "stage": "design",
+  "generated": "2026-11-11",
+  "verdict": "concerns",
+  "risk_tier": "sensitive",
+  "summary": "The plugin gives the engineer a new signal at a low build cost. Two concerns stay: D1 meets a brief shape it was never scored on, and each stop sends a transcript to an outside service.",
+  "sensible": {
+    "answer": "Yes. The problem is the feedback loop of the interpreter, and a live reader closes it. The plugin calls the CLI as a process, so priority-dev stays apart.",
+    "evidence": ["ADR-0045"]
+  },
+  "maintainability": {
+    "answer": "It helps. The plugin is one module with a small surface. The CLI change is one flag that leaves the scored commands as they are.",
+    "constraint_introduced": "A plugin may ship hooks/ only when an ADR names it. cobuilder-priority starts priority only as a process, and never reads priority-dev source.",
+    "evidence": ["ADR-0025", "ADR-0039", "ADR-0045"]
+  },
+  "pattern": {
+    "verdict": "new-valuable",
+    "answer": "New. cobuilder-memory is the closest pattern: an opt-in mod with a pane. No ADR or district reads a live stop.",
+    "duplicates": [],
+    "evidence": ["ADR-0039"]
+  },
+  "findings": [
+    {
+      "kind": "prediction",
+      "severity": "concern",
+      "claim": "The packaging test allows hooks/ only in implement and cobuilder-memory, so it fails when the plugin folder arrives.",
+      "evidence": "ADR-0039",
+      "district": "scripts",
+      "suggestion": "Change the test in the slice that adds the plugin folder."
+    },
+    {
+      "kind": "prediction",
+      "severity": "concern",
+      "claim": "Readings with a CURRENT RUN digest can score lower than the 0.654 of D1, and the marks would blame the prompt for a brief change.",
+      "evidence": "ADR-0045",
+      "district": "docs",
+      "suggestion": "Store the brief shape with each reading, so the marks can be split later."
+    },
+    {
+      "kind": "prediction",
+      "severity": "concern",
+      "claim": "Each stop with the switch on sends the transcript to an outside service.",
+      "evidence": "ADR-0049",
+      "district": "docs",
+      "suggestion": "Keep the switch off by default, and show its state in the pane title."
+    },
+    {
+      "kind": "prediction",
+      "severity": "info",
+      "claim": "The plugin count changes from six to seven in the top-level documents.",
+      "evidence": "ADR-0039",
+      "district": "docs",
+      "suggestion": "Grep README.md, CLAUDE.md, DDD-VOCABULARY.md, and plugins/ for the old count."
+    }
+  ],
+  "boundary_checks": [
+    {
+      "rule": "Only implement and cobuilder-memory may ship hooks/",
+      "source": "ADR-0039",
+      "result": "violation",
+      "evidence": "The design adds hooks/ to cobuilder-priority. ADR-0049 amends the rule."
+    },
+    {
+      "rule": "priority-dev never imports from plugins/ or shared/, and nothing imports it",
+      "source": "ADR-0045",
+      "result": "ok",
+      "evidence": "The plugin runs the priority CLI as a process."
+    }
+  ],
+  "delta": {
+    "districts_added": ["cobuilder-priority"],
+    "districts_changed": ["scripts", "docs"],
+    "edges_added": ["cobuilder-priority -> priority CLI (process)"],
+    "edges_removed": []
+  },
+  "regret_risk": "If this ships as written, the engineer pays for two model calls at each stop of a session with the switch on. The marks measure D1 on a brief it was never scored on. If the marks are poor, the cause can be the prompt or the new label, and the stored brief shape is the only way to tell them apart.",
+  "drift": []
+}

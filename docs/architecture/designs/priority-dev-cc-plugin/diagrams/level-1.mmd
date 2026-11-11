@@ -1,0 +1,38 @@
+%% Overview: the containers of the cobuilder-priority mod (ADR-0049).
+%% Epics E1 and E2. Each part is a prediction from contracts.md.
+C4Container
+    title cobuilder-priority: one reading for each stop of a live session
+
+    Person(person, "Engineer", "Turns the reader on<br>and marks each reading")
+    System_Ext(session, "Claude Code session", "Runs the main loop and fires<br>Stop at the end of each turn")
+    ContainerDb(transcript, "Transcript file", "transcript_path", "The JSONL record<br>of the session")
+    System_Ext(mercury, "Mercury model service", "Outside service. Two calls<br>for each stop")
+
+    Container_Boundary(plugin, "cobuilder-priority mod, hooks/register.ts") {
+        Container(hooks, "Hooks module", "classic.Stop, command.run", "Keeps the switch and the queue.<br>Runs one reading at a time")
+        ContainerDb(store, "Reading store", "$.store", "readings:session id<br>marks:session id")
+        Container(pane, "Priority pane", "ui.render", "One card for each stop,<br>with right, wrong, and note")
+    }
+
+    Container_Boundary(pdev, "priority-dev checkout, priority_dev_dir") {
+        Container(digest, "priority digest", "uv run, Python CLI", "Saves the digest<br>of this stop")
+        Container(interpret, "priority interpret", "uv run, --digest current", "Reads the stop with the<br>D1 program and prints JSON")
+        ContainerDb(logs, "Live logs", "reports/logs/live", "Saved digests,<br>Git-ignored")
+    }
+
+    Rel(person, session, "Turns the reader on or off", "/priority-on, :off")
+    Rel(session, hooks, "Fires Stop, main loop only", "classic.Stop")
+    Rel(hooks, session, "Returns at once", "next(e)")
+    Rel(hooks, digest, "Starts the digest", "$.process.run")
+    Rel(hooks, interpret, "Starts the reading", "$.process.run")
+    Rel(digest, transcript, "Reads the session", "fs read")
+    Rel(interpret, transcript, "Reads the session", "fs read")
+    Rel(digest, logs, "Saves the digest", "fs write")
+    Rel(logs, interpret, "Gives the digest as CURRENT RUN", "fs read")
+    Rel(digest, mercury, "Writes the digest", "HTTPS")
+    Rel(interpret, mercury, "Writes the reading", "HTTPS")
+    Rel(hooks, store, "Stores the reading", "$.store")
+    Rel(store, pane, "Feeds the cards", "ui.render")
+    Rel(pane, person, "Shows each reading", "pane")
+    Rel(person, pane, "Marks right, wrong, or note", "pane input")
+    Rel(pane, store, "Stores the mark", "$.store")

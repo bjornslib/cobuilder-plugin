@@ -97,8 +97,8 @@ These rules prefer caution to speed. For a trivial task, use judgment.
 
 ## What this repo is
 
-A Claude Code marketplace (`.claude-plugin/marketplace.json`) with six plugins
-under `plugins/`: five siblings and one opt-in mod. It is not an app. It has no
+A Claude Code marketplace (`.claude-plugin/marketplace.json`) with seven plugins
+under `plugins/`: five siblings and two opt-in mods. It is not an app. It has no
 deploy step and no CI.
 
 | Plugin | Job |
@@ -109,6 +109,7 @@ deploy step and no CI.
 | `implement` | Build a design one vertical slice at a time (`start`, `debug`). Ships the tracker reminder hook (ADR-0041). Its `install` hands over to the umbrella's install |
 | `cobuilder-full-lifecycle` | The umbrella. Depends on the other four, and holds the one install command, `/cobuilder-full-lifecycle:install` |
 | `cobuilder-memory` | An opt-in mod, outside the umbrella. Gives the agent the `consult` tool, which asks Hindsight what the project decided before |
+| `cobuilder-priority` | An opt-in mod, outside the umbrella. With `/priority-on`, it reads each stop of the session with the priority-dev interpreter, and a pane takes right, wrong, and note marks |
 
 The lifecycle has six steps. `options` explores the whole system. `design`
 decides one change. `implement` builds it. `pr:generate` assesses it and opens
@@ -144,8 +145,8 @@ tests/                            pytest suite for packaging, scripts, and gates
   hardcode judgment in a script or a skill body.
 - Decisions live in `docs/architecture/adr/`. Read the ADR before you change
   what it decided. ADR-0016 covers the plugin split, and ADR-0017 covers
-  `shared/`. ADR-0025 covers the install surface, and ADR-0039 amends it for
-  the `cobuilder-memory` mod.
+  `shared/`. ADR-0025 covers the install surface. ADR-0039 amends it for
+  the `cobuilder-memory` mod, and ADR-0049 for the `cobuilder-priority` mod.
 - The repo commits two fixtures: `.cobuilder-architect/cobuilder-harness-a103a550/`
   and `.cobuilder-architect/digital-curator-80f83abb/`. Do not delete them as
   stale cache.
@@ -168,8 +169,9 @@ tests/                            pytest suite for packaging, scripts, and gates
    `plugins/<other>/...`. Shared code goes in `shared/`.
 5. **Narrow install surface.** Only `implement` ships agents. `implement` ships
    four hook scripts: the coach, the tracker reminder, the sync check, and the
-   sync flush. The `cobuilder-memory` mod ships its hooks module (ADR-0025,
-   ADR-0039, ADR-0041, ADR-0042). No plugin ships an MCP server.
+   sync flush. The `cobuilder-memory` and `cobuilder-priority` mods each ship
+   a hooks module (ADR-0025, ADR-0039, ADR-0041, ADR-0042, ADR-0049). No
+   plugin ships an MCP server.
 6. **Never overwrite authored content.** `extract_story.py` keeps authored
    narrative fields. A data migration declares the fields it touches. Its guard
    stops the run before any write that changes another authored field.
@@ -209,6 +211,7 @@ tests/                            pytest suite for packaging, scripts, and gates
 uv run pytest tests -q                         # fast Python suite, on uv's managed Python 3.11, with no real bd
 uv run pytest tests -q -m ''                   # full suite, with the slow real-bd tests; run it before a PR merges
 claude plugin test plugins/cobuilder-memory    # the mod's hook tests
+claude plugin test plugins/cobuilder-priority  # the reader mod's hook tests
 npx tsc -p plugins/cobuilder-memory --noEmit   # the mod's type check, with the root tools package
 cd plugins/artifact/viewer && npm run build    # tsc --noEmit, then vite build, writes the committed index.html
 cd plugins/artifact/viewer && npm run test     # Vitest

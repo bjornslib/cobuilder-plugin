@@ -1,0 +1,79 @@
+{
+  "captured": "2026-11-11",
+  "source": "design",
+  "design_name": "priority-dev-cc-plugin",
+  "authorship": "agent-assisted",
+  "problem": "The priority-dev interpreter improves only on recorded transcripts. The optimiser runs on old sessions no longer give useful feedback. The engineer does not remember those sessions well enough to judge a reading.",
+  "why_now": "D1 beats the base prompt by 0.185 on 56 test stops, and D2 does not beat D1. The next gain needs a different signal: readings of sessions that the engineer remembers.",
+  "approach": "An opt-in plugin, cobuilder-priority, ships one hooks module. A per-session switch is off by default. With the switch on, a Stop hook on the main loop runs priority digest, then priority interpret with the D1 program, as a separate process, and returns at once. The module stores each reading. A pane shows one card per stop, with right, wrong, and note marks. The plugin carries out no step.",
+  "alternatives": [
+    {
+      "option": "A Stop command hook with async true, plus a mod pane that reads its files",
+      "rejected_because": "Two mechanisms meet through a data folder. One hooks module can start the process and draw the pane, so no file hand-off is necessary."
+    },
+    {
+      "option": "Interpret only, one model call per stop",
+      "rejected_because": "The engineer wants the digest of the run in the brief. The brief labels it CURRENT RUN on the live path."
+    },
+    {
+      "option": "Interpret first, then digest",
+      "rejected_because": "Interpret would read the digest of the stop before, not of this stop. The engineer chose digest first."
+    },
+    {
+      "option": "Change the PREVIOUS RUN label in every command",
+      "rejected_because": "Eval, replay, and the optimiser would see a new brief, and earlier compact-brief scores would no longer compare."
+    },
+    {
+      "option": "Read every session in every repo",
+      "rejected_because": "Each transcript goes to an outside model service. The engineer chose a per-session switch that is off by default."
+    },
+    {
+      "option": "A repo allowlist in userConfig",
+      "rejected_because": "The engineer chose a per-session switch, so each read is a choice made in that session."
+    },
+    {
+      "option": "Ship the D1 program inside the plugin",
+      "rejected_because": "priority-dev/probes/programs/ is Git-ignored. The person names the program file in userConfig."
+    },
+    {
+      "option": "API keys only in userConfig",
+      "rejected_because": "The priority CLI already reads priority-dev/.env. A secret userConfig key is an optional override."
+    },
+    {
+      "option": "Write each mark into the confirmed label files",
+      "rejected_because": "The engineer keeps the labels local. Live marks are a separate record from the confirmed set."
+    },
+    {
+      "option": "Add cobuilder-priority to the umbrella",
+      "rejected_because": "Each turn costs two model calls on an outside service. A person must choose that."
+    },
+    {
+      "option": "A Claude Artifact page instead of a pane",
+      "rejected_because": "A page does not sit beside the session and update at each stop."
+    }
+  ],
+  "out_of_scope": [
+    "Any step of a reading: no reply, no notify, and no question to the person",
+    "An export of the marks into the labelled set",
+    "An optimiser run on the marks",
+    "Subagent stops, headless sessions, and other harnesses",
+    "A change to D1, to eval, to replay, or to the optimiser"
+  ],
+  "risks": [
+    "D1 was not scored on a brief with a CURRENT RUN digest, so its readings can be worse than 0.654.",
+    "Each stop with the switch on costs two model calls on an outside service.",
+    "A hot reload or the end of the session can stop a reading, and that stop gets no card.",
+    "The transcript can lag behind the Stop event, so the brief can miss the last reply."
+  ],
+  "testing": "claude plugin test drives the module through classic.Stop, command.run, and ui.render, with a stubbed $.process.run. pytest covers the --digest current flag in priority-dev.",
+  "reviewer_focus": [
+    "The install-surface amendment to ADR-0025 and ADR-0039",
+    "The run guard: one reading at a time, and only the newest waiting stop",
+    "The CURRENT RUN label: live path only"
+  ],
+  "unknowns": [
+    "Does a reading that the hook does not await survive until its process ends?",
+    "How long does the transcript lag behind the Stop event? This is question 3 of adapter-host.md section 7.",
+    "How long do the digest and interpret calls take on a live stop?"
+  ]
+}
