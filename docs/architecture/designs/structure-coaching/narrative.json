@@ -6,7 +6,7 @@
   "problem_solution": {
     "problem": "No part of the slice loop looks at where a file goes or what its name says. The coach reports smells inside one file. The rubric scores behaviour. In some sessions the main agent writes the slice itself, so no coach and no blind score run.",
     "solution": "One shared script reports a crowded folder, a name-stem cluster, and a generic file name, only for files that are untracked or added since the merge-base. The coach passes them to GREEN as advice. VALIDATE writes an advisory Structure block. A script checks that the slice agents did the work.",
-    "narration": "The signals need no parser, so they work in each language. A git comparison with the merge-base is the ratchet, so old debt stays silent. Each limit is advice until a replay evaluation proves an effect.",
+    "narration": "The signals need no parser, so they work in each language. A git comparison with the merge-base keeps only new code, so old debt stays silent. Each limit is advice until a replay evaluation proves an effect.",
     "beats": [
       {
         "kind": "problem",
@@ -48,7 +48,7 @@
       },
       {
         "option": "Keep a baseline file of old findings in .cobuilder/",
-        "rejected_because": "A git comparison with the merge-base, with untracked files included, gives the same ratchet. It adds no state file to keep current."
+        "rejected_because": "A git comparison with the merge-base, with untracked files included, gives the same new-code rule. It adds no state file to keep current."
       },
       {
         "option": "Add an import check with dependency-cruiser and import-linter in the first version",

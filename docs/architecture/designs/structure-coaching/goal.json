@@ -11,14 +11,18 @@
   "created": "2026-11-10",
   "outcome": "GREEN gets structure coaching when it adds a file, VALIDATE reports structure findings beside the slice score, and the main agent runs each slice through the RED, GREEN, and VALIDATE agents.",
   "done_when": [
+    "A spike on zenagent/agencheck records the precision of each uncertain signal, and the engineer checks 10 labels for each signal",
     "A spike transcript shows one real coach message that carries a structure signal from the second runner in habit_coach.py",
-    "shared/structure_signals.py reports a crowded folder, a name-stem cluster, and a generic file name on synthetic folder trees, including a test folder, and it reads its limits from .cobuilder/structure-signals.json",
-    "A signal fires only for a file that is untracked or added since the merge-base. Tests cover an uncommitted file and a branch with no merge-base",
+    "shared/structure_signals.py reports a crowded folder with its groups, a name family, a generic name, and each kept coach signal, and reads its limits from .cobuilder/structure-signals.json",
+    "shared/structure_boundary.py reports each import or path string in a new file that names a context outside the allowed dependencies of its boundary.yaml",
+    "A coach signal fires only for a file that is untracked or added since the merge-base. Tests cover an uncommitted file and a branch with no merge-base",
     "The output of shared/structure_signals.py names each path that the script did not analyse",
     "The coach gives structure signals for each extension, stays silent about smells for an unscanned extension, and repeats no finding in a session. It has no cap on structure findings",
     "The engineer approves the coaching language, the message for each signal and the Structure block format, before the coach and VALIDATE use it",
     "A test of the effect check covers no attempt file, a pass at attempt 1, and workflow mode, and the check fails for a main-agent slice",
-    "The attempt file holds a Structure block outside the overall score. It judges contract drift, cohesion, and new dependencies against boundary.yaml, and a failed attempt passes it to GREEN",
+    "shared/structure_evidence.py writes an evidence packet for the slice diff with Python contract drift, boundary edges, vocabulary leads, and each signal that the spike keeps",
+    "The attempt file holds a Structure block outside the overall score. It labels each finding, judges contract drift, cohesion, and new dependencies, and a failed attempt passes it to GREEN",
+    "The vocabulary agent judges each vocabulary lead against DDD-VOCABULARY.md, and tags a name AVOID only when it means the avoided concept",
     "A replay of three runs or more for each condition, five slices each, records the growth of the largest folder and the follow-on resolve rate",
     "One real slice runs locally from RED to a VALIDATE score, and the transcript is kept"
   ],
@@ -44,8 +48,8 @@
     {
       "id": "E1",
       "slug": "structure-signals",
-      "title": "The spike, then shared/structure_signals.py with its three signals and its tests.",
-      "outcome": "The stdlib script reports each of the three signals on synthetic folder trees, only for files that are untracked or added since the merge-base."
+      "title": "The tracer, then shared/structure_signals.py and shared/structure_boundary.py with the coach signals and their tests.",
+      "outcome": "The stdlib scripts report a crowded folder with its groups, a name family, a generic name, a boundary edge, and each coach signal that the spike keeps, only for new files."
     },
     {
       "id": "E2",
@@ -62,8 +66,8 @@
     {
       "id": "E4",
       "slug": "validate-structure-block",
-      "title": "VALIDATE writes an advisory Structure block. It judges contract drift, cohesion, and each new dependency against boundary.yaml on the diff, and it passes the block to GREEN on a failed attempt.",
-      "outcome": "The attempt file holds a Structure block with the three judgments, and the overall score does not include it."
+      "title": "shared/structure_evidence.py writes an evidence packet for the slice diff, and VALIDATE judges each finding in an advisory Structure block. The vocabulary agent judges the vocabulary leads.",
+      "outcome": "The packet holds Python contract drift, boundary edges, and each signal that the spike keeps. The attempt file holds a Structure block with a label for each finding and the three judgments, outside the overall score."
     },
     {
       "id": "E5",
@@ -74,14 +78,20 @@
     {
       "id": "E6",
       "slug": "review-and-maintenance-signals",
-      "title": "Review mode and maintenance mode report the structure signals and their trend. This epic starts after E1 to E5.",
-      "outcome": "A review report and a maintenance report each carry the structure signals, with the four trend tags in maintenance."
+      "title": "Review mode and maintenance mode run each signal on the whole repository, show the folder table and the trend, and write one findings file.",
+      "outcome": "A review report and a maintenance report each carry the whole-repository findings, ranked by recent change count, and the findings file has a fixed schema."
     },
     {
       "id": "E7",
-      "slug": "import-graph",
-      "title": "A parser reads the imports of each file, checks each edge against boundary.yaml, and draws the dependency diagram. This epic is in the backlog, after E5.",
-      "outcome": "The parser reports each import that crosses a forbidden boundary on fixture repositories, and it writes a dependency diagram that a test can parse."
+      "slug": "dependency-diagram",
+      "title": "The import graph of E4 becomes a dependency diagram, and the boundary check covers more languages. This epic is in the backlog, after E5.",
+      "outcome": "The bundle shows a dependency diagram for each context, with each edge that breaks a boundary record marked."
+    },
+    {
+      "id": "E8",
+      "slug": "refactor-skill",
+      "title": "An /architect:refactor skill reads the E6 findings file and plans refactor slices. This epic is in the backlog, after E6.",
+      "outcome": "The skill turns the ranked whole-repository findings into a refactor plan that /implement:start can build."
     }
   ],
   "supersedes": null,

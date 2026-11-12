@@ -55,6 +55,15 @@ Test command: uv run pytest tests -q
 - 0.5 — stdlib only, tests not run
 - 0.0 — a third-party import
 
+### C6 — The families of a crowded folder
+**Must be true:** A crowded-folder finding holds `families`: each first-token group of two or more non-test files, largest first.
+**Evidence to check:**
+- Run the script on a synthetic crowded folder with two families of sizes 4 and 2.
+**Scoring:**
+- 1.0 — both families, in size order
+- 0.5 — families present, wrong order or a test file counted
+- 0.0 — no families
+
 ## Regression check
 - All tests that passed before this slice must still pass.
 - Files outside the slice scope in the epic design must remain unchanged.

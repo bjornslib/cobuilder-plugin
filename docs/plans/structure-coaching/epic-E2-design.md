@@ -24,9 +24,11 @@ E2 turns the signals into coaching that GREEN acts on. Slice 3 writes the wordin
 ```json
 {
   "header": "<one line with {path}>",
-  "crowded-folder": "<template with {folder}, {count}, {limit}, {groups}>",
+  "crowded-folder": "<template with {folder}, {count}, {limit}, {families}, {components}, {nearest_group}>",
   "name-stem-cluster": "<template with {folder}, {stem}, {count}, {examples}>",
-  "generic-name": "<template with {path}, {stem}>"
+  "generic-name": "<template with {path}, {stem}>",
+  "boundary-edge": "<template with {path}, {line}, {from_context}, {to_context}, {rule}>",
+  "twin-name": "<template with {path}, {stem}, {twins}>, only when the spike keeps the signal"
 }
 ```
 
@@ -49,7 +51,7 @@ Slice 3 also writes the format of the Structure block for VALIDATE (E4). The blo
 
 ### B2. The extension guard (slice 4)
 
-`scanned(path)` is true when the lower-case suffix of the path is in `SOURCE_EXTENSIONS`: `.py`, `.ts`, `.tsx`, `.php`, `.java`, and `.rb`. For another suffix, the coach does not call habit-hooks, and the habit-hooks result is `(0, "")`. The structure runner runs for each suffix.
+`scanned(path)` is true when the lower-case suffix of the path is in `SOURCE_EXTENSIONS`: `.py`, `.ts`, `.tsx`, `.php`, `.java`, and `.rb`. For another suffix, the coach does not call habit-hooks, and the habit-hooks result is `(0, "")`. The structure runner runs for each suffix. The rendered value of a list fact, such as `families`, is a comma list of `name (size)`.
 
 ### B3. The finding key and the session record (slice 4)
 
@@ -58,6 +60,8 @@ Slice 3 also writes the format of the Structure block for VALIDATE (E4). The blo
 | Crowded folder | `crowded-folder|<folder>` |
 | Name-stem cluster | `name-stem-cluster|<folder>|<stem>` |
 | Generic name | `generic-name|<path>` |
+| Boundary edge | `boundary-edge|<path>|<to_context>` |
+| Twin name | `twin-name|<stem>` |
 
 The crowded-folder key has no count, so GREEN sees one message for each folder in a session. A second new file in the same folder gives no repeat.
 
@@ -97,7 +101,7 @@ The defaults come from the script, so the skill holds no second copy of them.
 
 ## Slice Decomposition
 
-3. **Slice 3, the coaching language.** Depends on slice 2. Ends with the engineer approval and one blind GREEN pass.
+3. **Slice 3, the coaching language.** Depends on slice 10, the last E1 slice. Ends with the engineer approval and one blind GREEN pass.
 4. **Slice 4.** Depends on slice 3. Ends with the coach tests.
 5. **Slice 5.** Depends on slice 4. Ends with the install test.
 
@@ -111,5 +115,5 @@ The defaults come from the script, so the skill holds no second copy of them.
 
 - The wording may need two rounds of engineer review.
 - The crowded-folder key may hide a second real problem in the same folder.
-- No cap on findings may give long messages on an old, flat repo. The ratchet limits this to new files.
+- No cap on findings may give long messages on an old, flat repo. The new-code rule limits this to new files.
 - Two GREEN agents in one session can race on the record. One slice has one GREEN, so the risk is a repeat message, not a lost one.

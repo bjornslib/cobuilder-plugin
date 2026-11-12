@@ -2,7 +2,7 @@
 title: "ADR-0048 — structure signals coach GREEN, and VALIDATE reports them beside the slice score"
 status: active
 type: architecture
-last_verified: 2026-11-10
+last_verified: 2026-11-12
 owner: bjornslib
 id: ADR-0048
 source_pr: null
@@ -11,10 +11,10 @@ state: decided
 groups: [workflow, quality]
 approved_by: ""
 problem: "An agent adds each new file to the nearest folder, and no test rewards a better place. The coach reports smells inside one file only, and the VALIDATE rubric scores behaviour only. In some sessions the main agent writes the slice itself, so the coach and the blind score do not run."
-decision: "One script, shared/structure_signals.py, reports three structure signals: a crowded folder, a name-stem cluster, and a generic file name. A signal fires only for a file that is untracked or added since the merge-base. The coach passes the signals to the GREEN agent as advice, and the GREEN filter of ADR-0025 stays. VALIDATE writes an advisory Structure block outside the slice score. The slice loop text makes the main agent spawn the three slice agents, and a script checks that. A replay evaluation decides what becomes a scored criterion. Review mode and maintenance mode read the signals in a later epic."
+decision: "Two scripts report structure signals as evidence, and agents judge them. A stdlib script gives GREEN a crowded folder with its groups, a name family, a generic name, and a boundary edge for each new file. A VALIDATE script reads the slice diff for contract drift, boundary edges, and the signals that a spike on a second repository keeps. A signal reports only on code that the change adds. VALIDATE writes an advisory Structure block outside the slice score. The vocabulary agent judges names, with leads from the glossary. A replay decides what enters the score. Review mode and maintenance mode run the same signals on the whole repository later."
 maps_to:
   context: implement
-  modules: [shared/structure_signals.py, plugins/implement/scripts/habit_coach.py, plugins/implement/agents/validate.md, plugins/implement/skills/build/references/slice-loop.md, plugins/implement/skills/build/workflows/slice-loop.js, plugins/implement/skills/build/SKILL.md]
+  modules: [shared/structure_signals.py, shared/structure_boundary.py, shared/structure_evidence.py, plugins/implement/scripts/habit_coach.py, plugins/implement/agents/validate.md, plugins/implement/skills/build/references/slice-loop.md, plugins/implement/skills/build/workflows/slice-loop.js, plugins/implement/skills/build/SKILL.md]
   rule: "A structure signal is advice. It never blocks a write, and it enters the slice score only after a replay evaluation and an engineer decision. shared/structure_signals.py is the one source of each signal. The coach gives structure signals for each file extension. It stays silent about smells for an extension that habit-hooks does not scan, and it runs for the implement:green agent only."
 forces:
   - "The research synthesis of 2026-11-10 found that guidance at the start lowers the first level of decay, not its rate. A coaching message at write time had the best direct evidence, from one small study that is not peer-reviewed."
@@ -35,7 +35,7 @@ alternatives:
   - option: "Add weighted structure criteria S1 to S5 to the rubric at once"
     rejected_because: "The rubric has no weights, and a score is a plain average. An unproven threshold can then fail a slice."
   - option: "Keep a baseline file of old findings in .cobuilder/"
-    rejected_because: "A git comparison with the merge-base, with untracked files included, gives the same ratchet. It adds no state file to keep current."
+    rejected_because: "A git comparison with the merge-base, with untracked files included, gives the same new-code rule. It adds no state file to keep current."
   - option: "Add an import check with dependency-cruiser and import-linter in the first version"
     rejected_because: "It adds two tool dependencies and covers two languages only. The three signals work in each language."
   - option: "Add a PreToolUse speed bump that blocks the first write of a new file"
@@ -46,6 +46,12 @@ alternatives:
     rejected_because: "The coach ignores each caller except GREEN. A missing marker then means a main-agent slice or a silent coach, and the check cannot tell them apart."
   - option: "Silence the coach on the habit-hooks markers for an unscanned file"
     rejected_because: "For a scanned extension, those markers show a misconfiguration that GREEN must report. The guard keys on the file extension instead."
+  - option: "Start the generic-name list from the _Avoid_ terms of DDD-VOCABULARY.md"
+    rejected_because: "The _Avoid_ terms are rejected synonyms for one concept, not generic names. A match on file and folder names gave 25 hits on this repository, and none was real."
+  - option: "A placement score that names the best folder for a new file"
+    rejected_because: "On this repository, the own folder of a file was the best match for 47% of files by imports and for 35% by name tokens."
+  - option: "A Cluster Factor limit of 0.25 that makes a folder a finding"
+    rejected_because: "4 of the 7 folders that it flagged on this repository were false. Review mode shows the value in a table with no limit."
   - option: "Run the script from the coach with uv run, and read a YAML config"
     rejected_because: "The coach is stdlib only, and two coach tests fail when it runs uv. A uv start on each write also adds delay."
 delivers:
@@ -58,6 +64,7 @@ history:
   - { state: decided, date: 2026-11-10, by: engineer, note: "Decided in a cloud session. The engineer kept the GREEN filter, accepted the two coach guards, asked for stronger slice loop text, and asked for a later epic for review mode and maintenance mode. The spike, the reviewer round, and the tracker program record are pending." }
   - { state: decided, date: 2026-11-10, by: engineer, note: "Round 1 of the draft review scored 0.63. The engineer rated it material, kept the agent-use effect open for the spike, and rejected slice-loop.js as the default run mode. The implement and shared boundary records were refreshed." }
   - { state: decided, date: 2026-11-10, by: engineer, note: "Round 2 of the draft review scored 0.75. The session applied its findings: a stdlib script, a JSON config, a session store for the coach, the verify_gate.py host, and the install owner." }
+  - { state: decided, date: 2026-11-12, by: engineer, note: "Amended after the algorithm research. The engineer approved a boundary check now, a VALIDATE script with libraries, _Avoid_ words as leads for the vocabulary agent, two views of each signal, a spike on a second repository, and a backlog epic for /architect:refactor. Decisions 2, 3, and 12 changed, and decisions 13 to 17 are new." }
 related_decisions:
   - { type: is-related-to, target: ADR-0025 }
   - { type: is-related-to, target: ADR-0012 }
@@ -92,9 +99,9 @@ A read of this repository on the same day gave these facts.
 ## Decision
 
 1. **One source.** `shared/structure_signals.py` holds the signals. It uses the standard library only, because the coach is stdlib only and must not run `uv`. The coach imports it through the `shared` symlink, or runs it with `sys.executable`. It prints findings JSON in the habit-hooks format: one finding for each smell, and one issue for each place.
-2. **Three signals.** A crowded folder has more files than both the 90th percentile of the repository and a limit that the engineer sets. A name-stem cluster is three or more sibling files that share a first name token, with no sub-folder of that name. The script splits a file stem on `_`, `-`, `.`, and each camelCase boundary, and it compares the first token in lower case. The test prefixes `test_`, `.test`, and `.spec` do not count as a stem. A generic name is a file stem in a list that the engineer can change. The list starts from the `_Avoid_` terms of `DDD-VOCABULARY.md`, which the vocabulary agent also reads, so the two checks use one list of avoided names.
+2. **Coach signals.** A crowded folder has more files than both the 90th percentile of the repository and a limit that the engineer sets, 20 by default. Every file that is not excluded counts, test files too. The finding names the groups in the folder: the name families and the sets of files that import each other. A name family is three or more sibling files that share a first name token, with no sub-folder of that name. The script splits a file stem on `_`, `-`, `.`, and each camelCase boundary, and it compares the first token in lower case. Test names do not count as a family. A generic name is a file stem in the `generic_names` list of the config. Amended 2026-11-12: the list does not start from the `_Avoid_` terms of `DDD-VOCABULARY.md`. Decision 15 gives those terms to the vocabulary agent.
 2a. **Config.** `.cobuilder/structure-signals.json` holds the folder limit, the percentile, the generic names, the excluded stems, and the excluded paths. JSON keeps the script stdlib only. Each value has a default, and the engineer can change it.
-3. **Ratchet on git.** A signal fires only for a file that is untracked, or added since the merge-base with the default branch. The working tree counts, so a file that GREEN has not committed counts. On a branch with no merge-base, only untracked and staged files count. The script keeps no baseline file.
+3. **The new-code rule on git.** A signal reports only on code that the change adds, so old debt stays silent. For the coach, that is a file that is untracked, or added since the merge-base with the default branch. The working tree counts, so a file that GREEN has not committed counts. On a branch with no merge-base, only untracked and staged files count. For VALIDATE, it is the slice diff: each added file, the added lines of each changed file, and each public symbol that the slice changed. The whole-repository view of decision 16 does not use the rule. The script keeps no baseline file. Amended 2026-11-12: the earlier text called this rule the ratchet.
 4. **Not analysed.** The output names each path that the script did not analyse, so a clean result is not a false pass.
 5. **Coach.** The coach passes the signals to GREEN as advice that names the decision to make. It has no cap on structure findings at first. A cap comes only if the replay or the engineer finds noise. It does not repeat a finding in one session. Each hook call is a new process, so the coach keeps the findings it showed in a file in the system temp folder, keyed by the `session_id` of the payload.
 6. **Filter and guards.** The coach still runs for `implement:green` only. It gives structure signals for each file extension. It stays silent about smells for an extension outside the habit-hooks set, which is `.py`, `.ts`, `.tsx`, `.php`, `.java`, and `.rb` today. For an extension in that set, a habit-hooks failure still reaches GREEN as a report. Its messages do not depend on the name of the caller.
@@ -104,7 +111,12 @@ A read of this repository on the same day gave these facts.
 9. **Agent use.** The slice loop text states that the main agent spawns the three agents and writes no slice code itself. One effect that a script reads shows that the agents ran the slice. The effect must hold in manual mode and in workflow mode. The spike picks it from two candidates: the VALIDATE attempt file and the tracker attempt record. A marker from the coach cannot work, and the hook does not call the tracker. `verify_gate.py` runs the check before the slice loop closes a slice. Its tests cover no attempt file, a pass at attempt 1, and workflow mode. A partial skip, where the main agent writes the code and spawns only VALIDATE, is an open question for the spike. Neither text nor the check forces agent use, and the check finds a skipped agent only after the slice.
 10. **Evaluation.** A replay runs slice plans with the signals on and off, three runs or more for each condition, five slices each. It records the folder growth and the follow-on resolve rate. The engineer then decides on scored criteria.
 11. **Later epic.** Review mode and maintenance mode report the signals and their trend after the work for GREEN and VALIDATE is complete.
-12. **Import parser.** A backlog epic, E7, builds a parser that reads the imports, checks each edge against `boundary.yaml`, and draws the dependency diagram. It replaces the dependency judgment of decision 8 with a check only after its own decision record.
+12. **Import parser.** A backlog epic, E7, draws the dependency diagram and adds more languages. Amended 2026-11-12: the boundary check of decision 13 moves forward, so E7 reuses its reader and the import graph of E4.
+13. **Boundary edge now.** `shared/structure_boundary.py` reads each `docs/architecture/contexts/*/boundary.yaml` with the standard library. A reference in a new file, an import or a path string, that names another context outside `allowed_dependencies` is a finding. A match on a path glob of `forbidden_dependencies` is also a finding. The coach shows it to GREEN, and VALIDATE reads it on the slice diff. A forbidden target that is prose goes to VALIDATE as a rule to judge. In this repository the plugins couple through path strings and skill names, not imports.
+14. **VALIDATE evidence script.** `shared/structure_evidence.py` writes one evidence packet for the slice diff. VALIDATE runs it with `uv run`, so it may use tree-sitter for TypeScript and PyYAML. Python contract drift uses `ast`: a change to the parameters, the defaults, the return annotation, the raised errors, or the caught errors of a public symbol. Each event lists the files outside the diff that name the symbol. The coach and `structure_signals.py` stay on the standard library.
+15. **Vocabulary leads.** The script reads `DDD-VOCABULARY.md` and lists each `_Avoid_` word in a new name as a lead, with the reason from the glossary entry. The vocabulary agent reads the whole glossary and judges each lead. It tags a name AVOID only when the name means the concept that the avoided word lost to. VALIDATE does not judge names, and the coach does not show `_Avoid_` leads.
+16. **Two views.** Each signal uses one algorithm in two views, and only the input set changes. The change view serves GREEN and VALIDATE. The whole-repository view serves review mode and maintenance mode (E6). It reads every file that is not excluded, ranks the findings by the change count of the last 90 days, and writes one findings file with a fixed schema. A later `/architect:refactor` skill (backlog epic E8) plans refactor work from that file.
+17. **Spike on a second repository.** Five signals are uncertain: TypeScript contract drift, a missing co-change partner, duplicated code, a twin name, and consumer locality. A spike runs each one on `zenagent/agencheck`, read only. A signal stays when an agent label gives a precision of 50% or more and one finding or more that needs a change. The engineer checks 10 labels for each signal.
 
 ## Obsolete after this ADR
 
@@ -122,4 +134,6 @@ A read of this repository on the same day gave these facts.
 - A scored structure criterion later needs a change to the rubric rule on behaviour, and a new decision record.
 - An install must put the signals where the coach finds them. E2 owns it: the `cobuilder-setup` skill writes the default `.cobuilder/structure-signals.json`.
 - The Java, PHP, and Ruby suffix convention, as in `UserService` and `UserRepository`, can give name-stem clusters. E5 hand-labels them, and the excluded stems in the config can silence them.
-- The import check is now backlog epic E7. A speed bump stays open as a later decision. Each needs its own record.
+- The diagram and more languages are backlog epic E7. A speed bump stays open as a later decision. Each needs its own record.
+- `structure_evidence.py` needs a network on its first run, to download its wheels. When `uv run` fails, VALIDATE writes the Structure block from the diff alone and names the failure.
+- The boundary check reads the six `boundary.yaml` files of this repository. A repository with no boundary record gets no boundary finding, and `not_analysed` says so.

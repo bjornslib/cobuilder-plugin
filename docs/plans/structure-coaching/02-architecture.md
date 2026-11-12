@@ -6,11 +6,15 @@ Design record: `docs/architecture/designs/structure-coaching/`, decided in ADR-0
 
 | Module | Role today | Change |
 |---|---|---|
-| `shared/structure_signals.py` | None. A new file. | Finds three structure signals for one written file: a crowded folder, a name-stem cluster, and a generic name. Standard library only. |
+| `shared/structure_signals.py` | None. A new file. | Finds the coach signals for one written file: a crowded folder with its groups, a name family, and a generic name. Standard library only. |
+| `shared/structure_boundary.py` | None. A new file. | Reads each `boundary.yaml` and the imports and path strings of a file, and finds each boundary edge. Standard library only. |
+| `shared/structure_evidence.py` and its modules | None. New files. | Writes the evidence packet for a slice diff (contract drift, boundary edges, kept spike signals, vocabulary leads), and the whole-repository record. Run with `uv run`. |
+| `plugins/architect/skills/architecture/` | Review and maintenance modes run the habit-hooks scan. | Run the whole-repository record, report it, and show its trend (E6). |
+| `plugins/implement/agents/vocabulary.md` | Checks names against the glossary. | Reads the vocabulary leads from the packet. |
 | `plugins/implement/scripts/habit_coach.py` | The `PostToolUse` coach. It filters on `implement:green` and runs habit-hooks on one file. | Gets a second runner. The coach joins the habit-hooks text and the structure text into one message. The GREEN filter stays. |
 | `plugins/implement/scripts/structure_runner.py` | None. A new file. | Calls `structure_signals.py`, applies the approved wording, and drops a finding that the session already showed. It keeps the coach file inside the size limit. |
 | `plugins/implement/scripts/verify_gate.py` | Checks the gate files before slices start. | Gets an agent-use check for one slice, which runs before the slice closes. |
-| `plugins/implement/agents/validate.md` | Scores a slice and writes the attempt file. | Runs `structure_signals.py` on the new files of the slice, and adds a `### Structure` block outside the score. |
+| `plugins/implement/agents/validate.md` | Scores a slice and writes the attempt file. | Runs `structure_evidence.py` on the slice diff, labels each finding, and adds a `### Structure` block outside the score. |
 | `plugins/implement/skills/build/references/slice-loop.md` and `SKILL.md` | The loop procedure for the main agent. | Stronger text on the use of the three agents, and the agent-use check before a slice closes. |
 | `plugins/cobuilder-full-lifecycle/skills/cobuilder-setup/` | Installs habit-hooks and checks the coach. | Writes the default `.cobuilder/structure-signals.json`. |
 | `docs/architecture/contexts/implement/boundary.yaml` | The implement boundary record. | No new edge. `implement` already depends on `shared`. |
@@ -28,6 +32,8 @@ None. The work changes a hook, two scripts, an agent body, and the loop prose.
 | `<temp dir>/cobuilder-coach-<session_id>.json` | The coach | The keys of the findings that this session already showed. Outside the repo. |
 | `.cobuilder/rubrics/<slug>/evidence/slice-<N>-attempt-<M>.md` | VALIDATE | Gets a `### Structure` block. Git ignores the folder. |
 | `docs/plans/structure-coaching/evaluation.md` | The engineer and the main agent | The replay results and the hand labels (E5). |
+| `.cobuilder/rubrics/<slug>/evidence/slice-<N>-packet.json` | `structure_evidence.py` | The evidence packet of one slice. Git ignores the folder. |
+| `docs/architecture/review/<run>/structure-findings.json` | `structure_evidence.py --repo` | The whole-repository record, beside the review reports (E6). Committed with the reports. |
 
 No database. No schema migration. No change to the bundle format.
 
@@ -47,8 +53,8 @@ The primary path is a GREEN write.
 The second path is the end of a slice.
 
 1. The main agent spawns VALIDATE and VOCABULARY in parallel.
-2. VALIDATE scores the rubric. Then it runs `python3 <script> --file <path>` for each file that the slice added. The spawn message gives the script path. VALIDATE does not run `structure_runner.py`, because the runner holds only the coach wording and the session record.
-3. VALIDATE writes the `### Structure` block. For each script finding, it states confirmed or dismissed, with one line of reason. Then it reads the diff, the `forbidden_dependencies` of the touched contexts, and the glossary. It judges contract drift, cohesion, and each new dependency.
+2. VALIDATE scores the rubric. Then it runs `uv run <structure_evidence.py> --base <slice base> --out <packet>`. The spawn message gives the script path, the slice base that the main agent recorded before RED, and the packet path. VALIDATE does not run `structure_runner.py`, because the runner holds only the coach wording and the session record.
+3. VALIDATE writes the `### Structure` block. It labels each finding confirmed, accepted, or dismissed, with one line of reason. Then it reads the diff and the prose rules of the touched boundary records, and judges contract drift, cohesion, and each new dependency. The vocabulary agent reads the vocabulary leads of the same packet.
 4. On a FAIL, the block goes to the feedback file, and GREEN reads it in the next attempt.
 5. Before the slice closes, the main agent runs `verify_gate.py --plan <dir> --slice <N>`. The check fails when the agent-use effect is absent.
 
@@ -57,6 +63,7 @@ The second path is the end of a slice.
 | Item | Use |
 |---|---|
 | habit-hooks CLI | Unchanged. The coach still runs it for the six extensions. |
-| git | `git ls-files`, `git merge-base`, and `git diff --name-only --diff-filter=A` give the file list and the new files. `epic-E1-design.md` A1 and A2 give each call. |
+| git | `git ls-files`, `git merge-base`, `git diff`, `git show`, and `git log` give the file list, the new files, the slice diff, the base side of a file, and the change count. The epic designs give each call. |
+| uv and PyPI | `structure_evidence.py` declares `tree-sitter`, `tree-sitter-typescript`, and `pyyaml` in its PEP 723 header. The first run needs a network. The coach needs neither. |
 | Environment | No new variable. The coach reads `session_id` from the hook payload and the temp folder from `tempfile.gettempdir()`. |
 | Webhooks | None. |

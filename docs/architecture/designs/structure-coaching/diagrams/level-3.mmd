@@ -1,6 +1,6 @@
 classDiagram
     class StructureSignals {
-        +run
+        +signals_for
         +print_findings_json
     }
     class Signal {
@@ -8,22 +8,32 @@ classDiagram
         +check
     }
     class CrowdedFolder {
-        +percentile_limit
+        +folder_limit
+        +groups
     }
-    class NameStemCluster {
-        +shared_stem_count
+    class NameFamily {
+        +shared_first_token
     }
     class GenericName {
-        +generic_name_list
+        +generic_names
     }
-    class BranchBaseRatchet {
+    class BoundaryEdge {
+        +read_boundary_records
+        +outside_allowed
+    }
+    class NewCodeRule {
         +new_files_on_branch
-        +git_compare_with_base
+        +slice_diff
+    }
+    class StructureEvidence {
+        +evidence_packet
+        +contract_drift
+        +vocabulary_leads
     }
     class FindingsJson {
-        +habit_hooks_format
+        +signal
         +path
-        +message
+        +facts
     }
     class NotAnalysedList {
         +paths
@@ -31,12 +41,17 @@ classDiagram
     }
 
     Signal <|.. CrowdedFolder
-    Signal <|.. NameStemCluster
+    Signal <|.. NameFamily
     Signal <|.. GenericName
-    StructureSignals --> BranchBaseRatchet : keeps only new files
-    StructureSignals --> Signal : runs three
+    Signal <|.. BoundaryEdge
+    StructureSignals --> NewCodeRule : keeps only new files
+    StructureSignals --> Signal : runs each
     StructureSignals --> FindingsJson : prints
     StructureSignals --> NotAnalysedList : prints
+    StructureEvidence --> NewCodeRule : reads the slice diff
+    StructureEvidence --> BoundaryEdge : reuses
+    StructureEvidence --> FindingsJson : writes the packet
 
-    note for StructureSignals "member names are predictions\nthe script does not exist yet"
-    note for CrowdedFolder "the limit has no calibration data\nthe replay evaluation tunes it"
+    note for StructureSignals "standard library only\nthe coach runs it on each GREEN write"
+    note for StructureEvidence "uv run, may use tree-sitter and PyYAML\nVALIDATE runs it on the slice diff"
+    note for CrowdedFolder "default limit 20, a guess\nthe replay evaluation tunes it"

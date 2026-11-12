@@ -46,6 +46,15 @@ Test command: uv run pytest tests -q
 - 0.5 — transcript without the time
 - 0.0 — no transcript
 
+### C5 — The default limit and the count
+**Must be true:** With no config file, the folder limit is 20. Test files count toward the folder total.
+**Evidence to check:**
+- Run a test or a script call on a synthetic folder of 21 files, of which 10 are test names, with no config file.
+**Scoring:**
+- 1.0 — a finding with limit 20 and count 21
+- 0.5 — the limit is 20 but test files do not count
+- 0.0 — another limit
+
 ## Regression check
 - All tests that passed before this slice must still pass.
 - Files outside the slice scope in the epic design must remain unchanged.

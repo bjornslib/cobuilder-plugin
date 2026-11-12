@@ -5,13 +5,15 @@ Epic ID: E1
 
 ## Scope and Intent
 
-E1 builds `shared/structure_signals.py`, the one source of the three signals. Slice 1 is also the spike. It proves that a second runner in the coach can carry a folder signal to GREEN. If it cannot, the first abort rule of the design applies, and the work stops. E1 does not apply the approved wording. Slice 1 uses a plain text that slice 4 replaces.
+E1 builds the coach signals in two stdlib scripts. `shared/structure_signals.py` holds the file list, the new-code rule, the crowded folder with its groups, the name family, and the generic name. `shared/structure_boundary.py` holds the import reader and the boundary edge, which E4 reuses. Slice 1 is also the spike. It proves that a second runner in the coach can carry a folder signal to GREEN. If it cannot, the first abort rule of the design applies, and the work stops. E1 does not apply the approved wording. Slice 1 uses a plain text that slice 4 replaces.
 
 The script reports facts. It does not judge them. GREEN reads the facts as advice, and VALIDATE judges them in the Structure block (E4).
 
 ## Files Touched
 
 - `shared/structure_signals.py` (new)
+- `shared/structure_boundary.py` (new, slice 10)
+- `tests/test_structure_boundary.py` (new, slice 10)
 - `plugins/implement/scripts/structure_runner.py` (new, a plain `run` only in slice 1)
 - `plugins/implement/scripts/habit_coach.py` (the second runner call)
 - `tests/test_structure_signals.py` (new)
@@ -19,7 +21,7 @@ The script reports facts. It does not judge them. GREEN reads the facts as advic
 
 ## Types & Signatures
 
-As in `03-program-design.md`. Slice 1 adds `Config` with its defaults, `Finding`, `Report`, `repo_files`, `new_files`, `folder_counts`, `folder_limit`, `crowded_folder`, and `signals_for`, and a plain `structure_runner.run`. Slice 2 adds `split_tokens`, `is_test_name`, `stem_cluster`, `generic_name`, `excluded_by`, `load_config`, and `main`.
+As in `03-program-design.md`. Slice 1 adds `Config` with its defaults, `Finding`, `Report`, `repo_files`, `new_files`, `folder_counts`, `folder_limit`, `crowded_folder`, and `signals_for`, and a plain `structure_runner.run`. Slice 2 adds `split_tokens`, `is_test_name`, `stem_cluster`, `generic_name`, `excluded_by`, `load_config`, and `main`. Slice 10 adds `read_boundaries`, `context_of`, `references`, `import_groups`, `boundary_edges`, and each coach signal that the spike keeps.
 
 ## Algorithms
 
@@ -33,7 +35,7 @@ Each step below names the rule, the default value, and the evidence for the defa
 
 Default `excluded_paths`: `.*/**`, `docs/**`, `**/fixtures/**`, `**/__snapshots__/**`, `**/migrations/**`, `**/vendor/**`, `**/generated/**`. On this repo the first three globs remove 292, 426, and 209 files. The list keeps 1,028 files in 143 folders.
 
-### A2. The new-file rule (the ratchet)
+### A2. The new-code rule
 
 `new_files(root)` returns the union of three sets:
 
@@ -59,14 +61,14 @@ Cost on this repo: the four git calls take about 130 ms. The file list takes abo
 | Setting | Default | Evidence on this repo |
 |---|---|---|
 | `percentile` | 90 | p75 is 8, p90 is 13, p95 is 22 |
-| `folder_limit` | 15 | 11 folders have more than 15 files. Six hold code: `tests` (179), `plugins/artifact/viewer/src/shell` (65), `shared/tracker_port` (40), `.../shell/change` (22), `.../shell/app` (19), and `shared` (19). Five hold reference text, such as `references/books` (41). |
+| `folder_limit` | 20 | The engineer chose 20 on 2026-11-12. No source supports a value. 8 folders have more than 20 files. Four hold code: `tests` (179), `plugins/artifact/viewer/src/shell` (65), `shared/tracker_port` (40), and `.../shell/change` (22). Four hold reference text, such as `references/books` (41). At 15, the count was 11. |
 | `min_folders` | 10 | A guess. A repo with fewer folders gives a weak percentile. |
 
 ### A4. Signal 1: a crowded folder
 
-The signal fires when the written file is new, and its folder has more files than the limit. The written file counts.
+The signal fires when the written file is new, and its folder has more files than the limit. Every file that is not excluded counts, test files too. The written file counts.
 
-`Finding.facts`: `count`, `limit`, and `groups`. `groups` names the three largest first-token groups in the folder, from A5, such as `beads (14), fake (5), plan (4)` for `shared/tracker_port`. A group gives GREEN a named choice for a new sub-folder, and the research found that a named choice works better than a bare number.
+`Finding.facts`: `count` and `limit` in slice 1. Slice 2 adds `families`: each first-token group of two or more non-test files, largest first, such as `beads (14), fake (5), plan (4)` for `shared/tracker_port`. Slice 10 adds `components` and `nearest_group` from A9. A group gives GREEN a named choice for a new sub-folder, and the research found that a named choice works better than a bare number.
 
 ### A5. The token split
 
@@ -111,7 +113,7 @@ The signal fires when the written file is new and is not a test name, and its st
 
 Default `generic_names`: `utils`, `util`, `helpers`, `helper`, `common`, `misc`, `manager`, `base`. On this repo three files match: `viewer/src/lib/utils.ts`, `sections/common.tsx`, and `IntentDrawing/helpers.ts`. The first is a shadcn/ui convention, so E5 may label it a false signal.
 
-The list comes from the config only. ADR-0048 decision 2 says that the list starts from the `_Avoid_` terms of `DDD-VOCABULARY.md`. Those terms are rejected synonyms for one concept, not generic names. On this repo they include `reader`, `issue`, `connector`, and `bd`, and `shared/tracker_port/reader.py` would give a false signal. The engineer decides this point before slice 2 starts.
+The list comes from the config only, as amended ADR-0048 decision 2 says. The `_Avoid_` terms of `DDD-VOCABULARY.md` are leads for the vocabulary agent (E4, slice 12), not generic names. A plain match of them gave 25 hits on this repo and none was real.
 
 ### A8. The report and the command
 
@@ -134,10 +136,44 @@ A git error or a bad config never raises. The script returns no findings, and `n
 
 The output has the keys `findings` and `not_analysed`. Each finding has the keys `signal`, `path`, `folder`, and `facts`.
 
+### A9. The import reader (slice 10)
+
+`references(path, root)` returns the outgoing references of one file, each with its line number, its text, its target path, and `in_comment`.
+
+1. Python: parse with `ast`. Resolve `import a.b` and `from a.b import c` to a repo file. Try `a/b.py`, then `a/b/__init__.py`, from the folder of the file for a relative import, and from each folder on the `sys.path` roots that the repo uses: the repo root and the folder of the file. A name that resolves to no repo file is external and gives no reference.
+2. TypeScript and JavaScript: read each `import ... from '<spec>'`, `export ... from '<spec>'`, `import('<spec>')`, and `require('<spec>')` with one regex. Resolve a relative spec, then try the suffixes `.ts`, `.tsx`, `.js`, `.jsx`, and `/index.*`. Read `compilerOptions.paths` from the nearest `tsconfig.json`, after the removal of comments, for an alias such as `@/`. A spec that resolves to no repo file gives no reference.
+3. Path strings, for each language: each string literal that starts with the `path` of a boundary record, such as `plugins/artifact/`. This is how the plugins of this repo couple.
+4. A parse error gives no references and one `not_analysed` line.
+
+`import_groups(folder, files)` parses the siblings only, at most `sibling_parse_max` (default 60). Two siblings are in one group when one imports the other. A group is a connected set of two or more siblings. Above the cap, the script gives `families` only and says so in `not_analysed`.
+
+`nearest_group` is the family or the import group that the written file joins, or `null`.
+
+Cost from the proposal: 34 ms for 40 Python siblings with `ast`, and 2 ms for 65 TypeScript siblings with the regex.
+
+### A10. The boundary edge (slice 10)
+
+`read_boundaries(root)` reads each `docs/architecture/contexts/*/boundary.yaml` with a line reader. It keeps `id`, `path`, `allowed_dependencies`, and the `target` and `why` of each `forbidden_dependencies` entry. No PyYAML, so the coach stays stdlib. A record that the reader cannot read gives a `not_analysed` line.
+
+1. The context of a file is the record whose `path` is the longest prefix of the file path. No context gives no finding and a `not_analysed` line.
+2. For each reference of A9, find the context of its target.
+3. `outside-allowed`: the target context differs, and is not in `allowed_dependencies`.
+4. `forbidden-glob`: the reference matches a `forbidden_dependencies` target that is a path glob. A target that is prose is not checked here. E4 passes it to VALIDATE as a rule to judge.
+5. Drop a reference to `plugins/cache/`, the install cache.
+
+`Finding.facts`: `line`, `text`, `from_context`, `to_context`, `kind`, `rule`, and `in_comment`.
+
+Evidence on this repo: 18 import edges cross a context, all to `shared`, and none breaks the rules. Path strings give 9 hits in 6 files. Six are smells that the records already name, such as `verify_gate.py:102`. Three point at `plugins/cache` and the drop rule removes them.
+
+### A11. Coach signals from the spike (slice 10)
+
+The twin name runs here when the spike keeps it. `spike-signals.md` gives the algorithm and the precision. When the spike drops it, slice 10 has no A11.
+
 ## Slice Decomposition
 
 1. **Slice 1, the tracer bullet.** Depends on nothing. A1 to A4 with the defaults in code, and A8 steps 1, 3, and 4 for one signal. Ends with a real coach message for a crowded folder.
-2. **Slice 2.** Depends on slice 1. A5 to A7, the excluded paths of A1, the config file, and the command of A8. Ends with all three signals, the config, and `not_analysed` on synthetic trees.
+2. **Slice 2.** Depends on slice 1. A5 to A7, the families of A4, the excluded paths of A1, the config file, and the command of A8. Ends with all three signals, the config, and `not_analysed` on synthetic trees.
+3. **Slice 10.** Depends on slice 2. A9 to A11 in `shared/structure_boundary.py`. Ends with the import groups in a crowded-folder finding and a boundary edge on synthetic trees with synthetic boundary records.
 
 ## Test Plan
 
@@ -146,9 +182,11 @@ All cases use a `tmp_path` git repo with a synthetic tree. No case reads this re
 - Slice 1: a new file in a folder over the limit gives a finding with `count` and `limit`. A folder at the limit gives none. An old file in a crowded folder gives none. An untracked, a staged, and a branch-added file each count as new. A repo with no merge-base counts untracked and staged files. A repo with fewer than `min_folders` folders and no `folder_limit` gives no crowded finding and a `not_analysed` line. A `test_habit_coach.py` case shows the joined text with a fake habit-hooks runner. The spike transcript is the evidence that the real hook delivers the text.
 - Slice 2: `split_tokens` for the five stems in the A5 table. `is_test_name` for the four test forms. A cluster of three new siblings. No cluster of two. No cluster when a sub-folder named for the stem exists. No cluster of test files. No cluster on an excluded stem. A generic name with a leading `_`. A custom config that changes each limit. A missing config and a bad config give the defaults, and the bad config gives a `not_analysed` line. An excluded path names its glob. `--file`, `--survey`, and `--defaults` each print JSON that `json.loads` reads.
 
+- Slice 10: two siblings that import each other form one group. A folder over `sibling_parse_max` gives families only. A Python relative import, a TypeScript `@/` alias, and a path string each resolve. An external import gives no reference. A path string to a context outside `allowed_dependencies` gives an `outside-allowed` finding with its line. A path-glob forbidden target gives `forbidden-glob`. A `plugins/cache/` string gives none. A file with no context gives a `not_analysed` line. A bad record gives a `not_analysed` line.
+
 ## Risks & Open Questions
 
-- The generic-name source. The design follows the config only, and ADR-0048 says the `_Avoid_` terms. The engineer decides.
+- The line reader of `boundary.yaml` reads only the shape of the six records in this repo. A record in another form gives a `not_analysed` line, not a wrong finding.
 - The percentile on a repo with few folders. `min_folders` is a guess.
 - A cluster can mix code and text files, such as `shared/tracker.py` and three `tracker-*.md` files. E5 labels these.
 - The Java, PHP, and Ruby suffix habit, as in `UserService` and `UserRepository`, gives clusters on `user`. `excluded_stems` can silence a stem.

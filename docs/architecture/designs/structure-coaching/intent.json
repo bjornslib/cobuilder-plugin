@@ -21,7 +21,7 @@
     },
     {
       "option": "Keep a baseline file of old findings in .cobuilder/",
-      "rejected_because": "A git comparison with the merge-base, with untracked files included, gives the same ratchet. It adds no state file to keep current."
+      "rejected_because": "A git comparison with the merge-base, with untracked files included, gives the same new-code rule. It adds no state file to keep current."
     },
     {
       "option": "Add an import check with dependency-cruiser and import-linter in the first version",
@@ -54,10 +54,10 @@
   ],
   "out_of_scope": [
     "A scored structure criterion in the rubric, which the replay evaluation of E5 decides",
-    "An import check against the forbidden_dependencies of a boundary.yaml",
+    "The dependency diagram and import checks for more languages, which backlog epic E7 builds",
     "A PreToolUse speed bump for a new file",
     "A change to the GREEN filter of the coach",
-    "A /architect:refactor command",
+    "A /architect:refactor skill, which backlog epic E8 builds from the whole-repository findings",
     "A claim about who wrote the code, a human or an agent"
   ],
   "risks": [
