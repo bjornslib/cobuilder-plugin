@@ -60,6 +60,7 @@ related_concerns: []
 history:
   - { state: decided, date: 2026-11-11, note: "Drafted by design mode for the priority-dev-cc-plugin design. The engineer chose the name, the digest-first order with a CURRENT RUN label on the live path only, the per-session switch, opt-in, and local labels." }
   - { state: decided, date: 2026-11-12, note: "Review round 2. The engineer asked to act on the selected steps. The pane sends one draft to the main session on a press, and the pane layout is part of the design." }
+  - { state: decided, date: 2026-11-12, note: "The first live run failed on empty settings. The umbrella install gets an optional step that writes pluginConfigs, only when cobuilder-priority is installed (slice E1.5)." }
 maps_to:
   context: cobuilder-packaging
   modules: [plugins/cobuilder-priority, priority-dev/src/priority/cli.py, priority-dev/src/priority/brief, tests/test_plugin_manifests.py, .claude-plugin/marketplace.json]
@@ -158,6 +159,8 @@ history. `contracts.md` holds the layout and the wireframe.
 **Settings.** `userConfig` holds the priority-dev folder, the program file,
 the timeout, and an optional secret API key. The module passes the key to
 the process in `env`. Without the key, the CLI reads `priority-dev/.env`.
+The umbrella install has an optional step that writes the reader settings,
+only when the plugin is installed. The step never writes the API key.
 
 `contracts.md` in the design folder holds each command, field, and format.
 
