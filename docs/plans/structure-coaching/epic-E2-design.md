@@ -10,7 +10,7 @@ E2 turns the signals into coaching that GREEN acts on. Slice 3 writes the wordin
 ## Files Touched
 
 - `shared/structure-messages.json` (new, slice 3)
-- `plugins/implement/agents/validate.md` (the Structure block format only, slice 3)
+- `plugins/implement/skills/build/references/structure-judgment.md` (new, slice 3): the Structure block format. Slice 8 adds the decision questions and makes `validate.md` read it. Changed on 2026-11-13: a format in `validate.md` before the evidence packet exists would make each later VALIDATE try to write a block.
 - `plugins/implement/scripts/structure_runner.py` (slice 4)
 - `plugins/implement/scripts/habit_coach.py` (`scanned` and the join, slice 4)
 - `plugins/cobuilder-full-lifecycle/skills/cobuilder-setup/SKILL.md` (slice 5)
@@ -73,7 +73,7 @@ The crowded-folder key has no count, so GREEN sees one message for each folder i
 4. Read the record. A missing file, bad JSON, or a value that is not a list of strings counts as an empty record.
 5. Drop each finding whose key is in the record.
 6. When findings remain, write the old and new keys to a temp file in the same folder, then `os.replace` it onto the record. A write error does not stop the message.
-7. Render the header and one template for each remaining finding, with `str.format_map`. Return `(1, text)`, or `(0, "")` when no finding remains.
+7. Render the header and one template for each remaining finding, with `str.format_map`. A fact that is missing, `None`, or an empty string renders as `none`, so the crowded-folder text reads correctly for a flat folder or a folder over `sibling_parse_max`. Return `(1, text)`, or `(0, "")` when no finding remains.
 
 ### B4. The join (slice 4)
 

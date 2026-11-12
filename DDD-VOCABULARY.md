@@ -260,6 +260,16 @@ _Avoid_: component (a part of the viewer or of a C4 diagram)
 A structure finding for a reference, an import or a path string, from a file to a bounded context that its `boundary.yaml` does not allow, or to a path that a `forbidden_dependencies` glob names. In code it is the signal `boundary-edge`, which `shared/structure/boundary.py` reports.
 _Avoid_: boundary edge alone (a protocol-labelled line in a runtime diagram)
 
+<a id="structure-block"></a>
+**Structure block** (`implement`):
+The `### Structure` section that VALIDATE writes after the score, with one labelled item for each structure finding and the contract-drift, cohesion, and dependency judgments. It stays outside `overall_score`, and a failed attempt passes it to the next GREEN attempt (ADR-0048 decision 8).
+_Avoid_: structure score
+
+<a id="evidence-packet"></a>
+**Evidence packet** (`implement`):
+The JSON output of `shared/structure_evidence.py` for one slice diff, with its structure findings, the evidence for the agents, and the paths not analysed. VALIDATE and the vocabulary agent read it, and it holds facts, never a verdict.
+_Avoid_: report (the habit-hooks findings JSON)
+
 <a id="new-code-rule"></a>
 **New-code rule** (`implement`):
 A structure signal reports only on code that the change adds: for the coach a file that is untracked or added since the merge-base, and for VALIDATE the slice diff. The whole-repository view does not use the rule (ADR-0048 decisions 3 and 16).
