@@ -51,6 +51,20 @@ The plugin ships no hooks. When this file says a step runs, it means
 invoke anything on its own. Do not write the design under an exports
 tree. That old path is a historical mistake.
 
+### 2.1 A request to implement during the run
+
+This mode writes no application code, test, or plugin file. This rule
+holds for the whole run, also after an interruption. The engineer can ask
+for implementation during the run, for example "you are in charge of the
+design and the implementation". In that case, finish the current stage.
+Then continue to stage 7, and give `/implement:start` as the next step.
+
+Such a request is not an approval of the design. It does not skip a stage,
+the challenge gate, or the review. If the engineer wants code before the
+design is approved, ask with `AskUserQuestion`. Offer two options: stop
+design mode, or finish the design first. Do not choose the faster meaning
+in silence.
+
 ## 3. Stage 0 — Name and outcome
 
 Before the first question, run `tracker.py doctor`. Read the adapter and the
@@ -529,6 +543,8 @@ pull request.
 - **No foreign target.** No `--repo`. Refuse a design against another
   checkout.
 - **No remote action.** No push, no pull request, no GitHub write.
+- **No implementation.** No application code, test, or plugin file, even
+  when the engineer asks during the run. Section 2.1 gives the handoff.
 - **No epic split.** Capture slugs. Do not break the work into ordered
   epics, acceptance tests, or cross-epic contracts.
 - **No timeline key.** Do not mint a synthetic `pr` so a design can
