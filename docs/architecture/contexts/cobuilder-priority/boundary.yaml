@@ -43,7 +43,7 @@ modules:
     public_interface: ["enqueue", "readingsKey"]
     allowed_inbound: [register, pane]
     allowed_outbound: []
-    rule: "One reading at a time. Runs the priority CLI and stores each reading in $.store."
+    rule: "One reading at a time. Runs the priority-dev CLI and stores each reading in $.store."
   - id: pane
     path: plugins/cobuilder-priority/hooks/pane.tsx
     public_interface: ["PANE_ID", "openPane", "renderPane"]

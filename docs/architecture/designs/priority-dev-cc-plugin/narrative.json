@@ -6,12 +6,14 @@
   "problem_solution": {
     "problem": "The priority-dev interpreter improves only on recorded transcripts. The optimiser runs on old sessions no longer give useful feedback.",
     "solution": "An opt-in plugin, cobuilder-priority, reads each main-loop stop of a session that the person switched on. It runs digest and interpret as a process, stores the reading, and shows it in a pane with marks.",
-    "narration": "The plugin does not act on a reading. It shows each step, and the person judges it. The switch is off in each new session, because each reading sends the transcript to an outside service.",
+    "narration": "The plugin never acts alone. The person selects steps on the newest card, reads the draft, and presses Send or Edit. The switch is off in each new session, because each reading sends the transcript to an outside service.",
     "beats": [
       { "kind": "problem", "text": "Readings of old sessions no longer tell the engineer what to improve." },
       { "kind": "decision", "text": "One hooks module starts the reading and draws the pane." },
       { "kind": "decision", "text": "Digest runs first, and interpret labels its digest CURRENT RUN." },
       { "kind": "constraint", "text": "The switch is off by default in each session." },
+      { "kind": "decision", "text": "A press sends the selected steps to the session as one user prompt." },
+      { "kind": "risk", "text": "Model text from the transcript can become a prompt, so the pane shows the exact draft first." },
       { "kind": "outcome", "text": "Each stop gets a card, and each mark stays on this machine." }
     ],
     "alternatives": [
@@ -30,7 +32,7 @@
     ]
   },
   "architecture": {
-    "narration": "The plugin is one hooks module beside the other plugins. It starts the priority CLI as a process, so priority-dev stays apart. The store holds readings and marks, and the pane reads the store.",
+    "narration": "The plugin is one hooks module beside the other plugins. It starts the priority-dev CLI as a process, so priority-dev stays apart. The store holds readings and marks, and the pane reads the store.",
     "beats": [
       { "kind": "constraint", "text": "ADR-0045: the plugin never imports priority-dev." },
       { "kind": "decision", "text": "ADR-0049 amends ADR-0025 and ADR-0039 to let cobuilder-priority ship hooks/." },

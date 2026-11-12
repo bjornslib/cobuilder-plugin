@@ -4,13 +4,16 @@
   "adr": "ADR-0049",
   "adrs": ["ADR-0049", "ADR-0045", "ADR-0039", "ADR-0025"],
   "created": "2026-11-11",
-  "outcome": "In a Claude Code session where the person switched the reader on, each main-loop stop gets a D1 reading in a pane, and the session does not wait. The person marks each reading right or wrong, with a note, and the marks stay on this machine.",
+  "outcome": "With the reader switched on, each main-loop stop gets a D1 reading in a pane, and the session does not wait. The person marks each reading right or wrong, with a note, and sends the steps they choose to the session with one press. The marks stay local.",
   "done_when": [
     "With the switch on, a main-loop stop leads to a card in the pane with the status, the priority, and each step with its content, or the abstain reason",
     "The session takes its next prompt while the reading runs",
     "A right, wrong, or note mark on a card is still in the store after a restart of the session",
     "With the switch off, a stop starts no process",
-    "priority interpret --digest current labels the digest CURRENT RUN, and every other command still shows PREVIOUS RUN"
+    "priority interpret --digest current labels the digest CURRENT RUN, and every other command still shows PREVIOUS RUN",
+    "On the newest card, Send with two selected steps submits one user prompt that holds the draft text of both steps, and the mark records the steps and the text",
+    "Edit puts the same draft in the prompt box and submits nothing",
+    "No prompt reaches the session without a press of Send or Edit, and an older card has no send action"
   ],
   "abort_if": [
     "After one week of use, fewer than half of the marked readings are right, or the readings do not change which part of the prompt the engineer works on next"
@@ -36,6 +39,12 @@
       "slug": "pane",
       "title": "Pane: one card per stop, with right, wrong, and note marks.",
       "outcome": "The pane shows each stored reading, and each mark stays after a restart."
+    },
+    {
+      "id": "E3",
+      "slug": "act",
+      "title": "Act: select steps on the newest card, and send one draft to the session.",
+      "outcome": "A press of Send submits the draft of the selected steps as a user prompt, Edit puts it in the prompt box, and the mark records what was sent."
     }
   ],
   "stage": "review",
@@ -46,6 +55,12 @@
       "changed": true,
       "feedback_class": "cosmetic",
       "note": "Blind draft review scored 0.81 and found no survivor. It confirmed five defects, fixed in code: off drops a waiting stop, a no-digest brief shape, the reading number label, the switch state in the pane, and diagram drift. A reload can still run two readings side by side, and the contract accepts it."
+    },
+    {
+      "n": 2,
+      "changed": true,
+      "feedback_class": "scope",
+      "note": "The engineer asked to act on the selected steps, and to design the pane. Added epic E3, the step-to-draft table, the Send and Edit actions, and the pane layout. Renamed the priority CLI to the priority-dev CLI in prose."
     }
   ]
 }

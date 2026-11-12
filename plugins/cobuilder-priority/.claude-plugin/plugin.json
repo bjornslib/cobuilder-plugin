@@ -11,7 +11,7 @@
     "priority_dev_dir": {
       "type": "string",
       "title": "priority-dev folder",
-      "description": "The priority-dev checkout. The priority CLI runs here."
+      "description": "The priority-dev checkout. The priority-dev CLI runs here."
     },
     "program": {
       "type": "string",

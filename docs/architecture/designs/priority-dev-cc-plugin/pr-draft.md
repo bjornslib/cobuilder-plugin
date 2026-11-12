@@ -6,7 +6,7 @@ D1 beats the base prompt by 0.185 on 56 test stops, and D2 does not beat D1. The
 
 ## Why this approach
 
-An opt-in plugin, cobuilder-priority, ships one hooks module. A per-session switch is off by default. With the switch on, a Stop hook on the main loop runs priority digest, then priority interpret with the D1 program, as a separate process, and returns at once. The module stores each reading. A pane shows one card per stop, with right, wrong, and note marks. The plugin carries out no step.
+An opt-in plugin, cobuilder-priority, ships one hooks module. A per-session switch is off by default. With the switch on, a Stop hook on the main loop runs priority digest, then priority interpret with the D1 program, as a separate process, and returns at once. The module stores each reading. A pane shows one card per stop, with right, wrong, and note marks. On the newest card, the person selects steps. `Send` submits the draft as a user prompt, and `Edit` puts it in the prompt box. Nothing reaches the session without that press.
 
 ## Alternatives considered
 
@@ -21,10 +21,13 @@ An opt-in plugin, cobuilder-priority, ships one hooks module. A per-session swit
 - **Write marks into the confirmed label files** — rejected because the labels stay local.
 - **Add the plugin to the umbrella** — rejected because each turn costs two model calls.
 - **A Claude Artifact page** — rejected because a page does not update beside the session.
+- **Show the steps and carry out none** — rejected because the engineer wants to act, and a sent step is a stronger label.
+- **Send with no press** — rejected because model text must not reach the session unread.
 
 ## Out of scope
 
-- Any step of a reading.
+- A send with no press, and a send from an older card.
+- Permission, option-pick, and interrupt steps, which have no target at a stop.
 - An export of the marks into the labelled set.
 - Subagent stops, headless sessions, and other harnesses.
 - A change to D1, eval, replay, or the optimiser.
@@ -35,6 +38,7 @@ An opt-in plugin, cobuilder-priority, ships one hooks module. A per-session swit
 - Each stop with the switch on costs two model calls.
 - A reload or the end of the session can stop a reading.
 - The transcript can lag behind the Stop event.
+- A careless press can send model text that the person did not read.
 
 ## Testing
 

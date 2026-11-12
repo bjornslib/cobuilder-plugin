@@ -1,5 +1,5 @@
 // The reader: one live reading at a time, from a main-loop Stop to a stored reading.
-// It starts the priority CLI as a process and never imports priority-dev (ADR-0045, ADR-0049).
+// It starts the priority-dev CLI as a process and never imports priority-dev (ADR-0045, ADR-0049).
 import { atom, read as readAtom, update } from 'claude-code'
 import type { PluginOptions } from 'claude-code'
 import type { Reading, ReadingResult } from '../types'

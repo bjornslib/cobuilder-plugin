@@ -1,11 +1,11 @@
 {
   "schema_version": "1.4",
   "sources": {
-    "git_head": "4cf849b81e97ea6db59772100b2ddd50b46caf72",
+    "git_head": "43c0c673b50096ab6694bdb5f1c71335c1effab3",
     "trees": {
-      "docs/architecture/adr": "sha256:01555580c88a7b97578b4cc8f8ed0ee23039ff9e730c228a177db6bbade3c07d",
-      "docs/architecture/designs": "sha256:8d41c5a853a145b0ca91512c53949d91d988aa32c0bc0f0eb549b2a5ec8e8e5f",
-      "docs/architecture/contexts": "sha256:855a1a12706fbb9f39f9bc366bfe94e60a8271afe291a0ac3131ecc794d0f024",
+      "docs/architecture/adr": "sha256:b99c24b5ea6cd2eb446939380d12e1775a8dfea6af879e55126dcf7aa8980147",
+      "docs/architecture/designs": "sha256:0bc11dd60aa9b6d025012a40e7a359917706e6af6931351a02cc5134d2147bbb",
+      "docs/architecture/contexts": "sha256:e9537c5da21bf3f32eb547c8c422e8c3eb9acafefb5801143e53491b64ace073",
       "docs/plans": "sha256:59009083e5abb7b6391af2e29ee9d3fa30581a7e9d63cb18a803030eb05f1cfd",
       ".cobuilder/rubrics": "sha256:90d2396b0a34d85ece07a8eef3df300e7f7dbe1dee123084de92b3879c1e33bf"
     }
@@ -350,7 +350,7 @@
       {
         "id": "priority-dev-cc-plugin",
         "name": "priority-dev-cc-plugin",
-        "outcome": "In a Claude Code session where the person switched the reader on, each main-loop stop gets a D1 reading in a pane, and the session does not wait. The person marks each reading right or wrong, with a note, and the marks stay on this machine.",
+        "outcome": "In a Claude Code session where the person switched the reader on, each main-loop stop gets a D1 reading in a pane, and the session does not wait. The person marks each reading right or wrong, with a note, and sends the steps they choose to the session with one press. The marks stay on this machine.",
         "stage": "review"
       },
       {
@@ -1094,6 +1094,15 @@
         "id": "priority-dev-cc-plugin/E2",
         "design": "priority-dev-cc-plugin",
         "epic_id": "E2",
+        "branch": null,
+        "pr": null,
+        "state": null,
+        "note": null
+      },
+      {
+        "id": "priority-dev-cc-plugin/E3",
+        "design": "priority-dev-cc-plugin",
+        "epic_id": "E3",
         "branch": null,
         "pr": null,
         "state": null,
@@ -2294,7 +2303,7 @@
             "pane"
           ],
           "allowed_outbound": [],
-          "rule": "One reading at a time. Runs the priority CLI and stores each reading in $.store."
+          "rule": "One reading at a time. Runs the priority-dev CLI and stores each reading in $.store."
         }
       },
       {
@@ -7437,6 +7446,7 @@
           "habit-smells/E3",
           "priority-dev-cc-plugin/E1",
           "priority-dev-cc-plugin/E2",
+          "priority-dev-cc-plugin/E3",
           "slice-agents-and-vocabulary/E1",
           "slice-agents-and-vocabulary/E2",
           "slice-agents-and-vocabulary/E3",
@@ -7682,6 +7692,7 @@
         "path": [
           "priority-dev-cc-plugin/E1",
           "priority-dev-cc-plugin/E2",
+          "priority-dev-cc-plugin/E3",
           "priority-dev-spike/E1",
           "priority-dev-spike/E2",
           "priority-dev-spike/E3",
@@ -7697,7 +7708,8 @@
         "via": "epic",
         "path": [
           "priority-dev-cc-plugin/E1",
-          "priority-dev-cc-plugin/E2"
+          "priority-dev-cc-plugin/E2",
+          "priority-dev-cc-plugin/E3"
         ]
       }
     },
@@ -7824,6 +7836,7 @@
       "plugin-split/E8": "completed",
       "priority-dev-cc-plugin/E1": "unstarted",
       "priority-dev-cc-plugin/E2": "unstarted",
+      "priority-dev-cc-plugin/E3": "unstarted",
       "priority-dev-spike/E1": "no-pull-request",
       "priority-dev-spike/E2": "no-pull-request",
       "priority-dev-spike/E3": "no-pull-request",

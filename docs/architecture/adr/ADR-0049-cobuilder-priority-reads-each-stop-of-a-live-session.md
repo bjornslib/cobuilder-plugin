@@ -11,7 +11,7 @@ name: "cobuilder-priority reads each stop of a live session"
 state: decided
 groups: [workflow, packaging]
 problem: "The priority-dev interpreter improves only on recorded transcripts. The optimiser runs on old sessions no longer give useful feedback. The engineer needs readings of recent sessions that they remember, so they can judge which part of the prompt to improve next."
-decision: "Ship a seventh plugin, cobuilder-priority, as an opt-in mod outside the umbrella. One hooks module reads each main-loop Stop of a session that the person switched on. It runs priority digest, then priority interpret with the D1 program, as a separate process. It stores the reading, and a pane shows it with right, wrong, and note marks. The plugin carries out no step of the reading. This amends ADR-0025 and ADR-0039: implement, cobuilder-memory, and cobuilder-priority may ship hooks/."
+decision: "Ship a seventh plugin, cobuilder-priority, as an opt-in mod outside the umbrella. One hooks module reads each main-loop Stop of a session that the person switched on. It runs priority digest, then priority interpret with the D1 program, as a separate process. It stores the reading, and a pane shows it with right, wrong, and note marks. On the newest card the person selects steps, and one press sends the draft to the main session as a user prompt or puts it in the prompt box. The plugin never sends without that press. This amends ADR-0025 and ADR-0039: implement, cobuilder-memory, and cobuilder-priority may ship hooks/."
 alternatives:
   - option: "A Stop command hook with async true, plus a mod pane that reads its files"
     rejected_because: "Two mechanisms meet through a data folder. One hooks module can start the process and draw the pane, so no file hand-off is necessary."
@@ -28,7 +28,15 @@ alternatives:
   - option: "Ship the D1 program inside the plugin"
     rejected_because: "priority-dev/probes/programs/ is Git-ignored. The person names the program file in userConfig."
   - option: "API keys only in userConfig"
-    rejected_because: "The priority CLI already reads priority-dev/.env. A secret userConfig key is an optional override that the module passes in env."
+    rejected_because: "The priority-dev CLI already reads priority-dev/.env. A secret userConfig key is an optional override that the module passes in env."
+  - option: "Show the steps and carry out none"
+    rejected_because: "The engineer wants to act on a reading. A step that the person sends is also a stronger label than a mark."
+  - option: "Carry out the selected steps with no press, or carry out each step on its own"
+    rejected_because: "The reading comes from a model that read the transcript. Its text reaches the session only after the person reads it and presses Send or Edit."
+  - option: "Send the draft framed as a plugin message"
+    rejected_because: "The person chose the exact text, so it is their prompt. The transcript still names the plugin as the origin."
+  - option: "Act on permission, option-pick, and interrupt steps"
+    rejected_because: "A stop has no open permission prompt, dialog, or running turn, so these steps have no target."
   - option: "Write each mark into the confirmed label files"
     rejected_because: "The engineer keeps the labels local. The confirmed set holds labels that the engineer confirmed, and live marks are a separate record."
   - option: "Add cobuilder-priority to the umbrella"
@@ -49,12 +57,13 @@ related_decisions:
 related_concerns: []
 history:
   - { state: decided, date: 2026-11-11, note: "Drafted by design mode for the priority-dev-cc-plugin design. The engineer chose the name, the digest-first order with a CURRENT RUN label on the live path only, the per-session switch, opt-in, and local labels." }
+  - { state: decided, date: 2026-11-12, note: "Review round 2. The engineer asked to act on the selected steps. The pane sends one draft to the main session on a press, and the pane layout is part of the design." }
 maps_to:
   context: cobuilder-packaging
   modules: [plugins/cobuilder-priority, priority-dev/src/priority/cli.py, priority-dev/src/priority/brief, tests/test_plugin_manifests.py, .claude-plugin/marketplace.json]
   rule: "implement, cobuilder-memory, and cobuilder-priority may ship hooks/. Only implement may ship agents/. No plugin ships an MCP server."
 delivers:
-  capability: "Each stop of a live session that the person switched on gets a D1 reading in a pane, and the person marks it right or wrong."
+  capability: "Each stop of a live session that the person switched on gets a D1 reading in a pane. The person marks it right or wrong, and sends the steps they choose to the session."
   benefit: "The engineer judges the interpreter on sessions they remember, and the marks show which part of the prompt to improve next."
   beneficiary: [developer]
   enables: ["An export of the live marks into the labelled set", "A comparison of D1 and later programs on live stops"]
@@ -129,7 +138,16 @@ keyed by session and stop. The marks stay on this machine.
 **The pane.** The pane shows one card for each stop: status, priority,
 needs-human, each step with its content, or the abstain reason. Each card
 holds `right`, `wrong`, and a note. `/priority-pane` opens the
-pane. The plugin carries out no step.
+pane.
+
+**Acting on steps.** On the newest card only, the person selects steps
+and answers the questions of an `ask_human` step. The module joins the
+draft text of the selected steps. `Send` calls
+`$.prompt.submit({ text, asUser: true })`, and `Edit` calls
+`$.prompt.fill` so the person can change the draft first. The module
+records what it sent on the mark of that reading. Permission, option-pick,
+and interrupt steps have no target at a stop, so the pane shows them and
+cannot send them.
 
 **Settings.** `userConfig` holds the priority-dev folder, the program file,
 the timeout, and an optional secret API key. The module passes the key to
@@ -149,9 +167,14 @@ the process in `env`. Without the key, the CLI reads `priority-dev/.env`.
   first measure of that brief.
 - A hot reload or the end of the session can stop a reading. The store
   keeps no partial reading.
+- Text that a model wrote from the transcript can become a user prompt.
+  The press and the visible draft are the only guard, so the pane always
+  shows the exact text before it is sent.
+- A sent draft starts a new turn, and its stop gets a new reading.
 
 ## Value delivered
 
 The engineer sees a D1 reading of each stop of a session they remember,
-beside that session. They mark each reading, and the marks show which part
-of the prompt to improve next.
+beside that session. They mark each reading, and act on the steps they
+agree with. The marks and the sent steps show which part of the prompt to
+improve next.

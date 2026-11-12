@@ -4,7 +4,7 @@ sequenceDiagram
     actor Person as Engineer
     participant CC as Claude Code session
     participant Mod as Hooks module
-    participant CLI as priority CLI
+    participant CLI as priority-dev CLI
     participant LLM as Mercury model service
     participant Store as $.store
     participant Pane as Priority pane
@@ -41,3 +41,15 @@ sequenceDiagram
     Person->>Pane: Marks right, wrong, or a note
     Pane->>Store: Writes marks:session id, by reading number
     Note over Mod,Pane: A failed command stores state failed with its error, and the card shows it
+
+    Person->>Pane: Selects steps on the newest card, reads the draft
+    alt Send
+        Person->>Pane: Presses Send
+        Pane->>CC: $.prompt.submit, text, asUser true
+        CC->>CC: New user turn when idle, its stop gets a new reading
+    else Edit
+        Person->>Pane: Presses Edit
+        Pane->>CC: $.prompt.fill, the draft in the prompt box
+        Person->>CC: Edits and presses Enter
+    end
+    Pane->>Store: Writes sent on the mark, steps and text

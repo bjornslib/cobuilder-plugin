@@ -5,7 +5,7 @@
   "authorship": "agent-assisted",
   "problem": "The priority-dev interpreter improves only on recorded transcripts. The optimiser runs on old sessions no longer give useful feedback. The engineer does not remember those sessions well enough to judge a reading.",
   "why_now": "D1 beats the base prompt by 0.185 on 56 test stops, and D2 does not beat D1. The next gain needs a different signal: readings of sessions that the engineer remembers.",
-  "approach": "An opt-in plugin, cobuilder-priority, ships one hooks module. A per-session switch is off by default. With the switch on, a Stop hook on the main loop runs priority digest, then priority interpret with the D1 program, as a separate process, and returns at once. The module stores each reading. A pane shows one card per stop, with right, wrong, and note marks. The plugin carries out no step.",
+  "approach": "An opt-in plugin, cobuilder-priority, ships one hooks module. A per-session switch is off by default. With the switch on, a Stop hook on the main loop runs priority digest, then priority interpret with the D1 program, as a separate process, and returns at once. The module stores each reading. A pane shows one card per stop, with right, wrong, and note marks. On the newest card, the person selects steps, and one press sends the draft to the session or puts it in the prompt box.",
   "alternatives": [
     {
       "option": "A Stop command hook with async true, plus a mod pane that reads its files",
@@ -37,7 +37,15 @@
     },
     {
       "option": "API keys only in userConfig",
-      "rejected_because": "The priority CLI already reads priority-dev/.env. A secret userConfig key is an optional override."
+      "rejected_because": "The priority-dev CLI already reads priority-dev/.env. A secret userConfig key is an optional override."
+    },
+    {
+      "option": "Show the steps and carry out none",
+      "rejected_because": "The engineer wants to act on a reading, and a sent step is a stronger label than a mark."
+    },
+    {
+      "option": "Carry out the selected steps with no press",
+      "rejected_because": "Model text from the transcript reaches the session only after the person reads it and presses Send or Edit."
     },
     {
       "option": "Write each mark into the confirmed label files",
@@ -53,7 +61,9 @@
     }
   ],
   "out_of_scope": [
-    "Any step of a reading: no reply, no notify, and no question to the person",
+    "A step sent with no press, and a send from an older card",
+    "Permission, option-pick, and interrupt steps, which have no target at a stop",
+    "An operating-system notice for a notify step",
     "An export of the marks into the labelled set",
     "An optimiser run on the marks",
     "Subagent stops, headless sessions, and other harnesses",
@@ -63,17 +73,20 @@
     "D1 was not scored on a brief with a CURRENT RUN digest, so its readings can be worse than 0.654.",
     "Each stop with the switch on costs two model calls on an outside service.",
     "A hot reload or the end of the session can stop a reading, and that stop gets no card.",
-    "The transcript can lag behind the Stop event, so the brief can miss the last reply."
+    "The transcript can lag behind the Stop event, so the brief can miss the last reply.",
+    "A model wrote the draft from the transcript. A careless press can send text that the person did not read."
   ],
   "testing": "claude plugin test drives the module through classic.Stop, command.run, and ui.render, with a stubbed $.process.run. pytest covers the --digest current flag in priority-dev.",
   "reviewer_focus": [
     "The install-surface amendment to ADR-0025 and ADR-0039",
     "The run guard: one reading at a time, and only the newest waiting stop",
-    "The CURRENT RUN label: live path only"
+    "The CURRENT RUN label: live path only",
+    "The send guard: a press, the visible draft, and the newest card only"
   ],
   "unknowns": [
     "Does a reading that the hook does not await survive until its process ends?",
     "How long does the transcript lag behind the Stop event? This is question 3 of adapter-host.md section 7.",
-    "How long do the digest and interpret calls take on a live stop?"
+    "How long do the digest and interpret calls take on a live stop?",
+    "Does a terminal pane scroll when the cards are taller than the pane? The layout closes older cards, so it does not depend on it."
   ]
 }

@@ -16,7 +16,7 @@ Claude Code then asks for the settings. You can change them later in
 
 | Setting | Use |
 |---|---|
-| `priority_dev_dir` | The priority-dev checkout. The `priority` CLI runs here through `uv run`. |
+| `priority_dev_dir` | The priority-dev checkout. The priority-dev CLI (`priority`) runs here through `uv run`. |
 | `program` | The saved program, such as D1. A relative path starts at `priority_dev_dir`. |
 | `timeout_seconds` | The limit for each CLI command. The default is 180, and the limit is 600. |
 | `llm_api_key` | Optional and secret. Without it, the CLI reads `priority-dev/.env`. |
@@ -30,7 +30,7 @@ Claude Code then asks for the settings. You can change them later in
 4. Run `/priority-off` to stop. Run `/priority-pane` to open the pane again.
 
 Each stop with the reader on sends the transcript to the model service of
-the priority CLI, and costs two model calls.
+the priority-dev CLI, and costs two model calls.
 
 ## Test
 

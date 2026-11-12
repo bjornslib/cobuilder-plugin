@@ -64,13 +64,13 @@
       "rule": "priority-dev never imports from plugins/ or shared/, and nothing imports it",
       "source": "ADR-0045",
       "result": "ok",
-      "evidence": "The plugin runs the priority CLI as a process."
+      "evidence": "The plugin runs the priority-dev CLI as a process."
     }
   ],
   "delta": {
     "districts_added": ["cobuilder-priority"],
     "districts_changed": ["scripts", "docs"],
-    "edges_added": ["cobuilder-priority -> priority CLI (process)"],
+    "edges_added": ["cobuilder-priority -> priority-dev CLI (process)"],
     "edges_removed": []
   },
   "regret_risk": "If this ships as written, the engineer pays for two model calls at each stop of a session with the switch on. The marks measure D1 on a brief it was never scored on. If the marks are poor, the cause can be the prompt or the new label, and the stored brief shape is the only way to tell them apart.",
