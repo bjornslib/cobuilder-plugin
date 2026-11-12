@@ -350,11 +350,40 @@ changes. Each file stays under 200 lines.
 | E3.3 Select on the card | The pane keeps the selection and the answers in `$.state`, for the newest reading only. Digits `1`–`9` toggle steps. A newer reading clears the selection. | Pane tests press `1` and `3`, and find `[x]` on both rows and both lines in the draft block. An older card renders no step Button. |
 | E3.4 Send and Edit | `s` calls `$.prompt.submit({ text, asUser: true })`. `e` calls `$.prompt.fill({ text, mode: "replace" })`. Both write `sent` on the mark and clear the selection. With no selection, neither key calls anything. `isFilled: false` writes nothing and shows `The prompt box is not available`. | Pane tests stub both calls and check the arguments, the stored `sent`, and that no call happens without a press or with an empty selection. |
 | E3.5 Layout C | The summary block with `m`, the title row, the focus border, the draft block with its footer, the action row, and the history list, as in the wireframe. | A render test finds the summary text, the draft footer `session prompt`, and the three history rows. A live look in a 160-column terminal, kept as a screenshot in the slice evidence. |
-| E3.6 Show a running reading (not built) | From the engineer's live run: after the first reading, a new run was not clear. A moving one-cell indicator (`⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏`) stands to the left of `running…`. A redraw about each 100 ms moves it, and the redraw stops when the reading ends. While the reading runs, the previous summary, card and draft turn dim under a `Reading stop #<n+1>…` row, and Send and Edit do nothing. | A pane test drives a Stop with a pending `$.process.run`, and finds the indicator, the `Reading stop` row, and no submit call on a press of `s`. When the stub resolves, the test finds the new card and no indicator. A live look confirms that the indicator moves. |
+| E3.6 Show a running reading (not built) | From the engineer's live run: after the first reading, a new run was not clear. A moving one-cell indicator (`⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏`) stands to the left of `running…`. The reader starts `$.clock.every(120, …)` when a reading starts, and the callback adds 1 to the `tick` atom, which redraws the pane. `cancel()` runs when the reading ends. While the reading runs, the previous summary, card and draft turn dim under a `Reading stop #<n+1>…` row, and Send and Edit do nothing. | A pane test drives a Stop with a pending `$.process.run`, advances the mocked clock, and finds a new indicator frame, the `Reading stop` row, and no submit call on a press of `s`. When the stub resolves, the test finds the new card and no indicator. A live look confirms that the indicator moves. |
+| E3.7 Fixed key row (not built) | The row `s Send · e Edit · r Right · w Wrong · m Summary` stands directly under the header, so the pane never cuts it off. A key that cannot act now is dim: Send and Edit with no selection or while a reading runs. The action row under the draft goes away. The note field stays at the bottom. | A pane test finds the key row as the second row, and finds `send` dim with no selection. |
+| E3.8 Plain names (not built) | The pane shows each raw value of the model as plain text, from the table in "Plain names" below. The stored reading and the label file keep the raw values. | A unit test maps every value in the table. A pane test finds `Waits for your answer` and `P1 High`, and no raw value with an underscore. |
+
+### Plain names
+
+The engineer chose these names on 2026-11-13. Only the pane uses them.
+
+| Raw value | Pane text |
+|---|---|
+| `done`, `continuing` | Done, Still working |
+| `waiting_answer`, `waiting_permission` | Waits for your answer, Waits for your permission |
+| `blocked`, `failed` | Blocked, Failed |
+| `P0` to `P4` | P0 Urgent, P1 High, P2 Normal, P3 Low, P4 Can wait |
+| `reply`, `continue` | Reply, Continue |
+| `continue_until` | Continue until: <goal> (<n> turns, <m> min) |
+| `approve_permission` | Allow, or Allow for this session |
+| `deny_permission` | Denied permission |
+| `pick_option` | Pick option <n> |
+| `approve_gate`, `send_feedback` | Approve the gate, Send feedback |
+| `interrupt` | Stop the turn |
+| `ask_human` with `decide`, `do`, `review` | You decide, You do this, You review |
+| `snooze` | Wait until the session is idle, or Wait until the turn ends. The interpreter proposes it, so the person does not set it. |
+| `dismiss` | Dismiss: done, out of date, duplicate, or read |
+| `notify` | Notification |
+| `no_agent_reply` | No agent reply to read |
+| `invalid_output` | The model's answer could not be read |
+| `model_error` | The model call failed |
+| `brief_too_large` | The session is too long to read |
+| `digest-current`, `digest-previous`, `no-digest` | (nothing), Summary of the previous stop, No summary |
 
 ### Done when
 
-- The six slice checks pass under `claude plugin test plugins/cobuilder-priority`.
+- The eight slice checks pass under `claude plugin test plugins/cobuilder-priority`.
 - `tsc` and `claude plugin validate` pass.
 - In a live session, one press of `s` with two selected steps starts one
   user turn that holds both draft lines, and the next stop gets a new card.
