@@ -13,6 +13,33 @@ export const DONE = {
 
 export const DIGESTED = { ran: 'The agent ran the tests.', result: 'All pass.', open_items: [], decisions: [] }
 
+// A reading in the real step shapes of priority-dev/src/priority/interpreter/models.py.
+export const ACTIONABLE = {
+  status: 'blocked',
+  needs_human: true,
+  priority: 'P1',
+  steps: [
+    { kind: 'reply', text: 'Run the migration before the tests.' },
+    { kind: 'continue_until', goal: 'tests pass', proof: { kind: 'agent_shows', command: 'npm test', show: '' }, max_turns: 5, max_minutes: 20 },
+    {
+      kind: 'ask_human',
+      why_escalated: '',
+      detail: { role: 'decide', questions: [{ ask: 'Which store keeps the marks?', options: [{ label: '$.store', detail: '' }, { label: 'a JSONL file', detail: '' }], multi_select: false, free_text: true, helps: [] }] },
+    },
+    { kind: 'approve_permission', scope: 'session' },
+    { kind: 'interrupt' },
+  ],
+  abstain: null,
+}
+
+// Records each prompt.submit and prompt.fill. `filled` false makes the box refuse the text.
+export function stubPrompt(on: any, filled = true) {
+  const sent: { how: 'submit' | 'fill'; text: string; asUser?: boolean; mode?: string }[] = []
+  on('prompt.submit', (_$: any, e: any) => { sent.push({ how: 'submit', text: e.text, asUser: e.origin?.asUser ?? e.asUser }); return { text: e.text } })
+  on('prompt.fill', (_$: any, e: any) => { sent.push({ how: 'fill', text: e.text, mode: e.mode }); return { isFilled: filled } })
+  return sent
+}
+
 export type Call = { argv: string[]; cwd?: string; env?: Record<string, string>; timeoutMs?: number }
 
 // Each process.run answers from `answers` in order. The last answer repeats.
@@ -37,13 +64,17 @@ export function stubStore(on: any) {
   return data
 }
 
+// Returns the status lines that the module set, in order.
 export function stubEngine(on: any, opts: { commands?: boolean } = {}) {
+  const statuses: (string | undefined)[] = []
   if (opts.commands !== false) on('command.register', (_$: any, e: any) => ({ value: { command: e.name } }))
   on('ui.open', () => ({ value: { isPlaced: true } }))
   on('ui.toast', () => ({ value: undefined }))
+  on('ui.status', (_$: any, e: any) => { statuses.push(e.text); return { value: undefined } })
   on('session.start', (_$: any, e: any) => ({ cwd: e.cwd }))
   on('command.run', () => ({ text: '' }))
   on('classic.Stop', () => ({}))
+  return statuses
 }
 
 // Lets unawaited work finish: the reader runs after the Stop hook returns.
@@ -54,6 +85,29 @@ export async function drain(rounds = 200) {
 export async function waitFor(check: () => boolean, rounds = 50) {
   for (let i = 0; i < rounds && !check(); i++) await drain()
   await drain() // the reader writes the redraw tick after the store
+}
+
+export const PANE = {
+  plugin: 'cobuilder-priority',
+  component: 'Pane',
+  requestId: 'priority-reader',
+  props: { title: 'Priority reader', isFocused: false, bodyColumns: 60, placement: 'dock', scroll: { offset: 0, bodyRows: 40 }, view: {} },
+} as const
+
+// Starts a session, turns the reader on, and runs `count` stops to stored readings.
+// The store carries `sent`, the prompts that the module submitted or filled.
+export async function readings($: any, on: any, answers: object[] = [DIGESTED, DONE], count = 1, filled = true) {
+  stubEngine(on)
+  on('session.id', () => ({ value: 'S1' }))
+  const store = Object.assign(stubStore(on), { sent: stubPrompt(on, filled) })
+  stubProcess(on, answers)
+  await $.session.start({ cwd: '/work/app', surface: 'terminal', isInteractive: true })
+  await $.command.run({ command: 'priority-on' })
+  for (let i = 1; i <= count; i++) {
+    await stop($)
+    await waitFor(() => ((store.get('readings:S1') as unknown[]) ?? []).length >= i)
+  }
+  return store
 }
 
 export function stop($: any, session = 'S1') {

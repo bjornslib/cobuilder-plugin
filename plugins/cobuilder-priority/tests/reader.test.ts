@@ -3,6 +3,26 @@ import { DIGESTED, DONE, OPTIONS, stop, stubEngine, stubProcess, stubStore, wait
 
 const KEY = 'readings:S1'
 
+test('a reading keeps the digest that priority digest printed', { options: OPTIONS }, async ($, on) => {
+  stubEngine(on)
+  const store = stubStore(on)
+  stubProcess(on, [DIGESTED, DONE])
+  await switchOn($)
+  await stop($)
+  await waitFor(() => Array.isArray(store.get(KEY)))
+  expect((store.get(KEY) as any[])[0].digest).toEqual(DIGESTED)
+})
+
+test('a stored reading sets the status line, with needs you when the reading needs the person', { options: OPTIONS }, async ($, on) => {
+  const lines = stubEngine(on)
+  const store = stubStore(on)
+  stubProcess(on, [DIGESTED, DONE])
+  await switchOn($)
+  await stop($)
+  await waitFor(() => Array.isArray(store.get(KEY)))
+  expect(lines).toContain('Priority reader · #1 ready · needs you')
+})
+
 async function switchOn($: any) {
   await $.session.start({ cwd: '/work/app', surface: 'terminal', isInteractive: true })
   await $.command.run({ command: 'priority-on' })

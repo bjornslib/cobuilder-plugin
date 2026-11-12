@@ -43,5 +43,11 @@ export const register: Register = (on, options) => {
     return next(e)
   })
 
+  // The next prompt ends the wait at the stop, so the ready line goes.
+  on('prompt.submit', async ($, e, next) => {
+    $.ui.status(undefined)
+    return next(e)
+  })
+
   on('ui.render', { component: 'Pane', requestId: PANE_ID }, ($, e) => renderPane($, e))
 }

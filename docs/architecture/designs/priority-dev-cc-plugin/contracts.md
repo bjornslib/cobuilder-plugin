@@ -163,6 +163,11 @@ passed.
 At a stop, no permission prompt or option dialog is open. The agent asked
 in its reply text, so the answer goes back as text, the same as a `reply`.
 
+The pane draws every selection and every answer. The module calls
+`$.ui.ask` only for a question that the pane cannot draw. No step kind
+needs it now, so the module does not call it, and it never asks a choice
+twice.
+
 The module joins the draft lines of the selected steps in step order, with
 one blank line between them.
 
@@ -183,7 +188,7 @@ The transcript still names the plugin as the origin.
 
 ## The pane
 
-The pane id is `cobuilder-priority`, and its title is `Priority reader`.
+The pane id is `priority-reader`, and its title is `Priority reader`.
 `/priority-on` and `/priority-pane` open it with `focus: true`. In a wide
 fullscreen terminal it is a sidebar beside the transcript, at most 45% of
 the terminal width. The module asks for `columns: 60`. Otherwise it is a
@@ -233,8 +238,12 @@ Top to bottom:
 
 Three parts of the mockup are not in the design:
 
-- **"Execution paused: waiting on priority reader decision".** The session
-  never waits for the reader, so the transcript shows no such line.
+- **"Execution paused: waiting on priority reader decision".** At a stop
+  the session is idle and waits for the next prompt, from the prompt box or
+  from the pane. The Stop hook does not hold it longer. A mod does not
+  write that line into the transcript, so the module sets the status line
+  instead: `Priority reader · #<n> ready`, and `· needs you` when
+  `needs_human` is true. The next prompt clears it.
 - **"Target: bash stdin".** The draft goes to the session prompt.
 - **"ACTIVE FOCUS", "READY", "interactive", and "DISABLED" tags.** The
   focus border and the dim style carry the same state. The module draws no

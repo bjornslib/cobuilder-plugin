@@ -1,24 +1,5 @@
 import { expect, test } from 'claude-code/testing'
-import { DIGESTED, DONE, OPTIONS, stop, stubEngine, stubProcess, stubStore, waitFor } from './fakes'
-
-const PANE = {
-  plugin: 'cobuilder-priority',
-  component: 'Pane',
-  requestId: 'priority-reader',
-  props: { title: 'Priority reader: on', isFocused: false, bodyColumns: 80, placement: 'dock', scroll: { offset: 0, bodyRows: 40 }, view: {} },
-} as const
-
-async function oneReading($: any, on: any, answers: object[] = [DIGESTED, DONE]) {
-  stubEngine(on)
-  on('session.id', () => ({ value: 'S1' }))
-  const store = stubStore(on)
-  stubProcess(on, answers)
-  await $.session.start({ cwd: '/work/app', surface: 'terminal', isInteractive: true })
-  await $.command.run({ command: 'priority-on' })
-  await stop($)
-  await waitFor(() => Array.isArray(store.get('readings:S1')))
-  return store
-}
+import { ACTIONABLE, DIGESTED, OPTIONS, PANE, readings, stubEngine, stubStore, waitFor } from './fakes'
 
 test('with no reading and the switch off, the pane says how to turn it on', async ($, on) => {
   stubEngine(on)
@@ -29,48 +10,71 @@ test('with no reading and the switch off, the pane says how to turn it on', asyn
   await ui.unmount()
 })
 
-test('a card shows the status, the priority, and each step with its content', { options: OPTIONS }, async ($, on) => {
-  await oneReading($, on)
-  for (const surface of ['terminal', 'desktop'] as const) {
-    const ui = await $.ui.mount({ ...PANE, surface })
-    expect((await ui.find({ type: 'Text', text: /can_wait/ }))?.text).toBe('waiting_answer · can_wait · needs human')
-    expect((await ui.find({ type: 'Text', text: /ask_human/ }))?.text).toMatch(/Ship it now\?/)
-    expect((await ui.find({ type: 'Text', text: /notify/ }))?.text).toMatch(/Tests pass\./)
-    await ui.unmount()
-  }
-})
-
-test('a card names its reading number, and the pane shows the switch state', { options: OPTIONS }, async ($, on) => {
-  await oneReading($, on)
+test('the header shows the switch state and the count of readings', { options: OPTIONS }, async ($, on) => {
+  await readings($, on)
   await $.command.run({ command: 'priority-off' })
   const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
-  expect((await ui.find({ type: 'Text', text: /^Reading 1 · / }))).toBeDefined()
-  expect((await ui.find({ type: 'Text', text: /^Reader: / }))?.text).toMatch(/^Reader: off/)
+  expect((await ui.find({ key: 'state' }))?.text).toBe('○ off')
+  expect((await ui.find({ key: 'count' }))?.text).toBe('1 readings')
   await ui.unmount()
 })
 
-test('an abstain shows its reason', { options: OPTIONS }, async ($, on) => {
-  await oneReading($, on, [DIGESTED, { status: null, needs_human: null, priority: null, steps: [], abstain: { reason: 'model_error', detail: '429' } }])
+test('the agent summary shows the digest, and m closes it', { options: OPTIONS }, async ($, on) => {
+  await readings($, on)
   const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
-  expect((await ui.find({ type: 'Text', text: /abstain/ }))?.text).toBe('abstain: model_error (429)')
+  expect((await ui.find({ key: 'summary-body' }))?.text).toBe('The agent ran the tests. All pass.')
+  await ui.press({ key: 'summary' })
+  expect(await ui.find({ key: 'summary-body' })).toBeUndefined()
+  await ui.unmount()
+})
+
+test('the newest card shows its number, priority, status, needs you, and each step', { options: OPTIONS }, async ($, on) => {
+  await readings($, on, [DIGESTED, ACTIONABLE])
+  const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
+  expect((await ui.find({ key: 'title' }))?.text).toMatch(/^#1 \d\d:\d\d$/)
+  expect((await ui.find({ key: 'priority' }))?.text).toBe('P1')
+  expect((await ui.find({ key: 'status' }))?.text).toBe('blocked')
+  expect((await ui.find({ key: 'needs' }))?.text).toBe('needs you')
+  expect((await ui.find({ key: 'step-0' }))?.text).toBe('[ ] 1. reply')
+  expect((await ui.find({ key: 'step-0-body' }))?.text).toBe('"Run the migration before the tests."')
+  expect((await ui.find({ key: 'step-4' }))?.text).toBe('[-] 5. interrupt (no target at a stop)')
+  await ui.unmount()
+})
+
+test('an abstain and a failed reading show their reason on the card', { options: OPTIONS }, async ($, on) => {
+  await readings($, on, [DIGESTED, { status: null, needs_human: null, priority: null, steps: [], abstain: { reason: 'model_error', detail: '429' } }])
+  const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
+  expect((await ui.find({ key: 'status' }))?.text).toBe('abstain · model_error (429)')
+  await ui.unmount()
+})
+
+test('a failed reading names the unset setting', async ($, on) => {
+  await readings($, on)
+  const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
+  expect((await ui.find({ key: 'status' }))?.text).toMatch(/^failed: .*priority_dev_dir/)
   await ui.unmount()
 })
 
 test('right, wrong, and a note are stored per stop', { options: OPTIONS }, async ($, on) => {
-  const store = await oneReading($, on)
+  const store = await readings($, on)
   const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
   await ui.press({ key: 'wrong-1' })
   await ui.input({ key: 'note-1', text: 'It missed the open question.' })
-  await waitFor(() => (store.get('marks:S1') as any)?.['1']?.note !== undefined && (store.get('marks:S1') as any)['1'].note !== '')
+  await waitFor(() => Boolean((store.get('marks:S1') as any)?.['1']?.note))
   const mark = (store.get('marks:S1') as any)['1']
   expect(mark.verdict).toBe('wrong')
   expect(mark.note).toBe('It missed the open question.')
   await ui.unmount()
 })
 
-test('a failed reading shows its error', async ($, on) => {
-  await oneReading($, on)
+test('older readings are history rows, and a row opens its card with marks only', { options: OPTIONS }, async ($, on) => {
+  await readings($, on, [DIGESTED, ACTIONABLE], 2)
   const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
-  expect((await ui.find({ type: 'Text', text: /failed/ }))?.text).toMatch(/priority_dev_dir/)
+  expect((await ui.find({ key: 'history-1' }))?.text).toMatch(/^#1 \d\d:\d\d blocked P1/)
+  await ui.press({ key: 'history-1' })
+  expect((await ui.find({ key: 'title' }))?.text).toMatch(/^#1 /)
+  expect(await ui.find({ key: 'send' })).toBeUndefined()
+  expect(await ui.find({ key: 'step-0' })).toBeUndefined()
+  expect(await ui.find({ key: 'right-1' })).toBeDefined()
   await ui.unmount()
 })

@@ -44,9 +44,9 @@
     },
     {
       "name": "cobuilder-priority",
-      "description": "Read each stop of a live session with the priority-dev interpreter, and mark each reading",
+      "description": "Read each stop of a live session with the priority-dev interpreter, mark each reading, and send the chosen steps",
       "source": "./plugins/cobuilder-priority",
-      "version": "0.1.0"
+      "version": "0.2.0"
     }
   ]
 }

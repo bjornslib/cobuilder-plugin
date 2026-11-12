@@ -2,7 +2,7 @@
 // It starts the priority-dev CLI as a process and never imports priority-dev (ADR-0045, ADR-0049).
 import { atom, read as readAtom, update } from 'claude-code'
 import type { PluginOptions } from 'claude-code'
-import type { Reading, ReadingResult } from '../types'
+import type { Digest, Reading, ReadingResult } from '../types'
 
 // The pane reads the same tick, so a write here redraws it.
 const tick = atom({ plugin: 'cobuilder-priority', key: 'tick' } as const, 0)
@@ -20,6 +20,9 @@ let waiting: StopJob | null = null
 
 export const readingsKey = (sessionId: string) => `readings:${sessionId}`
 
+// True while a reading runs. The pane shows it as running….
+export const isBusy = () => busy
+
 // Puts the stop in the queue and starts a reading when none runs. Only the newest waiting stop is kept.
 export function enqueue($: any, job: StopJob, options: PluginOptions): void {
   waiting = job
@@ -33,6 +36,7 @@ async function drain($: any, options: PluginOptions): Promise<void> {
       const job = waiting
       waiting = null
       if (!(await readAtom($, switchedOn))) continue
+      await update($, tick, (n) => n + 1)
       await save($, await read($, job, options))
     }
   } finally {
@@ -56,7 +60,8 @@ async function read($: any, job: StopJob, options: PluginOptions): Promise<Omit<
     const label = brief === 'digest-current' ? 'current' : 'previous'
     const args = ['interpret', job.transcript, '--log-dir', LOG_DIR, '--program', base.program, '--digest', label]
     const result = (await cli($, args, options)) as ReadingResult
-    return { ...base, brief, state: 'done', result, ms: Date.now() - started }
+    const kept = isAbstain(digest) ? {} : { digest: digest as Digest }
+    return { ...base, brief, state: 'done', result, ...kept, ms: Date.now() - started }
   } catch (err) {
     return failed(String((err as Error)?.message ?? err))
   }
@@ -100,6 +105,9 @@ async function cli($: any, args: string[], options: PluginOptions): Promise<unkn
 async function save($: any, reading: Omit<Reading, 'n'>): Promise<void> {
   const key = readingsKey(reading.sessionId)
   const list = ((await $.store.get(key)) as Reading[] | undefined) ?? []
-  await $.store.set(key, [...list, { ...reading, n: list.length + 1 }])
-  await update($, tick, (n) => n + 1)
+  const n = list.length + 1
+  await $.store.set(key, [...list, { ...reading, n }])
+  // At a stop the session waits for the next prompt. The status line says a reading is ready.
+  $.ui.status(`Priority reader · #${n} ready${reading.result?.needs_human ? ' · needs you' : ''}`)
+  await update($, tick, (t) => t + 1)
 }

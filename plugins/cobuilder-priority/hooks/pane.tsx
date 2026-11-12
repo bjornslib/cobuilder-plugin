@@ -1,58 +1,57 @@
-// The reader pane: one card per live reading of this session, newest first, with its marks.
-import { atom, read, update } from 'claude-code'
-import type { Mark, Reading, Verdict } from '../types'
-import { readingsKey } from './reader'
+// The reader pane, layout C: header, agent summary, one open card, and the history of this session.
+import { atom, read } from 'claude-code'
+import type { Act, Mark, Reading } from '../types'
+import { EMPTY, actFor, marksKey, openCard, toggleSummary } from './act'
+import { card, keyed } from './card'
+import { isBusy, readingsKey } from './reader'
 
 const switchedOn = atom({ plugin: 'cobuilder-priority', key: 'on' } as const, false)
 const tick = atom({ plugin: 'cobuilder-priority', key: 'tick' } as const, 0)
+const act = atom({ plugin: 'cobuilder-priority', key: 'act' } as const, EMPTY)
 
 export const PANE_ID = 'priority-reader'
 
-const marksKey = (sessionId: string) => `marks:${sessionId}`
-
 export async function openPane($: any): Promise<void> {
-  await $.ui.open({ id: PANE_ID, title: 'Priority reader' })
+  await $.ui.open({ id: PANE_ID, title: 'Priority reader', focus: true, columns: 60 })
 }
 
-async function saveMark($: any, sessionId: string, n: number, change: Partial<Mark>): Promise<void> {
-  const key = marksKey(sessionId)
-  const marks = ((await $.store.get(key)) as Record<string, Mark> | undefined) ?? {}
-  const old = marks[String(n)] ?? { verdict: null, note: '' }
-  await $.store.set(key, { ...marks, [String(n)]: { ...old, ...change, at: new Date().toISOString() } })
-  await update($, tick, (t) => t + 1)
-}
-
-function stepLine(step: Record<string, unknown>): string {
-  const { kind, ...rest } = step
-  const body = Object.values(rest).map((v) => (typeof v === 'string' ? v : JSON.stringify(v))).join(' · ')
-  return `${String(kind)}: ${body}`
-}
-
-function headline(r: Reading): string {
-  if (r.state === 'failed') return `failed: ${r.error ?? ''}`
-  const res = r.result
-  if (!res) return 'no result'
-  if (res.abstain) return `abstain: ${res.abstain.reason}${res.abstain.detail ? ` (${res.abstain.detail})` : ''}`
-  const human = res.needs_human ? 'needs human' : 'no human needed'
-  return `${res.status ?? '-'} · ${res.priority ?? '-'} · ${human}`
-}
-
-function card($: any, ui: any, r: Reading, mark: Mark | undefined) {
-  const { Box, Text, Button, Input } = ui
-  const time = r.at.slice(11, 16)
-  const mark$ = (change: Partial<Mark>) => () => void saveMark($, r.sessionId, r.n, change)
-  const verdict = (v: Verdict) => (mark?.verdict === v ? `${v} ✓` : v)
+function header(ui: any, on: boolean, count: number) {
+  const { Box, Text } = ui
   return (
-    <Box key={`stop-${r.n}`} flexDirection="column" marginBottom={1}>
-      <Text bold>{`Reading ${r.n} · ${time} · ${(r.ms / 1000).toFixed(0)} s · ${r.brief}`}</Text>
-      <Text>{headline(r)}</Text>
-      {(r.result?.steps ?? []).map((s) => <Text dimColor>{`  ${stepLine(s)}`}</Text>)}
-      <Box flexDirection="row">
-        <Button key={`right-${r.n}`} label={verdict('right')} onPress={mark$({ verdict: 'right' })} />
-        <Button key={`wrong-${r.n}`} label={verdict('wrong')} onPress={mark$({ verdict: 'wrong' })} />
-      </Box>
-      <Input key={`note-${r.n}`} label="note" value={mark?.note ?? ''} placeholder="why" submitLabel="save"
-        onSubmit={(text: string) => void saveMark($, r.sessionId, r.n, { note: text })} />
+    <Box key="header" flexDirection="row" columnGap={2}>
+      <Text bold>Priority reader</Text>
+      {keyed(ui, 'state', on ? '● on' : '○ off', on ? { color: 'green' } : { dimColor: true })}
+      {keyed(ui, 'count', `${count} readings`, { dimColor: true })}
+      {isBusy() ? keyed(ui, 'running', 'running…', { color: 'yellow' }) : null}
+    </Box>
+  )
+}
+
+function summary($: any, ui: any, r: Reading, closed: boolean) {
+  const { Box, Button } = ui
+  const body = r.digest ? `${r.digest.ran} ${r.digest.result}` : 'No digest for this stop'
+  return (
+    <Box key="summary-box" flexDirection="column" borderStyle="single" paddingX={1}>
+      <Button key="summary" plain hotkey="m" label={`${closed ? '▸' : '▾'} Agent completed`} onPress={() => void toggleSummary($)} />
+      {closed ? null : keyed(ui, 'summary-body', body, { dimColor: !r.digest, wrap: 'wrap' })}
+    </Box>
+  )
+}
+
+// Pressing the newest row returns to the live card, so a later reading still opens on top.
+function history($: any, ui: any, rows: Reading[], marks: Record<string, Mark>, newest: number) {
+  const { Box, Text, Button } = ui
+  if (!rows.length) return null
+  const sign = (m?: Mark) => (m?.verdict === 'right' ? '✓' : m?.verdict === 'wrong' ? '✗' : '-')
+  const line = (r: Reading) => {
+    const res = r.result
+    const what = r.state === 'failed' ? 'failed' : res?.abstain ? `abstain · ${res.abstain.reason}` : `${res?.status ?? '-'} ${res?.priority ?? ''}`
+    return `#${r.n} ${r.at.slice(11, 16)} ${what.trim()}  ${sign(marks[String(r.n)])}`
+  }
+  return (
+    <Box key="history" flexDirection="column">
+      <Text dimColor>History</Text>
+      {rows.map((r) => <Button key={`history-${r.n}`} plain label={line(r)} onPress={() => void openCard($, r.n === newest ? null : r.n)} />)}
     </Box>
   )
 }
@@ -61,18 +60,26 @@ export async function renderPane($: any, e: any) {
   const ui = $.ui.resolve(e)
   const { Box, Text } = ui
   await read($, tick)
+  await read($, act)
   const sessionId = await $.session.id()
   const readings = ((await $.store.get(readingsKey(sessionId))) as Reading[] | undefined) ?? []
   const marks = ((await $.store.get(marksKey(sessionId))) as Record<string, Mark> | undefined) ?? {}
   const on = await read($, switchedOn)
-  if (readings.length === 0) {
+  const newest = readings[readings.length - 1]
+  if (!newest) {
     const hint = on ? 'No reading yet. The next stop starts one.' : 'The reader is off. Run /priority-on to read each stop.'
-    return <Box flexDirection="column"><Text dimColor>{hint}</Text></Box>
+    return <Box flexDirection="column">{header(ui, on, 0)}<Text dimColor>{hint}</Text></Box>
   }
+  const a: Act = await actFor($, newest.n)
+  const shown = readings.find((r) => r.n === a.open) ?? newest
+  const live = shown.n === newest.n
+  const others = readings.filter((r) => r.n !== shown.n).reverse()
   return (
-    <Box flexDirection="column">
-      <Text dimColor>{`Reader: ${on ? 'on' : 'off'} · ${readings.length} readings`}</Text>
-      {[...readings].reverse().map((r) => card($, ui, r, marks[String(r.n)]))}
+    <Box flexDirection="column" rowGap={1}>
+      {header(ui, on, readings.length)}
+      {summary($, ui, shown, a.summaryClosed)}
+      {card($, ui, shown, marks[String(shown.n)], a, live)}
+      {history($, ui, others, marks, newest.n)}
     </Box>
   )
 }

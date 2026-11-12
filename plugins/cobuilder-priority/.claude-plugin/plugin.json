@@ -1,7 +1,7 @@
 {
   "name": "cobuilder-priority",
-  "version": "0.1.0",
-  "description": "Read each stop of a live session with the priority-dev interpreter, and mark each reading",
+  "version": "0.2.0",
+  "description": "Read each stop of a live session with the priority-dev interpreter, mark each reading, and send the chosen steps",
   "author": { "name": "Bjorn Schliebitz" },
   "repository": "https://github.com/bjornslib/cobuilder-plugin",
   "license": "MIT",
