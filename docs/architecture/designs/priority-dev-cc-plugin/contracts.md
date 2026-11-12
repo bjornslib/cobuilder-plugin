@@ -172,7 +172,7 @@ passed.
 | `approve_permission` | yes | `Yes, go ahead.` With `scope: session`, the line adds `You may do the same for the rest of this session.` |
 | `deny_permission` | yes | `No, do not do that.` and the `reason` |
 | `pick_option` | yes | `Option <index + 1>.` |
-| `notify` | no | none. The card shows the excerpt |
+| `notify` | no | none. From slice E3.9, the row above the prompt shows the message, and the card does not |
 | `snooze`, `dismiss` | no | none. The card shows the kind |
 | `interrupt` | no | none. A stop has no running turn to stop. The card shows it dimmed, with "no target at a stop" |
 
@@ -331,7 +331,9 @@ one row.
 questions of an `ask_human` step. The pane shows the exact draft. `Send`
 submits it as a user prompt, `Edit` puts it in the prompt box, and the mark
 records what was sent. The pane follows layout C, with the agent summary
-at the top.
+at the top and a fixed key row under the header. Notifications move to a
+row above the prompt, and a toast tells the person when a reading needs
+them.
 
 **Depends on.** E1 (the reading and the store) and E2 (the pane and the
 marks). Both are built.
@@ -353,6 +355,14 @@ changes. Each file stays under 200 lines.
 | E3.6 Show a running reading (not built) | From the engineer's live run: after the first reading, a new run was not clear. A moving one-cell indicator (`⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏`) stands to the left of `running…`. The reader starts `$.clock.every(120, …)` when a reading starts, and the callback adds 1 to the `tick` atom, which redraws the pane. `cancel()` runs when the reading ends. While the reading runs, the previous summary, card and draft turn dim under a `Reading stop #<n+1>…` row, and Send and Edit do nothing. | A pane test drives a Stop with a pending `$.process.run`, advances the mocked clock, and finds a new indicator frame, the `Reading stop` row, and no submit call on a press of `s`. When the stub resolves, the test finds the new card and no indicator. A live look confirms that the indicator moves. |
 | E3.7 Fixed key row (not built) | The row `s Send · e Edit · r Right · w Wrong · m Summary` stands directly under the header, so the pane never cuts it off. A key that cannot act now is dim: Send and Edit with no selection or while a reading runs. The action row under the draft goes away. The note field stays at the bottom. | A pane test finds the key row as the second row, and finds `send` dim with no selection. |
 | E3.8 Plain names (not built) | The pane shows each raw value of the model as plain text, from the table in "Plain names" below. The stored reading and the label file keep the raw values. | A unit test maps every value in the table. A pane test finds `Waits for your answer` and `P1 High`, and no raw value with an underscore. |
+
+| E3.9 Row above the prompt (not built) | A `ui.render` hook on `{ component: 'AbovePrompt' }` draws the newest reading's `notify` messages, one row each, as `Notification: <message>`. The pane no longer shows `notify` steps. When the pane is not open at all, the hook also draws one summary row: `Priority reader · #<n> · P1 High · Waits for your answer · needs you`. With no reading and the pane open, the hook returns `next(e)`. | A render test with a `notify` step finds the message above the prompt and not in the pane. With the pane closed, the test finds the summary row. With no `notify` step and the pane open, the hook draws nothing. |
+| E3.10 Toast when a reading needs the person (not built) | When a new reading has `needs_human: true`, the reader calls `$.ui.toast("Priority reader · #<n> needs you")` once. | A reader test finds one toast for a `needs_human` reading and none for the others. |
+| E3.11 Record the answer labels (not built) | The engineer's concern: this repo's `CLAUDE.md` makes the agent split each answer into FYI, Summary, Next steps, and Decisions and questions. The digest may read well only because of that structure. Each reading records `labels`, the label words found at the start of lines in the last agent message, with no model call. The marks can then be split by `labels`, to show if the readings are worse in a repo without the structure. The digest and the interpreter do not change. | A unit test finds the four labels in a labelled message and none in a plain message. A reader test finds `labels` on the stored reading. |
+
+Do not judge the digest's quality from this repo alone. After E3.11, a
+week of use includes sessions in a repo with no response structure. If the right-rate of the marks with no labels is clearly lower,
+the next design asks the digest to read the agent's own labelled parts.
 
 ### Plain names
 
@@ -383,7 +393,7 @@ The engineer chose these names on 2026-11-13. Only the pane uses them.
 
 ### Done when
 
-- The eight slice checks pass under `claude plugin test plugins/cobuilder-priority`.
+- The eleven slice checks pass under `claude plugin test plugins/cobuilder-priority`.
 - `tsc` and `claude plugin validate` pass.
 - In a live session, one press of `s` with two selected steps starts one
   user turn that holds both draft lines, and the next stop gets a new card.

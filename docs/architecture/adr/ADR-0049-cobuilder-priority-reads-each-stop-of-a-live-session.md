@@ -63,6 +63,7 @@ history:
   - { state: decided, date: 2026-11-12, note: "Review round 2. The engineer asked to act on the selected steps. The pane sends one draft to the main session on a press, and the pane layout is part of the design." }
   - { state: decided, date: 2026-11-12, note: "The first live run failed on empty settings. The umbrella install gets an optional step that writes pluginConfigs, only when cobuilder-priority is installed (slice E1.5)." }
   - { state: approved, date: 2026-11-13, by: bjornslib, note: "Approved by the engineer in session, after a successful live run of the digest, the reading, and the steps." }
+  - { state: approved, date: 2026-11-13, note: "Live-run feedback, slices E3.6 to E3.11, not built. The mod also draws in the AbovePrompt slot: notify messages, and a summary row when the pane is closed. A needs_human reading raises a toast. Each reading records the response labels of the agent's answer, so the marks show if the digest depends on them." }
 maps_to:
   context: cobuilder-packaging
   modules: [plugins/cobuilder-priority, priority-dev/src/priority/cli.py, priority-dev/src/priority/brief, tests/test_plugin_manifests.py, .claude-plugin/marketplace.json]
