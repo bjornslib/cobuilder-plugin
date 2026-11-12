@@ -237,8 +237,23 @@ _Avoid_: draft review (the architect stage 6 pre-review, which proposes survivor
 
 <a id="structure-signal"></a>
 **Structure signal** (`implement`):
-A report from `shared/structure_signals.py` about where a new file sits or what its name says: a crowded folder, a name-stem cluster, or a generic file name. It is advice, it fires only for a file that is untracked or added since the merge-base, and it stays outside the slice score (ADR-0048).
-_Avoid_: mechanical smell (a pattern inside one file that habit-sensors counts), finding (an `assessment.json` entry, judged by a curator)
+A kind of structure fact that a script reports, such as a crowded folder, a name-stem cluster, a generic file name, a boundary edge, contract drift, or duplicated code. It is advice that stays outside the slice score, and the new-code rule limits it in the change view (ADR-0048).
+_Avoid_: mechanical smell (a pattern inside one file that habit-sensors counts), finding without the word structure (an `assessment.json` entry, judged by a curator)
+
+<a id="structure-finding"></a>
+**Structure finding** (`implement`):
+One result of a structure signal for one path, with its facts, which code names `structure_signals.Finding` and JSON holds under `findings`. VALIDATE labels it confirmed, accepted, or dismissed, and review mode labels it debt, accepted, or false.
+_Avoid_: issue, smell
+
+<a id="new-code-rule"></a>
+**New-code rule** (`implement`):
+A structure signal reports only on code that the change adds: for the coach a file that is untracked or added since the merge-base, and for VALIDATE the slice diff. The whole-repository view does not use the rule (ADR-0048 decisions 3 and 16).
+_Avoid_: ratchet
+
+<a id="structure-coaching"></a>
+**Structure coaching** (`implement`):
+The second runner of the coach. `structure_runner.py` turns the structure findings for one GREEN write into text, and the coach joins it to the habit-hooks text.
+_Avoid_: structure check (it never blocks a write)
 
 ## cobuilder-memory
 

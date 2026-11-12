@@ -1,13 +1,13 @@
 {
   "schema_version": "1.5",
   "sources": {
-    "git_head": "fd9730707c7ef8d7aaabd846ca1dcc0c6ae5030c",
+    "git_head": "bbaca66a54524847d0fc1a2a04307f081fb78110",
     "trees": {
       "docs/architecture/adr": "sha256:dacdd4f1b42d327dcd4f0b33a5fc4636abab702bd77c08045f4f6ebeb016b316",
       "docs/architecture/designs": "sha256:9faf06636e9f4782a1f46ae5507cdec60c96faf0c5824b0a4e154b1b0898c650",
       "docs/architecture/contexts": "sha256:aaf923ca84433a8c5a152bf846f749e852a293aca14e38801bf9a3c84faba20a",
-      "docs/plans": "sha256:5babdc2a0ae718e084a198e2e46e36e2ae5216ad424a009bbeb0af94d586393c",
-      ".cobuilder/rubrics": "sha256:693b345dded680ddd33dca6eeedfdebf88361f97f97f818d9dc0cf11d7a1a2ee"
+      "docs/plans": "sha256:9d7c0af6cc724b65f8089dfa2a9d05d51f0bd6057066878d11311f38a974fa68",
+      ".cobuilder/rubrics": "sha256:cba90ec221017fa5ad916a121a86b9fa0fce6bfb687a8e80947ef048054f278b"
     }
   },
   "entities": {
@@ -4922,9 +4922,9 @@
         "n": 1,
         "title": "Tracer bullet: a crowded folder reaches GREEN",
         "ends_with": "A GREEN write of a new file into a crowded folder gives a coach message that names the folder, its file count, and the limit. A write of an old file gives no structure text. The spike transcript is kept.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "structure-coaching/2",
@@ -8984,7 +8984,7 @@
       },
       "structure-coaching": {
         "stage_source": "tracker",
-        "next_ready": "structure-coaching/1",
+        "next_ready": "structure-coaching/2",
         "pull_requests": []
       },
       "ubiquitous-language": {

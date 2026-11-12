@@ -1112,3 +1112,194 @@ def test_coach_check_mode_proof_step_names_the_check_output_prefixes():
         assert f'"{prefix}"' in section, (
             f"Coach-check mode does not quote the check() output prefix {prefix!r}"
         )
+
+
+# ---------------------------------------------------------------------------
+# Structure coaching, slice 1: the second runner joins its text to the coach
+# ---------------------------------------------------------------------------
+
+COMMIT_OPTIONS = ("-c", "user.name=t", "-c", "user.email=t@t", "-c", "commit.gpgsign=false")
+
+
+class FakeStructure:
+    """Record each call to the structure runner and return a canned (code, text) result."""
+
+    def __init__(self, result: tuple[int, str]):
+        self.result = result
+        self.calls: list[tuple[str, str | None]] = []
+
+    def __call__(self, path: str, session_id: str | None) -> tuple[int, str]:
+        self.calls.append((path, session_id))
+        return self.result
+
+
+def _committed_folder_repo(tmp_path: Path, folder: str, count: int) -> Path:
+    """Return a repo whose folder holds count Python files, all in the first commit."""
+    repo = _init_repo(tmp_path).resolve()
+    for index in range(count):
+        _track(repo, f"{folder}/mod_{index:02d}.py")
+    _git(repo, *COMMIT_OPTIONS, "commit", "-q", "-m", "base")
+    return repo
+
+
+def _numbers_outside(text: str, repo: Path) -> set[int]:
+    """Return the integers in text, read after the temp path of repo is removed."""
+    return {int(found) for found in re.findall(r"\d+", text.replace(str(repo), ""))}
+
+
+def test_main_joins_habit_hooks_text_and_structure_text_and_returns_zero(habit_coach):
+    _require_param(habit_coach.main, "structure")
+    runner = FakeRunner((1, "too-many-parameters: coaching text"))
+    structure = FakeStructure((1, "structure signal text"))
+    stdin = io.StringIO(json.dumps(_green_payload("/x/a.py")))
+    stdout = io.StringIO()
+
+    rc = habit_coach.main(stdin, stdout, runner=runner, structure=structure)
+
+    assert rc == 0
+    context = json.loads(stdout.getvalue().strip())["hookSpecificOutput"]["additionalContext"]
+    assert "too-many-parameters: coaching text" in context
+    assert "structure signal text" in context
+
+
+def test_main_reports_structure_text_when_habit_hooks_is_clean(habit_coach):
+    _require_param(habit_coach.main, "structure")
+    structure = FakeStructure((1, "structure signal text"))
+    stdout = io.StringIO()
+
+    rc = habit_coach.main(
+        io.StringIO(json.dumps(_green_payload("/x/a.py"))),
+        stdout,
+        runner=FakeRunner((0, "")),
+        structure=structure,
+    )
+
+    assert rc == 0
+    context = json.loads(stdout.getvalue().strip())["hookSpecificOutput"]["additionalContext"]
+    assert "structure signal text" in context
+
+
+def test_main_writes_nothing_when_both_runners_are_clean(habit_coach):
+    _require_param(habit_coach.main, "structure")
+    stdout = io.StringIO()
+
+    rc = habit_coach.main(
+        io.StringIO(json.dumps(_green_payload("/x/a.py"))),
+        stdout,
+        runner=FakeRunner((0, "")),
+        structure=FakeStructure((0, "")),
+    )
+
+    assert rc == 0
+    assert stdout.getvalue() == ""
+
+
+def test_main_passes_the_written_path_and_session_id_to_the_structure_runner(habit_coach):
+    _require_param(habit_coach.main, "structure")
+    payload = _green_payload("/x/a.py")
+    payload["session_id"] = "session-one"
+    structure = FakeStructure((0, ""))
+
+    habit_coach.main(
+        io.StringIO(json.dumps(payload)),
+        io.StringIO(),
+        runner=FakeRunner((0, "")),
+        structure=structure,
+    )
+
+    assert structure.calls == [("/x/a.py", "session-one")]
+
+
+@pytest.mark.parametrize("agent_type", ["implement:red", "implement:validate"])
+def test_main_non_green_agent_types_skip_the_structure_runner(habit_coach, agent_type):
+    _require_param(habit_coach.main, "structure")
+    payload = _green_payload("/x/a.py")
+    payload["agent_type"] = agent_type
+    structure = FakeStructure((1, "should not be seen"))
+    stdout = io.StringIO()
+
+    rc = habit_coach.main(
+        io.StringIO(json.dumps(payload)),
+        stdout,
+        runner=FakeRunner((0, "")),
+        structure=structure,
+    )
+
+    assert rc == 0
+    assert stdout.getvalue() == ""
+    assert structure.calls == []
+
+
+def test_green_write_of_new_file_in_crowded_folder_names_folder_count_and_limit(
+    habit_coach, tmp_path
+):
+    repo = _committed_folder_repo(tmp_path, "src/pkg", 20)
+    new = repo / "src/pkg/new_module.py"
+    new.write_text("x = 1\n")
+    stdout = io.StringIO()
+
+    rc = habit_coach.main(
+        io.StringIO(json.dumps(_green_payload(str(new)))),
+        stdout,
+        runner=FakeRunner((0, "")),
+    )
+
+    assert rc == 0
+    out_text = stdout.getvalue().strip()
+    assert out_text, "expected a structure message on stdout, got nothing"
+    context = json.loads(out_text)["hookSpecificOutput"]["additionalContext"]
+    assert "src/pkg" in context
+    assert {21, 20} <= _numbers_outside(context, repo)
+
+
+def test_green_write_of_old_file_in_crowded_folder_gives_no_structure_text(
+    habit_coach, tmp_path
+):
+    repo = _committed_folder_repo(tmp_path, "src/pkg", 25)
+    new = repo / "src/pkg/new_module.py"
+    new.write_text("x = 1\n")
+    control = io.StringIO()
+    habit_coach.main(
+        io.StringIO(json.dumps(_green_payload(str(new)))),
+        control,
+        runner=FakeRunner((0, "")),
+    )
+    assert control.getvalue().strip(), "control: a new file in the same folder must get text"
+
+    old = repo / "src/pkg/mod_00.py"
+    old.write_text("x = 2\n")
+    stdout = io.StringIO()
+    rc = habit_coach.main(
+        io.StringIO(json.dumps(_green_payload(str(old)))),
+        stdout,
+        runner=FakeRunner((0, "")),
+    )
+
+    assert rc == 0
+    assert stdout.getvalue() == ""
+
+
+def test_e2e_hook_process_names_the_crowded_folder_for_a_new_file(tmp_path):
+    repo = _committed_folder_repo(tmp_path, "src/pkg", 20)
+    new = repo / "src/pkg/new_module.py"
+    new.write_text("x = 1\n")
+    clean_bin = _stub_bin(tmp_path, "clean-bin", "", 0)
+    env = dict(os.environ)
+    env["PATH"] = f"{clean_bin}{os.pathsep}{os.environ.get('PATH', '')}"
+
+    proc = subprocess.run(
+        [sys.executable, str(HABIT_COACH_PATH)],
+        cwd=str(repo),
+        env=env,
+        input=json.dumps(_green_payload(str(new))),
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+
+    assert proc.returncode == 0, f"stdout={proc.stdout!r} stderr={proc.stderr!r}"
+    out_text = proc.stdout.strip()
+    assert out_text, f"expected a structure message, got stdout={proc.stdout!r} stderr={proc.stderr!r}"
+    context = json.loads(out_text)["hookSpecificOutput"]["additionalContext"]
+    assert "src/pkg" in context
+    assert {21, 20} <= _numbers_outside(context, repo)
