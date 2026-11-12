@@ -8,8 +8,8 @@ from __future__ import annotations
 import posixpath
 import re
 
-from structure_config import Config
-from structure_types import Finding
+from .config import Config
+from .types import Finding
 
 EXAMPLES_MAX = 5
 _SEPARATORS = re.compile(r"[_\-.\s]+")

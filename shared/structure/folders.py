@@ -7,9 +7,9 @@ from __future__ import annotations
 import math
 import posixpath
 
-from structure_config import Config
-from structure_names import family_text, folder_of
-from structure_types import Finding
+from .config import Config
+from .names import family_text, folder_of
+from .types import Finding
 
 
 def folder_counts(files: list[str]) -> dict[str, int]:

@@ -31,14 +31,19 @@ def render(finding: structure_signals.Finding) -> str:
     )
 
 
-def run(path: str, session_id: str | None) -> tuple[int, str]:
-    """Return (1, text) with one line for each finding, or (0, "") when there is none.
+COACH_SIGNALS = ("crowded-folder", "name-stem-cluster", "generic-name")
 
+
+def run(path: str, session_id: str | None) -> tuple[int, str]:
+    """Return (1, text) with one line for each coach finding, or (0, "") when there is none.
+
+    The boundary edge is for VALIDATE, so the coach does not show it.
     session_id is not used yet. The session record arrives in a later slice.
     """
     folder = Path(os.path.dirname(os.path.abspath(path)))
     config = structure_signals.load_config(folder)
     report = structure_signals.signals_for(path, folder, config)
-    if not report.findings:
+    shown = [finding for finding in report.findings if finding.signal in COACH_SIGNALS]
+    if not shown:
         return 0, ""
-    return 1, "\n".join(render(finding) for finding in report.findings)
+    return 1, "\n".join(render(finding) for finding in shown)

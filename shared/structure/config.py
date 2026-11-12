@@ -12,7 +12,7 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
-from structure_git import try_repo_top
+from .git import try_repo_top
 
 CONFIG_RELPATH = ".cobuilder/structure-signals.json"
 
@@ -139,11 +139,14 @@ def drop_excluded(files: list[str], config: Config) -> tuple[list[str], tuple[st
         else:
             removed[glob] = removed.get(glob, 0) + 1
     lines = tuple(
-        f"{glob}: {_count_files(removed[glob])} not analysed."
-        for glob in config.excluded_paths
-        if glob in removed
+        glob_line(glob, removed[glob]) for glob in config.excluded_paths if glob in removed
     )
     return kept, lines
+
+
+def glob_line(glob: str, count: int) -> str:
+    """Return the not_analysed line for the files that one glob removed."""
+    return f"{glob}: {_count_files(count)} not analysed."
 
 
 def _count_files(count: int) -> str:

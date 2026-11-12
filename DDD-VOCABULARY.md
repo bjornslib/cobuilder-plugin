@@ -250,6 +250,16 @@ _Avoid_: issue, smell
 A group of two or more non-test files in one folder that share a first name token, which a crowded-folder finding lists in its `families` fact. A name family of `cluster_min` files or more, with no sub-folder of that name, is also a name-stem cluster.
 _Avoid_: cluster for a group of two
 
+<a id="import-group"></a>
+**Import group** (`implement`):
+A connected set of two or more sibling files in one folder, where each file imports another file of the set or is imported by one. A crowded-folder finding lists the import groups of its folder in its `components` fact, and names the group or family that a new file joins in its `nearest_group` fact.
+_Avoid_: component (a part of the viewer or of a C4 diagram)
+
+<a id="boundary-edge-finding"></a>
+**Boundary-edge finding** (`implement`):
+A structure finding for a reference, an import or a path string, from a file to a bounded context that its `boundary.yaml` does not allow, or to a path that a `forbidden_dependencies` glob names. In code it is the signal `boundary-edge`, which `shared/structure/boundary.py` reports.
+_Avoid_: boundary edge alone (a protocol-labelled line in a runtime diagram)
+
 <a id="new-code-rule"></a>
 **New-code rule** (`implement`):
 A structure signal reports only on code that the change adds: for the coach a file that is untracked or added since the merge-base, and for VALIDATE the slice diff. The whole-repository view does not use the rule (ADR-0048 decisions 3 and 16).
