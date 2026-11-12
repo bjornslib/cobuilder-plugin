@@ -7,12 +7,12 @@ Memory before Gate 3: absent. The `consult` tool answered that the Hindsight ser
 | File | New or changed | Reason |
 |---|---|---|
 | `shared/structure_signals.py` | New | The three signals and the new-file rule. Standard library only, so the coach can import it without `uv`. About 180 lines. |
-| `shared/structure_boundary.py` | New | The stdlib import reader, the import groups of a folder, and the boundary edge. E4 and E6 reuse it. Slice 10. |
+| `shared/structure/boundary.py` | New | The stdlib import reader, the import groups of a folder, and the boundary edge. E4 and E6 reuse it. Slice 10. |
 | `shared/structure_evidence.py` | New | The VALIDATE packet for a slice diff (E4), and the whole-repository record (E6). Run with `uv run`, so it may use PyYAML. |
-| `shared/structure_drift.py` | New | The public surface of a Python file with `ast`, and the drift events. Slice 8. |
-| `shared/structure_duplicates.py`, `shared/structure_locality.py` | New | Duplicated code and consumer locality, for VALIDATE (slice 11) and the whole repository (E6). |
-| `shared/structure_vocabulary.py` | New | The glossary index and the vocabulary leads. Slice 12. |
-| `shared/structure_repo.py` | New | The whole-repository run, the folder table, the change count, and the trend. Slice 13. |
+| `shared/structure/drift.py` | New | The public surface of a Python file with `ast`, and the drift events. Slice 8. |
+| `shared/structure/duplicates.py`, `shared/structure/locality.py` | New | Duplicated code and consumer locality, for VALIDATE (slice 11) and the whole repository (E6). |
+| `shared/structure/vocabulary.py` | New | The glossary index and the vocabulary leads. Slice 12. |
+| `shared/structure/repo.py` | New | The whole-repository run, the folder table, the change count, and the trend. Slice 13. |
 | `plugins/implement/skills/build/references/structure-judgment.md` | New | The decision questions that VALIDATE answers for each finding. Slice 8. |
 | `plugins/implement/agents/vocabulary.md` | Changed | Reads the leads from the packet, with one rule for AVOID. Slice 12. |
 | `plugins/architect/skills/architecture/SKILL.md` and `references/structure-review.md` | Changed and new | Review mode and maintenance mode run the whole-repository record and report its trend. Slice 14. |
@@ -129,10 +129,10 @@ VALIDATE, after it scores the rubric (E4, `epic-E4-design.md`):
 VALIDATE
 ├── uv run <structure_evidence.py> --base <slice base> --out <evidence>/slice-N-packet.json
 │   ├── slice_files / added_lines            # the slice diff
-│   ├── structure_drift.drift_events         # Python contract drift
-│   ├── structure_boundary.boundary_edges    # added files and added lines
+│   ├── structure.drift.drift_events         # Python contract drift
+│   ├── structure.boundary.boundary_edges    # added files and added lines
 │   ├── structure_duplicates / structure_locality (slice 11)
-│   └── structure_vocabulary.vocabulary_leads (slice 12)
+│   └── structure.vocabulary.vocabulary_leads (slice 12)
 ├── reads structure-judgment.md
 └── writes ### Structure: a label for each finding, then
     contract drift, cohesion, and dependencies
@@ -146,8 +146,8 @@ Review and maintenance (E6, `epic-E6-design.md`):
 ```
 architecture skill, review mode
 └── uv run <structure_evidence.py> --repo --out docs/architecture/review/<run>/structure-findings.json [--since <sha>]
-    └── structure_repo.repo_findings -> findings by change count, folder table
-maintenance mode -> structure_repo.compare_findings(previous, current) -> trend tags
+    └── structure.repo.repo_findings -> findings by change count, folder table
+maintenance mode -> structure.repo.compare_findings(previous, current) -> trend tags
 ```
 
 Slice close:

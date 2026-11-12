@@ -5,14 +5,14 @@ Epic ID: E1
 
 ## Scope and Intent
 
-E1 builds the coach signals in two stdlib scripts. `shared/structure_signals.py` holds the file list, the new-code rule, the crowded folder with its groups, the name family, and the generic name. `shared/structure_boundary.py` holds the import reader and the boundary edge, which E4 reuses. Slice 1 is also the spike. It proves that a second runner in the coach can carry a folder signal to GREEN. If it cannot, the first abort rule of the design applies, and the work stops. E1 does not apply the approved wording. Slice 1 uses a plain text that slice 4 replaces.
+E1 builds the coach signals in two stdlib scripts. `shared/structure_signals.py` holds the file list, the new-code rule, the crowded folder with its groups, the name family, and the generic name. `shared/structure/boundary.py` holds the import reader and the boundary edge, which E4 reuses. Slice 1 is also the spike. It proves that a second runner in the coach can carry a folder signal to GREEN. If it cannot, the first abort rule of the design applies, and the work stops. E1 does not apply the approved wording. Slice 1 uses a plain text that slice 4 replaces.
 
 The script reports facts. It does not judge them. GREEN reads the facts as advice, and VALIDATE judges them in the Structure block (E4).
 
 ## Files Touched
 
 - `shared/structure_signals.py` (new)
-- `shared/structure_boundary.py` (new, slice 10)
+- `shared/structure/boundary.py` (new, slice 10)
 - `tests/test_structure_boundary.py` (new, slice 10)
 - `plugins/implement/scripts/structure_runner.py` (new, a plain `run` only in slice 1)
 - `plugins/implement/scripts/habit_coach.py` (the second runner call)
@@ -174,7 +174,7 @@ The spike kept no new coach signal. The twin name gave 0 real findings in 14 on 
 
 1. **Slice 1, the tracer bullet.** Depends on nothing. A1 to A4 with the defaults in code, and A8 steps 1, 3, and 4 for one signal. Ends with a real coach message for a crowded folder.
 2. **Slice 2.** Depends on slice 1. A5 to A7, the families of A4, the excluded paths of A1, the config file, and the command of A8. Ends with all three signals, the config, and `not_analysed` on synthetic trees.
-3. **Slice 10.** Depends on slice 2. A9 and A10 in `shared/structure_boundary.py`. Ends with the import groups in a crowded-folder finding and a boundary edge on synthetic trees with synthetic boundary records.
+3. **Slice 10.** Depends on slice 2. First, move the helper modules of slices 1 and 2 (`structure_config`, `structure_folders`, `structure_git`, `structure_names`, `structure_types`) into the folder `shared/structure/`, as `config.py`, `folders.py`, `git.py`, `names.py`, and `types.py`. `shared/structure_signals.py` stays the entry point and re-exports each public name, so no test path changes. The reason: slice 2 put `shared` at 25 files, over the limit of 20, and E4 and E6 add about seven more modules. The plan follows its own advice. A9 and A10 in `shared/structure/boundary.py`. Ends with the import groups in a crowded-folder finding and a boundary edge on synthetic trees with synthetic boundary records.
 
 ## Test Plan
 

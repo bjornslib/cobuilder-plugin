@@ -12,10 +12,10 @@ Slice 8 is the tracer. It carries one signal, Python contract drift, plus the bo
 ## Files Touched
 
 - `shared/structure_evidence.py` (new, slice 8): the command, the slice diff, and the packet. PEP 723 header with `pyyaml`. The spike dropped TypeScript drift, so the first version needs no tree-sitter. VALIDATE runs it with `uv run`.
-- `shared/structure_drift.py` (new, slice 8): the public surface of a Python file with `ast`, and the drift events. Standard library only.
-- `shared/structure_vocabulary.py` (new, slice 12): the glossary index and the leads.
-- `shared/structure_duplicates.py` (new, slice 11): the duplicated-code index, shared with E6.
-- `shared/structure_locality.py` (new, slice 11): consumer locality from the import graph, shared with E6.
+- `shared/structure/drift.py` (new, slice 8): the public surface of a Python file with `ast`, and the drift events. Standard library only.
+- `shared/structure/vocabulary.py` (new, slice 12): the glossary index and the leads.
+- `shared/structure/duplicates.py` (new, slice 11): the duplicated-code index, shared with E6.
+- `shared/structure/locality.py` (new, slice 11): consumer locality from the import graph, shared with E6.
 - `plugins/implement/agents/validate.md` (slice 8): the step that runs the script and writes the block.
 - `plugins/implement/skills/build/references/structure-judgment.md` (new, slice 8): the decision questions for VALIDATE. Judgment lives in a reference, not in the script.
 - `plugins/implement/skills/build/references/slice-loop.md` (slice 8): record the slice base before RED, and pass the script path, the base, and the packet path to VALIDATE and VOCABULARY.
@@ -25,7 +25,7 @@ Slice 8 is the tracer. It carries one signal, Python contract drift, plus the bo
 ## Types & Signatures
 
 ```python
-# shared/structure_drift.py
+# shared/structure/drift.py
 @dataclass(frozen=True)
 class Surface:              # one public symbol
     name: str               # "f" or "Class.method"
@@ -45,7 +45,7 @@ def callers_untouched(root: Path, symbol: str, diff_files: set[str], cap: int = 
 def build_packet(root: Path, base: str) -> dict: ...
 def main(argv: list[str]) -> int: ...   # --base <sha>, --out <path>; prints the packet path
 
-# shared/structure_vocabulary.py
+# shared/structure/vocabulary.py
 def glossary_index(root: Path) -> list[dict]: ...   # term, context, avoid: [{word, reason}]
 def vocabulary_leads(names: list[str], index: list[dict]) -> dict: ...
 ```

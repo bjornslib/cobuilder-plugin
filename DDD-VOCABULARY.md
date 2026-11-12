@@ -245,6 +245,11 @@ _Avoid_: mechanical smell (a pattern inside one file that habit-sensors counts),
 One result of a structure signal for one path, with its facts, which code names `structure_signals.Finding` and JSON holds under `findings`. VALIDATE labels it confirmed, accepted, or dismissed, and review mode labels it debt, accepted, or false.
 _Avoid_: issue, smell
 
+<a id="name-family"></a>
+**Name family** (`implement`):
+A group of two or more non-test files in one folder that share a first name token, which a crowded-folder finding lists in its `families` fact. A name family of `cluster_min` files or more, with no sub-folder of that name, is also a name-stem cluster.
+_Avoid_: cluster for a group of two
+
 <a id="new-code-rule"></a>
 **New-code rule** (`implement`):
 A structure signal reports only on code that the change adds: for the coach a file that is untracked or added since the merge-base, and for VALIDATE the slice diff. The whole-repository view does not use the rule (ADR-0048 decisions 3 and 16).

@@ -7,7 +7,7 @@ Design record: `docs/architecture/designs/structure-coaching/`, decided in ADR-0
 | Module | Role today | Change |
 |---|---|---|
 | `shared/structure_signals.py` | None. A new file. | Finds the coach signals for one written file: a crowded folder with its groups, a name family, and a generic name. Standard library only. |
-| `shared/structure_boundary.py` | None. A new file. | Reads each `boundary.yaml` and the imports and path strings of a file, and finds each boundary edge. Standard library only. |
+| `shared/structure/boundary.py` | None. A new file. | Reads each `boundary.yaml` and the imports and path strings of a file, and finds each boundary edge. Standard library only. |
 | `shared/structure_evidence.py` and its modules | None. New files. | Writes the evidence packet for a slice diff (contract drift, boundary edges, duplicated code, consumer locality, vocabulary leads), and the whole-repository record. Run with `uv run`. |
 | `plugins/architect/skills/architecture/` | Review and maintenance modes run the habit-hooks scan. | Run the whole-repository record, report it, and show its trend (E6). |
 | `plugins/implement/agents/vocabulary.md` | Checks names against the glossary. | Reads the vocabulary leads from the packet. |

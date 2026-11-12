@@ -12,7 +12,7 @@ Slice 13 writes the findings file. Slice 14 makes review mode and maintenance mo
 ## Files Touched
 
 - `shared/structure_evidence.py` (slice 13): a `--repo` mode.
-- `shared/structure_repo.py` (new, slice 13): the whole-repository run, the folder table, the change count, and `compare_findings`.
+- `shared/structure/repo.py` (new, slice 13): the whole-repository run, the folder table, the change count, and `compare_findings`.
 - `plugins/architect/skills/architecture/SKILL.md` (slice 14): one step in review mode and one in maintenance mode.
 - `plugins/architect/skills/architecture/references/structure-review.md` (new, slice 14): how the agent reads the record and judges the rows.
 - `tests/test_structure_repo.py` (new)
@@ -20,7 +20,7 @@ Slice 13 writes the findings file. Slice 14 makes review mode and maintenance mo
 ## Types & Signatures
 
 ```python
-# shared/structure_repo.py
+# shared/structure/repo.py
 def change_counts(root: Path, days: int = 90) -> dict[str, int]: ...
 def folder_table(root: Path, files: list[str]) -> list[dict]: ...
 def repo_findings(root: Path, since: str | None) -> dict: ...

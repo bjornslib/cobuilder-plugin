@@ -1,7 +1,8 @@
 """Structure coaching text for habit_coach.py.
 
-Slice 1 writes a plain line for each finding. A later slice replaces the
-wording and adds a session record, so that each finding shows once.
+Slice 1 wrote a plain line for a crowded folder. Slice 2 adds plain lines for the
+name-stem cluster and the generic name. A later slice replaces the wording and
+adds a session record, so that each finding shows once.
 """
 from __future__ import annotations
 
@@ -15,6 +16,13 @@ import structure_signals  # noqa: E402
 
 def render(finding: structure_signals.Finding) -> str:
     """Return a plain line for one finding."""
+    if finding.signal == "name-stem-cluster":
+        return (
+            f"{finding.path} is a new file. Its folder, {finding.folder}, holds "
+            f"{finding.facts['count']} files that start with {finding.facts['stem']}."
+        )
+    if finding.signal == "generic-name":
+        return f"{finding.path} is a new file with a generic name, {finding.facts['stem']}."
     count = finding.facts["count"]
     limit = finding.facts["limit"]
     return (
@@ -29,7 +37,8 @@ def run(path: str, session_id: str | None) -> tuple[int, str]:
     session_id is not used yet. The session record arrives in a later slice.
     """
     folder = Path(os.path.dirname(os.path.abspath(path)))
-    report = structure_signals.signals_for(path, folder, structure_signals.Config())
+    config = structure_signals.load_config(folder)
+    report = structure_signals.signals_for(path, folder, config)
     if not report.findings:
         return 0, ""
     return 1, "\n".join(render(finding) for finding in report.findings)
