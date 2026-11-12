@@ -22,6 +22,22 @@ It ships no `agents/` and no MCP server.
 No field is required, so the module always loads. A reading that needs an
 unset field stops before any process starts, and the pane names the field.
 
+### Epic E1, slice E1.5: the install writes the settings (not built)
+
+The first live run failed because `priority_dev_dir` and `program` were
+empty. A `--plugin-dir` load shows no install screen, so nothing set them.
+
+| Slice | What it adds | Check |
+|---|---|---|
+| E1.5 Install settings | The install step writes `pluginConfigs.cobuilder-priority` in the user settings: `priority_dev_dir` (the priority-dev checkout it finds), `program` (D1, `probes/programs/gepa-armC3s-seeded-budget5-seed7.json`), and `timeout_seconds` (180). It shows the change and asks before the write. It does not write `llm_api_key`. | A test runs the install step on a temporary settings file, and finds the three fields with these values. A second run changes nothing. |
+
+Decided on 2026-11-12: the step is an optional step of
+`/cobuilder-full-lifecycle:install`. The step first checks if
+`cobuilder-priority` is installed. If it is not installed, the step does
+nothing and writes nothing. The plugin stays opt-in and outside the umbrella
+dependencies. The check for this rule: a test runs the step with the plugin
+absent, and the settings file does not change.
+
 ### Commands
 
 | Command | Effect |

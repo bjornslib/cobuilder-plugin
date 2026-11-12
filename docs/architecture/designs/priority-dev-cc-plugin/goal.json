@@ -32,7 +32,7 @@
     {
       "id": "E1",
       "slug": "reader",
-      "title": "Reader: the switch, the Stop hook, the CLI flag, and the store.",
+      "title": "Reader: the switch, the Stop hook, the CLI flag, the store, and the install settings.",
       "outcome": "With the switch on, a main-loop stop leads to a stored reading, and the session does not wait."
     },
     {
