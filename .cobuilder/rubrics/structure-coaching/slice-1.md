@@ -55,6 +55,15 @@ Test command: uv run pytest tests -q
 - 0.5 — the limit is 20 but test files do not count
 - 0.0 — another limit
 
+### C6 — No crowded finding for a folder with no code file
+**Must be true:** A new file in a folder over the limit gives no crowded-folder finding when the folder holds no file with a code suffix, such as a folder of 25 Markdown files.
+**Evidence to check:**
+- Run the script on a synthetic folder of 25 `.md` files and on one of 25 files with one `.py` file.
+**Scoring:**
+- 1.0 — no finding for the first, a finding for the second
+- 0.5 — —
+- 0.0 — a finding for the first, or none for the second
+
 ## Regression check
 - All tests that passed before this slice must still pass.
 - Files outside the slice scope in the epic design must remain unchanged.

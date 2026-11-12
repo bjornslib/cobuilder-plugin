@@ -36,7 +36,7 @@ slices:
     name: "The import reader, the folder groups, and the boundary edge"
     weight: 0.08
   - id: 11
-    name: "Each VALIDATE signal that the spike keeps"
+    name: "Duplicated code and consumer locality in the packet"
     weight: 0.07
   - id: 12
     name: "The vocabulary leads"

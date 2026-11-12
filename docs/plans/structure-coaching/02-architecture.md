@@ -8,7 +8,7 @@ Design record: `docs/architecture/designs/structure-coaching/`, decided in ADR-0
 |---|---|---|
 | `shared/structure_signals.py` | None. A new file. | Finds the coach signals for one written file: a crowded folder with its groups, a name family, and a generic name. Standard library only. |
 | `shared/structure_boundary.py` | None. A new file. | Reads each `boundary.yaml` and the imports and path strings of a file, and finds each boundary edge. Standard library only. |
-| `shared/structure_evidence.py` and its modules | None. New files. | Writes the evidence packet for a slice diff (contract drift, boundary edges, kept spike signals, vocabulary leads), and the whole-repository record. Run with `uv run`. |
+| `shared/structure_evidence.py` and its modules | None. New files. | Writes the evidence packet for a slice diff (contract drift, boundary edges, duplicated code, consumer locality, vocabulary leads), and the whole-repository record. Run with `uv run`. |
 | `plugins/architect/skills/architecture/` | Review and maintenance modes run the habit-hooks scan. | Run the whole-repository record, report it, and show its trend (E6). |
 | `plugins/implement/agents/vocabulary.md` | Checks names against the glossary. | Reads the vocabulary leads from the packet. |
 | `plugins/implement/scripts/habit_coach.py` | The `PostToolUse` coach. It filters on `implement:green` and runs habit-hooks on one file. | Gets a second runner. The coach joins the habit-hooks text and the structure text into one message. The GREEN filter stays. |
@@ -64,6 +64,6 @@ The second path is the end of a slice.
 |---|---|
 | habit-hooks CLI | Unchanged. The coach still runs it for the six extensions. |
 | git | `git ls-files`, `git merge-base`, `git diff`, `git show`, and `git log` give the file list, the new files, the slice diff, the base side of a file, and the change count. The epic designs give each call. |
-| uv and PyPI | `structure_evidence.py` declares `tree-sitter`, `tree-sitter-typescript`, and `pyyaml` in its PEP 723 header. The first run needs a network. The coach needs neither. |
+| uv and PyPI | `structure_evidence.py` declares `pyyaml` in its PEP 723 header. The first run needs a network. The coach needs neither. |
 | Environment | No new variable. The coach reads `session_id` from the hook payload and the temp folder from `tempfile.gettempdir()`. |
 | Webhooks | None. |

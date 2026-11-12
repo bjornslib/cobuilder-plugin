@@ -11,10 +11,11 @@ Slice 8 is the tracer. It carries one signal, Python contract drift, plus the bo
 
 ## Files Touched
 
-- `shared/structure_evidence.py` (new, slice 8): the command, the slice diff, and the packet. PEP 723 header with `tree-sitter`, `tree-sitter-typescript`, and `pyyaml`. VALIDATE runs it with `uv run`.
+- `shared/structure_evidence.py` (new, slice 8): the command, the slice diff, and the packet. PEP 723 header with `pyyaml`. The spike dropped TypeScript drift, so the first version needs no tree-sitter. VALIDATE runs it with `uv run`.
 - `shared/structure_drift.py` (new, slice 8): the public surface of a Python file with `ast`, and the drift events. Standard library only.
 - `shared/structure_vocabulary.py` (new, slice 12): the glossary index and the leads.
-- One module for each kept spike signal (slice 11), such as `shared/structure_cochange.py`.
+- `shared/structure_duplicates.py` (new, slice 11): the duplicated-code index, shared with E6.
+- `shared/structure_locality.py` (new, slice 11): consumer locality from the import graph, shared with E6.
 - `plugins/implement/agents/validate.md` (slice 8): the step that runs the script and writes the block.
 - `plugins/implement/skills/build/references/structure-judgment.md` (new, slice 8): the decision questions for VALIDATE. Judgment lives in a reference, not in the script.
 - `plugins/implement/skills/build/references/slice-loop.md` (slice 8): record the slice base before RED, and pass the script path, the base, and the packet path to VALIDATE and VOCABULARY.
@@ -112,7 +113,35 @@ The labels are fixed, so E5 can count them. When `uv run` fails, VALIDATE writes
 
 ### C6. Spike signals (slice 11)
 
-Each VALIDATE signal that the spike keeps gets one module, and one key in `findings`. The candidates are TypeScript contract drift with tree-sitter, a missing co-change partner, duplicated code, and consumer locality. `spike-signals.md` gives the algorithm, the defaults, and the filters for each kept signal. Consumer locality goes in `evidence`, never in `findings`, because it is evidence for the cohesion judgment only.
+The agencheck spike (`spike-signals.md`) kept two VALIDATE signals and dropped two.
+
+| Signal | Result on agencheck | Decision |
+|---|---|---|
+| Duplicated code | 26 change findings after filters A and B, precision 92% | Slice 11, in `findings` |
+| Consumer locality | 16 findings, 3 `act`, 13 `keep`, 0 `false` | Slice 11, in `evidence` only |
+| TypeScript contract drift | 0 `act` in 30 labels. The project compiler covers it | Dropped |
+| Missing co-change partner | 1 `act` in 19, and 2 in 20 | Dropped from VALIDATE. E6 keeps the pair table |
+
+**Duplicated code** (`duplicate-block`):
+
+1. Take the product code files: code files that are not test names.
+2. Strip each line. Drop a line with fewer than 4 characters, and a line that starts with `#`, `//`, `*`, `/*`, `import `, `from `, `export {`, `}`, `)`, or `]`.
+3. Replace each string literal with `S` and each number with `0`. Make each run of white space one space.
+4. Hash each window of `dup_window` lines (6) with `dup_min_chars` characters or more (120).
+5. Filter A: a window needs 4 or more distinct lines. Filter B: drop a window with 4 or more lines of the form `name=value,` or `name: type,`.
+6. A duplicate window is a hash in two files or more. Merge windows that follow each other in both files into one block.
+7. Keep a block only when its lines in the slice file all lie in an added range of C1. One finding is one pair of a slice file and another file. When both files are in the slice, keep one finding for the pair.
+
+`facts`: `lines`, `other`, `other_lines`, and `size`. Cost on agencheck: 0.33 s for the index of 791 files.
+
+**Consumer locality** (`evidence.consumer_locality`):
+
+1. Build the import graph of the code files with the reader of E1 A9.
+2. For each added product file, take its product importers. The fact holds when two or more importers exist, all in one folder that is neither the folder of the file nor an ancestor of it.
+3. Drop it when that consumer folder imports 3 or more files of the folder of the file. This layer filter removed 6 `keep` findings and no `act` on agencheck.
+4. Give `importers_by_folder` and `sole_consumer_folder`. VALIDATE uses it only for the cohesion judgment.
+
+Cost on agencheck: 0.9 s for the graph of 1,285 code files.
 
 ### C7. Vocabulary leads (slice 12)
 
@@ -129,7 +158,7 @@ Evidence on this repo: a plain match gave 25 hits and none was real. Five of the
 
 ## Slice Decomposition
 
-1. **Slice 8, the tracer.** Depends on E3. C1 to C5. Ends with a packet on a fixture repo and a blind VALIDATE that writes the block.
+1. **Slice 8, the tracer.** Depends on E3. C1 to C5. Test the move filter of C2 against a real `git grep`, because the spike found that a first pattern matched nothing. Ends with a packet on a fixture repo and a blind VALIDATE that writes the block.
 2. **Slice 11.** Depends on slice 8. C6. Ends with each kept signal on a fixture repo.
 3. **Slice 12.** Depends on slice 11. C7. Ends with the leads in the packet and a blind vocabulary agent that judges them.
 
@@ -139,13 +168,13 @@ Each case builds a `tmp_path` git repo with a base commit and a work-tree change
 
 - `test_structure_drift.py`: each of the eight event kinds from a before and after source. A private name gives no event. A syntax error gives `{}`.
 - `test_structure_evidence.py`: an added, a modified, and an untracked file land in the right list. A changed raise gives one event with an untouched caller. A moved function gives no event. A boundary edge in an added line gives a finding, and the same text in an old line gives none. A bad base gives a `not_analysed` line and exit 0. The packet file has the C4 keys.
-- Slice 11: one test file for each kept signal, with the false-positive filter that the spike names.
+- `test_structure_duplicates.py` and `test_structure_locality.py` (slice 11): a copied block of 8 lines in an added file gives one finding. A row-of-literals block and a named-argument block give none (filters A and B). A copy in an old line gives none. A pair of two slice files gives one finding. A file with two importers in one other folder gives the locality fact. The layer filter drops it when that folder imports 3 files of its folder.
 - `test_structure_vocabulary.py`: the index reads a synthetic glossary. A name with an avoided word gives a candidate with its reason. `also_defined` is true for a word that is another term. A missing glossary gives a `not_analysed` line.
 - Blind passes: VALIDATE on a fixture slice for slice 8, and the vocabulary agent on a fixture slice for slice 12. Each transcript stays in the slice evidence.
 
 ## Risks & Open Questions
 
-- `uv run` with tree-sitter needs a network on its first run. C5 states the fallback.
+- `uv run` with PyYAML needs a network on its first run. C5 states the fallback.
 - The caller list matches names, so a common name such as `main` gives a long list. The cap of 10 and `callers_total` keep the packet small, and VALIDATE judges.
 - The slice base depends on the main agent. When it does not record one, the merge-base gives a larger diff that holds earlier slices.
-- Slice 11 depends on the spike. When the spike keeps no VALIDATE signal, slice 11 has no work and the engineer skips it with `skip-slice`.
+- Each filter of slice 11 was tested on agencheck only, after the false findings were seen. A filter can overfit, and E5 labels the findings again.

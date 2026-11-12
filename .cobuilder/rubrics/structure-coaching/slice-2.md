@@ -64,6 +64,15 @@ Test command: uv run pytest tests -q
 - 0.5 — families present, wrong order or a test file counted
 - 0.0 — no families
 
+### C7 — The spike filters for families
+**Must be true:** `split_tokens("s3_config")` gives `s3` and `config`. No family fires on `use`, or on a stem that is a token of the last three parts of the folder path. The glob `**/docs/**` excludes a nested `docs` folder.
+**Evidence to check:**
+- Run the unit tests, or call the functions on synthetic trees.
+**Scoring:**
+- 1.0 — all four hold
+- 0.5 — two or three hold
+- 0.0 — fewer
+
 ## Regression check
 - All tests that passed before this slice must still pass.
 - Files outside the slice scope in the epic design must remain unchanged.

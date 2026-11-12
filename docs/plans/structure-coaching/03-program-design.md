@@ -8,8 +8,9 @@ Memory before Gate 3: absent. The `consult` tool answered that the Hindsight ser
 |---|---|---|
 | `shared/structure_signals.py` | New | The three signals and the new-file rule. Standard library only, so the coach can import it without `uv`. About 180 lines. |
 | `shared/structure_boundary.py` | New | The stdlib import reader, the import groups of a folder, and the boundary edge. E4 and E6 reuse it. Slice 10. |
-| `shared/structure_evidence.py` | New | The VALIDATE packet for a slice diff (E4), and the whole-repository record (E6). Run with `uv run`, so it may use tree-sitter and PyYAML. |
+| `shared/structure_evidence.py` | New | The VALIDATE packet for a slice diff (E4), and the whole-repository record (E6). Run with `uv run`, so it may use PyYAML. |
 | `shared/structure_drift.py` | New | The public surface of a Python file with `ast`, and the drift events. Slice 8. |
+| `shared/structure_duplicates.py`, `shared/structure_locality.py` | New | Duplicated code and consumer locality, for VALIDATE (slice 11) and the whole repository (E6). |
 | `shared/structure_vocabulary.py` | New | The glossary index and the vocabulary leads. Slice 12. |
 | `shared/structure_repo.py` | New | The whole-repository run, the folder table, the change count, and the trend. Slice 13. |
 | `plugins/implement/skills/build/references/structure-judgment.md` | New | The decision questions that VALIDATE answers for each finding. Slice 8. |
@@ -44,8 +45,9 @@ class Config:                       # defaults and evidence: epic-E1-design.md A
     min_folders: int                # default 10
     cluster_min: int                # default 3
     generic_names: frozenset[str]   # default: utils, util, helpers, helper, common, misc, manager, base
-    excluded_stems: frozenset[str]  # default: a, an, the, index, main, init
-    excluded_paths: tuple[str, ...] # default: .*/**, docs/**, **/fixtures/**, and four more
+    excluded_stems: frozenset[str]  # default: a, an, the, index, main, init, use
+    code_extensions: frozenset[str] # default: .py .ts .tsx .js .jsx .mjs .cjs .php .java .rb .go .rs .kt .cs .swift
+    excluded_paths: tuple[str, ...] # default: **/.*/**, **/docs/**, **/fixtures/**, and four more
     test_prefixes: tuple[str, ...]  # default: ("test_", "test-")
     test_suffixes: tuple[str, ...]  # default: (".test", ".spec", "_test")
     problem: str | None             # why the config file was not used, or None
@@ -129,7 +131,7 @@ VALIDATE
 │   ├── slice_files / added_lines            # the slice diff
 │   ├── structure_drift.drift_events         # Python contract drift
 │   ├── structure_boundary.boundary_edges    # added files and added lines
-│   ├── each kept spike signal (slice 11)
+│   ├── structure_duplicates / structure_locality (slice 11)
 │   └── structure_vocabulary.vocabulary_leads (slice 12)
 ├── reads structure-judgment.md
 └── writes ### Structure: a label for each finding, then
@@ -177,5 +179,5 @@ Test rules from the repo: test effects and structure, not wording. Use `tmp_path
 3. **The import path from the coach to `shared/`.** The coach reaches the script through the `plugins/implement/shared` symlink. A cache install must keep that symlink.
 4. **The no-repeat key.** A key of signal, folder, and stem may hide a second real problem in the same folder.
 5. **The cost per write.** One write runs git about five times. On this repo the calls take about 180 ms in total. The spike measures one real write.
-6. **The spike result.** Slices 10 and 11 build only the signals that the agencheck spike keeps. A signal that the spike drops leaves a smaller slice.
+6. **The spike filters.** The agencheck spike tuned each filter on one repository, after it saw the false findings. E5 labels the findings again.
 7. **The slice base.** The packet reads the diff from the commit that the main agent records before RED. Without it, the diff holds earlier slices.

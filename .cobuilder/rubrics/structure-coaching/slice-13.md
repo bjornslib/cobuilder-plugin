@@ -52,6 +52,15 @@ Test command: uv run pytest tests -q
 - 0.5 — one missing
 - 0.0 — more missing
 
+### C6 — The whole-repository signals [CRITICAL]
+**Must be true:** Two `util.py` files in two folders give one twin finding, and two `page.tsx` files give none. A pair of files in different folders committed together in 5 of 6 commits gives one co-change group. A block in three files gives one duplicate group, not three pairs. A window of fewer than 20 commits in 90 days widens to 365 days, and the record states the window.
+**Evidence to check:**
+- Run the tests for structure_repo.py on a fixture repo.
+**Scoring:**
+- 1.0 — all five hold
+- 0.5 — three or four hold
+- 0.0 — fewer
+
 ## Regression check
 - All tests that passed before this slice must still pass.
 - Files outside the slice scope in the epic design must remain unchanged.

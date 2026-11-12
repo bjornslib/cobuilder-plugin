@@ -1,10 +1,10 @@
 # Status: Structure signals coach GREEN, and VALIDATE reports them beside the slice score (structure-coaching)
 
 - Gate 1 — Product: 2026-11-11
-- Gate 2 — Architecture: pending
+- Gate 2 — Architecture: 2026-11-12
 - Gate 2b — Interaction design: n/a
-- Gate 3 — Program Design: pending
-- Gate 4 — Slice plan, epic designs, and rubrics: pending
+- Gate 3 — Program Design: 2026-11-12
+- Gate 4 — Slice plan, epic designs, and rubrics: 2026-11-12
   - 4a Slice plan: pending
   - 4b Epic technical solution designs: pending
   - 4c Blind rubrics: pending

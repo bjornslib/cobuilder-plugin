@@ -37,11 +37,19 @@ Every file from E1 A1, after the excluded paths. No new-code rule applies. For c
 
 ### D2. The signals
 
-The script runs each coach signal of E1 on each file, and each kept VALIDATE signal of E4 that has a whole-repository form. The key of each finding is the key of E2 B3, so a finding in two runs has one key. A crowded folder gives one finding for each folder, not one for each file.
+The script runs each coach signal of E1 on each file, and the duplicated code and consumer locality of E4. The key of each finding is the key of E2 B3, so a finding in two runs has one key. A crowded folder gives one finding for each folder, not one for each file. Three signals run in this view only, because the agencheck spike found them weak in the change view and useful here:
+
+| Signal | Rule | Key | Result on agencheck |
+|---|---|---|---|
+| Twin name | Two or more non-test code files in different folders have the same lower-case stem, in one language family (Python, or TypeScript and JavaScript). Skip `twin_excluded_stems`: `index`, `__init__`, `main`, `types`, `conftest`, and the Next.js names `page`, `route`, `layout`, `loading`, `error`, `not-found`, `template`, and `default` | `twin-name|<stem>` | 55%, and 67% with the two filters |
+| Co-change group | Over the last 365 days of `git log --no-merges --name-only`, skip commits with more than 30 files. Two files in different folders form a pair when `support >= 5` and `support / union >= 0.5`. Connected pairs form one group | `co-change|<sorted paths>` | 14 of 14 real, 7 `act` |
+| Duplicate group | The duplicate windows of E4 C6 on all product code. Files that share a block form one group, a clone class | `duplicate-group|<sorted paths>` | 360 pairs became 79 groups, precision 87% |
+
+Code-and-test pairs do not count as a co-change pair.
 
 ### D3. The change count and the order
 
-`change_counts` runs `git log --since=<days>.days --name-only --no-merges --format=` once. The count of a finding is the count of its path, or the largest count of a file in its folder for a folder finding. The record lists the findings with the largest count first, then by key. No formula with weights, because the research found no source for one.
+`change_counts` runs `git log --since=<days>.days --name-only --no-merges --format=` once. When the 90-day window holds fewer than 20 commits, it uses 365 days, and the record states the window. The agencheck spike had 3 commits in 90 days. The count of a finding is the count of its path, or the largest count of a file in its folder for a folder finding. The record lists the findings with the largest count first, then by key. No formula with weights, because the research found no source for one.
 
 ### D4. The folder table
 
@@ -54,7 +62,8 @@ For each folder with three or more code files: `n` (code files), `internal` (imp
   "schema": 1,
   "commit": "<sha>",
   "since": "<sha or null>",
-  "findings": [{"key": "", "signal": "", "path": "", "folder": "", "facts": {}, "changes_90d": 0}],
+  "window_days": 90,
+  "findings": [{"key": "", "signal": "", "path": "", "folder": "", "facts": {}, "changes": 0}],
   "folders": [{"folder": "", "n": 0, "internal": 0, "out": 0, "in": 0, "cf": 0.0, "instability": 0.0, "groups": [], "test_share": 0.0}],
   "not_analysed": []
 }
@@ -79,7 +88,7 @@ Review mode writes it as `structure-findings.json` beside the reports in `docs/a
 
 ## Test Plan
 
-- `test_structure_repo.py`: a fixture repo with a crowded folder, a name family, and a boundary edge gives each finding in an old file, which the change view does not report. The folder with more recent commits comes first. The folder table gives `cf` and `instability` for a folder with known edges, and `null` for a folder with no edges. `compare_findings` gives each of the four tags. The record has the D5 keys.
+- `test_structure_repo.py`: a fixture repo with a crowded folder, a name family, and a boundary edge gives each finding in an old file, which the change view does not report. The folder with more recent commits comes first. The folder table gives `cf` and `instability` for a folder with known edges, and `null` for a folder with no edges. `compare_findings` gives each of the four tags. Two `page.tsx` files give no twin. Two `util.py` files in two folders give one twin finding. A pair of files committed together in 5 of 6 commits gives one co-change group. A block in three files gives one duplicate group. A window of 5 commits in 90 days widens to 365 days. The record has the D5 keys.
 - Slice 14: a blind pass. A fresh agent in review mode gets a fixture record and writes the section with a judgment for each reported finding. The transcript stays in the slice evidence. `tests/test_install_command.py` and the existing architect tests stay green.
 
 ## Risks & Open Questions

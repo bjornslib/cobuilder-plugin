@@ -33,7 +33,7 @@ Each step below names the rule, the default value, and the evidence for the defa
 2. `excluded_by(path, config)` returns the first glob of `excluded_paths` that matches the path, or `None`. It uses `fnmatch.fnmatchcase`. A glob that starts with `**/` also matches the path with that part removed, so `**/fixtures/**` matches `fixtures/a.json` at the root.
 3. The script drops each excluded file from the list. For each glob that matched, `Report.not_analysed` gets one line: the glob and the count of files it removed.
 
-Default `excluded_paths`: `.*/**`, `docs/**`, `**/fixtures/**`, `**/__snapshots__/**`, `**/migrations/**`, `**/vendor/**`, `**/generated/**`. On this repo the first three globs remove 292, 426, and 209 files. The list keeps 1,028 files in 143 folders.
+Default `excluded_paths`: `**/.*/**`, `**/docs/**`, `**/fixtures/**`, `**/__snapshots__/**`, `**/migrations/**`, `**/vendor/**`, `**/generated/**`. Each glob matches at each depth. The agencheck spike found 57 files in a nested dot folder and 53 in a nested `docs` folder that the top-only globs `.*/**` and `docs/**` let through. On this repo the first three globs remove 292, 426, and 209 files. The list keeps 1,028 files in 143 folders.
 
 ### A2. The new-code rule
 
@@ -66,7 +66,7 @@ Cost on this repo: the four git calls take about 130 ms. The file list takes abo
 
 ### A4. Signal 1: a crowded folder
 
-The signal fires when the written file is new, and its folder has more files than the limit. Every file that is not excluded counts, test files too. The written file counts.
+The signal fires when the written file is new, its folder has more files than the limit, and the folder holds one code file or more. Every file that is not excluded counts, test files too. The written file counts. A code file has a suffix in `code_extensions`: `.py`, `.ts`, `.tsx`, `.js`, `.jsx`, `.mjs`, `.cjs`, `.php`, `.java`, `.rb`, `.go`, `.rs`, `.kt`, `.cs`, and `.swift`. On agencheck, 12 of 26 folders over the limit held no code file, and the rule removed 9 `keep` and 3 `false` findings.
 
 `Finding.facts`: `count` and `limit` in slice 1. Slice 2 adds `families`: each first-token group of two or more non-test files, largest first, such as `beads (14), fake (5), plan (4)` for `shared/tracker_port`. Slice 10 adds `components` and `nearest_group` from A9. A group gives GREEN a named choice for a new sub-folder, and the research found that a named choice works better than a bare number.
 
@@ -76,7 +76,7 @@ The signal fires when the written file is new, and its folder has more files tha
 
 1. The stem is the file name without its last suffix. `foo.test.ts` gives `foo.test`.
 2. Split the stem on each run of `_`, `-`, `.`, or white space.
-3. Split each part on case changes with the pattern `[A-Z]+(?=[A-Z][a-z])|[A-Z]?[a-z]+|[A-Z]+|\d+`.
+3. Split each part on case changes with the pattern `[A-Z]+(?=[A-Z][a-z])|[A-Z]?[a-z]+\d*|[A-Z]+\d*|\d+`. Digits stay with the letters before them, so `s3_config` gives `s3` and `config`.
 4. Make each token lower case.
 
 | Stem | Tokens |
@@ -86,13 +86,14 @@ The signal fires when the written file is new, and its folder has more files tha
 | `IntentDrawing` | intent, drawing |
 | `HTTPServerError` | http, server, error |
 | `foo.test` | foo, test |
+| `s3_config` | s3, config |
 
 `is_test_name(name)` is true when the stem starts with a `test_prefixes` entry, or ends with a `test_suffixes` entry. The defaults are `test_` and `test-`, and `.test`, `.spec`, and `_test`. They cover `test_x.py`, `x.test.ts`, `x.spec.ts`, and `x_test.go`.
 
 ### A6. Signal 2: a name-stem cluster
 
 1. The written file must be new, and not a test name.
-2. The first token of the written file is the stem. The script stops when the stem is in `excluded_stems`, or is all digits.
+2. The first token of the written file is the stem. The script stops when the stem is in `excluded_stems`, or is all digits, or is a token of the last three parts of the folder path. A family `university*` in `components/university` repeats what the folder already says.
 3. The siblings are the files in the same folder, the written file included, that are not test names and have the same first token.
 4. The signal fires when the siblings number `cluster_min` or more, and no sub-folder of that folder has a name whose tokens are exactly `[stem]`.
 
@@ -101,7 +102,7 @@ The signal fires when the written file is new, and its folder has more files tha
 | Setting | Default | Evidence on this repo |
 |---|---|---|
 | `cluster_min` | 3 | `shared/tracker_port` holds 14 `beads*` files and 5 `fake*` files. `plugins/implement/scripts` holds 4 `tracker*` files. |
-| `excluded_stems` | `a`, `an`, `the`, `index`, `main`, `init` | Without them, `references/books` gives clusters on `a` and `the`. |
+| `excluded_stems` | `a`, `an`, `the`, `index`, `main`, `init`, `use` | Without them, `references/books` gives clusters on `a` and `the`. On agencheck, React hooks gave three false `use` families. With the folder-path rule and `use`, precision on families with code rose from 57% to 81%. |
 
 The rule compares the first token only, as ADR-0048 decision 2 says. A folder such as `tracker_port` does not stop a `tracker` cluster, because its tokens are `tracker` and `port`.
 
@@ -165,22 +166,22 @@ Cost from the proposal: 34 ms for 40 Python siblings with `ast`, and 2 ms for 65
 
 Evidence on this repo: 18 import edges cross a context, all to `shared`, and none breaks the rules. Path strings give 9 hits in 6 files. Six are smells that the records already name, such as `verify_gate.py:102`. Three point at `plugins/cache` and the drop rule removes them.
 
-### A11. Coach signals from the spike (slice 10)
+### A11. Coach signals from the spike
 
-The twin name runs here when the spike keeps it. `spike-signals.md` gives the algorithm and the precision. When the spike drops it, slice 10 has no A11.
+The spike kept no new coach signal. The twin name gave 0 real findings in 14 on the change view of agencheck, so the coach does not show it. E6 runs it on the whole repository, where it gave 55%. Slice 10 builds A9 and A10 only.
 
 ## Slice Decomposition
 
 1. **Slice 1, the tracer bullet.** Depends on nothing. A1 to A4 with the defaults in code, and A8 steps 1, 3, and 4 for one signal. Ends with a real coach message for a crowded folder.
 2. **Slice 2.** Depends on slice 1. A5 to A7, the families of A4, the excluded paths of A1, the config file, and the command of A8. Ends with all three signals, the config, and `not_analysed` on synthetic trees.
-3. **Slice 10.** Depends on slice 2. A9 to A11 in `shared/structure_boundary.py`. Ends with the import groups in a crowded-folder finding and a boundary edge on synthetic trees with synthetic boundary records.
+3. **Slice 10.** Depends on slice 2. A9 and A10 in `shared/structure_boundary.py`. Ends with the import groups in a crowded-folder finding and a boundary edge on synthetic trees with synthetic boundary records.
 
 ## Test Plan
 
 All cases use a `tmp_path` git repo with a synthetic tree. No case reads this repo.
 
 - Slice 1: a new file in a folder over the limit gives a finding with `count` and `limit`. A folder at the limit gives none. An old file in a crowded folder gives none. An untracked, a staged, and a branch-added file each count as new. A repo with no merge-base counts untracked and staged files. A repo with fewer than `min_folders` folders and no `folder_limit` gives no crowded finding and a `not_analysed` line. A `test_habit_coach.py` case shows the joined text with a fake habit-hooks runner. The spike transcript is the evidence that the real hook delivers the text.
-- Slice 2: `split_tokens` for the five stems in the A5 table. `is_test_name` for the four test forms. A cluster of three new siblings. No cluster of two. No cluster when a sub-folder named for the stem exists. No cluster of test files. No cluster on an excluded stem. A generic name with a leading `_`. A custom config that changes each limit. A missing config and a bad config give the defaults, and the bad config gives a `not_analysed` line. An excluded path names its glob. `--file`, `--survey`, and `--defaults` each print JSON that `json.loads` reads.
+- Slice 2: `split_tokens` for the five stems in the A5 table. `is_test_name` for the four test forms. A cluster of three new siblings. No cluster of two. No cluster when a sub-folder named for the stem exists. No cluster of test files. No cluster on an excluded stem, on `use`, or on a stem that the folder path holds. `split_tokens` keeps `s3` as one token. A folder over the limit with no code file gives no crowded finding. `**/docs/**` excludes a nested `docs` folder. A generic name with a leading `_`. A custom config that changes each limit. A missing config and a bad config give the defaults, and the bad config gives a `not_analysed` line. An excluded path names its glob. `--file`, `--survey`, and `--defaults` each print JSON that `json.loads` reads.
 
 - Slice 10: two siblings that import each other form one group. A folder over `sibling_parse_max` gives families only. A Python relative import, a TypeScript `@/` alias, and a path string each resolve. An external import gives no reference. A path string to a context outside `allowed_dependencies` gives an `outside-allowed` finding with its line. A path-glob forbidden target gives `forbidden-glob`. A `plugins/cache/` string gives none. A file with no context gives a `not_analysed` line. A bad record gives a `not_analysed` line.
 
