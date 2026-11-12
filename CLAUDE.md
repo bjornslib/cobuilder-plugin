@@ -319,3 +319,7 @@ family, resolve the collision in the glossary before it ships.
 `.cobuilder-architect/self/pages/cobuilder-vocabulary.html` is a session
 gazetteer from 2026-08-20. Several of its proposals shipped differently. Treat
 it as a record, not a specification, and do not edit it.
+
+The glossary loads with this file. Its terms are the names to use:
+
+@DDD-VOCABULARY.md
