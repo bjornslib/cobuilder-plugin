@@ -8,7 +8,8 @@ owner: bjornslib
 # --- 42010 decision-record index (schema: references/decision-records.md §2) ---
 id: ADR-0049
 name: "cobuilder-priority reads each stop of a live session"
-state: decided
+state: approved
+approved_by: bjornslib
 groups: [workflow, packaging]
 problem: "The priority-dev interpreter improves only on recorded transcripts. The optimiser runs on old sessions no longer give useful feedback. The engineer needs readings of recent sessions that they remember, so they can judge which part of the prompt to improve next."
 decision: "Ship a seventh plugin, cobuilder-priority, as an opt-in mod outside the umbrella. One hooks module reads each main-loop Stop of a session that the person switched on. It runs priority digest, then priority interpret with the D1 program, as a separate process. It stores the reading, and a pane shows it with right, wrong, and note marks. On the newest card the person selects steps, and one press sends the draft to the main session as a user prompt or puts it in the prompt box. The plugin never sends without that press. This amends ADR-0025 and ADR-0039: implement, cobuilder-memory, and cobuilder-priority may ship hooks/."
@@ -61,6 +62,7 @@ history:
   - { state: decided, date: 2026-11-11, note: "Drafted by design mode for the priority-dev-cc-plugin design. The engineer chose the name, the digest-first order with a CURRENT RUN label on the live path only, the per-session switch, opt-in, and local labels." }
   - { state: decided, date: 2026-11-12, note: "Review round 2. The engineer asked to act on the selected steps. The pane sends one draft to the main session on a press, and the pane layout is part of the design." }
   - { state: decided, date: 2026-11-12, note: "The first live run failed on empty settings. The umbrella install gets an optional step that writes pluginConfigs, only when cobuilder-priority is installed (slice E1.5)." }
+  - { state: approved, date: 2026-11-13, by: bjornslib, note: "Approved by the engineer in session, after a successful live run of the digest, the reading, and the steps." }
 maps_to:
   context: cobuilder-packaging
   modules: [plugins/cobuilder-priority, priority-dev/src/priority/cli.py, priority-dev/src/priority/brief, tests/test_plugin_manifests.py, .claude-plugin/marketplace.json]

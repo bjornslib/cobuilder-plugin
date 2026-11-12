@@ -57,6 +57,7 @@ history:
   - { state: decided, date: 2026-10-15, note: "Round 7. The engineer chose the standard Hindsight MCP tools over the HTTP API, named the tool consult, dropped SDK prompts, approved the pane mockup, and moved the design and build workflow steps into E1. Epic E2 now holds only the Jev gate." }
   - { state: decided, date: 2026-10-16, note: "Revised before approval. A live run passed 60 s with three parallel reflects, so the engineer cut each run to one reflect question. The decision text now says one." }
   - { state: approved, date: 2026-10-17, by: bjornslib, source: "PR #40", note: "Approved by the engineer in session, after PR #40 merged on 2026-10-16." }
+  - { state: approved, date: 2026-11-13, by: bjornslib, note: "ADR-0049 extends this rule to a second opt-in mod. cobuilder-priority may also ship hooks/. This record's Decision text stays as chosen." }
 maps_to:
   context: cobuilder-packaging
   modules: [plugins/cobuilder-memory, tests/test_plugin_manifests.py, .claude-plugin/marketplace.json]

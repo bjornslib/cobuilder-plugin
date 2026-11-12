@@ -223,6 +223,15 @@ Top to bottom:
 1. **Header row.** `Priority reader`, the switch state (`● on` in green,
    `○ off` dim), the count of readings, and `running…` in yellow while a
    reading runs. An unset setting shows the field name here in red.
+   Slice E3.6 (not built) adds a moving indicator to the left of
+   `running…`, and the stale state below.
+2a. **The stale state (slice E3.6, not built).** While a reading runs, the
+   pane must not look finished. The summary, the newest card, and the draft
+   block of the previous reading turn dim, and a dim row
+   `Reading stop #<n+1>…` stands above them. Send and Edit do nothing while
+   the new reading runs, because the previous steps describe a state that
+   has passed. Right, Wrong and the note stay active on the previous card.
+   When the new reading arrives, the pane draws it at full colour.
 2. **Agent summary.** A bordered `Box` titled `▸ Agent completed`. It shows
    the digest of the newest reading: `ran`, then `result`, cut at three rows.
    Hotkey `m` closes it to its title row, and `m` again opens it. A reading
@@ -341,10 +350,11 @@ changes. Each file stays under 200 lines.
 | E3.3 Select on the card | The pane keeps the selection and the answers in `$.state`, for the newest reading only. Digits `1`–`9` toggle steps. A newer reading clears the selection. | Pane tests press `1` and `3`, and find `[x]` on both rows and both lines in the draft block. An older card renders no step Button. |
 | E3.4 Send and Edit | `s` calls `$.prompt.submit({ text, asUser: true })`. `e` calls `$.prompt.fill({ text, mode: "replace" })`. Both write `sent` on the mark and clear the selection. With no selection, neither key calls anything. `isFilled: false` writes nothing and shows `The prompt box is not available`. | Pane tests stub both calls and check the arguments, the stored `sent`, and that no call happens without a press or with an empty selection. |
 | E3.5 Layout C | The summary block with `m`, the title row, the focus border, the draft block with its footer, the action row, and the history list, as in the wireframe. | A render test finds the summary text, the draft footer `session prompt`, and the three history rows. A live look in a 160-column terminal, kept as a screenshot in the slice evidence. |
+| E3.6 Show a running reading (not built) | From the engineer's live run: after the first reading, a new run was not clear. A moving one-cell indicator (`⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏`) stands to the left of `running…`. A redraw about each 100 ms moves it, and the redraw stops when the reading ends. While the reading runs, the previous summary, card and draft turn dim under a `Reading stop #<n+1>…` row, and Send and Edit do nothing. | A pane test drives a Stop with a pending `$.process.run`, and finds the indicator, the `Reading stop` row, and no submit call on a press of `s`. When the stub resolves, the test finds the new card and no indicator. A live look confirms that the indicator moves. |
 
 ### Done when
 
-- The five slice checks pass under `claude plugin test plugins/cobuilder-priority`.
+- The six slice checks pass under `claude plugin test plugins/cobuilder-priority`.
 - `tsc` and `claude plugin validate` pass.
 - In a live session, one press of `s` with two selected steps starts one
   user turn that holds both draft lines, and the next stop gets a new card.

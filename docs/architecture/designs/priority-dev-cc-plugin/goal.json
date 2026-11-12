@@ -48,7 +48,7 @@
       "outcome": "A press of Send submits the draft of the selected steps as a user prompt, Edit puts it in the prompt box, and the mark records what was sent. The pane shows the agent summary on top."
     }
   ],
-  "stage": "review",
+  "stage": "approved",
   "supersedes": null,
   "rounds": [
     {
