@@ -27,7 +27,7 @@ An opt-in plugin, cobuilder-priority, ships one hooks module. A per-session swit
 ## Out of scope
 
 - A send with no press, and a send from an older card.
-- Permission, option-pick, and interrupt steps, which have no target at a stop.
+- An interrupt step, which has no running turn to stop at a stop.
 - An export of the marks into the labelled set.
 - Subagent stops, headless sessions, and other harnesses.
 - A change to D1, eval, replay, or the optimiser.

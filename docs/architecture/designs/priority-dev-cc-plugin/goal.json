@@ -13,7 +13,8 @@
     "priority interpret --digest current labels the digest CURRENT RUN, and every other command still shows PREVIOUS RUN",
     "On the newest card, Send with two selected steps submits one user prompt that holds the draft text of both steps, and the mark records the steps and the text",
     "Edit puts the same draft in the prompt box and submits nothing",
-    "No prompt reaches the session without a press of Send or Edit, and an older card has no send action"
+    "No prompt reaches the session without a press of Send or Edit, and an older card has no send action",
+    "The pane shows the digest summary of the newest reading above its card"
   ],
   "abort_if": [
     "After one week of use, fewer than half of the marked readings are right, or the readings do not change which part of the prompt the engineer works on next"
@@ -43,8 +44,8 @@
     {
       "id": "E3",
       "slug": "act",
-      "title": "Act: select steps on the newest card, and send one draft to the session.",
-      "outcome": "A press of Send submits the draft of the selected steps as a user prompt, Edit puts it in the prompt box, and the mark records what was sent."
+      "title": "Act: select steps on the newest card, send one draft, and draw layout C.",
+      "outcome": "A press of Send submits the draft of the selected steps as a user prompt, Edit puts it in the prompt box, and the mark records what was sent. The pane shows the agent summary on top."
     }
   ],
   "stage": "review",
@@ -61,6 +62,12 @@
       "changed": true,
       "feedback_class": "scope",
       "note": "The engineer asked to act on the selected steps, and to design the pane. Added epic E3, the step-to-draft table, the Send and Edit actions, and the pane layout. Renamed the priority CLI to the priority-dev CLI in prose."
+    },
+    {
+      "n": 3,
+      "changed": true,
+      "feedback_class": "scope",
+      "note": "The engineer chose layout C with an agent summary, and asUser true. Permission and option-pick steps became text answers. E3 is written up in contracts.md with five slices."
     }
   ]
 }

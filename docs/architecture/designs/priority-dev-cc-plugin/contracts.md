@@ -94,6 +94,12 @@ type Reading = {
     steps: unknown[]
     abstain: { reason: string, detail?: string } | null
   }
+  digest?: {              // the RunDigest that priority digest printed, when it did not abstain
+    ran: string           // what the agent did, at most 600 characters
+    result: string        // how the run ended, at most 300 characters
+    open_items: string[]
+    decisions: string[]
+  }
   error?: string          // the exit code and the last stderr line, when failed
   ms: number              // the time for both commands
 }
@@ -147,9 +153,15 @@ passed.
 | `approve_gate` | yes | `Approved: <gate>.` and the `notes` |
 | `ask_human`, `decide` | yes, through its answers | one line for each question: `<ask> → <picked labels>; <free text>` |
 | `ask_human`, `do` or `review` | yes | `Done: <steps or artifact>.` and the free text |
+| `approve_permission` | yes | `Yes, go ahead.` With `scope: session`, the line adds `You may do the same for the rest of this session.` |
+| `deny_permission` | yes | `No, do not do that.` and the `reason` |
+| `pick_option` | yes | `Option <index + 1>.` |
 | `notify` | no | none. The card shows the excerpt |
 | `snooze`, `dismiss` | no | none. The card shows the kind |
-| `approve_permission`, `deny_permission`, `pick_option`, `interrupt` | no | none. A stop has no open prompt, dialog, or turn for them. The card shows them dimmed, with "no target at a stop" |
+| `interrupt` | no | none. A stop has no running turn to stop. The card shows it dimmed, with "no target at a stop" |
+
+At a stop, no permission prompt or option dialog is open. The agent asked
+in its reply text, so the answer goes back as text, the same as a `reply`.
 
 The module joins the draft lines of the selected steps in step order, with
 one blank line between them.
@@ -174,75 +186,149 @@ The transcript still names the plugin as the origin.
 The pane id is `cobuilder-priority`, and its title is `Priority reader`.
 `/priority-on` and `/priority-pane` open it with `focus: true`. In a wide
 fullscreen terminal it is a sidebar beside the transcript, at most 45% of
-the terminal width. The module asks for `columns: 56`. Otherwise it is a
+the terminal width. The module asks for `columns: 60`. Otherwise it is a
 framed region above the prompt.
 
-### Layout, top to bottom
 
-1. **Header row.** The switch state (`● on` in green, `○ off` dim), the
-   count of readings, and a `running` marker while a reading runs.
-2. **The newest card, open.**
-   - A title row: `#<n>`, the time, the status, the priority, and
-     `needs you` when `needs_human` is true.
-   - One row for each step. A selectable step is a `Button` with
-     `plain: true`, drawn `[x]` or `[ ]` before its kind and a short form of
-     its content. A step that cannot be sent is a dim `Text`.
-   - For an `ask_human` `decide` step: each question, then its options as
-     toggle Buttons. A single-choice question clears the other options. The
-     question gets an `Input` for free text when `free_text` is true.
-   - The draft preview: a dim `Text` of the joined draft, cut at six rows.
-   - The action row: `Send (s)`, `Edit (e)`, `Right (r)`, `Wrong (w)`.
-   - The note `Input`, one row, with submit label `save`.
-3. **Older cards, closed.** One row each: `#<n>`, time, status, priority,
-   and the mark (`✓`, `✗`, or nothing). Pressing the row opens that card
-   with marks only, and no send actions.
-4. **Errors.** A failed reading shows its error in red on its card. An
-   unset setting shows the field name in the header row.
+### The chosen layout: C, split focus with an agent summary
+
+The engineer chose layout C. The image model's mockup is in
+`pane-design/layout-c.png`, and its HTML is in `pane-design/layout-c.html`.
+The mockup is a picture, not a specification. Where the two differ, this
+section rules.
+
+Top to bottom:
+
+1. **Header row.** `Priority reader`, the switch state (`● on` in green,
+   `○ off` dim), the count of readings, and `running…` in yellow while a
+   reading runs. An unset setting shows the field name here in red.
+2. **Agent summary.** A bordered `Box` titled `▸ Agent completed`. It shows
+   the digest of the newest reading: `ran`, then `result`, cut at three rows.
+   Hotkey `m` closes it to its title row, and `m` again opens it. A reading
+   with no digest shows `No digest for this stop` dim.
+3. **The newest card.**
+   - A title row: `#<n>`, the time, the priority on a red background, the
+     status, and `needs you` in yellow on the right when `needs_human` is
+     true.
+   - The dim line `Proposed steps (1–9 to select)`.
+   - One row for each step, in a `Box`. A selectable step is a `Button` with
+     `plain: true` and the label `[x] 1. reply` or `[ ] 1. reply`. Its
+     content follows on the next row. The focused step has a cyan border.
+   - An `ask_human` `decide` step lists each question, then its options as
+     toggle Buttons, `[•]` or `[ ]`. A single-choice question clears the
+     other options. The question gets an `Input` labelled `Other` when
+     `free_text` is true.
+   - An `interrupt` step is a dim `Text`: `[-] n. interrupt (no target at a
+     stop)`.
+4. **The draft block.** A `Box` with a cyan border, titled
+   `What will be sent`. It holds the exact draft. Its footer row shows the
+   source steps, the length in characters, and the target, `session prompt`.
+   With no step selected, it shows `Select a step` dim.
+5. **The action row.** `s Send` on a cyan background, then `e Edit`,
+   `r Right`, and `w Wrong`, as four Buttons with `plain: true`.
+6. **The note.** An `Input` labelled `Note`, with submit label `save`.
+7. **History.** The dim title `History`, then one row for each older
+   reading: `#<n>`, time, status, priority, and the mark on the right (`✓`
+   green, `✗` red, `-` dim). Pressing a row opens that card with marks only.
+
+Three parts of the mockup are not in the design:
+
+- **"Execution paused: waiting on priority reader decision".** The session
+  never waits for the reader, so the transcript shows no such line.
+- **"Target: bash stdin".** The draft goes to the session prompt.
+- **"ACTIVE FOCUS", "READY", "interactive", and "DISABLED" tags.** The
+  focus border and the dim style carry the same state. The module draws no
+  tag that repeats them.
 
 ### Element budget
 
 The terminal pane takes only `Box`, `Text`, `Button`, `Input`, `Select`,
 `Link`, `Code`, `Markdown`, `Raster`, `Image`, and `Client`. The design uses
-the first five. There is no checkbox element, so a selection is a `Button`
-with a `[x]` or `[ ]` label. There is no hover and no icon set. Colors are
-theme keys or named colors. A hotkey is one digit or one lowercase letter,
-and it works only while the pane has the focus. The person moves the focus
-to the pane with ctrl+x tab or a click.
+`Box`, `Text`, `Button`, and `Input`. There is no checkbox element, so a
+selection is a `Button` with a `[x]` or `[ ]` label. There is no hover and
+no icon set. Colors are theme keys or named colors. A hotkey is one digit
+or one lowercase letter, and it works only while the pane has the focus.
+The person moves the focus to the pane with ctrl+x tab or a click.
 
-Step rows take the digits `1` to `9` as hotkeys in step order. A step after
-the ninth has no hotkey.
+Step rows take the digits `1` to `9` in step order. A step after the ninth
+has no hotkey. The letters `s`, `e`, `r`, `w`, and `m` are the action keys.
 
-### Wireframe: the sidebar at 56 columns
-
-This wireframe is the baseline. The image prompt in `pane-image-prompt.md`
-asks for other options inside the same element budget.
+### Wireframe: the sidebar at 60 columns
 
 ```
-┌ Priority reader ─────────────────────────────────────┐
-│ ● on   4 readings   running…                         │
-│                                                      │
-│ #4  14:32  blocked  P1  needs you                    │
-│ 1 [x] reply   "Run the migration before the tests…"  │
-│ 2 [ ] continue_until  tests pass · 5 turns · 20 min  │
-│ 3 ask_human · decide                                 │
-│     Which store keeps the marks?                     │
-│     [x] $.store   [ ] a JSONL file                   │
-│     Other: ________________________________          │
-│   approve_permission   no target at a stop           │
-│                                                      │
-│ Draft                                                │
-│   Run the migration before the tests, then …         │
-│   Which store keeps the marks? → $.store             │
-│                                                      │
-│ [Send s]  [Edit e]      [Right r]  [Wrong w]         │
-│ Note: ______________________________________ save    │
-│                                                      │
-│ #3  14:20  working   P3   ✓                          │
-│ #2  14:11  done      P4   ✗                          │
-│ #1  14:02  abstain · no_agent_reply                  │
-└──────────────────────────────────────────────────────┘
+┌ Priority reader  ● on               4 readings │ running… ┐
+│ ┌ ▸ Agent completed ─────────────────────────── m ──────┐ │
+│ │ Ran the full test suite. Found the missing table      │ │
+│ │ hindsight_marks. Wrote a migration script.            │ │
+│ └───────────────────────────────────────────────────────┘ │
+│ #4 14:32  P1  blocked                          needs you  │
+│ Proposed steps (1–9 to select)                            │
+│ ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓ │
+│ ┃ [x] 1. reply                                          ┃ │
+│ ┃     "Run the migration before the tests, then re-…"   ┃ │
+│ ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛ │
+│ [ ] 2. continue_until · tests pass (5 turns, 20m)         │
+│ [ ] 3. ask_human · decide                                 │
+│     "Which store keeps the marks?"                        │
+│     [•] $.store   [ ] a JSONL file   Other: ________      │
+│ [ ] 4. approve_permission · once                          │
+│ ┌ What will be sent ────────────────────────────────────┐ │
+│ │ Run the migration before the tests, then re-run the   │ │
+│ │ suite.                                                │ │
+│ │ step 1 · 60 chars · session prompt                    │ │
+│ └───────────────────────────────────────────────────────┘ │
+│  s Send     e Edit     r Right     w Wrong                │
+│ Note: ____________________________________________ save   │
+│ History                                                   │
+│ #3 14:20 working P3                                    ✓  │
+│ #2 14:11 done P4                                       ✗  │
+│ #1 14:02 abstain · no_agent_reply                      -  │
+└───────────────────────────────────────────────────────────┘
 ```
 
 In a narrow terminal, or without fullscreen rendering, the same tree draws
-as a framed region above the prompt. The region takes a third of the
-height by default, so the older-card rows are the first to fall off.
+as a framed region above the prompt. The region takes a third of the height
+by default. The module then draws the summary closed and the history cut to
+one row.
+
+## Epic E3: Act
+
+**Outcome.** On the newest card, the person selects steps and answers the
+questions of an `ask_human` step. The pane shows the exact draft. `Send`
+submits it as a user prompt, `Edit` puts it in the prompt box, and the mark
+records what was sent. The pane follows layout C, with the agent summary
+at the top.
+
+**Depends on.** E1 (the reading and the store) and E2 (the pane and the
+marks). Both are built.
+
+**Files.** `hooks/draft.ts` (new, pure functions), `hooks/pane.tsx`,
+`hooks/reader.ts`, `hooks/register.ts`, `types/index.d.ts`, the tests in
+`tests/`, and the plugin README. No file outside `plugins/cobuilder-priority/`
+changes. Each file stays under 200 lines.
+
+### Slices
+
+| Slice | What it adds | Check |
+|---|---|---|
+| E3.1 Keep the digest | `reader.ts` stores the parsed `RunDigest` as `digest` on the reading. An abstain stores none. | A test stubs `$.process.run` with a digest JSON, drives `classic.Stop`, and finds `digest.ran` in the stored reading. |
+| E3.2 Build the draft | `draft.ts` exports `draftOf(steps, selection, answers)`. It follows the step table and returns the text and the source step indexes. It sends no unselected step and no `interrupt`. | Unit tests for each selectable kind, two steps joined in order, a decide answer with free text, and an empty selection. |
+| E3.3 Select on the card | The pane keeps the selection and the answers in `$.state`, for the newest reading only. Digits `1`–`9` toggle steps. A newer reading clears the selection. | Pane tests press `1` and `3`, and find `[x]` on both rows and both lines in the draft block. An older card renders no step Button. |
+| E3.4 Send and Edit | `s` calls `$.prompt.submit({ text, asUser: true })`. `e` calls `$.prompt.fill({ text, mode: "replace" })`. Both write `sent` on the mark and clear the selection. With no selection, neither key calls anything. `isFilled: false` writes nothing and shows `The prompt box is not available`. | Pane tests stub both calls and check the arguments, the stored `sent`, and that no call happens without a press or with an empty selection. |
+| E3.5 Layout C | The summary block with `m`, the title row, the focus border, the draft block with its footer, the action row, and the history list, as in the wireframe. | A render test finds the summary text, the draft footer `session prompt`, and the three history rows. A live look in a 160-column terminal, kept as a screenshot in the slice evidence. |
+
+### Done when
+
+- The five slice checks pass under `claude plugin test plugins/cobuilder-priority`.
+- `tsc` and `claude plugin validate` pass.
+- In a live session, one press of `s` with two selected steps starts one
+  user turn that holds both draft lines, and the next stop gets a new card.
+
+### Risks
+
+- A careless press can send model text that the person did not read. The
+  draft block shows the exact text, and only the newest card can send.
+- `asUser: true` makes the model read the draft as the person's words. The
+  person chose this.
+- `$.prompt.submit` waits until the session is idle. A press while a turn
+  runs sends the draft after that turn, and the card may be stale by then.

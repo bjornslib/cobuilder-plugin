@@ -62,7 +62,7 @@
   ],
   "out_of_scope": [
     "A step sent with no press, and a send from an older card",
-    "Permission, option-pick, and interrupt steps, which have no target at a stop",
+    "An interrupt step, which has no running turn to stop at a stop",
     "An operating-system notice for a notify step",
     "An export of the marks into the labelled set",
     "An optimiser run on the marks",

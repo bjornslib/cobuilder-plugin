@@ -35,8 +35,10 @@ alternatives:
     rejected_because: "The reading comes from a model that read the transcript. Its text reaches the session only after the person reads it and presses Send or Edit."
   - option: "Send the draft framed as a plugin message"
     rejected_because: "The person chose the exact text, so it is their prompt. The transcript still names the plugin as the origin."
-  - option: "Act on permission, option-pick, and interrupt steps"
-    rejected_because: "A stop has no open permission prompt, dialog, or running turn, so these steps have no target."
+  - option: "Act on an interrupt step"
+    rejected_because: "A stop has no running turn to stop."
+  - option: "Leave permission and option-pick steps out"
+    rejected_because: "At a stop, the agent asked in its reply text, so a text answer reaches it the same as a reply."
   - option: "Write each mark into the confirmed label files"
     rejected_because: "The engineer keeps the labels local. The confirmed set holds labels that the engineer confirmed, and live marks are a separate record."
   - option: "Add cobuilder-priority to the umbrella"
@@ -145,9 +147,13 @@ and answers the questions of an `ask_human` step. The module joins the
 draft text of the selected steps. `Send` calls
 `$.prompt.submit({ text, asUser: true })`, and `Edit` calls
 `$.prompt.fill` so the person can change the draft first. The module
-records what it sent on the mark of that reading. Permission, option-pick,
-and interrupt steps have no target at a stop, so the pane shows them and
-cannot send them.
+records what it sent on the mark of that reading. Permission and
+option-pick steps become short text answers. An interrupt step has no
+target at a stop, so the pane shows it and cannot send it.
+
+**Layout.** The pane follows layout C: an agent summary from the digest at
+the top, then the newest card, the draft block, the actions, and the
+history. `contracts.md` holds the layout and the wireframe.
 
 **Settings.** `userConfig` holds the priority-dev folder, the program file,
 the timeout, and an optional secret API key. The module passes the key to
