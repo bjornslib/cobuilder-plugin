@@ -7,9 +7,15 @@ import { answer, draftFor, pick, saveMark, send, toggleStep } from './act'
 type Step = Record<string, any>
 
 // A Text keeps no key, so a keyed text is a Text in a keyed Box. Tests find it by that key.
-export function keyed(ui: any, key: string, text: string, style: Record<string, unknown> = {}) {
+export function keyed(ui: any, key: string, text: string, style: Record<string, unknown> = {}, box: Record<string, unknown> = {}) {
   const { Box, Text } = ui
-  return <Box key={key}><Text {...style}>{text}</Text></Box>
+  return <Box key={key} {...box}><Text {...style}>{text}</Text></Box>
+}
+
+// The local hour and minute of an ISO time.
+export function clock(at: string): string {
+  const d = new Date(at)
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
 
 function stepBody(step: Step): string {
@@ -95,20 +101,22 @@ export function card($: any, ui: any, r: Reading, mark: Mark | undefined, a: Act
   const { Box, Text, Button, Input } = ui
   const verdict = (v: 'right' | 'wrong', label: string) => (mark?.verdict === v ? `${label} ✓` : label)
   const res = r.result
+  // A reading with nothing to send has no draft block and no Send or Edit.
+  const sendable = live && (res?.steps ?? []).some(canSend)
   return (
     <Box key={`card-${r.n}`} flexDirection="column" rowGap={0}>
       <Box flexDirection="row" columnGap={1}>
-        {keyed(ui, 'title', `#${r.n} ${r.at.slice(11, 16)}`, { bold: true })}
+        {keyed(ui, 'title', `#${r.n} ${clock(r.at)}`, { bold: true }, { flexShrink: 0 })}
         {res?.priority ? keyed(ui, 'priority', res.priority, { backgroundColor: 'red', color: 'white' }) : null}
         {keyed(ui, 'status', statusText(r), r.state === 'failed' || res?.needs_human ? { color: 'red' } : {})}
         {res?.needs_human ? keyed(ui, 'needs', 'needs you', { color: 'yellow' }) : null}
       </Box>
       {live && res?.steps.length ? <Text dimColor>Proposed steps (1–9 to select)</Text> : null}
       {(res?.steps ?? []).map((s, i) => stepRow($, ui, r, s, i, a, live))}
-      {live ? draftBlock(ui, r, a) : null}
+      {sendable ? draftBlock(ui, r, a) : null}
       <Box flexDirection="row" columnGap={3}>
-        {live ? <Button key="send" plain hotkey="s" label="Send" onPress={() => void send($, r, 'submit')} /> : null}
-        {live ? <Button key="edit" plain hotkey="e" label="Edit" onPress={() => void send($, r, 'fill')} /> : null}
+        {sendable ? <Button key="send" plain hotkey="s" label="Send" onPress={() => void send($, r, 'submit')} /> : null}
+        {sendable ? <Button key="edit" plain hotkey="e" label="Edit" onPress={() => void send($, r, 'fill')} /> : null}
         <Button key={`right-${r.n}`} plain hotkey="r" label={verdict('right', 'Right')} onPress={() => void saveMark($, r.sessionId, r.n, { verdict: 'right' })} />
         <Button key={`wrong-${r.n}`} plain hotkey="w" label={verdict('wrong', 'Wrong')} onPress={() => void saveMark($, r.sessionId, r.n, { verdict: 'wrong' })} />
       </Box>

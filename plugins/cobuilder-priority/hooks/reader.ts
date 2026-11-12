@@ -108,6 +108,7 @@ async function save($: any, reading: Omit<Reading, 'n'>): Promise<void> {
   const n = list.length + 1
   await $.store.set(key, [...list, { ...reading, n }])
   // At a stop the session waits for the next prompt. The status line says a reading is ready.
-  $.ui.status(`Priority reader · #${n} ready${reading.result?.needs_human ? ' · needs you' : ''}`)
+  const what = reading.state === 'failed' ? 'failed' : `ready${reading.result?.needs_human ? ' · needs you' : ''}`
+  $.ui.status(`Priority reader · #${n} ${what}`)
   await update($, tick, (t) => t + 1)
 }

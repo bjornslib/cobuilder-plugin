@@ -23,6 +23,16 @@ test('a stored reading sets the status line, with needs you when the reading nee
   expect(lines).toContain('Priority reader · #1 ready · needs you')
 })
 
+test('a failed reading sets the status line to failed, not ready', async ($, on) => {
+  const lines = stubEngine(on)
+  const store = stubStore(on)
+  stubProcess(on, [DIGESTED, DONE])
+  await switchOn($)
+  await stop($)
+  await waitFor(() => Array.isArray(store.get(KEY)))
+  expect(lines).toContain('Priority reader · #1 failed')
+})
+
 async function switchOn($: any) {
   await $.session.start({ cwd: '/work/app', surface: 'terminal', isInteractive: true })
   await $.command.run({ command: 'priority-on' })

@@ -2,7 +2,7 @@
 import { atom, read } from 'claude-code'
 import type { Act, Mark, Reading } from '../types'
 import { EMPTY, actFor, marksKey, openCard, toggleSummary } from './act'
-import { card, keyed } from './card'
+import { card, clock, keyed } from './card'
 import { isBusy, readingsKey } from './reader'
 
 const switchedOn = atom({ plugin: 'cobuilder-priority', key: 'on' } as const, false)
@@ -46,7 +46,7 @@ function history($: any, ui: any, rows: Reading[], marks: Record<string, Mark>, 
   const line = (r: Reading) => {
     const res = r.result
     const what = r.state === 'failed' ? 'failed' : res?.abstain ? `abstain · ${res.abstain.reason}` : `${res?.status ?? '-'} ${res?.priority ?? ''}`
-    return `#${r.n} ${r.at.slice(11, 16)} ${what.trim()}  ${sign(marks[String(r.n)])}`
+    return `#${r.n} ${clock(r.at)} ${what.trim()}  ${sign(marks[String(r.n)])}`
   }
   return (
     <Box key="history" flexDirection="column">

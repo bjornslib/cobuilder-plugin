@@ -48,10 +48,22 @@ test('an abstain and a failed reading show their reason on the card', { options:
   await ui.unmount()
 })
 
-test('a failed reading names the unset setting', async ($, on) => {
+test('a failed reading names the unset setting, and offers no draft and no send', async ($, on) => {
   await readings($, on)
   const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
   expect((await ui.find({ key: 'status' }))?.text).toMatch(/^failed: .*priority_dev_dir/)
+  expect(await ui.find({ key: 'draft' })).toBeUndefined()
+  expect(await ui.find({ key: 'send' })).toBeUndefined()
+  expect(await ui.find({ key: 'right-1' })).toBeDefined()
+  await ui.unmount()
+})
+
+test('the card time is the local time of the stop', { options: OPTIONS }, async ($, on) => {
+  const store = await readings($, on)
+  const at = new Date((store.get('readings:S1') as any[])[0].at)
+  const local = `${String(at.getHours()).padStart(2, '0')}:${String(at.getMinutes()).padStart(2, '0')}`
+  const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
+  expect((await ui.find({ key: 'title' }))?.text).toBe(`#1 ${local}`)
   await ui.unmount()
 })
 
