@@ -1,10 +1,10 @@
 {
   "schema_version": "1.5",
   "sources": {
-    "git_head": "b860c010bcc22764695457c5d40c5b2288333a29",
+    "git_head": "86f4295a0d51d2757a1a6ab16313f42badd1267e",
     "trees": {
       "docs/architecture/adr": "sha256:33aceef11ab8621d50050399041d3695eddf2c98aa96c945a8a4f5d2dff325c9",
-      "docs/architecture/designs": "sha256:c9d8a49b7d69edc5d9ee05489f7992e94b92d4c5d0a7d2a9ade95ec371a5f274",
+      "docs/architecture/designs": "sha256:928faab91339b5dce92e3c33d9936c6f0bba0597397104546a5bd11ded2077da",
       "docs/architecture/contexts": "sha256:aaf923ca84433a8c5a152bf846f749e852a293aca14e38801bf9a3c84faba20a",
       "docs/plans": "sha256:f18f4ca3a7051334e5a1cc1325aba632ce1f8a07205bbceb4018482b7c4d041d",
       ".cobuilder/rubrics": "sha256:1c37edc890c8ea4fe045f4353fd79426b171fa4d842878aaa9211330af08bca8"
