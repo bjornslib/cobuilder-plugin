@@ -19,7 +19,7 @@ Test command: uv run pytest tests -q
 ### C2 — Each signal has a message that names a decision [CRITICAL]
 **Must be true:** shared/structure-messages.json has one template per signal of the script, and each template names the decision for GREEN: move the files now, or keep the layout and give a reason.
 **Evidence to check:**
-- Run the structure test that matches the JSON keys to the signal names.
+- Run the structure test that matches the JSON keys to the signal names, and each template placeholder to a fact of its signal.
 - Read each template.
 **Scoring:**
 - 1.0 — every signal, every template names both choices

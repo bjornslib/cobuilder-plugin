@@ -10,7 +10,7 @@ Design record: `docs/architecture/designs/structure-coaching/`, decided in ADR-0
 | `plugins/implement/scripts/habit_coach.py` | The `PostToolUse` coach. It filters on `implement:green` and runs habit-hooks on one file. | Gets a second runner. The coach joins the habit-hooks text and the structure text into one message. The GREEN filter stays. |
 | `plugins/implement/scripts/structure_runner.py` | None. A new file. | Calls `structure_signals.py`, applies the approved wording, and drops a finding that the session already showed. It keeps the coach file inside the size limit. |
 | `plugins/implement/scripts/verify_gate.py` | Checks the gate files before slices start. | Gets an agent-use check for one slice, which runs before the slice closes. |
-| `plugins/implement/agents/validate.md` | Scores a slice and writes the attempt file. | Adds a `### Structure` block outside the score. |
+| `plugins/implement/agents/validate.md` | Scores a slice and writes the attempt file. | Runs `structure_signals.py` on the new files of the slice, and adds a `### Structure` block outside the score. |
 | `plugins/implement/skills/build/references/slice-loop.md` and `SKILL.md` | The loop procedure for the main agent. | Stronger text on the use of the three agents, and the agent-use check before a slice closes. |
 | `plugins/cobuilder-full-lifecycle/skills/cobuilder-setup/` | Installs habit-hooks and checks the coach. | Writes the default `.cobuilder/structure-signals.json`. |
 | `docs/architecture/contexts/implement/boundary.yaml` | The implement boundary record. | No new edge. `implement` already depends on `shared`. |
@@ -47,15 +47,16 @@ The primary path is a GREEN write.
 The second path is the end of a slice.
 
 1. The main agent spawns VALIDATE and VOCABULARY in parallel.
-2. VALIDATE scores the rubric, then writes the `### Structure` block. The block reads the diff, the `forbidden_dependencies` of the touched contexts, and the glossary. It judges contract drift, cohesion, and each new dependency.
-3. On a FAIL, the block goes to the feedback file, and GREEN reads it in the next attempt.
-4. Before the slice closes, the main agent runs `verify_gate.py --plan <dir> --slice <N>`. The check fails when the agent-use effect is absent.
+2. VALIDATE scores the rubric. Then it runs `python3 <script> --file <path>` for each file that the slice added. The spawn message gives the script path. VALIDATE does not run `structure_runner.py`, because the runner holds only the coach wording and the session record.
+3. VALIDATE writes the `### Structure` block. For each script finding, it states confirmed or dismissed, with one line of reason. Then it reads the diff, the `forbidden_dependencies` of the touched contexts, and the glossary. It judges contract drift, cohesion, and each new dependency.
+4. On a FAIL, the block goes to the feedback file, and GREEN reads it in the next attempt.
+5. Before the slice closes, the main agent runs `verify_gate.py --plan <dir> --slice <N>`. The check fails when the agent-use effect is absent.
 
 ## External
 
 | Item | Use |
 |---|---|
 | habit-hooks CLI | Unchanged. The coach still runs it for the six extensions. |
-| git | `git ls-files --others --exclude-standard`, `git merge-base`, and `git diff --name-status` give the new files. |
+| git | `git ls-files`, `git merge-base`, and `git diff --name-only --diff-filter=A` give the file list and the new files. `epic-E1-design.md` A1 and A2 give each call. |
 | Environment | No new variable. The coach reads `session_id` from the hook payload and the temp folder from `tempfile.gettempdir()`. |
 | Webhooks | None. |

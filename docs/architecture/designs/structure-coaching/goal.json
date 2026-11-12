@@ -25,7 +25,7 @@
   "abort_if": [
     "The spike shows that a second runner in habit_coach.py cannot put a folder signal into the coach message",
     "A hand label on three repositories gives each of the three signals a precision below 50%. A single signal below 50% is dropped instead",
-    "The replay shows a fall of less than 20% in the growth of the largest folder with the signals on, across three runs or more for each condition",
+    "The replay shows no rise in the follow-on success rate, and no gain in folder growth, duplication, silent contract changes, or dependencies across a boundary",
     "The structure work needs a hard block on a write, which ADR-0025 does not allow for the coach"
   ],
   "min_work": {

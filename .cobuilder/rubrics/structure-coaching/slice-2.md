@@ -18,12 +18,12 @@ Test command: uv run pytest tests -q
 - 0.0 — fewer
 
 ### C2 — The token split and the exclusions
-**Must be true:** Stems split on _, -, ., and case changes. Siblings with a test prefix do not form a cluster. A stem that already has a sub-folder does not form a cluster.
+**Must be true:** Stems split on _, -, ., and case changes. Test names (test_ and test- prefixes, .test, .spec, and _test suffixes) do not form a cluster. A stem that already has a sub-folder of that name does not form a cluster. An excluded stem, such as the, does not form a cluster.
 **Evidence to check:**
-- Find cases for snake_case, kebab-case, camelCase, PascalCase, a test_ cluster, and a sub-folder.
+- Find cases for snake_case, kebab-case, camelCase, PascalCase, a test-name cluster, a sub-folder, and an excluded stem.
 **Scoring:**
-- 1.0 — all six cases
-- 0.5 — four or five
+- 1.0 — all seven cases
+- 0.5 — four to six
 - 0.0 — fewer
 
 ### C3 — The config file [CRITICAL]
@@ -36,9 +36,10 @@ Test command: uv run pytest tests -q
 - 0.0 — neither
 
 ### C4 — Paths not analysed
-**Must be true:** The output names each excluded path that the script did not analyse, so a clean result is not a false pass.
+**Must be true:** The output names each excluded-path glob that matched, with the count of files it removed. A written file that is excluded gets no finding, and the output names the file and its glob. So a clean result is not a false pass.
 **Evidence to check:**
-- Find a test that asserts an excluded path appears in the not-analysed list.
+- Find a test that asserts the glob and its count in the not-analysed list.
+- Find a test for an excluded written file.
 **Scoring:**
 - 1.0 — tested and passes
 - 0.5 — listed but not tested

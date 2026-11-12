@@ -12,8 +12,8 @@ Memory before Gate 3: absent. The `consult` tool answered that the Hindsight ser
 | `plugins/implement/scripts/habit_coach.py` | Changed | Skips habit-hooks for an extension outside `SOURCE_EXTENSIONS`, calls the second runner, and joins the two texts. About 15 new lines. |
 | `plugins/implement/scripts/agent_use.py` | New | The agent-use check for one slice. `verify_gate.py` has 569 lines, so the check goes in its own module. |
 | `plugins/implement/scripts/verify_gate.py` | Changed | A `--slice <N>` option that runs only the agent-use check. |
-| `plugins/implement/agents/validate.md` | Changed | The `### Structure` block step and its format. |
-| `plugins/implement/skills/build/references/slice-loop.md` | Changed | Stronger agent-use text, and the check before a slice closes. |
+| `plugins/implement/agents/validate.md` | Changed | The `### Structure` block step and its format. VALIDATE runs `structure_signals.py --file` on the new files of the slice. |
+| `plugins/implement/skills/build/references/slice-loop.md` | Changed | Stronger agent-use text, the check before a slice closes, and the structure script path in the VALIDATE spawn message. |
 | `plugins/implement/skills/build/SKILL.md` | Changed | One line that points to the check in the slice loop. |
 | `plugins/cobuilder-full-lifecycle/skills/cobuilder-setup/SKILL.md` | Changed | A step that writes the default config, after the engineer approves it. |
 | `tests/test_structure_signals.py` | New | Synthetic folder trees in `tmp_path` git repos. |
@@ -29,12 +29,17 @@ Memory before Gate 3: absent. The `consult` tool answered that the Hindsight ser
 
 ```python
 @dataclass(frozen=True)
-class Config:
-    folder_limit: int | None        # engineer limit; None means percentile only
+class Config:                       # defaults and evidence: epic-E1-design.md A1 to A7
+    folder_limit: int | None        # default 15; None means percentile only
     percentile: int                 # default 90
-    generic_names: frozenset[str]   # default: utils, helpers, common, misc, manager, base
-    excluded_paths: tuple[str, ...] # glob patterns, such as "**/node_modules/**"
-    test_prefixes: tuple[str, ...]  # default: ("test", "spec")
+    min_folders: int                # default 10
+    cluster_min: int                # default 3
+    generic_names: frozenset[str]   # default: utils, util, helpers, helper, common, misc, manager, base
+    excluded_stems: frozenset[str]  # default: a, an, the, index, main, init
+    excluded_paths: tuple[str, ...] # default: .*/**, docs/**, **/fixtures/**, and four more
+    test_prefixes: tuple[str, ...]  # default: ("test_", "test-")
+    test_suffixes: tuple[str, ...]  # default: (".test", ".spec", "_test")
+    problem: str | None             # why the config file was not used, or None
 
 @dataclass(frozen=True)
 class Finding:
@@ -50,16 +55,19 @@ class Report:
     findings: tuple[Finding, ...]
     not_analysed: tuple[str, ...] # excluded paths and reasons
 
-def load_config(root: Path) -> Config: ...
-def new_files(root: Path) -> frozenset[str]: ...
+def load_config(root: Path) -> Config: ...         # missing or bad file gives the defaults
+def repo_files(root: Path) -> list[str]: ...        # git ls-files --cached --others --exclude-standard
+def excluded_by(rel: str, config: Config) -> str | None: ...   # the matching glob
+def new_files(root: Path) -> frozenset[str]: ...    # untracked, staged added, added since merge-base
+def folder_counts(files: list[str]) -> dict[str, int]: ...
+def folder_limit(counts: dict[str, int], config: Config) -> int | None: ...
 def split_tokens(stem: str) -> list[str]: ...
-def folder_limit(root: Path, config: Config) -> int: ...
-def crowded_folder(rel: str, root: Path, config: Config, limit: int) -> Finding | None: ...
-def stem_cluster(rel: str, root: Path, config: Config) -> Finding | None: ...
+def is_test_name(name: str, config: Config) -> bool: ...
+def crowded_folder(rel: str, files: list[str], counts: dict[str, int], limit: int) -> Finding | None: ...
+def stem_cluster(rel: str, files: list[str], config: Config) -> Finding | None: ...
 def generic_name(rel: str, config: Config) -> Finding | None: ...
 def signals_for(path: str, root: Path, config: Config) -> Report: ...
-def to_findings_json(report: Report) -> str: ...   # habit-hooks findings shape, for E6
-def main(argv: list[str]) -> int: ...              # --file <path> prints the JSON
+def main(argv: list[str]) -> int: ...   # --file <path> (repeatable), --survey, --defaults; prints JSON
 ```
 
 `plugins/implement/scripts/structure_runner.py`:
@@ -104,6 +112,19 @@ habit_coach.main
 └── render(code, joined_message) -> additionalContext JSON, exit 0
 ```
 
+VALIDATE, after it scores the rubric (E4):
+
+```
+VALIDATE
+├── git diff of the slice -> the files that the slice added
+├── python3 <structure script> --file <f1> --file <f2> ...   # path from the spawn message
+│   └── signals_for(f, root, config) for each file -> JSON
+└── writes ### Structure: each finding confirmed or dismissed, then
+    contract drift, cohesion, and each new dependency against boundary.yaml
+```
+
+VALIDATE runs `structure_signals.py`, not `structure_runner.py`. The runner exists for the coach: the wording and the session record. VALIDATE needs the plain findings, and it judges them itself. The build skill puts the absolute script path in the spawn message, so `validate.md` names no plugin path.
+
 Slice close:
 
 ```
@@ -115,7 +136,7 @@ main agent -> verify_gate.py --plan <dir> --slice <N>
 
 | Test file | Cases |
 |---|---|
-| `test_structure_signals.py` | A crowded folder over the limit and over the percentile. No finding under either. A name-stem cluster of three siblings. No cluster when a sub-folder has the stem. No cluster for `test_*` files. A generic name. `split_tokens` for `snake_case`, `kebab-case`, `camelCase`, and `PascalCase`. An untracked file counts as new. A committed old file gives no finding. A repo with no merge-base uses untracked and staged files. An excluded path appears in `not_analysed`. A missing config gives the defaults. |
+| `test_structure_signals.py` | The cases in the test plan of `epic-E1-design.md`, one or more for each step A1 to A8. |
 | `test_structure_runner.py` | Each signal renders with its template. A second call in the same session gives no text. A new session gives the text again. A missing `session_id` gives the text with no record. A bad record file does not raise. |
 | `test_habit_coach.py` | A `.go` file gives a structure message and no habit-hooks call. A `.py` file gives the joined text. The coach still returns 0. The existing cases, which include the two cases where the hook must not run `uv`, still pass. |
 | `test_agent_use.py` | No attempt file fails. A pass at attempt 1 passes. A workflow-mode slice passes. A slice that the main agent wrote fails. |
@@ -129,4 +150,5 @@ Test rules from the repo: test effects and structure, not wording. Use `tmp_path
 2. **The percentile on small repos.** The 90th percentile of a repo with eight folders is a weak base. The engineer limit may need to be the main rule.
 3. **The import path from the coach to `shared/`.** The coach reaches the script through the `plugins/implement/shared` symlink. A cache install must keep that symlink.
 4. **The no-repeat key.** A key of signal, folder, and stem may hide a second real problem in the same folder.
-5. **The cost per write.** `new_files` runs git three times for each write. The spike measures the time.
+5. **The cost per write.** One write runs git about five times. On this repo the calls take about 180 ms in total. The spike measures one real write.
+6. **The generic-name source.** ADR-0048 decision 2 starts the list from the `_Avoid_` terms of the glossary. Those terms give false signals, such as `reader.py`. The E1 design uses the config list only, until the engineer decides.

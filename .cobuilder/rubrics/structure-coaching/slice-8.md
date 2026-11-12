@@ -34,6 +34,16 @@ Test command: uv run pytest tests -q
 - 0.5 — partial
 - 0.0 — absent
 
+### C4 — The block judges each script finding [CRITICAL]
+**Must be true:** The fixture slice adds a file to a folder over the limit. VALIDATE ran structure_signals.py --file on the files that the slice added, and the block lists the crowded-folder finding as confirmed or dismissed, with one line of reason. VALIDATE did not run structure_runner.py.
+**Evidence to check:**
+- Read the blind-pass transcript for the script call and its arguments.
+- Read the fixture attempt file for the finding and its judgment.
+**Scoring:**
+- 1.0 — script run on the added files, finding judged with a reason
+- 0.5 — script run, finding listed with no judgment
+- 0.0 — no script run, or the finding is absent
+
 ## Regression check
 - All tests that passed before this slice must still pass.
 - Files outside the slice scope in the epic design must remain unchanged.

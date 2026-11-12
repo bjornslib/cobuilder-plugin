@@ -8,10 +8,10 @@ Test command: uv run pytest tests -q
 ## Criteria
 
 ### C1 — The setup step writes the config [CRITICAL]
-**Must be true:** The cobuilder-setup skill has a step that writes .cobuilder/structure-signals.json after the engineer approves it, and load_config reads the result.
+**Must be true:** The cobuilder-setup skill has a step that shows the output of structure_signals.py --defaults and --survey, writes .cobuilder/structure-signals.json only after the engineer approves it, and leaves an existing file alone. load_config reads the result with no not-analysed line.
 **Evidence to check:**
 - Run the temp-repo test for the written config.
-- Read the setup skill step.
+- Read the setup skill step. It holds no second copy of the default values.
 **Scoring:**
 - 1.0 — step and test pass
 - 0.5 — step without a test
