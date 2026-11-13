@@ -1,13 +1,13 @@
 {
   "schema_version": "1.5",
   "sources": {
-    "git_head": "7477bb75e3df922e2673452e23072774eb16af24",
+    "git_head": "315b76f801ba048c8e6ca403682bd98328bfedaf",
     "trees": {
       "docs/architecture/adr": "sha256:20ca2f731683a3c296a2c76de4eeab9d4a6a07fcfeab163272cc78709195785d",
       "docs/architecture/designs": "sha256:9faf06636e9f4782a1f46ae5507cdec60c96faf0c5824b0a4e154b1b0898c650",
-      "docs/architecture/contexts": "sha256:a8577da6af797170fd9ba5c9a19eec1279a1a8dac1bd7cda9e71a16f6118f836",
-      "docs/plans": "sha256:971f62697e41d7910af874a8426ab5439cff1328b1304a130bbba9659294b7ce",
-      ".cobuilder/rubrics": "sha256:37da73fbaaa70aeafb464471a6a5b4deb80d2f9e8be0418ab5523381465daab1"
+      "docs/architecture/contexts": "sha256:5ba95d850addabe46f6527e72178225cea8307bc3d3d772b5450ec6f5e73718f",
+      "docs/plans": "sha256:6e5ba1d2b6ef97b4805e4b9bcf941f5435da8e881116cadd01a9ff3827e05cf2",
+      ".cobuilder/rubrics": "sha256:f2881ddce956a1ac1e35a189db6240a60f5e06eef638230cd49d178593e90468"
     }
   },
   "entities": {
@@ -1731,8 +1731,8 @@
             "ste-writing"
           ],
           "public_interface": [
-            "Skill(\"architect:mermaid\")",
-            "Skill(\"architect:ste-writing\")"
+            "Skill(\"mermaid\")",
+            "Skill(\"ste-writing\")"
           ],
           "allowed_inbound": [
             "skill-architecture"
@@ -5022,9 +5022,9 @@
         "n": 11,
         "title": "Each VALIDATE signal that the spike keeps, in the packet",
         "ends_with": "Each kept signal gives its finding on a fixture repo, and a `not_analysed` line when it has no input, such as a file with no history.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "structure-coaching/12",
@@ -8984,7 +8984,7 @@
       },
       "structure-coaching": {
         "stage_source": "tracker",
-        "next_ready": "structure-coaching/11",
+        "next_ready": "structure-coaching/12",
         "pull_requests": []
       },
       "ubiquitous-language": {

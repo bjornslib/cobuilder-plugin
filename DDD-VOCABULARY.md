@@ -417,6 +417,20 @@ _Avoid_: drift alone (the `pr` term)
 
 The change can be a parameter, a default, a return, a raise, or a removed symbol. Its facts list `callers_untouched` and `callers_total`. It differs from Drift (`pr`), an `assessment.json` finding.
 
+<a id="duplicate-block"></a>
+**Duplicate block** (`implement`):
+A structure finding of the signal `duplicate-block`: a run of normalised code lines in an added range of the slice that another product file also holds. Its facts are `lines`, `other`, `other_lines`, and `size`, and `shared/structure/duplicates.py` finds it.
+_Avoid_: block alone (the Structure block is a section of a VALIDATE report)
+
+<a id="consumer-locality"></a>
+**Consumer locality** (`implement`):
+A fact in `evidence.consumer_locality` of the evidence packet: every importer of an added file sits in one other folder. VALIDATE uses it in the cohesion judgment, and it never becomes a structure finding.
+_Avoid_: locality finding
+
+<a id="layer-rule"></a>
+**Layer rule** (`implement`):
+The rule of consumer locality that drops an entry when the consumer folder imports three or more files of the folder of the added file. That folder is then a layer above it, not the one home of the file.
+
 <a id="modular-mirage"></a>
 **Modular Mirage** (`implement`):
 A split of code into more files that keeps one reason to change spread across them. Teams often make such a split only to pass a size limit.

@@ -8,7 +8,7 @@ from __future__ import annotations
 import posixpath
 import re
 
-from .config import Config
+from .config import Config, excluded_by
 from .types import Finding
 
 EXAMPLES_MAX = 5
@@ -44,6 +44,12 @@ def is_test_name(name: str, config: Config) -> bool:
     """Return True when the stem starts with a test prefix or ends with a test suffix."""
     stem = stem_of(name)
     return stem.startswith(config.test_prefixes) or stem.endswith(config.test_suffixes)
+
+
+def is_product(rel: str, config: Config) -> bool:
+    """Return True for a code file that is not a test name and that no excluded path holds."""
+    code = posixpath.splitext(rel)[1] in config.code_extensions
+    return code and not is_test_name(rel, config) and excluded_by(rel, config) is None
 
 
 def stem_cluster(rel: str, files: list[str], config: Config) -> Finding | None:

@@ -35,6 +35,7 @@ try:
     from structure.git import GitError, added_lines, merge_base, repo_top, slice_files
     from structure.slice_drift import caller_files, drift_part
     from structure.slice_edges import edge_part, prose_rules, read_records
+    from structure.slice_reuse import copy_part, locality_part
 except (ImportError, SyntaxError) as error:  # the run still writes one packet, see main
     IMPORT_FAILURE: str | None = str(error) or type(error).__name__
 else:
@@ -83,12 +84,16 @@ def _analyse(root: Path, base: str, config: Config, notes: list[str]) -> dict[st
     boundaries, record_notes = read_records(root, parse)
     drift, moves, drift_notes = drift_part(root, base, modified, diff, config)
     edges, edge_notes = edge_part(root, base, added, modified, boundaries)
+    copies, copy_notes = copy_part(root, base, added, modified, config)
+    locality, locality_notes = locality_part(root, added, config)
     rules = prose_rules(sorted(diff), boundaries)
     all_notes = [
         *notes, *dropped_added, *dropped_modified, *record_notes, *drift_notes, *edge_notes,
+        *copy_notes, *locality_notes,
     ]
     return _packet(
-        base, _files(added, modified), [*drift, *edges], _evidence(rules, moves), all_notes
+        base, _files(added, modified), [*drift, *edges, *copies],
+        _evidence(rules, moves, locality), all_notes,
     )
 
 
@@ -123,9 +128,18 @@ def _files(added: list[str], modified: list[str]) -> dict[str, list[str]]:
     return {"added": list(added), "modified": list(modified)}
 
 
-def _evidence(rules: list[dict[str, str]], moves: list[dict[str, str]]) -> dict[str, Any]:
+def _evidence(
+    rules: list[dict[str, str]],
+    moves: list[dict[str, str]],
+    locality: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
     """Return the evidence block. The vocabulary block stays empty until the leads exist."""
-    return {"boundary_rules_for_agent": list(rules), "vocabulary": {}, "moves": list(moves)}
+    return {
+        "boundary_rules_for_agent": list(rules),
+        "vocabulary": {},
+        "moves": list(moves),
+        "consumer_locality": list(locality or []),
+    }
 
 
 def _one_line(text: str) -> str:

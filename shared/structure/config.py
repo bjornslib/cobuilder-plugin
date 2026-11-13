@@ -39,6 +39,9 @@ class Config:
     )
     test_prefixes: tuple[str, ...] = ("test_", "test-")
     test_suffixes: tuple[str, ...] = (".test", ".spec", "_test")
+    # Duplicated code, from epic-E4-design.md step C6.
+    dup_window: int = 6
+    dup_min_chars: int = 120
     problem: str | None = None
 
 
