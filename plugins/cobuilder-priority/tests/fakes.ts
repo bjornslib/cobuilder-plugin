@@ -39,6 +39,36 @@ export const WAITING = { ...ACTIONABLE, status: 'waiting_answer' }
 // An interpret result that abstains because the agent gave no reply.
 export const NO_REPLY = { status: null, needs_human: null, priority: null, steps: [], abstain: { reason: 'no_agent_reply' } }
 
+// The WAITING steps with a notify step, in the shape of the interpreter's Notify: `excerpt` (E3.9).
+export const NOTIFYING = {
+  ...WAITING,
+  steps: [{ kind: 'reply', text: 'Run the migration before the tests.' }, { kind: 'notify', excerpt: 'Tests pass.' }],
+}
+
+// A waiting reading that the person does not need to answer.
+export const NO_HUMAN = { ...WAITING, needs_human: false }
+
+// A last agent message in the four labelled parts of this repo's CLAUDE.md (E3.11).
+export const LABELLED = [
+  '**FYI**',
+  'The reader stores each reading.',
+  '',
+  '**Summary**',
+  'The labels now reach the store.',
+  '',
+  '## Next steps',
+  'Run the tests.',
+  '',
+  'Decisions and questions:',
+  'None.',
+].join('\n')
+
+// The text of the Summary part of LABELLED.
+export const LABELLED_SUMMARY = 'The labels now reach the store.'
+
+// A last agent message with no labelled part.
+export const PLAIN = 'The tests pass, so the change can ship.'
+
 // The drawn tree as plain data. A node keeps its key in `key` or in `props.key`.
 export type Node = { type?: string; key?: string; props?: Record<string, any>; children?: unknown[] }
 
@@ -88,17 +118,24 @@ export function stubStore(on: any) {
   return data
 }
 
-// Returns the status lines that the module set, in order.
-export function stubEngine(on: any, opts: { commands?: boolean } = {}) {
+// Returns the status lines that the module set, in order. `opts.toasts` collects the text of each toast.
+export function stubEngine(on: any, opts: { commands?: boolean; toasts?: string[] } = {}) {
   const statuses: (string | undefined)[] = []
   if (opts.commands !== false) on('command.register', (_$: any, e: any) => ({ value: { command: e.name } }))
   on('ui.open', () => ({ value: { isPlaced: true } }))
-  on('ui.toast', () => ({ value: undefined }))
+  on('ui.toast', (_$: any, e: any) => { opts.toasts?.push(e.text); return { value: undefined } })
   on('ui.status', (_$: any, e: any) => { statuses.push(e.text); return { value: undefined } })
   on('session.start', (_$: any, e: any) => ({ cwd: e.cwd }))
   on('command.run', () => ({ text: '' }))
   on('classic.Stop', () => ({}))
   return statuses
+}
+
+// The engine's record of this plugin's open panes, which `$.ui.panes()` reads (E3.9).
+// `open` says whether the reader pane is up.
+export function stubPanes(on: any, open: boolean) {
+  const pane = { id: 'priority-reader', title: 'Priority reader', isShown: true, isFocused: false, isPlaced: true }
+  on('ui.panes', () => ({ value: open ? [pane] : [] }))
 }
 
 // Lets unawaited work finish: the reader runs after the Stop hook returns.
@@ -119,8 +156,8 @@ export const PANE = {
 } as const
 
 // Starts a session, turns the reader on, and runs `count` stops to stored readings.
-// The store carries `sent`, the prompts that the module submitted or filled.
-export async function readings($: any, on: any, answers: object[] = [DIGESTED, DONE], count = 1, filled = true) {
+// The store carries `sent`, the prompts that the module submitted or filled. `last` is the last agent message of each stop.
+export async function readings($: any, on: any, answers: object[] = [DIGESTED, DONE], count = 1, filled = true, last?: string) {
   stubEngine(on)
   on('session.id', () => ({ value: 'S1' }))
   const store = Object.assign(stubStore(on), { sent: stubPrompt(on, filled) })
@@ -128,14 +165,16 @@ export async function readings($: any, on: any, answers: object[] = [DIGESTED, D
   await $.session.start({ cwd: '/work/app', surface: 'terminal', isInteractive: true })
   await $.command.run({ command: 'priority-on' })
   for (let i = 1; i <= count; i++) {
-    await stop($)
+    await stop($, 'S1', last)
     await waitFor(() => ((store.get('readings:S1') as unknown[]) ?? []).length >= i)
   }
   return store
 }
 
-export function stop($: any, session = 'S1') {
-  return $.classic.Stop({ session_id: session, transcript_path: `/home/me/.claude/projects/x/${session}.jsonl`, cwd: '/work/app', stop_hook_active: false })
+// `last` is the last agent message of the stop. Without it the stop carries none.
+export function stop($: any, session = 'S1', last?: string) {
+  const message = last === undefined ? {} : { last_assistant_message: last }
+  return $.classic.Stop({ session_id: session, transcript_path: `/home/me/.claude/projects/x/${session}.jsonl`, cwd: '/work/app', stop_hook_active: false, ...message })
 }
 
 // The frames of the running indicator, in order (contracts.md, E3.6).

@@ -42,6 +42,18 @@ function summary(ui: any, r: Reading, closed: boolean) {
       <Text {...quiet()}>{`${closed ? '▸' : '▾'} Agent completed`}</Text>
       {closed || !source ? null : keyed(ui, 'brief', source, { dimColor: true })}
       {closed ? null : keyed(ui, 'summary-body', body, quiet({ dimColor: !r.digest, wrap: 'wrap' }))}
+      {closed || !r.agentSummary ? null : ownSummary(ui, r.agentSummary)}
+    </Box>
+  )
+}
+
+// The agent's own Summary part, under the digest summary, so the person can compare the two.
+function ownSummary(ui: any, text: string) {
+  const { Box, Text } = ui
+  return (
+    <Box key="agent-summary" flexDirection="column">
+      <Text {...quiet({ dimColor: true })}>{"Agent's own summary"}</Text>
+      <Text {...quiet({ wrap: 'wrap' })}>{text}</Text>
     </Box>
   )
 }

@@ -1,7 +1,8 @@
 import { expect, test } from 'claude-code/testing'
-import { DIGESTED, DONE, OPTIONS, stop, stubEngine, stubProcess, stubStore, waitFor } from './fakes'
+import { DIGESTED, DONE, LABELLED, LABELLED_SUMMARY, NO_HUMAN, NO_REPLY, OPTIONS, PLAIN, stop, stubEngine, stubProcess, stubStore, waitFor } from './fakes'
 
 const KEY = 'readings:S1'
+const TRANSCRIPT = '/home/me/.claude/projects/x/S1.jsonl'
 
 test('a reading keeps the digest that priority digest printed', { options: OPTIONS }, async ($, on) => {
   stubEngine(on)
@@ -191,4 +192,95 @@ test('the off command stops later readings', { options: OPTIONS }, async ($, on)
   await stop($)
   await waitFor(() => false, 3)
   expect(calls.length).toBe(0)
+})
+
+// E3.10: a reading that needs the person raises one toast with its number. The other readings raise none.
+test('a reading that needs the person raises one toast with its number', { options: OPTIONS }, async ($, on) => {
+  const toasts: string[] = []
+  stubEngine(on, { toasts })
+  const store = stubStore(on)
+  stubProcess(on, [DIGESTED, DONE])
+  await switchOn($)
+  await stop($)
+  await waitFor(() => Array.isArray(store.get(KEY)))
+  await waitFor(() => false, 3)
+  expect(toasts).toEqual(['Priority reader · #1 needs you'])
+})
+
+test('a reading that does not need the person raises no toast', { options: OPTIONS }, async ($, on) => {
+  const toasts: string[] = []
+  stubEngine(on, { toasts })
+  const store = stubStore(on)
+  stubProcess(on, [DIGESTED, NO_HUMAN])
+  await switchOn($)
+  await stop($)
+  await waitFor(() => Array.isArray(store.get(KEY)))
+  await waitFor(() => false, 3)
+  expect((store.get(KEY) as any[]).length).toBe(1)
+  expect(toasts).toEqual([])
+})
+
+test('a failed reading raises no toast', { options: OPTIONS }, async ($, on) => {
+  const toasts: string[] = []
+  stubEngine(on, { toasts })
+  const store = stubStore(on)
+  stubProcess(on, [new Error('uv: command not found')])
+  await switchOn($)
+  await stop($)
+  await waitFor(() => Array.isArray(store.get(KEY)))
+  await waitFor(() => false, 3)
+  expect((store.get(KEY) as any[])[0].state).toBe('failed')
+  expect(toasts).toEqual([])
+})
+
+test('an abstain raises no toast', { options: OPTIONS }, async ($, on) => {
+  const toasts: string[] = []
+  stubEngine(on, { toasts })
+  const store = stubStore(on)
+  stubProcess(on, [DIGESTED, NO_REPLY])
+  await switchOn($)
+  await stop($)
+  await waitFor(() => Array.isArray(store.get(KEY)))
+  await waitFor(() => false, 3)
+  expect((store.get(KEY) as any[])[0].result.abstain).toBeTruthy()
+  expect(toasts).toEqual([])
+})
+
+// E3.11: each reading records the answer labels of the last agent message, with no model call.
+test('a labelled last message stores its labels and its Summary text', { options: OPTIONS }, async ($, on) => {
+  stubEngine(on)
+  const store = stubStore(on)
+  stubProcess(on, [DIGESTED, DONE])
+  await switchOn($)
+  await stop($, 'S1', LABELLED)
+  await waitFor(() => Array.isArray(store.get(KEY)))
+  const reading = (store.get(KEY) as any[])[0]
+  expect(reading.labels).toEqual(['FYI', 'Summary', 'Next steps', 'Decisions and questions'])
+  expect(reading.agentSummary).toBe(LABELLED_SUMMARY)
+})
+
+test('a plain last message stores no labels and no agent summary', { options: OPTIONS }, async ($, on) => {
+  stubEngine(on)
+  const store = stubStore(on)
+  stubProcess(on, [DIGESTED, DONE])
+  await switchOn($)
+  await stop($, 'S1', PLAIN)
+  await waitFor(() => Array.isArray(store.get(KEY)))
+  const reading = (store.get(KEY) as any[])[0]
+  expect(reading.labels).toEqual([])
+  expect(reading.agentSummary).toBeUndefined()
+})
+
+// A guard: the labels do not change the two CLI calls, so this passes before and after E3.11.
+test('the digest and interpret calls keep their argv when the message is labelled', { options: OPTIONS }, async ($, on) => {
+  stubEngine(on)
+  const store = stubStore(on)
+  const calls = stubProcess(on, [DIGESTED, DONE])
+  await switchOn($)
+  await stop($, 'S1', LABELLED)
+  await waitFor(() => Array.isArray(store.get(KEY)))
+  expect(calls.map((c) => c.argv)).toEqual([
+    ['uv', 'run', 'priority', 'digest', TRANSCRIPT, '--log-dir', 'reports/logs/live'],
+    ['uv', 'run', 'priority', 'interpret', TRANSCRIPT, '--log-dir', 'reports/logs/live', '--program', OPTIONS.program, '--digest', 'current'],
+  ])
 })

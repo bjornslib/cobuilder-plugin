@@ -3,13 +3,14 @@
 import { atom, read as readAtom, update } from 'claude-code'
 import type { PluginOptions } from 'claude-code'
 import type { Digest, Reading, ReadingResult } from '../types'
+import { agentSummary, answerLabels } from './labels'
 
 // The pane reads the same tick, so a write here redraws it.
 const tick = atom({ plugin: 'cobuilder-priority', key: 'tick' } as const, 0)
 // The reader switch. A stop that waits runs only while the switch is still on.
 const switchedOn = atom({ plugin: 'cobuilder-priority', key: 'on' } as const, false)
 
-export type StopJob = { sessionId: string; transcript: string; repo: string; at: string }
+export type StopJob = { sessionId: string; transcript: string; repo: string; at: string; lastMessage: string }
 
 const LOG_DIR = 'reports/logs/live'
 const MAX_SECONDS = 600
@@ -64,7 +65,7 @@ function missingSettings(options: PluginOptions): string[] {
 
 async function read($: any, job: StopJob, options: PluginOptions): Promise<Omit<Reading, 'n'>> {
   const started = Date.now()
-  const base = { sessionId: job.sessionId, at: job.at, repo: job.repo, program: String(options.program ?? '') }
+  const base = { sessionId: job.sessionId, at: job.at, repo: job.repo, program: String(options.program ?? ''), ...answersOf(job.lastMessage) }
   const failed = (error: string) => ({ ...base, brief: 'digest-current' as const, state: 'failed' as const, error, ms: Date.now() - started })
   const missing = missingSettings(options)
   if (missing.length) return failed(`Set ${missing.join(' and ')} in /config for cobuilder-priority.`)
@@ -79,6 +80,12 @@ async function read($: any, job: StopJob, options: PluginOptions): Promise<Omit<
   } catch (err) {
     return failed(String((err as Error)?.message ?? err))
   }
+}
+
+// The labels always; the Summary text only when the message has one.
+function answersOf(text: string): { labels: string[]; agentSummary?: string } {
+  const summary = agentSummary(text)
+  return { labels: answerLabels(text), ...(summary ? { agentSummary: summary } : {}) }
 }
 
 // A digest abstain stores nothing: the brief then holds the digest of an earlier stop, or none.
@@ -124,5 +131,11 @@ async function save($: any, reading: Omit<Reading, 'n'>): Promise<void> {
   // At a stop the session waits for the next prompt. The status line says a reading is ready.
   const what = reading.state === 'failed' ? 'failed' : `ready${reading.result?.needs_human ? ' · needs you' : ''}`
   $.ui.status(`Priority reader · #${n} ${what}`)
+  if (asksPerson(reading)) $.ui.toast(`Priority reader · #${n} needs you`)
   await update($, tick, (t) => t + 1)
+}
+
+// Only a done reading that needs the person raises the toast. A failed or abstained one does not.
+function asksPerson(reading: Omit<Reading, 'n'>): boolean {
+  return reading.state === 'done' && !reading.result?.abstain && reading.result?.needs_human === true
 }

@@ -39,6 +39,16 @@ Claude Code then asks for the settings. You can change them later in
 The keys work while the pane has the focus. Press ctrl+x tab to move the
 focus to the pane.
 
+## Signals
+
+- The row above the prompt shows each `notify` message of the newest
+  reading. With the pane closed, it also shows one line for that reading.
+- A reading that needs you raises one toast: `Priority reader · #<n> needs you`.
+- The key row under the header shows `s`, `e`, `r`, `w`, and `m`. A key that
+  cannot act now is dim.
+- When the agent's last message has a `Summary` part, the summary block shows
+  it under the digest, as `Agent's own summary`.
+
 Each stop with the reader on sends the transcript to the model service of
 the priority-dev CLI, and costs two model calls.
 

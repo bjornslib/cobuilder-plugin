@@ -1,5 +1,6 @@
 import { atom, read, update } from 'claude-code'
 import type { Register } from 'claude-code'
+import { renderBand } from './band'
 import { PANE_ID, openPane, renderPane } from './pane'
 import { enqueue } from './reader'
 
@@ -37,7 +38,7 @@ export const register: Register = (on, options) => {
   // Stop fires for the main loop only. The hook queues the stop and returns at once.
   on('classic.Stop', async ($, e, next) => {
     if (await read($, switchedOn)) {
-      const job = { sessionId: e.session_id, transcript: e.transcript_path, repo: e.cwd, at: new Date().toISOString() }
+      const job = { sessionId: e.session_id, transcript: e.transcript_path, repo: e.cwd, at: new Date().toISOString(), lastMessage: e.last_assistant_message ?? '' }
       enqueue($, job, options)
     }
     return next(e)
@@ -50,4 +51,6 @@ export const register: Register = (on, options) => {
   })
 
   on('ui.render', { component: 'Pane', requestId: PANE_ID }, ($, e) => renderPane($, e))
+
+  on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => (await renderBand($, e)) ?? next(e))
 }

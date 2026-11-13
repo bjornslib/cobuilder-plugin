@@ -1,5 +1,5 @@
 import { expect, test } from 'claude-code/testing'
-import { ACTIONABLE, DIGESTED, NO_REPLY, OPTIONS, PANE, WAITING, childNodes, keyOfNode, nodeByKey, parentOfKey, readings, stubEngine, stubStore, waitFor, walk } from './fakes'
+import { ACTIONABLE, DIGESTED, LABELLED, LABELLED_SUMMARY, NO_REPLY, OPTIONS, PANE, PLAIN, WAITING, childNodes, keyOfNode, nodeByKey, parentOfKey, readings, stubEngine, stubStore, waitFor, walk } from './fakes'
 import type { Node } from './fakes'
 
 test('with no reading and the switch off, the pane says how to turn it on', async ($, on) => {
@@ -145,5 +145,26 @@ test('an abstain shows its reason in plain words', { options: OPTIONS }, async (
   await readings($, on, [DIGESTED, NO_REPLY])
   const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
   expect((await ui.find({ key: 'status' }))?.text).toBe('abstain · No agent reply to read')
+  await ui.unmount()
+})
+
+// E3.11: the summary block shows the agent's own Summary under the digest summary.
+test('the summary block shows the agent Summary under the digest summary', { options: OPTIONS }, async ($, on) => {
+  await readings($, on, [DIGESTED, WAITING], 1, true, LABELLED)
+  const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
+  const row = await ui.find({ key: 'agent-summary' })
+  expect(row, 'the agent summary row is drawn').toBeDefined()
+  expect(row?.text, 'the row is titled Agent\'s own summary').toContain("Agent's own summary")
+  expect(row?.text, 'the row holds the agent Summary text').toContain(LABELLED_SUMMARY)
+  const order = walk((await ui.drawn()) as Node).map(keyOfNode)
+  expect(order.indexOf('agent-summary'), 'the row stands under the digest summary').toBeGreaterThan(order.indexOf('summary-body'))
+  await ui.unmount()
+})
+
+test('a plain last message draws no agent summary row', { options: OPTIONS }, async ($, on) => {
+  await readings($, on, [DIGESTED, WAITING], 1, true, PLAIN)
+  const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
+  expect((await ui.find({ key: 'summary-body' }))?.text).toBe('The agent ran the tests. All pass.')
+  expect(await ui.find({ key: 'agent-summary' })).toBeUndefined()
   await ui.unmount()
 })

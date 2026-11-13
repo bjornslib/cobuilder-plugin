@@ -30,6 +30,10 @@ export type Reading = {
   digest?: Digest
   error?: string
   ms: number
+  // The answer labels of the last agent message, in order. Readings from before E3.11 have none.
+  labels?: string[]
+  // The text of the agent's own Summary part, when the message has one.
+  agentSummary?: string
 }
 
 // What the pane holds between presses. `n` names the reading the selection belongs to.

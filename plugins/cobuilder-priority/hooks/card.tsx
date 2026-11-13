@@ -29,7 +29,6 @@ function stepBody(step: Step): string {
     case 'send_feedback': return step.notes
     case 'approve_gate': return step.gate
     case 'deny_permission': return step.reason ?? ''
-    case 'notify': return step.excerpt ?? ''
     case 'ask_human': return step.detail?.role === 'do' ? (step.detail.steps ?? []).join('; ') : step.detail?.artifact ?? ''
     default: return ''
   }
@@ -106,6 +105,7 @@ export function card($: any, ui: any, r: Reading, mark: Mark | undefined, a: Act
   const { Box, Text, Input } = ui
   const res = r.result
   const sendable = sendableNow(r, live)
+  const drawnSteps = (res?.steps ?? []).filter((s) => s.kind !== 'notify')
   return (
     <Box key={`card-${r.n}`} flexDirection="column" rowGap={0}>
       <Box flexDirection="row" columnGap={1}>
@@ -114,8 +114,8 @@ export function card($: any, ui: any, r: Reading, mark: Mark | undefined, a: Act
         {keyed(ui, 'status', statusText(r), quiet(r.state === 'failed' || res?.needs_human ? { color: 'red' } : {}))}
         {res?.needs_human ? keyed(ui, 'needs', 'needs you', quiet({ color: 'yellow' })) : null}
       </Box>
-      {live && res?.steps.length ? <Text dimColor>Proposed steps (1–9 to select)</Text> : null}
-      {(res?.steps ?? []).map((s, i) => stepRow($, ui, r, s, i, a, live))}
+      {live && drawnSteps.length ? <Text dimColor>Proposed steps (1–9 to select)</Text> : null}
+      {(res?.steps ?? []).map((s, i) => (s.kind === 'notify' ? null : stepRow($, ui, r, s, i, a, live)))}
       {sendable ? draftBlock(ui, r, a) : null}
       <Input key={`note-${r.n}`} label="Note" value={mark?.note ?? ''} placeholder="Type an observation" submitLabel="save"
         onSubmit={(t: string) => void saveMark($, r.sessionId, r.n, { note: t })} />
