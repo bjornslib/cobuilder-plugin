@@ -1,13 +1,13 @@
 {
   "schema_version": "1.5",
   "sources": {
-    "git_head": "84a20f7a3fe3d6017847826d10cc753a1ec02f7b",
+    "git_head": "5971a2ee95fbabddd014f538e30c0ee89a1ba27d",
     "trees": {
       "docs/architecture/adr": "sha256:20ca2f731683a3c296a2c76de4eeab9d4a6a07fcfeab163272cc78709195785d",
       "docs/architecture/designs": "sha256:9faf06636e9f4782a1f46ae5507cdec60c96faf0c5824b0a4e154b1b0898c650",
       "docs/architecture/contexts": "sha256:a8577da6af797170fd9ba5c9a19eec1279a1a8dac1bd7cda9e71a16f6118f836",
-      "docs/plans": "sha256:c7739636c2d2d3108d533b7e13e6e6a98918c5ce82dae2d92c6d3b8321a20326",
-      ".cobuilder/rubrics": "sha256:ea04d2569944a0177af37c02b4641a074cda81e8b0abee595f5828028bc621ac"
+      "docs/plans": "sha256:283f2f0f59bcfc90983b5f1f0c11ff55c6b3fc5fa78644ae6eadb5b1b74b5f3e",
+      ".cobuilder/rubrics": "sha256:700793cf0d1910056b2bb0f0ce67f1f5809b563660945f8ef4945a4498798bdb"
     }
   },
   "entities": {
@@ -1375,7 +1375,7 @@
         "epic_id": "E3",
         "branch": null,
         "pr": null,
-        "state": "open",
+        "state": "closed",
         "note": null,
         "design_doc": "structure-coaching/E3"
       },
@@ -4982,9 +4982,9 @@
         "n": 7,
         "title": "The slice loop text makes the main agent spawn RED, GREEN, and VALIDATE, and run the check before it closes a slice",
         "ends_with": "A blind main agent with a small design spawns the three agents in order and runs the check. One real slice runs from RED to a VALIDATE score, and the transcript is kept.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "structure-coaching/8",
@@ -7916,7 +7916,7 @@
       "slice-agents-and-vocabulary/E4": "unstarted",
       "structure-coaching/E1": "completed",
       "structure-coaching/E2": "completed",
-      "structure-coaching/E3": "unstarted",
+      "structure-coaching/E3": "completed",
       "structure-coaching/E4": "unstarted",
       "structure-coaching/E5": "unstarted",
       "structure-coaching/E6": "unstarted",
@@ -8984,7 +8984,7 @@
       },
       "structure-coaching": {
         "stage_source": "tracker",
-        "next_ready": "structure-coaching/7",
+        "next_ready": "structure-coaching/8",
         "pull_requests": []
       },
       "ubiquitous-language": {

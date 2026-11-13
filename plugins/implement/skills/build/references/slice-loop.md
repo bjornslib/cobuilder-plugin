@@ -10,6 +10,8 @@ One slice uses three roles and one gate. The roles must execute as separate
 agents with separate contexts. An agent that writes an implementation cannot
 judge it objectively.
 
+The main agent is the orchestrator. For each slice, it spawns the three agents by agent type, in this order: `implement:red`, `implement:green`, and `implement:validate`. It never writes the code or the tests of a slice, even for a small slice. An agent that writes the code cannot judge it. A skipped VALIDATE leaves no attempt file, so the slice cannot close.
+
 ```
 RED       write failing tests that define the slice contract
    ↓
@@ -147,9 +149,11 @@ Branch on the exit code only, and never parse the message. [shared/tracker-usage
 
 | Verdict | Action |
 |---|---|
-| **PASS** | Delete `slice-<N>-feedback.md`. Run `set-slice-state <id> closed --score <score> --attempts <n>`, then `regenerate-status-files <program> --plans-dir <dir>`, then rebuild the index. These calls record the score and the epic status. **Store the slice note** (see "Slice note to project memory" below). Prove the slice works to the user with a test or demo. Ask whether to continue or adjust direction. |
+| **PASS** | Run the agent-use check: `uv run "${CLAUDE_PLUGIN_ROOT}/scripts/verify_gate.py" --plan docs/plans/<slug> --slice <N>`. When it prints a reason and exits 1, do not close the slice. Spawn the missing agent or fix the attempt file first, then run the check again. Delete `slice-<N>-feedback.md`. Run `set-slice-state <id> closed --score <score> --attempts <n>`, then `regenerate-status-files <program> --plans-dir <dir>`, then rebuild the index. These calls record the score and the epic status. **Store the slice note** (see "Slice note to project memory" below). Prove the slice works to the user with a test or demo. Ask whether to continue or adjust direction. |
 | **FAIL** | Run `record-attempt <id> <score> --note <text>`. Re-run GREEN with the feedback file. Do not re-run RED because the contract did not change. |
-| **ESCALATION** | Do not loop again. Run `escalate <id> <score> <reason>`. Then run `regenerate-status-files <program> --plans-dir <dir>` and rebuild the index. Discuss with the user. See the gap decision tree in `validation-scoring.md`. When the engineer decides to move on, run `tracker.py skip-slice <id> --reason <text> --outcome escalated`, then rebuild the index again. For a delayed slice, use `--outcome skipped`. Closing the slice unblocks the later slices. |
+| **ESCALATION** | Do not loop again. Run the agent-use check, as in the PASS row. Then run `escalate <id> <score> <reason>`. Then run `regenerate-status-files <program> --plans-dir <dir>` and rebuild the index. Discuss with the user. See the gap decision tree in `validation-scoring.md`. When the engineer decides to move on, run `tracker.py skip-slice <id> --reason <text> --outcome escalated`, then rebuild the index again. For a delayed slice, use `--outcome skipped`. Closing the slice unblocks the later slices. |
+
+The agent-use check reads the newest attempt file of VALIDATE for the slice. It cannot see a main agent that wrote the code and then spawned only VALIDATE. It also cannot see a skipped RED or GREEN while VALIDATE still runs. This known gap means the check does not replace the rule that the main agent spawns all three agents.
 
 ## Slice note to project memory
 
@@ -199,7 +203,7 @@ to multi-agent orchestration before running the script. Invoke it with
 input only looks up built-in or `.claude/workflows/`-registered workflows,
 not plugin-shipped scripts. The script also has no filesystem access, so
 each slice's `epicDesignExists` must be computed and passed in by the
-orchestrating session (see the script's own args comment).
+orchestrating session (see the script's own args comment). The script does not run the agent-use check. Before the main session records a PASS from the script, it runs the check for that slice.
 
 ---
 
