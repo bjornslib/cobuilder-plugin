@@ -3,6 +3,7 @@
 import type { Act, Mark, Reading } from '../types'
 import { canSend } from './draft'
 import { answer, draftFor, pick, saveMark, toggleStep } from './act'
+import { isBusy } from './reader'
 import { abstainName, priorityName, statusName, stepName } from './names'
 
 type Step = Record<string, any>
@@ -12,6 +13,9 @@ export function keyed(ui: any, key: string, text: string, style: Record<string, 
   const { Box, Text } = ui
   return <Box key={key} {...box}><Text {...style}>{text}</Text></Box>
 }
+
+// While a reading runs, the previous turn draws dim. Each Text in it takes this style.
+export const quiet = (style: Record<string, unknown> = {}) => (isBusy() ? { ...style, dimColor: true } : style)
 
 // The local hour and minute of an ISO time.
 export function clock(at: string): string {
@@ -43,10 +47,10 @@ function questions($: any, ui: any, r: Reading, s: Step, i: number, a: Act) {
   }
   return (s.detail.questions as Step[]).map((q, j) => (
     <Box key={`q-${i}-${j}`} flexDirection="column" paddingLeft={4}>
-      <Text color="yellow">{`"${q.ask}"`}</Text>
+      <Text {...quiet({ color: 'yellow' })}>{`"${q.ask}"`}</Text>
       <Box flexDirection="row" columnGap={2} flexWrap="wrap">
         {(q.options as Step[]).map((o, k) => (
-          <Button key={`opt-${i}-${j}-${k}`} plain label={`${(a.picks[`${i}.${j}`] ?? []).includes(o.label) ? '[•]' : '[ ]'} ${o.label}`}
+          <Button key={`opt-${i}-${j}-${k}`} plain dimColor={isBusy()} label={`${(a.picks[`${i}.${j}`] ?? []).includes(o.label) ? '[•]' : '[ ]'} ${o.label}`}
             onPress={() => void pick($, r.n, `${i}.${j}`, o.label, Boolean(q.multi_select))} />
         ))}
       </Box>
@@ -67,9 +71,9 @@ function stepRow($: any, ui: any, r: Reading, s: Step, i: number, a: Act, live: 
   const on = a.steps.includes(i)
   return (
     <Box key={`row-${i}`} flexDirection="column" borderStyle={on ? 'round' : undefined} borderColor="cyan" paddingX={on ? 1 : 0}>
-      <Button key={`step-${i}`} plain hotkey={i < 9 ? String(i + 1) : undefined} label={`${on ? '[x]' : '[ ]'} ${head}`}
+      <Button key={`step-${i}`} plain dimColor={isBusy()} hotkey={i < 9 ? String(i + 1) : undefined} label={`${on ? '[x]' : '[ ]'} ${head}`}
         onPress={() => void toggleStep($, r.n, i)} />
-      {body ? keyed(ui, `step-${i}-body`, body, { dimColor: !on }) : null}
+      {body ? keyed(ui, `step-${i}-body`, body, quiet({ dimColor: !on })) : null}
       {s.kind === 'ask_human' ? questions($, ui, r, s, i, a) : null}
     </Box>
   )
@@ -81,11 +85,11 @@ function draftBlock(ui: any, r: Reading, a: Act) {
   const names = draft.steps.map((s) => s + 1).join(', ')
   return (
     <Box key="draft-block" flexDirection="column" borderStyle="round" borderColor="cyan" paddingX={1}>
-      <Text color="cyan" bold>What will be sent</Text>
-      {keyed(ui, 'draft', draft.text || 'Select a step', { dimColor: !draft.text })}
+      <Text {...quiet({ color: 'cyan', bold: true })}>What will be sent</Text>
+      {keyed(ui, 'draft', draft.text || 'Select a step', quiet({ dimColor: !draft.text }))}
       {draft.text ? keyed(ui, 'draft-footer',
         `${draft.steps.length > 1 ? 'steps' : 'step'} ${names} · ${draft.text.length} chars · session prompt`, { dimColor: true }) : null}
-      {a.notice ? keyed(ui, 'notice', a.notice, { color: 'red' }) : null}
+      {a.notice ? keyed(ui, 'notice', a.notice, quiet({ color: 'red' })) : null}
     </Box>
   )
 }
@@ -105,10 +109,10 @@ export function card($: any, ui: any, r: Reading, mark: Mark | undefined, a: Act
   return (
     <Box key={`card-${r.n}`} flexDirection="column" rowGap={0}>
       <Box flexDirection="row" columnGap={1}>
-        {keyed(ui, 'title', `#${r.n} ${clock(r.at)}`, { bold: true }, { flexShrink: 0 })}
-        {res?.priority ? keyed(ui, 'priority', priorityName(res.priority), { backgroundColor: 'red', color: 'white' }) : null}
-        {keyed(ui, 'status', statusText(r), r.state === 'failed' || res?.needs_human ? { color: 'red' } : {})}
-        {res?.needs_human ? keyed(ui, 'needs', 'needs you', { color: 'yellow' }) : null}
+        {keyed(ui, 'title', `#${r.n} ${clock(r.at)}`, quiet({ bold: true }), { flexShrink: 0 })}
+        {res?.priority ? keyed(ui, 'priority', priorityName(res.priority), quiet({ backgroundColor: 'red', color: 'white' })) : null}
+        {keyed(ui, 'status', statusText(r), quiet(r.state === 'failed' || res?.needs_human ? { color: 'red' } : {}))}
+        {res?.needs_human ? keyed(ui, 'needs', 'needs you', quiet({ color: 'yellow' })) : null}
       </Box>
       {live && res?.steps.length ? <Text dimColor>Proposed steps (1–9 to select)</Text> : null}
       {(res?.steps ?? []).map((s, i) => stepRow($, ui, r, s, i, a, live))}

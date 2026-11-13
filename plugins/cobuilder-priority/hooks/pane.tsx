@@ -2,7 +2,7 @@
 import { atom, read } from 'claude-code'
 import type { Act, Mark, Reading } from '../types'
 import { EMPTY, actFor, marksKey, openCard } from './act'
-import { card, clock, keyed } from './card'
+import { card, clock, keyed, quiet } from './card'
 import { keyRow } from './keys'
 import { isBusy, readingsKey } from './reader'
 import { abstainName, briefName, priorityName, statusName } from './names'
@@ -13,17 +13,21 @@ const act = atom({ plugin: 'cobuilder-priority', key: 'act' } as const, EMPTY)
 
 export const PANE_ID = 'priority-reader'
 
+// The braille frames of the running indicator (contracts.md, E3.6).
+const FRAMES = [...'⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏']
+
 export async function openPane($: any): Promise<void> {
   await $.ui.open({ id: PANE_ID, title: 'Priority reader', focus: true, columns: 60 })
 }
 
-function header(ui: any, on: boolean, count: number) {
+function header(ui: any, on: boolean, count: number, frame: number) {
   const { Box, Text } = ui
   return (
     <Box key="header" flexDirection="row" columnGap={2}>
       <Text bold>Priority reader</Text>
       {keyed(ui, 'state', on ? '● on' : '○ off', on ? { color: 'green' } : { dimColor: true })}
       {keyed(ui, 'count', `${count} readings`, { dimColor: true })}
+      {isBusy() ? keyed(ui, 'spinner', FRAMES[frame % FRAMES.length] ?? '', { color: 'yellow' }) : null}
       {isBusy() ? keyed(ui, 'running', 'running…', { color: 'yellow' }) : null}
     </Box>
   )
@@ -35,9 +39,9 @@ function summary(ui: any, r: Reading, closed: boolean) {
   const source = briefName(r.brief)
   return (
     <Box key="summary-box" flexDirection="column" borderStyle="single" paddingX={1}>
-      <Text>{`${closed ? '▸' : '▾'} Agent completed`}</Text>
+      <Text {...quiet()}>{`${closed ? '▸' : '▾'} Agent completed`}</Text>
       {closed || !source ? null : keyed(ui, 'brief', source, { dimColor: true })}
-      {closed ? null : keyed(ui, 'summary-body', body, { dimColor: !r.digest, wrap: 'wrap' })}
+      {closed ? null : keyed(ui, 'summary-body', body, quiet({ dimColor: !r.digest, wrap: 'wrap' }))}
     </Box>
   )
 }
@@ -69,7 +73,7 @@ function history($: any, ui: any, rows: Reading[], marks: Record<string, Mark>, 
 export async function renderPane($: any, e: any) {
   const ui = $.ui.resolve(e)
   const { Box, Text } = ui
-  await read($, tick)
+  const frame = await read($, tick)
   await read($, act)
   const sessionId = await $.session.id()
   const readings = ((await $.store.get(readingsKey(sessionId))) as Reading[] | undefined) ?? []
@@ -78,7 +82,7 @@ export async function renderPane($: any, e: any) {
   const newest = readings[readings.length - 1]
   if (!newest) {
     const hint = on ? 'No reading yet. The next stop starts one.' : 'The reader is off. Run /priority-on to read each stop.'
-    return <Box flexDirection="column">{header(ui, on, 0)}<Text dimColor>{hint}</Text></Box>
+    return <Box flexDirection="column">{header(ui, on, 0, frame)}<Text dimColor>{hint}</Text></Box>
   }
   const a: Act = await actFor($, newest.n)
   const shown = readings.find((r) => r.n === a.open) ?? newest
@@ -86,8 +90,9 @@ export async function renderPane($: any, e: any) {
   const others = readings.filter((r) => r.n !== shown.n).reverse()
   return (
     <Box flexDirection="column" rowGap={1}>
-      {header(ui, on, readings.length)}
+      {header(ui, on, readings.length, frame)}
       {keyRow($, ui, shown, marks[String(shown.n)], a, live)}
+      {isBusy() ? keyed(ui, 'stale', `Reading stop #${newest.n + 1}…`, { dimColor: true }) : null}
       {summary(ui, shown, a.summaryClosed)}
       {card($, ui, shown, marks[String(shown.n)], a, live)}
       {history($, ui, others, marks, newest.n)}

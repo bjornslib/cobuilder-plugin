@@ -13,6 +13,8 @@ export type StopJob = { sessionId: string; transcript: string; repo: string; at:
 
 const LOG_DIR = 'reports/logs/live'
 const MAX_SECONDS = 600
+// The running indicator moves once each 120 ms while a reading runs.
+const FRAME_MS = 120
 
 // Module values: a hot reload starts them over, and a reading in flight then ends on its own.
 let busy = false
@@ -37,10 +39,22 @@ async function drain($: any, options: PluginOptions): Promise<void> {
       waiting = null
       if (!(await readAtom($, switchedOn))) continue
       await update($, tick, (n) => n + 1)
-      await save($, await read($, job, options))
+      await save($, await withSpinner($, job, options))
     }
   } finally {
     busy = false
+    // busy is not an atom, so this write redraws the pane without the indicator.
+    await update($, tick, (n) => n + 1)
+  }
+}
+
+// Runs one reading while the timer moves the running indicator. The timer stops on every path.
+async function withSpinner($: any, job: StopJob, options: PluginOptions): Promise<Omit<Reading, 'n'>> {
+  const timer = $.clock.every(FRAME_MS, () => void update($, tick, (n) => n + 1))
+  try {
+    return await read($, job, options)
+  } finally {
+    timer.cancel()
   }
 }
 

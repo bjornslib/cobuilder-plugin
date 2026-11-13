@@ -1,5 +1,6 @@
 // Shared stubs for the cobuilder-priority tests. The runner reads *.test.ts only,
 // so this file holds no test cases.
+import { mock } from 'claude-code/testing'
 
 export const OPTIONS = { priority_dev_dir: '/work/priority-dev', program: 'probes/programs/d1.json', timeout_seconds: 120 }
 
@@ -66,12 +67,12 @@ export function stubPrompt(on: any, filled = true) {
 export type Call = { argv: string[]; cwd?: string; env?: Record<string, string>; timeoutMs?: number }
 
 // Each process.run answers from `answers` in order. The last answer repeats.
-// An answer that is an Error rejects the call. `gate` holds every call until it resolves.
-export function stubProcess(on: any, answers: (object | Error)[], gate?: Promise<void>) {
+// An answer that is an Error rejects the call. `gate` holds each call from number `from` (1 by default) until it resolves.
+export function stubProcess(on: any, answers: (object | Error)[], gate?: Promise<void>, from = 1) {
   const calls: Call[] = []
   on('process.run', async (_$: any, e: any) => {
     calls.push({ argv: [...e.argv], cwd: e.init?.cwd, env: e.init?.env, timeoutMs: e.init?.timeoutMs })
-    if (gate) await gate
+    if (gate && calls.length >= from) await gate
     const answer = answers[Math.min(calls.length - 1, answers.length - 1)]
     if (answer instanceof Error) return { deny: answer.message }
     return { value: { exitCode: 0, stdout: JSON.stringify(answer), stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
@@ -136,3 +137,24 @@ export async function readings($: any, on: any, answers: object[] = [DIGESTED, D
 export function stop($: any, session = 'S1') {
   return $.classic.Stop({ session_id: session, transcript_path: `/home/me/.claude/projects/x/${session}.jsonl`, cwd: '/work/app', stop_hook_active: false })
 }
+
+// The frames of the running indicator, in order (contracts.md, E3.6).
+export const FRAMES = [...'⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏']
+
+// Starts a session with the reader on and a mocked clock. Each process.run call from number `from` on waits for `gate`.
+// Returns the store, the prompts sent or filled, the process calls, and the clock that moves the mocked time.
+export async function startReader($: any, on: any, answers: (object | Error)[] = [DIGESTED, ACTIONABLE], gate?: Promise<void>, from = 1) {
+  stubEngine(on)
+  on('session.id', () => ({ value: 'S1' }))
+  const store = stubStore(on)
+  const sent = stubPrompt(on)
+  const clock = mock.clock(on)
+  const calls = stubProcess(on, answers, gate, from)
+  await $.session.start({ cwd: '/work/app', surface: 'terminal', isInteractive: true })
+  await $.command.run({ command: 'priority-on' })
+  return { store, sent, calls, clock }
+}
+
+// The Text and Button nodes under the node with `key`, in document order. A Box takes no dimColor, so dim is read here.
+export const rowsUnder = (root: Node, key: string): Node[] =>
+  walk(nodeByKey(root, key) ?? {}).filter((n) => n.type === 'Text' || n.type === 'Button')
