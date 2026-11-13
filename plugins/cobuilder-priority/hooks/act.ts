@@ -40,7 +40,7 @@ export async function pick($: any, n: number, key: string, label: string, multi:
 }
 
 export async function answer($: any, n: number, key: string, text: string): Promise<void> {
-  await change($, n, (a) => ({ ...a, other: { ...a.other, [key]: text }, steps: withStep(a, key) }))
+  await change($, n, (a) => ({ ...a, notice: '', other: { ...a.other, [key]: text }, steps: withStep(a, key) }))
 }
 
 export async function toggleSummary($: any): Promise<void> {
@@ -66,7 +66,10 @@ export async function saveMark($: any, sessionId: string, n: number, change: Par
 // Send submits the draft as the person. Edit puts it in the prompt box. Both record it on the mark.
 export async function send($: any, r: Reading, how: 'submit' | 'fill'): Promise<void> {
   const draft = draftFor(r, await actFor($, r.n))
-  if (!draft.steps.length) return
+  if (!draft.steps.length) {
+    await change($, r.n, (a) => ({ ...a, notice: 'Nothing to send yet' }))
+    return
+  }
   if (how === 'submit') {
     await $.prompt.submit({ text: draft.text, asUser: true })
   } else if (!(await $.prompt.fill({ text: draft.text, mode: 'replace' })).isFilled) {

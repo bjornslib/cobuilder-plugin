@@ -1,7 +1,8 @@
 // One card of layout C: the title row, the steps, the draft block, and the note.
 // The keys sit in keys.tsx. Only the newest card can select and send (contracts.md, "The chosen layout").
+// A card is a list of blocks, so the pane scrolls each block on its own (E3.12).
 import type { Act, Mark, Reading } from '../types'
-import { canSend } from './draft'
+import { canSend, visibleNo } from './draft'
 import { answer, draftFor, pick, saveMark, toggleStep } from './act'
 import { isBusy } from './reader'
 import { abstainName, priorityName, statusName, stepName } from './names'
@@ -61,17 +62,21 @@ function questions($: any, ui: any, r: Reading, s: Step, i: number, a: Act) {
 
 function stepRow($: any, ui: any, r: Reading, s: Step, i: number, a: Act, live: boolean) {
   const { Box, Button } = ui
-  const head = `${i + 1}. ${stepName(s)}`
+  const no = visibleNo(r.result?.steps ?? [], i)
+  const head = `${no}. ${stepName(s)}`
   const body = stepBody(s)
   if (!live || !canSend(s)) {
     const tail = live && s.kind === 'interrupt' ? ' (no target at a stop)' : body ? ` · ${body}` : ''
     return keyed(ui, live ? `step-${i}` : `old-step-${i}`, `[-] ${head}${tail}`, { dimColor: true })
   }
   const on = a.steps.includes(i)
+  const decide = s.kind === 'ask_human' && s.detail?.role === 'decide'
   return (
     <Box key={`row-${i}`} flexDirection="column" borderStyle={on ? 'round' : undefined} borderColor="cyan" paddingX={on ? 1 : 0}>
-      <Button key={`step-${i}`} plain dimColor={isBusy()} hotkey={i < 9 ? String(i + 1) : undefined} label={`${on ? '[x]' : '[ ]'} ${head}`}
-        onPress={() => void toggleStep($, r.n, i)} />
+      {decide ? keyed(ui, `step-${i}`, head, quiet({ bold: true })) : (
+        <Button key={`step-${i}`} plain dimColor={isBusy()} hotkey={no < 10 ? String(no) : undefined} label={`${on ? '[x]' : '[ ]'} ${head}`}
+          onPress={() => void toggleStep($, r.n, i)} />
+      )}
       {body ? keyed(ui, `step-${i}-body`, body, quiet({ dimColor: !on })) : null}
       {s.kind === 'ask_human' ? questions($, ui, r, s, i, a) : null}
     </Box>
@@ -81,9 +86,9 @@ function stepRow($: any, ui: any, r: Reading, s: Step, i: number, a: Act, live: 
 function draftBlock(ui: any, r: Reading, a: Act) {
   const { Box, Text } = ui
   const draft = draftFor(r, a)
-  const names = draft.steps.map((s) => s + 1).join(', ')
+  const names = draft.steps.map((s) => visibleNo(r.result?.steps ?? [], s)).join(', ')
   return (
-    <Box key="draft-block" flexDirection="column" borderStyle="round" borderColor="cyan" paddingX={1}>
+    <Box key="draft-block" flexDirection="column" borderStyle="round" borderColor="cyan" paddingX={1} marginTop={1}>
       <Text {...quiet({ color: 'cyan', bold: true })}>What will be sent</Text>
       {keyed(ui, 'draft', draft.text || 'Select a step', quiet({ dimColor: !draft.text }))}
       {draft.text ? keyed(ui, 'draft-footer',
@@ -101,11 +106,10 @@ function statusText(r: Reading): string {
   return status ? statusName(status) : '-'
 }
 
-export function card($: any, ui: any, r: Reading, mark: Mark | undefined, a: Act, live: boolean) {
-  const { Box, Text, Input } = ui
+// The title row of the card, with the hint above its steps. The key card-<n> wraps the row.
+function titleBlock(ui: any, r: Reading, live: boolean, hasSteps: boolean) {
+  const { Box, Text } = ui
   const res = r.result
-  const sendable = sendableNow(r, live)
-  const drawnSteps = (res?.steps ?? []).filter((s) => s.kind !== 'notify')
   return (
     <Box key={`card-${r.n}`} flexDirection="column" rowGap={0}>
       <Box flexDirection="row" columnGap={1}>
@@ -114,11 +118,22 @@ export function card($: any, ui: any, r: Reading, mark: Mark | undefined, a: Act
         {keyed(ui, 'status', statusText(r), quiet(r.state === 'failed' || res?.needs_human ? { color: 'red' } : {}))}
         {res?.needs_human ? keyed(ui, 'needs', 'needs you', quiet({ color: 'yellow' })) : null}
       </Box>
-      {live && drawnSteps.length ? <Text dimColor>Proposed steps (1–9 to select)</Text> : null}
-      {(res?.steps ?? []).map((s, i) => (s.kind === 'notify' ? null : stepRow($, ui, r, s, i, a, live)))}
-      {sendable ? draftBlock(ui, r, a) : null}
-      <Input key={`note-${r.n}`} label="Note" value={mark?.note ?? ''} placeholder="Type an observation" submitLabel="save"
-        onSubmit={(t: string) => void saveMark($, r.sessionId, r.n, { note: t })} />
+      {live && hasSteps ? <Text dimColor>Proposed steps (1–9 to select)</Text> : null}
     </Box>
   )
+}
+
+// The blocks of one card, in draw order: the title row, each step row, the draft block, and the note.
+// A notify step draws no row, so it adds no block.
+export function card($: any, ui: any, r: Reading, mark: Mark | undefined, a: Act, live: boolean): any[] {
+  const { Input } = ui
+  const steps = r.result?.steps ?? []
+  const rows = steps.map((s, i) => (s.kind === 'notify' ? null : stepRow($, ui, r, s, i, a, live)))
+  return [
+    titleBlock(ui, r, live, steps.some((s) => s.kind !== 'notify')),
+    ...rows,
+    sendableNow(r, live) ? draftBlock(ui, r, a) : null,
+    <Input key={`note-${r.n}`} label="Note" value={mark?.note ?? ''} placeholder="Type an observation" submitLabel="save"
+      onSubmit={(t: string) => void saveMark($, r.sessionId, r.n, { note: t })} />,
+  ].filter((b) => b !== null)
 }

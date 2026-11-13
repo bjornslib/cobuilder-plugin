@@ -1,4 +1,4 @@
-// The reader switch, the redraw tick, and the pane's selection, kept in $.state.
+// The reader switch, the redraw tick, the pane's selection, and the body offset, kept in $.state.
 // Readings and marks live in $.store, so they outlive the session.
 
 export type Verdict = 'right' | 'wrong'
@@ -50,6 +50,6 @@ export type Act = {
 
 declare module 'claude-code' {
   interface PluginState {
-    'cobuilder-priority': { on: boolean; tick: number; act: Act }
+    'cobuilder-priority': { on: boolean; tick: number; act: Act; scroll: number }
   }
 }

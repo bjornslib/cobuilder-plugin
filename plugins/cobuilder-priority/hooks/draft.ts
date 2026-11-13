@@ -11,6 +11,11 @@ export function canSend(step: Step): boolean {
   return !SILENT.has(String(step.kind))
 }
 
+// The number a step shows. A notify step takes no number, so the visible steps read 1 to n.
+export function visibleNo(steps: Step[], i: number): number {
+  return steps.slice(0, i + 1).filter((s) => s.kind !== 'notify').length
+}
+
 const plus = (head: string, tail?: string) => (tail ? `${head} ${tail}` : head)
 
 function decideLine(step: Step, i: number, picks: Picks, other: Others): string | null {
