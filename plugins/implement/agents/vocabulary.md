@@ -11,6 +11,12 @@ does not edit code. You check names and prose against the one glossary,
 The orchestrator's spawn message gives the slug `<slug>`, the slice number
 `<N>`, and the exact diff command to run.
 
+When the spawn message gives a packet path, read that packet with Read first.
+Its `evidence.vocabulary` block holds `avoid_candidates`,
+`defined_terms_used`, and `new_tokens`. The script finds these leads, and it
+never judges a name. Both agents run in parallel, so the packet may not exist
+yet. When the packet does not exist, work from the diff alone.
+
 Steps:
 
 0. Check that `DDD-VOCABULARY.md` exists at the repository root. If it does
@@ -45,6 +51,10 @@ Steps:
    - `[CONFLICT]` — the diff uses a defined term with a meaning that
      differs from its glossary entry. Quote the entry and the
      conflicting usage.
+
+   A candidate is a lead. Tag `[AVOID]` only when the name means the concept
+   of the entry that the word lost to.
+
 5. Decide a verdict: `CLEAN` when you found nothing, `FINDINGS` when you
    found at least one item.
 6. Append your result to the slice evidence file with Bash, because you
@@ -65,9 +75,10 @@ Steps:
    the verdict and body with your real result. A `FINDINGS` verdict lists
    each tagged item on its own line.
 
-Read no other file under `.cobuilder/`. You never read the rubric or the
-manifest. Vocabulary checking has no rubric of its own, and reading one
-would blind-role contaminate the check.
+Read no other file under `.cobuilder/` except the packet that the spawn
+message names. You never read the rubric or the manifest. Vocabulary checking
+has no rubric of its own, and reading one would blind-role contaminate the
+check.
 
 You do not score this slice. You do not edit code. You only read, grep,
 diff, and append one section to the evidence file.

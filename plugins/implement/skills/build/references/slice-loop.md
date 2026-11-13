@@ -123,12 +123,14 @@ The VALIDATE spawn message also carries these structure values:
 - the path of `${CLAUDE_PLUGIN_ROOT}/skills/build/references/structure-judgment.md`.
 
 Spawn VALIDATE and VOCABULARY in parallel, not one after the other. VALIDATE
-uses `subagent_type: "implement:validate"`. VOCABULARY uses `subagent_type:
-"implement:vocabulary"`, and its spawn message carries the slug, the slice
-number, and the exact diff command. Its own body
-(`plugins/implement/agents/vocabulary.md`) holds the finding tags and the
-evidence-file format. Running both agents in parallel costs no extra wall
-time, because neither reads the other's output.
+uses `subagent_type: "implement:validate"`, and VOCABULARY uses
+`subagent_type: "implement:vocabulary"`. The VOCABULARY spawn message carries
+the slug, the slice number, the exact diff command, and the packet path,
+`.cobuilder/rubrics/<slug>/evidence/slice-<N>-packet.json`. When the packet
+exists, VOCABULARY reads it, and it works from the diff alone when it does
+not. Its own body (`plugins/implement/agents/vocabulary.md`) holds the finding
+tags and the evidence-file format. Running both agents in parallel costs no
+extra wall time, because neither waits for the other's report.
 
 **The vocabulary verdict is a separate axis, not part of the score.** A
 `CLEAN` or `FINDINGS` verdict never enters `overall_score`, and it never

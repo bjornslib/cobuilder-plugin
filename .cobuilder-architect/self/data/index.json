@@ -1,13 +1,13 @@
 {
   "schema_version": "1.5",
   "sources": {
-    "git_head": "315b76f801ba048c8e6ca403682bd98328bfedaf",
+    "git_head": "de9155f5953a4039b3867c1d860c8d82b7a3ea47",
     "trees": {
       "docs/architecture/adr": "sha256:20ca2f731683a3c296a2c76de4eeab9d4a6a07fcfeab163272cc78709195785d",
       "docs/architecture/designs": "sha256:9faf06636e9f4782a1f46ae5507cdec60c96faf0c5824b0a4e154b1b0898c650",
       "docs/architecture/contexts": "sha256:5ba95d850addabe46f6527e72178225cea8307bc3d3d772b5450ec6f5e73718f",
-      "docs/plans": "sha256:6e5ba1d2b6ef97b4805e4b9bcf941f5435da8e881116cadd01a9ff3827e05cf2",
-      ".cobuilder/rubrics": "sha256:f2881ddce956a1ac1e35a189db6240a60f5e06eef638230cd49d178593e90468"
+      "docs/plans": "sha256:eadb1d14e421f743204031d067b553911bbb2cd16bb890c6e95e87e40d1ab647",
+      ".cobuilder/rubrics": "sha256:211d1505a68b1578c368493f6a531566656e2c3d079b3d966903bb2c90e6b095"
     }
   },
   "entities": {
@@ -5032,9 +5032,9 @@
         "n": 12,
         "title": "The vocabulary leads: the script indexes the glossary, and the vocabulary agent judges each lead",
         "ends_with": "The packet lists each `_Avoid_` word in a new name with its glossary reason. A blind vocabulary agent tags a lead AVOID only when the name means the avoided concept.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "0.95",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "structure-coaching/13",
@@ -8984,7 +8984,7 @@
       },
       "structure-coaching": {
         "stage_source": "tracker",
-        "next_ready": "structure-coaching/12",
+        "next_ready": null,
         "pull_requests": []
       },
       "ubiquitous-language": {

@@ -13,7 +13,7 @@ from typing import Any
 
 from .config import Config, excluded_by
 from .drift import drift_events, public_surface
-from .git import file_at, files_with_word
+from .git import GitError, file_at, files_with_word
 from .names import is_test_name
 
 CALLER_CAP = 10
@@ -82,6 +82,21 @@ def definer(root: Path, symbol: str, source: str, config: Config) -> str | None:
     return next(matches, None)
 
 
+def added_symbols(root: Path, base: str, rel: str, config: Config) -> list[str]:
+    """Return the sorted public symbols that a Python product file holds and its base lacks.
+
+    A file that the base does not hold counts all of its public symbols. A file that does not
+    parse gives none.
+    """
+    if not _is_python_product(rel, config):
+        return []
+    before = _base_text(root, base, rel)
+    after = _read(root, rel)
+    if _unparsed(rel, before, after) is not None:
+        return []
+    return sorted(public_surface(after).keys() - public_surface(before).keys())
+
+
 def _finding(
     root: Path, rel: str, event: dict[str, str], diff_files: set[str], config: Config
 ) -> dict[str, Any]:
@@ -107,6 +122,14 @@ def _is_python_product(rel: str, config: Config) -> bool:
 def _read(root: Path, rel: str) -> str:
     """Return the text of a work-tree file. Bytes that do not decode become replacements."""
     return (root / rel).read_text(encoding="utf-8", errors="replace")
+
+
+def _base_text(root: Path, base: str, rel: str) -> str:
+    """Return the text of the file at base, or an empty text when the base does not hold it."""
+    try:
+        return file_at(root, base, rel)
+    except GitError:
+        return ""
 
 
 def _unparsed(rel: str, *sources: str) -> str | None:

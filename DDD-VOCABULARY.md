@@ -427,6 +427,11 @@ _Avoid_: block alone (the Structure block is a section of a VALIDATE report)
 A fact in `evidence.consumer_locality` of the evidence packet: every importer of an added file sits in one other folder. VALIDATE uses it in the cohesion judgment, and it never becomes a structure finding.
 _Avoid_: locality finding
 
+<a id="vocabulary-lead"></a>
+**Vocabulary lead** (`implement`):
+One fact in `evidence.vocabulary` of the evidence packet: an avoid candidate, a defined term used, or a new token. `shared/structure/vocabulary.py` finds it from the glossary index, and the vocabulary agent judges it.
+_Avoid_: finding, verdict (a lead holds no judgement)
+
 <a id="layer-rule"></a>
 **Layer rule** (`implement`):
 The rule of consumer locality that drops an entry when the consumer folder imports three or more files of the folder of the added file. That folder is then a layer above it, not the one home of the file.
