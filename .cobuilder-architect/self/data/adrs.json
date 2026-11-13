@@ -1641,6 +1641,12 @@
         "date": "2026-10-17",
         "by": "bjornslib",
         "note": "ADR-0039 amends the install-surface rule. implement and the cobuilder-memory mod may ship hooks/. Only implement may ship agents/. This record's Decision text stays as chosen on 2026-09-27."
+      },
+      {
+        "state": "approved",
+        "date": "2026-11-13",
+        "by": "bjornslib",
+        "note": "ADR-0049 amends the install-surface rule again. The cobuilder-priority mod may also ship hooks/. Only implement may ship agents/. This record's Decision text stays as chosen on 2026-09-27."
       }
     ],
     "related": []
@@ -2831,6 +2837,12 @@
         "by": "bjornslib",
         "source": "PR #40",
         "note": "Approved by the engineer in session, after PR #40 merged on 2026-10-16."
+      },
+      {
+        "state": "approved",
+        "date": "2026-11-13",
+        "by": "bjornslib",
+        "note": "ADR-0049 extends this rule to a second opt-in mod. cobuilder-priority may also ship hooks/. This record's Decision text stays as chosen."
       }
     ],
     "related": [
@@ -3183,7 +3195,7 @@
   "ADR-0049": {
     "id": "ADR-0049",
     "title": "cobuilder-priority reads each stop of a live session",
-    "state": "decided",
+    "state": "approved",
     "source_pr": null,
     "problem": "The priority-dev interpreter improves only on recorded transcripts. The optimiser runs on old sessions no longer give useful feedback. The engineer needs readings of recent sessions that they remember, so they can judge which part of the prompt to improve next.",
     "decision": "Ship a seventh plugin, cobuilder-priority, as an opt-in mod outside the umbrella. One hooks module reads each main-loop Stop of a session that the person switched on. It runs priority digest, then priority interpret with the D1 program, as a separate process. It stores the reading, and a pane shows it with right, wrong, and note marks. On the newest card the person selects steps, and one press sends the draft to the main session as a user prompt or puts it in the prompt box. The plugin never sends without that press. This amends ADR-0025 and ADR-0039: implement, cobuilder-memory, and cobuilder-priority may ship hooks/.",
@@ -3273,7 +3285,7 @@
       ],
       "addresses_problem": "P1"
     },
-    "body": "# ADR-0049 — cobuilder-priority reads each stop of a live session\n\n## Context\n\nThe priority-dev interpreter reads one stop of a coding session. It gives a\nstatus, a priority, and the steps that a person might take next. The\noptimiser improves its prompt on recorded transcripts. The recent runs on\nold sessions no longer give useful feedback, because the engineer does not\nremember those sessions well enough to judge a reading.\n\nD1 is the best saved program. It scored 0.654 on 56 test stops, against\n0.469 for the base prompt. D1 saw no digest in those runs.\n\nADR-0025 and ADR-0039 let only `implement` and `cobuilder-memory` ship\nhooks. A reader at each stop needs a hook.\n\n## Options considered\n\nThe frontmatter lists each option with its reason. Three shaped the\ndecision most:\n\n- **A command hook plus a mod pane.** The mod API can start a process\n  and draw a pane from one module, so a second mechanism adds only a\n  file hand-off.\n- **Interpret only.** It matches the brief that D1 was scored on. The\n  engineer wants the digest in the brief, and accepts the risk.\n- **Every session.** Each transcript goes to an outside service. The\n  engineer chose a switch for each session.\n\n## Decision\n\nShip a seventh plugin, `cobuilder-priority`, as an opt-in install from\nthis marketplace, outside the umbrella.\n\n**Install surface.** The plugin is a mod. `hooks/hooks.json` names one\nhooks module. It ships the module's tests, the manifest, a type contract,\nand the `shared` symlink. It ships no `agents/` and no MCP server. This\namends ADR-0025 and ADR-0039: `implement`, `cobuilder-memory`, and\n`cobuilder-priority` may ship `hooks/`. Only `implement` may ship\n`agents/`. No plugin ships an MCP server.\n\n**The switch.** The reader is off in each new session. The command\n`/priority-on` turns it on for this session, and\n`/priority-off` turns it off. The module keeps the switch in\n`$.state`.\n\n**The reading.** A `classic.Stop` hook runs on the main loop only. When the\nswitch is on and no reading runs, it starts one reading and returns at\nonce. A reading runs two commands in the priority-dev checkout:\n`priority digest`, then `priority interpret --program <D1> --digest current`.\nEach command has a timeout. A stop that comes while a reading runs waits,\nand only the newest waiting stop runs next.\n\n**The CURRENT RUN label.** The new `--digest current` flag of\n`priority interpret` labels the saved digest `CURRENT RUN`. Without the\nflag, the brief keeps `PREVIOUS RUN`. Eval, replay, and the optimiser do\nnot change.\n\n**The store.** The module keeps each reading and each mark in `$.store`,\nkeyed by session and stop. The marks stay on this machine.\n\n**The pane.** The pane shows one card for each stop: status, priority,\nneeds-human, each step with its content, or the abstain reason. Each card\nholds `right`, `wrong`, and a note. `/priority-pane` opens the\npane.\n\n**Acting on steps.** On the newest card only, the person selects steps\nand answers the questions of an `ask_human` step. The module joins the\ndraft text of the selected steps. `Send` calls\n`$.prompt.submit({ text, asUser: true })`, and `Edit` calls\n`$.prompt.fill` so the person can change the draft first. The module\nrecords what it sent on the mark of that reading. Permission and\noption-pick steps become short text answers. An interrupt step has no\ntarget at a stop, so the pane shows it and cannot send it.\n\n**Layout.** The pane follows layout C: an agent summary from the digest at\nthe top, then the newest card, the draft block, the actions, and the\nhistory. `contracts.md` holds the layout and the wireframe.\n\n**Settings.** `userConfig` holds the priority-dev folder, the program file,\nthe timeout, and an optional secret API key. The module passes the key to\nthe process in `env`. Without the key, the CLI reads `priority-dev/.env`.\n\n`contracts.md` in the design folder holds each command, field, and format.\n\n## Consequences\n\n- The build adds this ADR to the history of ADR-0025 and ADR-0039. It\n  updates CLAUDE.md principle 5, the plugin table, and the plugin count in\n  CLAUDE.md, README.md, and DDD-VOCABULARY.md.\n- The packaging test reads the amended rule in the slice that adds the\n  plugin folder.\n- Each stop with the switch on costs two model calls on an outside service.\n- D1 was not scored on a brief with a CURRENT RUN digest. The marks are the\n  first measure of that brief.\n- A hot reload or the end of the session can stop a reading. The store\n  keeps no partial reading.\n- Text that a model wrote from the transcript can become a user prompt.\n  The press and the visible draft are the only guard, so the pane always\n  shows the exact text before it is sent.\n- A sent draft starts a new turn, and its stop gets a new reading.\n\n## Value delivered\n\nThe engineer sees a D1 reading of each stop of a session they remember,\nbeside that session. They mark each reading, and act on the steps they\nagree with. The marks and the sent steps show which part of the prompt to\nimprove next.\n",
+    "body": "# ADR-0049 — cobuilder-priority reads each stop of a live session\n\n## Context\n\nThe priority-dev interpreter reads one stop of a coding session. It gives a\nstatus, a priority, and the steps that a person might take next. The\noptimiser improves its prompt on recorded transcripts. The recent runs on\nold sessions no longer give useful feedback, because the engineer does not\nremember those sessions well enough to judge a reading.\n\nD1 is the best saved program. It scored 0.654 on 56 test stops, against\n0.469 for the base prompt. D1 saw no digest in those runs.\n\nADR-0025 and ADR-0039 let only `implement` and `cobuilder-memory` ship\nhooks. A reader at each stop needs a hook.\n\n## Options considered\n\nThe frontmatter lists each option with its reason. Three shaped the\ndecision most:\n\n- **A command hook plus a mod pane.** The mod API can start a process\n  and draw a pane from one module, so a second mechanism adds only a\n  file hand-off.\n- **Interpret only.** It matches the brief that D1 was scored on. The\n  engineer wants the digest in the brief, and accepts the risk.\n- **Every session.** Each transcript goes to an outside service. The\n  engineer chose a switch for each session.\n\n## Decision\n\nShip a seventh plugin, `cobuilder-priority`, as an opt-in install from\nthis marketplace, outside the umbrella.\n\n**Install surface.** The plugin is a mod. `hooks/hooks.json` names one\nhooks module. It ships the module's tests, the manifest, a type contract,\nand the `shared` symlink. It ships no `agents/` and no MCP server. This\namends ADR-0025 and ADR-0039: `implement`, `cobuilder-memory`, and\n`cobuilder-priority` may ship `hooks/`. Only `implement` may ship\n`agents/`. No plugin ships an MCP server.\n\n**The switch.** The reader is off in each new session. The command\n`/priority-on` turns it on for this session, and\n`/priority-off` turns it off. The module keeps the switch in\n`$.state`.\n\n**The reading.** A `classic.Stop` hook runs on the main loop only. When the\nswitch is on and no reading runs, it starts one reading and returns at\nonce. A reading runs two commands in the priority-dev checkout:\n`priority digest`, then `priority interpret --program <D1> --digest current`.\nEach command has a timeout. A stop that comes while a reading runs waits,\nand only the newest waiting stop runs next.\n\n**The CURRENT RUN label.** The new `--digest current` flag of\n`priority interpret` labels the saved digest `CURRENT RUN`. Without the\nflag, the brief keeps `PREVIOUS RUN`. Eval, replay, and the optimiser do\nnot change.\n\n**The store.** The module keeps each reading and each mark in `$.store`,\nkeyed by session and stop. The marks stay on this machine.\n\n**The pane.** The pane shows one card for each stop: status, priority,\nneeds-human, each step with its content, or the abstain reason. Each card\nholds `right`, `wrong`, and a note. `/priority-pane` opens the\npane.\n\n**Acting on steps.** On the newest card only, the person selects steps\nand answers the questions of an `ask_human` step. The module joins the\ndraft text of the selected steps. `Send` calls\n`$.prompt.submit({ text, asUser: true })`, and `Edit` calls\n`$.prompt.fill` so the person can change the draft first. The module\nrecords what it sent on the mark of that reading. Permission and\noption-pick steps become short text answers. An interrupt step has no\ntarget at a stop, so the pane shows it and cannot send it.\n\n**Layout.** The pane follows layout C: an agent summary from the digest at\nthe top, then the newest card, the draft block, the actions, and the\nhistory. `contracts.md` holds the layout and the wireframe.\n\n**Settings.** `userConfig` holds the priority-dev folder, the program file,\nthe timeout, and an optional secret API key. The module passes the key to\nthe process in `env`. Without the key, the CLI reads `priority-dev/.env`.\nThe umbrella install has an optional step that writes the reader settings,\nonly when the plugin is installed. The step never writes the API key.\n\n`contracts.md` in the design folder holds each command, field, and format.\n\n## Consequences\n\n- The build adds this ADR to the history of ADR-0025 and ADR-0039. It\n  updates CLAUDE.md principle 5, the plugin table, and the plugin count in\n  CLAUDE.md, README.md, and DDD-VOCABULARY.md.\n- The packaging test reads the amended rule in the slice that adds the\n  plugin folder.\n- Each stop with the switch on costs two model calls on an outside service.\n- D1 was not scored on a brief with a CURRENT RUN digest. The marks are the\n  first measure of that brief.\n- A hot reload or the end of the session can stop a reading. The store\n  keeps no partial reading.\n- Text that a model wrote from the transcript can become a user prompt.\n  The press and the visible draft are the only guard, so the pane always\n  shows the exact text before it is sent.\n- A sent draft starts a new turn, and its stop gets a new reading.\n\n## Value delivered\n\nThe engineer sees a D1 reading of each stop of a session they remember,\nbeside that session. They mark each reading, and act on the steps they\nagree with. The marks and the sent steps show which part of the prompt to\nimprove next.\n",
     "maps_to": {
       "context": "cobuilder-packaging",
       "modules": [
@@ -3285,6 +3297,7 @@
       ],
       "rule": "implement, cobuilder-memory, and cobuilder-priority may ship hooks/. Only implement may ship agents/. No plugin ships an MCP server."
     },
+    "approved_by": "bjornslib",
     "history": [
       {
         "state": "decided",
@@ -3295,6 +3308,22 @@
         "state": "decided",
         "date": "2026-11-12",
         "note": "Review round 2. The engineer asked to act on the selected steps. The pane sends one draft to the main session on a press, and the pane layout is part of the design."
+      },
+      {
+        "state": "decided",
+        "date": "2026-11-12",
+        "note": "The first live run failed on empty settings. The umbrella install gets an optional step that writes pluginConfigs, only when cobuilder-priority is installed (slice E1.5)."
+      },
+      {
+        "state": "approved",
+        "date": "2026-11-13",
+        "by": "bjornslib",
+        "note": "Approved by the engineer in session, after a successful live run of the digest, the reading, and the steps."
+      },
+      {
+        "state": "approved",
+        "date": "2026-11-13",
+        "note": "Live-run feedback, slices E3.6 to E3.11, not built. The mod also draws in the AbovePrompt slot: notify messages, and a summary row when the pane is closed. A needs_human reading raises a toast. Each reading records the response labels of the agent's answer, so the marks show if the digest depends on them."
       }
     ],
     "related": [

@@ -1,10 +1,10 @@
 {
   "schema_version": "1.4",
   "sources": {
-    "git_head": "679af7b2d783a3d86ef6ec1596aec18e92b74bdf",
+    "git_head": "2f27bf01a8de5872a6d8985407cd6bf4c72956e6",
     "trees": {
-      "docs/architecture/adr": "sha256:3fd6db11007e02a628719e6cc75ff8acae789f2fad6a9a8f313c2c59faec44a2",
-      "docs/architecture/designs": "sha256:8ae90ba268345518315ffa83801f22b87e780799ee9ad6f1c07b8b6ad300035b",
+      "docs/architecture/adr": "sha256:6312af9f9bb78c56cd7a91c97bdb2605057a56d8695225a039c552ada47d5eb4",
+      "docs/architecture/designs": "sha256:22e8017109526e8ab91e15e5ed3498fc49675b37db21ace58d2bffe765faf911",
       "docs/architecture/contexts": "sha256:e9537c5da21bf3f32eb547c8c422e8c3eb9acafefb5801143e53491b64ace073",
       "docs/plans": "sha256:59009083e5abb7b6391af2e29ee9d3fa30581a7e9d63cb18a803030eb05f1cfd",
       ".cobuilder/rubrics": "sha256:90d2396b0a34d85ece07a8eef3df300e7f7dbe1dee123084de92b3879c1e33bf"
@@ -235,7 +235,7 @@
       {
         "id": "ADR-0049",
         "title": "cobuilder-priority reads each stop of a live session",
-        "state": "decided"
+        "state": "approved"
       }
     ],
     "design": [
@@ -351,7 +351,7 @@
         "id": "priority-dev-cc-plugin",
         "name": "priority-dev-cc-plugin",
         "outcome": "With the reader switched on, each main-loop stop gets a D1 reading in a pane, and the session does not wait. The person marks each reading right or wrong, with a note, and sends the steps they choose to the session with one press. The marks stay local.",
-        "stage": "review"
+        "stage": "approved"
       },
       {
         "id": "priority-dev-spike",
@@ -5027,9 +5027,9 @@
         "n": 1,
         "title": "Tracer bullet: a crowded folder reaches GREEN",
         "ends_with": "A GREEN write of a new file into a crowded folder gives a coach message that names the folder, its file count, and the limit. A write of an old file gives no structure text. The spike transcript is kept.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "structure-coaching/2",
@@ -5037,9 +5037,9 @@
         "n": 2,
         "title": "The name-stem cluster and the generic name, with the token split, the config file, and the list of paths not analysed",
         "ends_with": "The script reports each of the three signals on synthetic trees, reads its limits from `.cobuilder/structure-signals.json`, skips test-name prefixes, and names each excluded path.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "structure-coaching/3",
@@ -5047,9 +5047,9 @@
         "n": 3,
         "title": "The coaching language: one message for each signal and the format of the Structure block",
         "ends_with": "The engineer approves `shared/structure-messages.json` and the block format. A blind GREEN agent that gets one message makes the decision that the message names.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "structure-coaching/4",
@@ -5057,9 +5057,9 @@
         "n": 4,
         "title": "The coach uses the approved wording, repeats no finding in a session, and gives no smell output for an unscanned extension",
         "ends_with": "A `.go` write gives a structure message and no habit-hooks call. A second write in the same session gives no repeat. The coach always exits 0.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 2,
+        "state": "completed"
       },
       {
         "id": "structure-coaching/5",
@@ -5067,9 +5067,9 @@
         "n": 5,
         "title": "The install writes the default config",
         "ends_with": "The setup step writes `.cobuilder/structure-signals.json` in a temp repo after approval, and the coach reads it on the next write.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "structure-coaching/6",
@@ -5077,9 +5077,9 @@
         "n": 6,
         "title": "The agent-use check: the effect is chosen from the spike, and `verify_gate.py --slice` reads it",
         "ends_with": "The check passes for a pass at attempt 1 and for a workflow-mode slice, and it fails for no attempt file and for a slice that the main agent wrote.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "structure-coaching/7",
@@ -5087,9 +5087,9 @@
         "n": 7,
         "title": "The slice loop text makes the main agent spawn RED, GREEN, and VALIDATE, and run the check before it closes a slice",
         "ends_with": "A blind main agent with a small design spawns the three agents in order and runs the check. One real slice runs from RED to a VALIDATE score, and the transcript is kept.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "structure-coaching/8",
@@ -5097,9 +5097,9 @@
         "n": 8,
         "title": "VALIDATE writes the Structure block: contract drift, cohesion, and each new dependency against `boundary.yaml`",
         "ends_with": "A blind VALIDATE on a fixture slice writes the block with the three judgments outside `overall_score`, and a FAIL puts the block in the feedback file.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "structure-coaching/9",
@@ -5107,6 +5107,56 @@
         "n": 9,
         "title": "The replay with the signals on and off, and the hand label of the findings",
         "ends_with": "`evaluation.md` holds, for each condition, three runs or more of five slices, the follow-on success rate, the folder growth, and the precision of each signal, with a decision on scored criteria.",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
+        "id": "structure-coaching/10",
+        "feature": "structure-coaching",
+        "n": 10,
+        "title": "The import reader: the groups of a crowded folder, the boundary edge, and each coach signal that the spike keeps",
+        "ends_with": "A crowded-folder finding names the name families and the import groups of the folder. A new file that names a context outside `allowed_dependencies` gives a finding with the line and the rule. A file with no context gives a `not_analysed` line.",
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
+      },
+      {
+        "id": "structure-coaching/11",
+        "feature": "structure-coaching",
+        "n": 11,
+        "title": "Each VALIDATE signal that the spike keeps, in the packet",
+        "ends_with": "Each kept signal gives its finding on a fixture repo, and a `not_analysed` line when it has no input, such as a file with no history.",
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
+      },
+      {
+        "id": "structure-coaching/12",
+        "feature": "structure-coaching",
+        "n": 12,
+        "title": "The vocabulary leads: the script indexes the glossary, and the vocabulary agent judges each lead",
+        "ends_with": "The packet lists each `_Avoid_` word in a new name with its glossary reason. A blind vocabulary agent tags a lead AVOID only when the name means the avoided concept.",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
+        "id": "structure-coaching/13",
+        "feature": "structure-coaching",
+        "n": 13,
+        "title": "The whole-repository findings file: each signal on every file, the folder table, and the order by change count",
+        "ends_with": "`structure_evidence.py --repo` writes a record for a fixture repo that holds findings in old files, ranked by recent change count, with the folder table. `compare_findings` tags two records new, worse, unchanged, or fixed.",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
+        "id": "structure-coaching/14",
+        "feature": "structure-coaching",
+        "n": 14,
+        "title": "Review mode and maintenance mode report the record and its trend",
+        "ends_with": "A blind review agent with a fixture record writes a Structure section with a judgment for each reported finding. Maintenance mode tags each finding with its trend.",
         "score": "—",
         "attempts": 0,
         "state": "planned"
