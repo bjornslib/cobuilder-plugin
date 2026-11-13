@@ -11,7 +11,7 @@ import ast
 from pathlib import Path
 from typing import Any
 
-from .config import Config, excluded_by
+from .config import Config, excluded_by, load_config
 from .drift import drift_events, public_surface
 from .git import GitError, file_at, files_with_word
 from .names import is_test_name
@@ -67,6 +67,16 @@ def caller_files(root: Path, symbol: str, diff_files: set[str], config: Config) 
         rel for rel in files_with_word(root, word)
         if rel not in diff_files and excluded_by(rel, config) is None
     ]
+
+
+def callers_untouched(
+    root: Path, symbol: str, diff_files: set[str], cap: int = 10
+) -> list[str]:
+    """Return up to cap files outside the diff that name the last part of the symbol, sorted.
+
+    The default cap of 10 matches the list that each contract-drift finding holds.
+    """
+    return caller_files(root, symbol, diff_files, load_config(root))[:cap]
 
 
 def definer(root: Path, symbol: str, source: str, config: Config) -> str | None:

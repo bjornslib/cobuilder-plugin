@@ -139,3 +139,27 @@ def files_with_word(root: Path, word: str) -> list[str]:
         "-e", word, ok_codes=(0, 1),
     )
     return sorted(_names(output))
+
+
+def head_commit(root: Path) -> str:
+    """Return the sha of HEAD. Raise GitError when the repo has no commit."""
+    return _git(root, "rev-parse", "HEAD").strip()
+
+
+def commit_file_sets(root: Path, days: int) -> list[list[str]]:
+    """Return the file names of each non-merge commit of the last days, newest first.
+
+    The -z option keeps each name raw, so it matches the names of ls-files. A commit that
+    changes no file gives an empty list.
+    """
+    output = _git(
+        root, "log", f"--since={days}.days", "--no-merges", "--name-only", "-z",
+        "--format=%x1e%H",
+    )
+    return [_commit_names(chunk) for chunk in output.split("\x1e")[1:]]
+
+
+def _commit_names(chunk: str) -> list[str]:
+    """Return the names of one commit. Its chunk holds the sha, a NUL, then NUL-separated names."""
+    _, _, rest = chunk.partition("\0")
+    return [name.lstrip("\n") for name in rest.split("\0") if name.strip("\n")]

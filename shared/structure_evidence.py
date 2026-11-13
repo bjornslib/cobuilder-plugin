@@ -5,16 +5,17 @@
 # ///
 """Write the evidence packet of one slice diff, for VALIDATE.
 
-The packet holds facts and no verdict. It lists the added and modified files of the diff,
-the Python contract drift with the callers that each change may reach, the boundary edges
-on the diff, the prose rules of each touched context, and the vocabulary leads. VALIDATE
-judges each fact.
+The packet holds facts and no verdict. It lists the added and modified files of the diff, the
+Python contract drift with the callers that each change may reach, the boundary edges on the
+diff, the prose rules of each touched context, and the vocabulary leads. VALIDATE judges each fact.
 
 Usage: uv run shared/structure_evidence.py [--base <sha>] --out <packet.json>
+       uv run shared/structure_evidence.py --repo [--since <sha>] --out <record.json>
 
-Without --base, the diff starts at the merge-base with the default branch. A git error or
-a helper that does not import gives one not_analysed line and no finding. A file that does
-not parse gives one not_analysed line. The script exits 0, or 2 for a usage error.
+Without --base, the diff starts at the merge-base with the default branch. The --repo mode
+writes the whole-repository record. A git error or a helper that does not import gives one
+not_analysed line and no finding. A file that does not parse gives one not_analysed line.
+The script exits 0, or 2 for a usage error.
 """
 from __future__ import annotations
 
@@ -34,7 +35,8 @@ if _HERE not in sys.path:
 try:
     from structure.config import Config, drop_excluded, load_config
     from structure.git import GitError, added_lines, merge_base, repo_top, slice_files
-    from structure.slice_drift import caller_files, drift_part
+    from structure.repo import empty_record, record_here
+    from structure.slice_drift import callers_untouched, drift_part
     from structure.slice_edges import edge_part, prose_rules, read_records
     from structure.slice_reuse import copy_part, locality_part
     from structure.slice_vocab import vocabulary_part
@@ -52,16 +54,6 @@ except ImportError:  # the line reader reads the records, and the packet says so
 __all__ = ["added_lines", "build_packet", "callers_untouched", "main", "slice_files"]
 
 NO_BASE = "not analysed: no merge-base with the default branch. Pass --base <sha>."
-
-
-def callers_untouched(
-    root: Path, symbol: str, diff_files: set[str], cap: int = 10
-) -> list[str]:
-    """Return up to cap files outside the diff that name the last part of the symbol, sorted.
-
-    The default cap of 10 matches the list that each contract-drift finding holds.
-    """
-    return caller_files(root, symbol, diff_files, load_config(root))[:cap]
 
 
 def build_packet(root: Path, base: str | None) -> dict[str, Any]:
@@ -169,25 +161,37 @@ def _packet_here(base: str | None) -> dict[str, Any]:
     return build_packet(root, base or merge_base(root))
 
 
+def _record_here(since: str | None) -> dict[str, Any]:
+    """Return the whole-repository record of the repo that holds the working folder."""
+    if IMPORT_FAILURE is not None:
+        return empty_record(since, _one_line(f"not analysed: {IMPORT_FAILURE}"))
+    return record_here(since, _yaml_parse if yaml is not None else None)
+
+
 def _parser() -> argparse.ArgumentParser:
-    """Return the parser with its two options."""
+    """Return the parser with its options."""
     parser = argparse.ArgumentParser(description="Write the evidence packet of one slice diff.")
     parser.add_argument(
         "--base",
         metavar="SHA",
         help="the slice base; by default the merge-base with the default branch",
     )
-    parser.add_argument("--out", required=True, metavar="PATH", help="the packet file to write")
+    parser.add_argument("--repo", action="store_true", help="write the whole-repository record")
+    parser.add_argument("--since", metavar="SHA", help="with --repo: the base of contract drift")
+    parser.add_argument("--out", required=True, metavar="PATH", help="the file to write")
     return parser
 
 
 def main(argv: list[str]) -> int:
-    """Write the packet to the --out path and print that path. A usage error exits 2."""
-    args = _parser().parse_args(argv)
-    packet = _packet_here(args.base)
+    """Write the packet, or the record with --repo, to the --out path. A usage error exits 2."""
+    parser = _parser()
+    args = parser.parse_args(argv)
+    if (args.repo and args.base is not None) or (args.since is not None and not args.repo):
+        parser.error("--base is for a slice packet, and --since is for --repo")
+    data = _record_here(args.since) if args.repo else _packet_here(args.base)
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps(packet, indent=2) + "\n", encoding="utf-8")
+    out.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
     print(out.resolve())
     return 0
 

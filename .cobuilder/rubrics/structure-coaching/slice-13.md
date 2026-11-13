@@ -44,7 +44,7 @@ Test command: uv run pytest tests -q
 - 0.0 — none
 
 ### C5 — The record shape
-**Must be true:** The record has the keys `schema`, `commit`, `since`, `findings`, `folders`, and `not_analysed`, and each finding has a `key` and `changes_90d`.
+**Must be true:** The record has the keys `schema`, `commit`, `since`, `window_days`, `findings`, `folders`, and `not_analysed`, and each finding has a `key` and `changes`.
 **Evidence to check:**
 - Read a record.
 **Scoring:**

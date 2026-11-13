@@ -109,10 +109,10 @@ def import_groups(
         for ref in scan.references:
             if ref.kind == "import" and ref.target in members and ref.target != rel:
                 edges.append((rel, ref.target))
-    return _groups(siblings, edges), tuple(notes)
+    return connected_groups(siblings, edges), tuple(notes)
 
 
-def _groups(names: list[str], edges: list[tuple[str, str]]) -> tuple[tuple[str, ...], ...]:
+def connected_groups(names: list[str], edges: list[tuple[str, str]]) -> tuple[tuple[str, ...], ...]:
     """Return each set of two or more connected names, sorted, with the largest set first."""
     parent = {name: name for name in names}
 

@@ -1,13 +1,13 @@
 {
   "schema_version": "1.5",
   "sources": {
-    "git_head": "de9155f5953a4039b3867c1d860c8d82b7a3ea47",
+    "git_head": "b6909194cbc5c02c5b6d3b78c899e8646aaa7d1b",
     "trees": {
       "docs/architecture/adr": "sha256:20ca2f731683a3c296a2c76de4eeab9d4a6a07fcfeab163272cc78709195785d",
       "docs/architecture/designs": "sha256:9faf06636e9f4782a1f46ae5507cdec60c96faf0c5824b0a4e154b1b0898c650",
       "docs/architecture/contexts": "sha256:5ba95d850addabe46f6527e72178225cea8307bc3d3d772b5450ec6f5e73718f",
-      "docs/plans": "sha256:eadb1d14e421f743204031d067b553911bbb2cd16bb890c6e95e87e40d1ab647",
-      ".cobuilder/rubrics": "sha256:211d1505a68b1578c368493f6a531566656e2c3d079b3d966903bb2c90e6b095"
+      "docs/plans": "sha256:0da720c91c7d30fb65303d3113e575699e4c55332f6b335ed6a45599024324ae",
+      ".cobuilder/rubrics": "sha256:7f97793c85a95883bf1089d43811b288c7fdc6926089c9f20b0713485e5e13fe"
     }
   },
   "entities": {
@@ -5042,9 +5042,9 @@
         "n": 13,
         "title": "The whole-repository findings file: each signal on every file, the folder table, and the order by change count",
         "ends_with": "`structure_evidence.py --repo` writes a record for a fixture repo that holds findings in old files, ranked by recent change count, with the folder table. `compare_findings` tags two records new, worse, unchanged, or fixed.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "0.92",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "structure-coaching/14",
@@ -7210,7 +7210,7 @@
         "feature_slug": "structure-coaching",
         "n": 13,
         "title": "Slice 13 — The whole-repository findings file",
-        "body_md": "# Rubric: Slice 13 — The whole-repository findings file\n\nFeature: structure-coaching\nEpic: E6\nSlice goal: see row 13 of docs/plans/structure-coaching/04-slices.md\nTest command: uv run pytest tests -q\n\n## Criteria\n\n### C1 — Findings in old files [CRITICAL]\n**Must be true:** `structure_evidence.py --repo --out <path>` on a fixture repo reports a crowded folder, a name family, and a boundary edge in committed old files, which the change view does not report.\n**Evidence to check:**\n- Run the script on a fixture repo and read the record.\n**Scoring:**\n- 1.0 — all three\n- 0.5 — one or two\n- 0.0 — none\n\n### C2 — The order by change count [CRITICAL]\n**Must be true:** The findings of the folder with more commits in the last 90 days come first.\n**Evidence to check:**\n- Read the order in the record for a fixture with known commit counts.\n**Scoring:**\n- 1.0 — right order\n- 0.5 — —\n- 0.0 — another order\n\n### C3 — The folder table\n**Must be true:** Each folder with three or more code files has `n`, `internal`, `out`, `in`, `cf`, `instability`, `groups`, and `test_share`. A folder with known edges gives the right `cf` and `instability`. A folder with no edges gives `null`.\n**Evidence to check:**\n- Run the tests for structure_repo.py, or compute the values for the fixture by hand.\n**Scoring:**\n- 1.0 — all hold\n- 0.5 — one value wrong\n- 0.0 — no table\n\n### C4 — The trend [CRITICAL]\n**Must be true:** `compare_findings` gives new, worse, unchanged, and fixed for two fixture records.\n**Evidence to check:**\n- Run the unit tests for compare_findings.\n**Scoring:**\n- 1.0 — all four\n- 0.5 — two or three\n- 0.0 — none\n\n### C5 — The record shape\n**Must be true:** The record has the keys `schema`, `commit`, `since`, `findings`, `folders`, and `not_analysed`, and each finding has a `key` and `changes_90d`.\n**Evidence to check:**\n- Read a record.\n**Scoring:**\n- 1.0 — all keys\n- 0.5 — one missing\n- 0.0 — more missing\n\n### C6 — The whole-repository signals [CRITICAL]\n**Must be true:** Two `util.py` files in two folders give one twin finding, and two `page.tsx` files give none. A pair of files in different folders committed together in 5 of 6 commits gives one co-change group. A block in three files gives one duplicate group, not three pairs. A window of fewer than 20 commits in 90 days widens to 365 days, and the record states the window.\n**Evidence to check:**\n- Run the tests for structure_repo.py on a fixture repo.\n**Scoring:**\n- 1.0 — all five hold\n- 0.5 — three or four hold\n- 0.0 — fewer\n\n## Regression check\n- All tests that passed before this slice must still pass.\n- Files outside the slice scope in the epic design must remain unchanged.\n\n## Out of scope — do not penalise\n- The review report text (slice 14)\n- The refactor skill (E8)\n",
+        "body_md": "# Rubric: Slice 13 — The whole-repository findings file\n\nFeature: structure-coaching\nEpic: E6\nSlice goal: see row 13 of docs/plans/structure-coaching/04-slices.md\nTest command: uv run pytest tests -q\n\n## Criteria\n\n### C1 — Findings in old files [CRITICAL]\n**Must be true:** `structure_evidence.py --repo --out <path>` on a fixture repo reports a crowded folder, a name family, and a boundary edge in committed old files, which the change view does not report.\n**Evidence to check:**\n- Run the script on a fixture repo and read the record.\n**Scoring:**\n- 1.0 — all three\n- 0.5 — one or two\n- 0.0 — none\n\n### C2 — The order by change count [CRITICAL]\n**Must be true:** The findings of the folder with more commits in the last 90 days come first.\n**Evidence to check:**\n- Read the order in the record for a fixture with known commit counts.\n**Scoring:**\n- 1.0 — right order\n- 0.5 — —\n- 0.0 — another order\n\n### C3 — The folder table\n**Must be true:** Each folder with three or more code files has `n`, `internal`, `out`, `in`, `cf`, `instability`, `groups`, and `test_share`. A folder with known edges gives the right `cf` and `instability`. A folder with no edges gives `null`.\n**Evidence to check:**\n- Run the tests for structure_repo.py, or compute the values for the fixture by hand.\n**Scoring:**\n- 1.0 — all hold\n- 0.5 — one value wrong\n- 0.0 — no table\n\n### C4 — The trend [CRITICAL]\n**Must be true:** `compare_findings` gives new, worse, unchanged, and fixed for two fixture records.\n**Evidence to check:**\n- Run the unit tests for compare_findings.\n**Scoring:**\n- 1.0 — all four\n- 0.5 — two or three\n- 0.0 — none\n\n### C5 — The record shape\n**Must be true:** The record has the keys `schema`, `commit`, `since`, `window_days`, `findings`, `folders`, and `not_analysed`, and each finding has a `key` and `changes`.\n**Evidence to check:**\n- Read a record.\n**Scoring:**\n- 1.0 — all keys\n- 0.5 — one missing\n- 0.0 — more missing\n\n### C6 — The whole-repository signals [CRITICAL]\n**Must be true:** Two `util.py` files in two folders give one twin finding, and two `page.tsx` files give none. A pair of files in different folders committed together in 5 of 6 commits gives one co-change group. A block in three files gives one duplicate group, not three pairs. A window of fewer than 20 commits in 90 days widens to 365 days, and the record states the window.\n**Evidence to check:**\n- Run the tests for structure_repo.py on a fixture repo.\n**Scoring:**\n- 1.0 — all five hold\n- 0.5 — three or four hold\n- 0.0 — fewer\n\n## Regression check\n- All tests that passed before this slice must still pass.\n- Files outside the slice scope in the epic design must remain unchanged.\n\n## Out of scope — do not penalise\n- The review report text (slice 14)\n- The refactor skill (E8)\n",
         "source_path": ".cobuilder/rubrics/structure-coaching/slice-13.md"
       },
       {

@@ -357,7 +357,24 @@ The block also has one item each for the contract-drift, cohesion, and dependenc
 <a id="evidence-packet"></a>
 **Evidence packet** (`implement`):
 The JSON output of `shared/structure_evidence.py` for one slice diff. It holds the structure findings, the evidence for the agents, and the paths that the run did not analyze.
-_Avoid_: report (the habit-hooks findings JSON)
+_Avoid_: report (the habit-hooks findings JSON), structure findings record (the whole-repository output of `--repo`)
+
+<a id="structure-findings-record"></a>
+**Structure findings record** (`implement`):
+The JSON output of `structure_evidence.py --repo` for the whole repository, written as `structure-findings.json` beside the review reports. It holds the structure findings ranked by change count, the folder table, and the paths that the run did not analyze.
+_Avoid_: evidence packet (the output for one slice diff)
+
+<a id="folder-table"></a>
+**Folder table** (`implement`):
+The `folders` list of a structure findings record: one row for each folder with three or more code files. Each row holds its edge counts, its cohesion and instability ratios, its import groups, and its test share.
+
+<a id="group-signal"></a>
+**Group signal** (`implement`):
+A structure signal that only the whole-repository view runs: the twin name, the co-change group, and the duplicate group. Its finding names a set of files in its `members` fact.
+
+<a id="change-count"></a>
+**Change count** (`implement`):
+The number of commits in the window that touch a path, where the window is 90 days, or 365 days when 90 days hold fewer than 20 commits. The structure findings record puts the finding with the largest change count first.
 
 VALIDATE and the vocabulary agent read the packet. It holds facts, never a verdict.
 

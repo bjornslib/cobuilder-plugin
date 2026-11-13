@@ -17,6 +17,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "shared"))
 import structure_signals  # noqa: E402
+from structure.keys import finding_key  # noqa: E402
 
 MESSAGES_PATH = Path(__file__).resolve().parent.parent / "shared" / "structure-messages.json"
 RECORD_PREFIX = "cobuilder-coach-"
@@ -50,18 +51,6 @@ def render(finding: structure_signals.Finding, messages: dict[str, str]) -> str:
     """Return the text of one finding, filled from the template of its signal."""
     names = {**finding.facts, "path": finding.path, "folder": finding.folder}
     return _fill(messages[finding.signal], names)
-
-
-def _finding_key(finding: structure_signals.Finding) -> str:
-    """Return the key of one finding in the session record. The keys follow epic E2, step B3."""
-    if finding.signal == "crowded-folder":
-        return f"crowded-folder|{finding.folder}"
-    if finding.signal == "name-stem-cluster":
-        return f"name-stem-cluster|{finding.folder}|{finding.facts['stem']}"
-    if finding.signal == "boundary-edge":
-        return f"boundary-edge|{finding.path}|{_shown(finding.facts.get('to_context'))}"
-    # A generic name keys by its path.
-    return f"{finding.signal}|{finding.path}"
 
 
 def _record_path(session_id: str | None) -> Path | None:
@@ -131,13 +120,13 @@ def _text_for(path: str, session_id: str | None) -> tuple[int, str]:
     seen = seen_keys(session_id)
     unseen = [
         item for item in _findings(path)
-        if item.signal in messages and _finding_key(item) not in seen
+        if item.signal in messages and finding_key(item) not in seen
     ]
     if not unseen:
         return 0, ""
     parts = [_fill(messages["header"], {"path": unseen[0].path})]
     parts.extend(render(item, messages) for item in unseen)
-    remember(session_id, seen | {_finding_key(item) for item in unseen})
+    remember(session_id, seen | {finding_key(item) for item in unseen})
     return 1, "\n\n".join(parts)
 
 
