@@ -1,7 +1,7 @@
 // E3.12: the fixes from the live run of 0.3.0 (contracts.md, Epic E3). Decide heading, empty send,
 // visible numbering, and the scroll hook of the pane.
 import { expect, test } from 'claude-code/testing'
-import { ACTIONABLE, DIGESTED, OPTIONS, PANE, childNodes, drain, keyOfNode, nodeByKey, readings, waitFor, walk } from './fakes'
+import { ACTIONABLE, DIGESTED, OPTIONS, PANE, childNodes, drain, keyOfNode, nodeByKey, readings, stop, waitFor, walk } from './fakes'
 import type { Node } from './fakes'
 import { LIVE_DECIDE, NOTIFY_GAP } from './fixtures'
 
@@ -170,5 +170,21 @@ test('a card taller than the window can scroll every step row and the draft bloc
   expect(seen.has('draft-block'), 'the draft block reaches the top of the body').toBe(true)
   const last = (await ui.drawn()) as Node
   expect(walk(childNodes(last)[2] as Node).some((n) => keyOfNode(n) === 'step-0'), 'scrolled past the first step, it is no longer at the top').toBe(false)
+  await ui.unmount()
+})
+
+// A new reading opens at the top of its card, not at the scroll position of the previous card.
+test('a new reading resets the scroll, so its card opens at the top', { options: OPTIONS }, async ($, on) => {
+  const store = await readings($, on, [DIGESTED, TALL, DIGESTED, TALL])
+  const ui = await $.ui.mount({ ...SMALL_BODY, surface: 'terminal' })
+  const topKey = async () => keyOfNode(childNodes((await ui.drawn()) as Node)[2] as Node)
+  const first = await topKey()
+  for (let k = 1; k <= 4; k++) await scrollPane($, k, 1)
+  expect(await topKey(), 'the scroll moved the body').not.toBe(first)
+
+  await stop($)
+  await waitFor(() => ((store.get('readings:S1') as unknown[]) ?? []).length >= 2)
+  await drain()
+  expect(await topKey(), 'the new card opens at the top of the body').toBe(first)
   await ui.unmount()
 })

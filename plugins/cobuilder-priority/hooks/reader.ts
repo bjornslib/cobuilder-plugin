@@ -9,6 +9,8 @@ import { agentSummary, answerLabels } from './labels'
 const tick = atom({ plugin: 'cobuilder-priority', key: 'tick' } as const, 0)
 // The reader switch. A stop that waits runs only while the switch is still on.
 const switchedOn = atom({ plugin: 'cobuilder-priority', key: 'on' } as const, false)
+// The pane's scroll offset in blocks. A new reading sets it to 0.
+const scroll = atom({ plugin: 'cobuilder-priority', key: 'scroll' } as const, 0)
 
 export type StopJob = { sessionId: string; transcript: string; repo: string; at: string; lastMessage: string }
 
@@ -132,6 +134,8 @@ async function save($: any, reading: Omit<Reading, 'n'>): Promise<void> {
   const what = reading.state === 'failed' ? 'failed' : `ready${reading.result?.needs_human ? ' · needs you' : ''}`
   $.ui.status(`Priority reader · #${n} ${what}`)
   if (asksPerson(reading)) $.ui.toast(`Priority reader · #${n} needs you`)
+  // A new card opens at the top of the pane body.
+  await update($, scroll, () => 0)
   await update($, tick, (t) => t + 1)
 }
 
