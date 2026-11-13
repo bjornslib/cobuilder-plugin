@@ -17,7 +17,7 @@ This skill sets up the CoBuilder family for the target repo. It asks before it i
 
 ## Install mode
 
-This mode runs the five parts below in order: habit-hooks setup, glossary check, Hindsight allow rules, tracker backfill, and report. Run it once per repo, and again when the repo gains a language.
+This mode runs the six parts below in order: habit-hooks setup, glossary check, Hindsight allow rules, priority reader settings, tracker backfill, and report. Run it once per repo, and again when the repo gains a language.
 
 ## Habit-hooks setup
 
@@ -130,6 +130,38 @@ g. After a no, change nothing. List the missing rules as a manual step for the u
 
 h. State the reason to the user. A plugin cannot ship allow rules, so this skill edits the user file itself, and only after approval.
 
+## Priority reader settings
+
+This part sets the reader options when `cobuilder-priority` is installed. When the plugin is absent, this part does nothing. Follow these steps in order.
+
+a. Check that the plugin is installed. Run the script with no priority-dev folder:
+
+   ```bash
+   uv run "${CLAUDE_PLUGIN_ROOT}/scripts/priority_settings.py" --settings ~/.claude/settings.json --installed-plugins ~/.claude/plugins/installed_plugins.json
+   ```
+
+   If the status is `absent`, say that the reader is not installed. Write nothing, and ask nothing. Then go on to the Tracker backfill part.
+
+b. If the script exits 2, the plugin is installed. If the repo has a `priority-dev` folder, use its path as `<dir>`. If the repo has no such folder, ask the engineer for the path of a priority-dev checkout. If the engineer gives no path, skip this part.
+
+   Run the dry run with that folder:
+
+   ```bash
+   uv run "${CLAUDE_PLUGIN_ROOT}/scripts/priority_settings.py" --settings ~/.claude/settings.json --installed-plugins ~/.claude/plugins/installed_plugins.json --priority-dev-dir <dir>
+   ```
+
+   The script prints one JSON object with a `status`. If the script exits 2 again, show its message, and skip this part.
+
+c. If the status is `unchanged`, say that the reader settings already hold these values. Then go on to the Tracker backfill part.
+
+d. If the status is `planned`, show the key and the three options from the output. Ask once for permission to write. Do not write before the answer.
+
+   After a yes, run the same command again with `--write` added.
+
+   After a no, change nothing. List the three options as a manual step for the engineer.
+
+e. Never ask for and never write the API key. The script never writes `llm_api_key`. Tell the engineer that the key goes in `priority-dev/.env`, or in the plugin's secret setting.
+
 ## Tracker backfill
 
 This part runs after the engineer configures the tracker adapter. It follows `shared/tracker-backfill.md`. It writes nothing until the engineer agrees.
@@ -155,3 +187,4 @@ Report one list with one item for each part:
 - **Coach check:** the line that the coach-check mode printed.
 - **Glossary:** whether `DDD-VOCABULARY.md` exists at the repository root.
 - **Allow rules:** each rule that the user file received, already held, or left for the user.
+- **Priority reader settings:** whether the reader was absent, unchanged, written, skipped, or left as a manual step.

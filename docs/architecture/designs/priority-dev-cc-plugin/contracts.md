@@ -22,7 +22,7 @@ It ships no `agents/` and no MCP server.
 No field is required, so the module always loads. A reading that needs an
 unset field stops before any process starts, and the pane names the field.
 
-### Epic E1, slice E1.5: the install writes the settings (not built)
+### Epic E1, slice E1.5: the install writes the settings
 
 The first live run failed because `priority_dev_dir` and `program` were
 empty. A `--plugin-dir` load shows no install screen, so nothing set them.
