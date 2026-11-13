@@ -1,8 +1,9 @@
-// One card of layout C: the title row, the steps, the draft block, the actions, and the note.
-// Only the newest card can select and send (contracts.md, "The chosen layout").
+// One card of layout C: the title row, the steps, the draft block, and the note.
+// The keys sit in keys.tsx. Only the newest card can select and send (contracts.md, "The chosen layout").
 import type { Act, Mark, Reading } from '../types'
 import { canSend } from './draft'
-import { answer, draftFor, pick, saveMark, send, toggleStep } from './act'
+import { answer, draftFor, pick, saveMark, toggleStep } from './act'
+import { abstainName, priorityName, statusName, stepName } from './names'
 
 type Step = Record<string, any>
 
@@ -21,19 +22,18 @@ export function clock(at: string): string {
 function stepBody(step: Step): string {
   switch (step.kind) {
     case 'reply': return `"${step.text}"`
-    case 'continue_until': return `${step.goal} (${step.max_turns} turns, ${step.max_minutes}m)`
     case 'send_feedback': return step.notes
     case 'approve_gate': return step.gate
-    case 'approve_permission': return `scope: ${step.scope ?? 'once'}`
     case 'deny_permission': return step.reason ?? ''
-    case 'pick_option': return `option ${Number(step.index) + 1}`
     case 'notify': return step.excerpt ?? ''
     case 'ask_human': return step.detail?.role === 'do' ? (step.detail.steps ?? []).join('; ') : step.detail?.artifact ?? ''
     default: return ''
   }
 }
 
-const kindOf = (s: Step) => (s.kind === 'ask_human' ? `ask_human · ${s.detail?.role}` : String(s.kind))
+export function sendableNow(r: Reading, live: boolean): boolean {
+  return live && (r.result?.steps ?? []).some(canSend)
+}
 
 function questions($: any, ui: any, r: Reading, s: Step, i: number, a: Act) {
   const { Box, Text, Button, Input } = ui
@@ -58,7 +58,7 @@ function questions($: any, ui: any, r: Reading, s: Step, i: number, a: Act) {
 
 function stepRow($: any, ui: any, r: Reading, s: Step, i: number, a: Act, live: boolean) {
   const { Box, Button } = ui
-  const head = `${i + 1}. ${kindOf(s)}`
+  const head = `${i + 1}. ${stepName(s)}`
   const body = stepBody(s)
   if (!live || !canSend(s)) {
     const tail = live && s.kind === 'interrupt' ? ' (no target at a stop)' : body ? ` · ${body}` : ''
@@ -93,33 +93,26 @@ function draftBlock(ui: any, r: Reading, a: Act) {
 function statusText(r: Reading): string {
   if (r.state === 'failed') return `failed: ${r.error ?? ''}`
   const ab = r.result?.abstain
-  if (ab) return `abstain · ${ab.reason}${ab.detail ? ` (${ab.detail})` : ''}`
-  return r.result?.status ?? '-'
+  if (ab) return `abstain · ${abstainName(ab.reason)}${ab.detail ? ` (${ab.detail})` : ''}`
+  const status = r.result?.status
+  return status ? statusName(status) : '-'
 }
 
 export function card($: any, ui: any, r: Reading, mark: Mark | undefined, a: Act, live: boolean) {
-  const { Box, Text, Button, Input } = ui
-  const verdict = (v: 'right' | 'wrong', label: string) => (mark?.verdict === v ? `${label} ✓` : label)
+  const { Box, Text, Input } = ui
   const res = r.result
-  // A reading with nothing to send has no draft block and no Send or Edit.
-  const sendable = live && (res?.steps ?? []).some(canSend)
+  const sendable = sendableNow(r, live)
   return (
     <Box key={`card-${r.n}`} flexDirection="column" rowGap={0}>
       <Box flexDirection="row" columnGap={1}>
         {keyed(ui, 'title', `#${r.n} ${clock(r.at)}`, { bold: true }, { flexShrink: 0 })}
-        {res?.priority ? keyed(ui, 'priority', res.priority, { backgroundColor: 'red', color: 'white' }) : null}
+        {res?.priority ? keyed(ui, 'priority', priorityName(res.priority), { backgroundColor: 'red', color: 'white' }) : null}
         {keyed(ui, 'status', statusText(r), r.state === 'failed' || res?.needs_human ? { color: 'red' } : {})}
         {res?.needs_human ? keyed(ui, 'needs', 'needs you', { color: 'yellow' }) : null}
       </Box>
       {live && res?.steps.length ? <Text dimColor>Proposed steps (1–9 to select)</Text> : null}
       {(res?.steps ?? []).map((s, i) => stepRow($, ui, r, s, i, a, live))}
       {sendable ? draftBlock(ui, r, a) : null}
-      <Box flexDirection="row" columnGap={3}>
-        {sendable ? <Button key="send" plain hotkey="s" label="Send" onPress={() => void send($, r, 'submit')} /> : null}
-        {sendable ? <Button key="edit" plain hotkey="e" label="Edit" onPress={() => void send($, r, 'fill')} /> : null}
-        <Button key={`right-${r.n}`} plain hotkey="r" label={verdict('right', 'Right')} onPress={() => void saveMark($, r.sessionId, r.n, { verdict: 'right' })} />
-        <Button key={`wrong-${r.n}`} plain hotkey="w" label={verdict('wrong', 'Wrong')} onPress={() => void saveMark($, r.sessionId, r.n, { verdict: 'wrong' })} />
-      </Box>
       <Input key={`note-${r.n}`} label="Note" value={mark?.note ?? ''} placeholder="Type an observation" submitLabel="save"
         onSubmit={(t: string) => void saveMark($, r.sessionId, r.n, { note: t })} />
     </Box>

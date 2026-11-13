@@ -32,6 +32,29 @@ export const ACTIONABLE = {
   abstain: null,
 }
 
+// The ACTIONABLE steps, with a waiting status. The pane must name the status and the priority.
+export const WAITING = { ...ACTIONABLE, status: 'waiting_answer' }
+
+// An interpret result that abstains because the agent gave no reply.
+export const NO_REPLY = { status: null, needs_human: null, priority: null, steps: [], abstain: { reason: 'no_agent_reply' } }
+
+// The drawn tree as plain data. A node keeps its key in `key` or in `props.key`.
+export type Node = { type?: string; key?: string; props?: Record<string, any>; children?: unknown[] }
+
+const isNode = (x: unknown): x is Node => typeof x === 'object' && x !== null
+
+export const keyOfNode = (n: Node): string | undefined => n.key ?? n.props?.key
+
+export const childNodes = (n: Node): Node[] => (Array.isArray(n.children) ? n.children.filter(isNode) : [])
+
+// Every node under `n`, `n` first, in document order.
+export const walk = (n: Node): Node[] => [n, ...childNodes(n).flatMap(walk)]
+
+export const nodeByKey = (root: Node, key: string): Node | undefined => walk(root).find((n) => keyOfNode(n) === key)
+
+export const parentOfKey = (root: Node, key: string): Node | undefined =>
+  walk(root).find((n) => childNodes(n).some((c) => keyOfNode(c) === key))
+
 // Records each prompt.submit and prompt.fill. `filled` false makes the box refuse the text.
 export function stubPrompt(on: any, filled = true) {
   const sent: { how: 'submit' | 'fill'; text: string; asUser?: boolean; mode?: string }[] = []

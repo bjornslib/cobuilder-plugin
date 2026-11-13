@@ -1,9 +1,11 @@
 // The reader pane, layout C: header, agent summary, one open card, and the history of this session.
 import { atom, read } from 'claude-code'
 import type { Act, Mark, Reading } from '../types'
-import { EMPTY, actFor, marksKey, openCard, toggleSummary } from './act'
+import { EMPTY, actFor, marksKey, openCard } from './act'
 import { card, clock, keyed } from './card'
+import { keyRow } from './keys'
 import { isBusy, readingsKey } from './reader'
+import { abstainName, briefName, priorityName, statusName } from './names'
 
 const switchedOn = atom({ plugin: 'cobuilder-priority', key: 'on' } as const, false)
 const tick = atom({ plugin: 'cobuilder-priority', key: 'tick' } as const, 0)
@@ -27,15 +29,27 @@ function header(ui: any, on: boolean, count: number) {
   )
 }
 
-function summary($: any, ui: any, r: Reading, closed: boolean) {
-  const { Box, Button } = ui
+function summary(ui: any, r: Reading, closed: boolean) {
+  const { Box, Text } = ui
   const body = r.digest ? `${r.digest.ran} ${r.digest.result}` : 'No digest for this stop'
+  const source = briefName(r.brief)
   return (
     <Box key="summary-box" flexDirection="column" borderStyle="single" paddingX={1}>
-      <Button key="summary" plain hotkey="m" label={`${closed ? '▸' : '▾'} Agent completed`} onPress={() => void toggleSummary($)} />
+      <Text>{`${closed ? '▸' : '▾'} Agent completed`}</Text>
+      {closed || !source ? null : keyed(ui, 'brief', source, { dimColor: true })}
       {closed ? null : keyed(ui, 'summary-body', body, { dimColor: !r.digest, wrap: 'wrap' })}
     </Box>
   )
+}
+
+// The status and priority of a reading in plain words. A failure or an abstain takes its place.
+function resultWords(r: Reading): string {
+  const res = r.result
+  if (r.state === 'failed') return 'failed'
+  if (res?.abstain) return `abstain · ${abstainName(res.abstain.reason)}`
+  const status = res?.status ? statusName(res.status) : '-'
+  const priority = res?.priority ? priorityName(res.priority) : ''
+  return `${status} ${priority}`
 }
 
 // Pressing the newest row returns to the live card, so a later reading still opens on top.
@@ -43,11 +57,7 @@ function history($: any, ui: any, rows: Reading[], marks: Record<string, Mark>, 
   const { Box, Text, Button } = ui
   if (!rows.length) return null
   const sign = (m?: Mark) => (m?.verdict === 'right' ? '✓' : m?.verdict === 'wrong' ? '✗' : '-')
-  const line = (r: Reading) => {
-    const res = r.result
-    const what = r.state === 'failed' ? 'failed' : res?.abstain ? `abstain · ${res.abstain.reason}` : `${res?.status ?? '-'} ${res?.priority ?? ''}`
-    return `#${r.n} ${clock(r.at)} ${what.trim()}  ${sign(marks[String(r.n)])}`
-  }
+  const line = (r: Reading) => `#${r.n} ${clock(r.at)} ${resultWords(r).trim()}  ${sign(marks[String(r.n)])}`
   return (
     <Box key="history" flexDirection="column">
       <Text dimColor>History</Text>
@@ -77,7 +87,8 @@ export async function renderPane($: any, e: any) {
   return (
     <Box flexDirection="column" rowGap={1}>
       {header(ui, on, readings.length)}
-      {summary($, ui, shown, a.summaryClosed)}
+      {keyRow($, ui, shown, marks[String(shown.n)], a, live)}
+      {summary(ui, shown, a.summaryClosed)}
       {card($, ui, shown, marks[String(shown.n)], a, live)}
       {history($, ui, others, marks, newest.n)}
     </Box>
