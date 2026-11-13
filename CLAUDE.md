@@ -7,7 +7,7 @@ Simplified Technical English (STE). The rules cover `README.md`, this file,
 skill references, commit and PR bodies, code comments, error messages, ADRs,
 and the story in `story.json`. They also cover every response to the user.
 
-`Skill("architect:ste-writing")` holds the full rule set and its two modes:
+`Skill("ste-writing")` holds the full rule set and its two modes:
 `strict` for procedures and safety text, and `flavored` for general prose. If
 that call answers `Unknown skill`, read
 `${CLAUDE_PLUGIN_ROOT}/shared/skills/ste-writing/SKILL.md` and obey that file.
@@ -55,7 +55,7 @@ A short response may carry one or two labels. Do not pad a response to reach
 four. The reader must be able to stop after FYI when nothing needs them. Use a
 list or a table where it carries the meaning better than a sentence.
 
-Before you send a response, run `Skill("architect:ste-writing")` on the draft
+Before you send a response, run `Skill("ste-writing")` on the draft
 and correct what it flags. The fallback above applies.
 
 ## Working rules
@@ -113,6 +113,7 @@ deploy step and no CI.
 The lifecycle has six steps. `options` explores the whole system. `design`
 decides one change. `implement` builds it. `pr:generate` assesses it and opens
 the PR. `pr:review` narrates it after the merge. `artifact` shows the result.
+
 Before the first build in a repo, run `/cobuilder-full-lifecycle:install`.
 
 ## Layout
@@ -220,16 +221,18 @@ uv run shared/tracker.py doctor                # check the tracker adapter and t
 uv run shared/tracker.py --help                # list every tracker operation
 ```
 
-Plugin scripts are PEP 723, so `uv run <script>` resolves their dependencies.
+Plugin scripts follow PEP 723, so `uv run <script>` resolves their dependencies.
 
 The repo keeps its own state in its beads tracker: programs, epics, and slices.
-Use `tracker.py` to move that state. Do not edit the state by hand. A program is
-a native `feature`. A pull request record is a `milestone` that `tracks` its
-epics. Slices are ordered, and native ready (`claim-next`) picks the next slice.
-Records carry the `cb` label and `external_ref` finds each record. Run
-`migrate-mapping` for an old tracker. Version 1.3.0 or later of `bd` is a
-dependency of the tests. The beads contract tests run the real `bd` in
-temporary folders.
+Use `tracker.py` to move that state. Do not edit the state by hand.
+
+A program is a native `feature`. A pull request record is a `milestone` that
+`tracks` its epics. The tracker orders the slices, and native ready
+(`claim-next`) picks the next one. Records carry the `cb` label, and
+`external_ref` finds each record. Run `migrate-mapping` for an old tracker.
+
+Version 1.3.0 or later of `bd` is a dependency of the tests. The beads contract
+tests run the real `bd` in temporary folders.
 
 ## Rules that break easily
 
@@ -293,10 +296,11 @@ temporary folders.
   denies it. The hook is local tooling, and it ships to nobody.
 - **Keep sync code in the beads adapter and the worker.** Only the beads
   adapter and `shared/tracker_port/sync_worker.py` may run a sync. A hook
-  script never calls `bd`. The sync files sit in `.cobuilder/` as `sync-dirty`,
-  `sync-lock`, `sync-status.json`, and `sync-worker.log`, and the install
-  default is `sync: async` for beads. Tests that use a real `bd` carry the `slow` marker, and the default run skips
-  them. Run the full suite as one background run at a time.
+  script never calls `bd`. The sync files sit in `.cobuilder/`: `sync-dirty`,
+  `sync-lock`, `sync-status.json`, and `sync-worker.log`. The install
+  default is `sync: async` for beads. Tests that use a real `bd` carry the
+  `slow` marker, and the default run skips them. Run the full suite as one
+  background run at a time.
 
 ## Known gaps
 
