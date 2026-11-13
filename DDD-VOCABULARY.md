@@ -280,6 +280,16 @@ _Avoid_: habit-smells record (the `habit-smells.json` file of review mode)
 The JSON file `.cobuilder/structure-signals.json` that holds the structure signal settings, such as `folder_limit`, `generic_names`, and `excluded_paths`. The install writes it after the engineer approves it, `structure_signals.py --defaults` prints the default, and the coach reads it on each GREEN write.
 _Avoid_: structure settings, signals file
 
+<a id="attempt-file"></a>
+**Attempt file** (`implement`):
+The file `.cobuilder/rubrics/<slug>/evidence/slice-<N>-attempt-<M>.md` that VALIDATE writes for attempt M of slice N, with the score, the verdict, and each criterion score. The vocabulary agent appends its block to it.
+_Avoid_: evidence file for the whole folder
+
+<a id="agent-use-check"></a>
+**Agent-use check** (`implement`):
+The check in `agent_use.py` that `verify_gate.py --slice <N>` runs before a slice closes, which passes when the newest attempt file of the slice holds a PASS at or above the accept threshold, or an escalation. It shows that VALIDATE scored the slice, and it cannot see a main agent that wrote the code and then spawned only VALIDATE (ADR-0048 decision 9).
+_Avoid_: agent check, spawn check
+
 <a id="new-code-rule"></a>
 **New-code rule** (`implement`):
 A structure signal reports only on code that the change adds: for the coach a file that is untracked or added since the merge-base, and for VALIDATE the slice diff. The whole-repository view does not use the rule (ADR-0048 decisions 3 and 16).

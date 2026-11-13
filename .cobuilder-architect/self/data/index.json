@@ -1,13 +1,13 @@
 {
   "schema_version": "1.5",
   "sources": {
-    "git_head": "777ab1fc89836cbc88ec207084a4f3142ca6575a",
+    "git_head": "84a20f7a3fe3d6017847826d10cc753a1ec02f7b",
     "trees": {
       "docs/architecture/adr": "sha256:20ca2f731683a3c296a2c76de4eeab9d4a6a07fcfeab163272cc78709195785d",
       "docs/architecture/designs": "sha256:9faf06636e9f4782a1f46ae5507cdec60c96faf0c5824b0a4e154b1b0898c650",
       "docs/architecture/contexts": "sha256:a8577da6af797170fd9ba5c9a19eec1279a1a8dac1bd7cda9e71a16f6118f836",
-      "docs/plans": "sha256:422540f26583e0783f47b55de7711550518039bebc1dd51993e78ee23df4d42e",
-      ".cobuilder/rubrics": "sha256:9469a29fcf42a24445308dacedbfda39f08ba01d3ff5108bfbbf99ac78f9db68"
+      "docs/plans": "sha256:c7739636c2d2d3108d533b7e13e6e6a98918c5ce82dae2d92c6d3b8321a20326",
+      ".cobuilder/rubrics": "sha256:ea04d2569944a0177af37c02b4641a074cda81e8b0abee595f5828028bc621ac"
     }
   },
   "entities": {
@@ -4972,9 +4972,9 @@
         "n": 6,
         "title": "The agent-use check: the effect is chosen from the spike, and `verify_gate.py --slice` reads it",
         "ends_with": "The check passes for a pass at attempt 1 and for a workflow-mode slice, and it fails for no attempt file and for a slice that the main agent wrote.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "structure-coaching/7",
@@ -8984,7 +8984,7 @@
       },
       "structure-coaching": {
         "stage_source": "tracker",
-        "next_ready": "structure-coaching/6",
+        "next_ready": "structure-coaching/7",
         "pull_requests": []
       },
       "ubiquitous-language": {

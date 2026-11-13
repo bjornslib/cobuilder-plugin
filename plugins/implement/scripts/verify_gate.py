@@ -68,10 +68,14 @@ Artifact key names (stable, used in --json output):
 Exit 0 iff every key above is "ok" or "n/a" (slices.count and rubrics.count
 pass when they are a positive integer, not literally the word "ok").
 
+With --slice <N>, the script runs only the agent-use check of slice N
+(agent_use.py). It prints ok or the reason, and it exits 0 or 1.
+
 Usage:
     uv run verify_gate.py --plan docs/plans/<slug>
     uv run verify_gate.py --plan docs/plans/<slug> --rubrics-dir .cobuilder/rubrics/<slug>
     uv run verify_gate.py --plan docs/plans/<slug> --json
+    uv run verify_gate.py --plan docs/plans/<slug> --slice <N>
 """
 from __future__ import annotations
 
@@ -85,6 +89,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "shared"))
 import slice_table  # noqa: E402
 from tracker_port import reader  # noqa: E402
+import agent_use  # noqa: E402
 import gate_status  # noqa: E402
 
 # The 04-slices.md table format (see plugins/implement/skills/
@@ -445,6 +450,7 @@ def parse_args() -> argparse.Namespace:
         "from the plan dir's basename)",
     )
     parser.add_argument("--json", action="store_true", help="emit machine-readable JSON instead of a table")
+    parser.add_argument("--slice", type=int, help="run only the agent-use check of this slice number")
     return parser.parse_args()
 
 
@@ -514,6 +520,15 @@ def print_remediation(results: dict[str, dict]) -> None:
         )
 
 
+def run_slice_option(slice_id: int | None, plan_dir: Path, rubrics_dir: Path) -> None:
+    """Print the agent-use result for --slice and exit 0 or 1. Return when --slice is absent."""
+    if slice_id is None:
+        return
+    reason = agent_use.check_slice(plan_dir, rubrics_dir, slice_id)
+    print(reason)
+    sys.exit(0 if reason == "ok" else 1)
+
+
 def main() -> None:
     args = parse_args()
 
@@ -531,6 +546,7 @@ def main() -> None:
     # docs/plans/<slug> -> docs/plans -> docs -> <repo-root>.
     repo_root = plan_dir.parent.parent.parent
     rubrics_dir = Path(args.rubrics_dir).resolve() if args.rubrics_dir else (repo_root / ".cobuilder" / "rubrics" / slug)
+    run_slice_option(args.slice, plan_dir, rubrics_dir)
 
     # Under a store other than docs/plans, the gates read the tracker, not 00-status.md.
     records = reader.plan_records(repo_root, slug)
