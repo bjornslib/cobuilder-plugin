@@ -28,7 +28,7 @@ export async function renderBand($: any, e: any) {
   const { Box } = ui
   return (
     <Box flexDirection="column">
-      {notes.map((step, i) => keyed(ui, `notify-${i}`, `Notification: ${step.excerpt ?? ''}`))}
+      {notes.map((step, i) => keyed(ui, `notify-${i}`, `Notification: ${step.excerpt ?? ''}`, { color: 'warning' }))}
       {open ? null : keyed(ui, 'band-summary', summaryLine(newest))}
     </Box>
   )

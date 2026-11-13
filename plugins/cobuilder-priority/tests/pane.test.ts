@@ -24,8 +24,18 @@ test('the agent summary shows the digest, and m closes it', { options: OPTIONS }
   await readings($, on)
   const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
   expect((await ui.find({ key: 'summary-body' }))?.text).toBe('The agent ran the tests. All pass.')
+  expect((await ui.find({ key: 'summary' }))?.text, 'the open summary offers to hide it').toMatch(/Hide summary/)
   await ui.press({ key: 'summary' })
   expect(await ui.find({ key: 'summary-body' })).toBeUndefined()
+  expect((await ui.find({ key: 'summary' }))?.text, 'the closed summary offers to show it').toMatch(/Show summary/)
+  await ui.unmount()
+})
+
+test('the draft block has no title row', { options: OPTIONS }, async ($, on) => {
+  await readings($, on, [DIGESTED, ACTIONABLE])
+  const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
+  expect(await ui.find({ key: 'draft' }), 'the draft block is drawn').toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /What will be sent/ })).toBeUndefined()
   await ui.unmount()
 })
 
@@ -148,16 +158,13 @@ test('an abstain shows its reason in plain words', { options: OPTIONS }, async (
   await ui.unmount()
 })
 
-// E3.11: the summary block shows the agent's own Summary under the digest summary.
-test('the summary block shows the agent Summary under the digest summary', { options: OPTIONS }, async ($, on) => {
-  await readings($, on, [DIGESTED, WAITING], 1, true, LABELLED)
+// E3.11: the reading stores the agent's own Summary, but the pane does not draw it.
+test('the pane does not draw the agent Summary, and the reading keeps it', { options: OPTIONS }, async ($, on) => {
+  const store = await readings($, on, [DIGESTED, WAITING], 1, true, LABELLED)
   const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
-  const row = await ui.find({ key: 'agent-summary' })
-  expect(row, 'the agent summary row is drawn').toBeDefined()
-  expect(row?.text, 'the row is titled Agent\'s own summary').toContain("Agent's own summary")
-  expect(row?.text, 'the row holds the agent Summary text').toContain(LABELLED_SUMMARY)
-  const order = walk((await ui.drawn()) as Node).map(keyOfNode)
-  expect(order.indexOf('agent-summary'), 'the row stands under the digest summary').toBeGreaterThan(order.indexOf('summary-body'))
+  expect(await ui.find({ key: 'agent-summary' }), 'no agent summary row').toBeUndefined()
+  expect(await ui.find({ type: 'Text', text: LABELLED_SUMMARY }), 'no agent summary text').toBeUndefined()
+  expect((store.get('readings:S1') as { agentSummary?: string }[])[0]?.agentSummary).toBe(LABELLED_SUMMARY)
   await ui.unmount()
 })
 

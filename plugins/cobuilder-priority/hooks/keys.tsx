@@ -22,7 +22,7 @@ export function keyRow($: any, ui: any, r: Reading, mark: Mark | undefined, a: A
       {sendable ? <Button key="edit" plain hotkey="e" label="Edit" dimColor={none || busy} onPress={whenIdle(() => send($, r, 'fill'))} /> : null}
       <Button key={`right-${r.n}`} plain hotkey="r" label={verdict(mark, 'right', 'Right')} onPress={() => void saveMark($, r.sessionId, r.n, { verdict: 'right' })} />
       <Button key={`wrong-${r.n}`} plain hotkey="w" label={verdict(mark, 'wrong', 'Wrong')} onPress={() => void saveMark($, r.sessionId, r.n, { verdict: 'wrong' })} />
-      <Button key="summary" plain hotkey="m" label="Summary" onPress={() => void toggleSummary($)} />
+      <Button key="summary" plain hotkey="m" label={a.summaryClosed ? 'Show summary' : 'Hide summary'} onPress={() => void toggleSummary($)} />
     </Box>
   )
 }

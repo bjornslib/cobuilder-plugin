@@ -46,8 +46,8 @@ focus to the pane.
 - A reading that needs you raises one toast: `Priority reader · #<n> needs you`.
 - The key row under the header shows `s`, `e`, `r`, `w`, and `m`. A key that
   cannot act now is dim.
-- When the agent's last message has a `Summary` part, the summary block shows
-  it under the digest, as `Agent's own summary`.
+- When the agent's last message has a `Summary` part, the reading stores it as
+  `agentSummary`. The pane does not show it.
 
 Each stop with the reader on sends the transcript to the model service of
 the priority-dev CLI, and costs two model calls.

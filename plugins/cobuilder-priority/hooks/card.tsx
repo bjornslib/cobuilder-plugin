@@ -84,12 +84,11 @@ function stepRow($: any, ui: any, r: Reading, s: Step, i: number, a: Act, live: 
 }
 
 function draftBlock(ui: any, r: Reading, a: Act) {
-  const { Box, Text } = ui
+  const { Box } = ui
   const draft = draftFor(r, a)
   const names = draft.steps.map((s) => visibleNo(r.result?.steps ?? [], s)).join(', ')
   return (
     <Box key="draft-block" flexDirection="column" borderStyle="round" borderColor="cyan" paddingX={1} marginTop={1}>
-      <Text {...quiet({ color: 'cyan', bold: true })}>What will be sent</Text>
       {keyed(ui, 'draft', draft.text || 'Select a step', quiet({ dimColor: !draft.text }))}
       {draft.text ? keyed(ui, 'draft-footer',
         `${draft.steps.length > 1 ? 'steps' : 'step'} ${names} · ${draft.text.length} chars · session prompt`, { dimColor: true }) : null}

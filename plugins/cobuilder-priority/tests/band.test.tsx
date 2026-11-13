@@ -23,6 +23,7 @@ test('with the pane open, a notify step draws its message above the prompt', { o
   await readings($, on, [DIGESTED, NOTIFYING])
   const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
   expect((await ui.find({ key: 'notify-0' }))?.text, 'the notify message is one row above the prompt').toBe('Notification: Tests pass.')
+  expect((await ui.find({ type: 'Text', text: 'Notification: Tests pass.' }))?.props?.color, 'the row is orange (theme warning)').toBe('warning')
   expect(await ui.find({ key: 'band-summary' }), 'the pane is open, so no summary row').toBeUndefined()
   await ui.unmount()
 })
