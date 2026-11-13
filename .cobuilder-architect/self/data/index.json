@@ -1,13 +1,13 @@
 {
   "schema_version": "1.5",
   "sources": {
-    "git_head": "5971a2ee95fbabddd014f538e30c0ee89a1ba27d",
+    "git_head": "7477bb75e3df922e2673452e23072774eb16af24",
     "trees": {
       "docs/architecture/adr": "sha256:20ca2f731683a3c296a2c76de4eeab9d4a6a07fcfeab163272cc78709195785d",
       "docs/architecture/designs": "sha256:9faf06636e9f4782a1f46ae5507cdec60c96faf0c5824b0a4e154b1b0898c650",
       "docs/architecture/contexts": "sha256:a8577da6af797170fd9ba5c9a19eec1279a1a8dac1bd7cda9e71a16f6118f836",
-      "docs/plans": "sha256:283f2f0f59bcfc90983b5f1f0c11ff55c6b3fc5fa78644ae6eadb5b1b74b5f3e",
-      ".cobuilder/rubrics": "sha256:700793cf0d1910056b2bb0f0ce67f1f5809b563660945f8ef4945a4498798bdb"
+      "docs/plans": "sha256:971f62697e41d7910af874a8426ab5439cff1328b1304a130bbba9659294b7ce",
+      ".cobuilder/rubrics": "sha256:37da73fbaaa70aeafb464471a6a5b4deb80d2f9e8be0418ab5523381465daab1"
     }
   },
   "entities": {
@@ -4992,9 +4992,9 @@
         "n": 8,
         "title": "VALIDATE writes the Structure block: contract drift, cohesion, and each new dependency against `boundary.yaml`",
         "ends_with": "A blind VALIDATE on a fixture slice writes the block with the three judgments outside `overall_score`, and a FAIL puts the block in the feedback file.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "structure-coaching/9",
@@ -8984,7 +8984,7 @@
       },
       "structure-coaching": {
         "stage_source": "tracker",
-        "next_ready": "structure-coaching/8",
+        "next_ready": "structure-coaching/11",
         "pull_requests": []
       },
       "ubiquitous-language": {

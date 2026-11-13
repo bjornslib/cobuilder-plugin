@@ -169,13 +169,13 @@ def _breaks(
         rule = f"allowed_dependencies of {source.id} does not name {target.id}"
         breaks.append(("outside-allowed", to_name, rule))
     for glob_target, why in source.forbidden:
-        if any(fnmatch.fnmatchcase(ref.target, glob) for glob in _globs(glob_target)):
+        if any(fnmatch.fnmatchcase(ref.target, glob) for glob in path_globs(glob_target)):
             rule = f"forbidden_dependencies names {glob_target}: {why}"
             breaks.append(("forbidden-glob", to_name, rule))
     return breaks
 
 
-def _globs(target: str) -> list[str]:
+def path_globs(target: str) -> list[str]:
     """Return the path globs of a forbidden target. Prose has no glob, so it gives none."""
     return [
         part for part in target.split(", ")

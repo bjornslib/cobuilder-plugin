@@ -300,6 +300,21 @@ _Avoid_: ratchet
 The second runner of the coach. `structure_runner.py` turns the structure findings for one GREEN write into text, and the coach joins it to the habit-hooks text.
 _Avoid_: structure check (it never blocks a write)
 
+<a id="slice-base"></a>
+**Slice base** (`implement`):
+The full commit sha from `git rev-parse HEAD` that the main agent records before RED starts. `structure_evidence.py --base` diffs from it to the work tree, so the slice diff holds no earlier slice.
+_Avoid_: merge-base (the fallback when no slice base exists)
+
+<a id="contract-drift"></a>
+**Contract drift** (`implement`):
+A structure finding of the signal `contract-drift`: a change in the public surface of a modified Python file, such as a parameter, a default, a return, a raise, or a removed symbol. Its facts list `callers_untouched` and `callers_total`, and it differs from Drift (`pr`), an `assessment.json` finding.
+_Avoid_: drift alone (the `pr` term)
+
+<a id="modular-mirage"></a>
+**Modular Mirage** (`implement`):
+A split of code into more files that keeps one reason to change spread across them, often made only to pass a size limit. VALIDATE names it in the cohesion line of the Structure block.
+_Avoid_: modularisation (a split that gives each file its own reason to change)
+
 ## cobuilder-memory
 
 These terms come from the `cobuilder-memory` design (ADR-0039). The plugin lives in `plugins/cobuilder-memory/`.

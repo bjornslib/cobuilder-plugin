@@ -44,11 +44,18 @@ survives context compactions, lost sessions, or changes in harness:
 .cobuilder/rubrics/<slug>/evidence/
     slice-N-attempt-M.md                              validator findings (output)
     slice-N-feedback.md                               guidance for the next GREEN
+    slice-N-packet.json                               evidence packet of the slice diff
 docs/plans/<slug>/00-status.md                        scores and checkmarks
 ```
 
 `slice-N-feedback.md` is append-only within a slice. Delete it when the slice is
 accepted. The header count in this file determines the attempt number.
+
+---
+
+## Slice base
+
+Before RED starts, record the slice base. Run `git rev-parse HEAD` in the repo. Keep the full sha for the VALIDATE spawn message. Without this base, the script uses the merge-base with the default branch, and that diff holds the earlier slices too.
 
 ---
 
@@ -107,6 +114,13 @@ scope contract, the frontend/browser step, the false-pass checks, the
 scoring guide, the evidence file format, and the verdict rules. That step
 requires opening a frontend slice in a real browser: a component test that
 calls `.click()` is not that check.
+
+The VALIDATE spawn message also carries these structure values:
+
+- the script path, `${CLAUDE_PLUGIN_ROOT}/shared/structure_evidence.py`,
+- the slice base, as `--base <slice base>`,
+- the packet path, as `--out .cobuilder/rubrics/<slug>/evidence/slice-<N>-packet.json`,
+- the path of `${CLAUDE_PLUGIN_ROOT}/skills/build/references/structure-judgment.md`.
 
 Spawn VALIDATE and VOCABULARY in parallel, not one after the other. VALIDATE
 uses `subagent_type: "implement:validate"`. VOCABULARY uses `subagent_type:

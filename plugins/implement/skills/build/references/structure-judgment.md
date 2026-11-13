@@ -50,4 +50,12 @@ When the attempt fails, the block also goes to the feedback file, so the next GR
 
 ## 4. Decision questions
 
-Slice 8 fills this section with the decision questions that VALIDATE answers for each structure finding.
+Answer these four questions for the slice. Write each answer in the Structure block format of section 1.
+
+1. **For each finding.** Decide whether the fact is true in the code. Decide whether it matters for the next reader. Label the finding `confirmed`, `accepted`, or `dismissed`. Give one line of reason and one `file:line`.
+
+2. **Contract drift.** For each `contract-drift` finding, decide whether a caller-visible contract changed. Decide whether each file in `callers_untouched` stays safe. When `callers_total` is larger than the list, the list is partial. Then read the diff once for drift that the script cannot see. Look for a changed dictionary key, a changed file format, or a changed exit code.
+
+3. **Cohesion.** For each added file, name the one reason that the file has to change. Decide whether that reason matches the folder that holds the file. A split made only to pass a size limit is a Modular Mirage. Say so in the Cohesion line of the block.
+
+4. **Dependencies.** For each `boundary-edge` finding, and for each rule in `boundary_rules_for_agent`, decide whether the diff breaks the rule. Name each new dependency that the script cannot see. Examples are a `Skill("...")` call and a subprocess path.
