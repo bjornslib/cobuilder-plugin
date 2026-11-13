@@ -17,7 +17,7 @@ public_interface:
   - commands/debug.md
   - commands/options.md
   - "Skill(\"architect:architecture\", args=\"<mode> ...\") with modes design, review, maintenance, decisions, describe, debug, options"
-  - "Skill(\"architect:mermaid\") and Skill(\"architect:ste-writing\") (vendored from shared)"
+  - "Skill(\"mermaid\") and Skill(\"ste-writing\") (vendored from shared)"
   - scripts/check_design_svg.py
   - scripts/check_options_report.py
 
@@ -89,7 +89,7 @@ modules:
   - id: shared-skills
     path: plugins/architect/shared/skills
     members: [mermaid, ste-writing]
-    public_interface: ["Skill(\"architect:mermaid\")", "Skill(\"architect:ste-writing\")"]
+    public_interface: ["Skill(\"mermaid\")", "Skill(\"ste-writing\")"]
     allowed_inbound: [skill-architecture]
     allowed_outbound: []
     rule: "A symlink into shared/. The architect context owns none of this text."

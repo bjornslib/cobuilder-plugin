@@ -266,7 +266,7 @@ draft the thirty-second voice script first. Then write each field by the writing
 `prose_budget.py check` on `goal.json`, `intent.json`, and `assessment.json`, and fix every ceiling
 line. A cap is soft, so keep a point rather than cut it. STE is not optional, and a cap does not
 replace it. Run each
-prose pass through `Skill("architect:ste-writing")` in flavored mode. If that call
+prose pass through `Skill("ste-writing")` in flavored mode. If that call
 gives `Unknown skill`, read `${CLAUDE_PLUGIN_ROOT}/shared/skills/ste-writing/SKILL.md`
 directly and obey that file instead. Use strict mode for ADR procedural
 text: the constraint introduced, and the boundary rules.

@@ -183,7 +183,7 @@ and `form.q` classes of the template. Keep `assets/design-system.css`
 unchanged. A confidence cell holds exactly one tag and nothing else. Put a
 note in the Evidence text, not in the cell.
 
-Run each prose pass through `Skill("architect:ste-writing")` in flavored
+Run each prose pass through `Skill("ste-writing")` in flavored
 mode. If that call gives `Unknown skill`, read
 `${CLAUDE_PLUGIN_ROOT}/shared/skills/ste-writing/SKILL.md` and obey that
 file instead.
