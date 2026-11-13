@@ -6,7 +6,7 @@ Memory before Gate 3: absent. The `consult` tool answered that the Hindsight ser
 
 | File | New or changed | Reason |
 |---|---|---|
-| `shared/structure_signals.py` | New | The three signals and the new-file rule. Standard library only, so the coach can import it without `uv`. About 180 lines. |
+| `shared/structure_signals.py` and `shared/structure/` | New | The entry point and the helper modules of the four coach signals (crowded folder, name-stem cluster, generic name, boundary edge) and the new-code rule. Standard library only, so the coach can import it without `uv`. |
 | `shared/structure/boundary.py` | New | The stdlib import reader, the import groups of a folder, and the boundary edge. E4 and E6 reuse it. Slice 10. |
 | `shared/structure_evidence.py` | New | The VALIDATE packet for a slice diff (E4), and the whole-repository record (E6). Run with `uv run`, so it may use PyYAML. |
 | `shared/structure/drift.py` | New | The public surface of a Python file with `ast`, and the drift events. Slice 8. |

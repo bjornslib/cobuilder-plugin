@@ -270,6 +270,11 @@ _Avoid_: structure score
 The JSON output of `shared/structure_evidence.py` for one slice diff, with its structure findings, the evidence for the agents, and the paths not analysed. VALIDATE and the vocabulary agent read it, and it holds facts, never a verdict.
 _Avoid_: report (the habit-hooks findings JSON)
 
+<a id="session-record"></a>
+**Session record** (`implement`):
+The file `cobuilder-coach-<session_id>.json` in the system temp folder, where `structure_runner.py` keeps the finding key of each structure finding that one session showed, so a later write in that session gives no repeat. A finding key is one string for each structure finding, such as `name-stem-cluster|<folder>|<stem>`.
+_Avoid_: habit-smells record (the `habit-smells.json` file of review mode)
+
 <a id="new-code-rule"></a>
 **New-code rule** (`implement`):
 A structure signal reports only on code that the change adds: for the coach a file that is untracked or added since the merge-base, and for VALIDATE the slice diff. The whole-repository view does not use the rule (ADR-0048 decisions 3 and 16).

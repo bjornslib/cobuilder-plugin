@@ -21,6 +21,7 @@ import shlex
 import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 from types import ModuleType
 
@@ -1303,3 +1304,291 @@ def test_e2e_hook_process_names_the_crowded_folder_for_a_new_file(tmp_path):
     context = json.loads(out_text)["hookSpecificOutput"]["additionalContext"]
     assert "src/pkg" in context
     assert {21, 20} <= _numbers_outside(context, repo)
+
+
+# ---------------------------------------------------------------------------
+# Structure coaching, slice 4: the approved wording, no repeat in a session,
+# the extension guard, and the join of the two texts (E2 B2 to B4)
+# ---------------------------------------------------------------------------
+
+STRUCTURE_SIGNALS_PATH = REPO_ROOT / "shared" / "structure_signals.py"
+MESSAGES_PATH = REPO_ROOT / "shared" / "structure-messages.json"
+NON_SCANNED_PATHS = ["/x/a.go", "/x/a.js", "/x/a.jsx", "/x/a.md", "/x/a.rs", "/x/Makefile"]
+
+
+@pytest.fixture()
+def coach_temp(tmp_path: Path, monkeypatch) -> Path:
+    """Send each session record to a folder in tmp_path, never to the real temp folder."""
+    temp = tmp_path / "coach-temp"
+    temp.mkdir()
+    monkeypatch.setenv("TMPDIR", str(temp))
+    monkeypatch.setattr(tempfile, "tempdir", None)
+    return temp
+
+
+class _Values(dict):
+    """The names of one template. A name with no value reads as none."""
+
+    def __missing__(self, key: str) -> str:
+        return "none"
+
+
+def _expected_texts(path: Path, root: Path) -> list[str]:
+    """Return the template text of each structure finding of one write, from the real facts."""
+    assert STRUCTURE_SIGNALS_PATH.exists(), f"missing {STRUCTURE_SIGNALS_PATH}"
+    spec = importlib.util.spec_from_file_location("structure_signals", STRUCTURE_SIGNALS_PATH)
+    assert spec is not None and spec.loader is not None
+    signals = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(signals)
+    messages = json.loads(MESSAGES_PATH.read_text(encoding="utf-8"))
+    texts = []
+    for finding in signals.signals_for(str(path), root, signals.Config()).findings:
+        facts = {
+            name: "none" if value is None or value == "" else value
+            for name, value in finding.facts.items()
+        }
+        values = _Values({**facts, "path": finding.path, "folder": finding.folder})
+        texts.append(messages[finding.signal].format_map(values))
+    return texts
+
+
+def _context(text: str) -> str:
+    """Return the additionalContext of one hook output. Fail with an assertion when it is empty."""
+    assert text.strip(), "expected a message on stdout, got nothing"
+    return json.loads(text.strip())["hookSpecificOutput"]["additionalContext"]
+
+
+def _assert_structure_shown(context: str, path: Path, root: Path) -> None:
+    texts = _expected_texts(path, root)
+    assert texts, "the real facts give no structure text for this write"
+    for text in texts:
+        assert text in context, f"the message lacks the structure text: {text!r}"
+
+
+def _write_new(repo: Path, rel: str) -> Path:
+    """Write one new file under repo. The folder must already exist."""
+    target = repo / rel
+    target.write_text("x = 1\n")
+    return target
+
+
+def _session_payload(path: Path, session: str) -> str:
+    """Return the hook payload of one GREEN write in one session, as JSON text."""
+    return json.dumps({**_green_payload(str(path)), "session_id": session})
+
+
+def _committed_go_repo(tmp_path: Path) -> Path:
+    """Return a repo whose cmd/tool folder holds twenty committed Go files."""
+    repo = _init_repo(tmp_path).resolve()
+    for index in range(20):
+        _track(repo, f"cmd/tool/mod_{index:02d}.go", "package tool\n")
+    _git(repo, *COMMIT_OPTIONS, "commit", "-q", "-m", "base")
+    return repo
+
+
+# --- scanned(path): the extension guard (B2) ---
+
+
+@pytest.mark.parametrize("ext", SOURCE_EXTENSIONS)
+def test_scanned_is_true_for_each_source_extension(habit_coach, ext):
+    _require(habit_coach, "scanned")
+    assert habit_coach.scanned(f"/x/a{ext}") is True
+
+
+@pytest.mark.parametrize("path", NON_SCANNED_PATHS)
+def test_scanned_is_false_for_any_other_suffix(habit_coach, path):
+    _require(habit_coach, "scanned")
+    assert habit_coach.scanned(path) is False
+
+
+@pytest.mark.parametrize("path", ["/x/A.PY", "/x/B.Tsx"])
+def test_scanned_reads_the_suffix_in_lower_case(habit_coach, path):
+    _require(habit_coach, "scanned")
+    assert habit_coach.scanned(path) is True
+
+
+# --- a .go write: no habit-hooks call, and the structure text ---
+
+
+def test_main_go_write_runs_no_habit_hooks_and_gives_the_structure_text(
+    habit_coach, tmp_path, monkeypatch, coach_temp
+):
+    repo = _committed_go_repo(tmp_path)
+    new = _write_new(repo, "cmd/tool/new_module.go")
+    record = _install_stub(tmp_path, monkeypatch, "habit output that must not appear", 1)
+    stdout = io.StringIO()
+
+    rc = habit_coach.main(io.StringIO(json.dumps(_green_payload(str(new)))), stdout)
+
+    assert rc == 0
+    assert not record.exists(), "habit-hooks ran for a .go write"
+    context = _context(stdout.getvalue())
+    assert "habit output that must not appear" not in context
+    _assert_structure_shown(context, new, repo)
+
+
+def test_e2e_go_write_runs_no_habit_hooks_and_prints_the_structure_text(tmp_path, coach_temp):
+    repo = _committed_go_repo(tmp_path)
+    new = _write_new(repo, "cmd/tool/new_module.go")
+    bin_dir = tmp_path / "record-bin"
+    bin_dir.mkdir()
+    record = tmp_path / "record-cwd.txt"
+    stub = bin_dir / "habit-hooks"
+    stub.write_text(
+        "#!/bin/sh\n"
+        f"pwd > {shlex.quote(str(record))}\n"
+        "printf '%s\\n' 'habit output that must not appear'\n"
+        "exit 1\n"
+    )
+    stub.chmod(0o755)
+    env = dict(os.environ)
+    env["PATH"] = f"{bin_dir}{os.pathsep}{os.environ.get('PATH', '')}"
+    env["TMPDIR"] = str(coach_temp)
+
+    proc = subprocess.run(
+        [sys.executable, str(HABIT_COACH_PATH)],
+        cwd=str(repo),
+        env=env,
+        input=json.dumps(_green_payload(str(new))),
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+
+    assert proc.returncode == 0, f"stdout={proc.stdout!r} stderr={proc.stderr!r}"
+    assert not record.exists(), "habit-hooks ran for a .go write"
+    context = _context(proc.stdout)
+    assert "habit output that must not appear" not in context
+    _assert_structure_shown(context, new, repo)
+
+
+# --- the join of the two texts: one case for each row of the B4 table ---
+
+
+def test_b4_clean_habit_hooks_and_clean_structure_give_no_output(habit_coach, tmp_path, coach_temp):
+    repo = _committed_folder_repo(tmp_path, "src/app", 3)
+    new = _write_new(repo, "src/app/new_core.py")
+    stdout = io.StringIO()
+
+    rc = habit_coach.main(
+        io.StringIO(json.dumps(_green_payload(str(new)))), stdout, runner=FakeRunner((0, ""))
+    )
+
+    assert rc == 0
+    assert stdout.getvalue() == ""
+
+
+def test_b4_clean_habit_hooks_gives_the_structure_text_alone(habit_coach, tmp_path, coach_temp):
+    repo = _committed_folder_repo(tmp_path, "src/pkg", 20)
+    new = _write_new(repo, "src/pkg/new_module.py")
+    expected = habit_coach.structure_runner.run(str(new), None)[1]
+    assert expected, "the structure runner gave no text for the crowded write"
+    stdout = io.StringIO()
+
+    rc = habit_coach.main(
+        io.StringIO(json.dumps(_green_payload(str(new)))), stdout, runner=FakeRunner((0, ""))
+    )
+
+    assert rc == 0
+    context = _context(stdout.getvalue())
+    assert context == expected, "the output must be the structure text alone"
+    _assert_structure_shown(context, new, repo)
+
+
+@pytest.mark.parametrize("code", [1, 2, 127])
+def test_b4_habit_message_alone_when_the_structure_text_is_clean(
+    habit_coach, tmp_path, coach_temp, code
+):
+    repo = _committed_folder_repo(tmp_path, "src/app", 3)
+    new = _write_new(repo, "src/app/new_core.py")
+    text = "habit-hooks output for the write"
+    stdout = io.StringIO()
+
+    rc = habit_coach.main(
+        io.StringIO(json.dumps(_green_payload(str(new)))),
+        stdout,
+        runner=FakeRunner((code, text)),
+    )
+
+    assert rc == 0
+    assert _context(stdout.getvalue()) == habit_coach.habit_message(code, text, str(new))
+
+
+@pytest.mark.parametrize("code", [1, 2, 127])
+def test_b4_habit_message_then_a_blank_line_then_the_structure_text(
+    habit_coach, tmp_path, coach_temp, code
+):
+    repo = _committed_folder_repo(tmp_path, "src/pkg", 20)
+    new = _write_new(repo, "src/pkg/new_module.py")
+    text = "habit-hooks output for the write"
+    expected_structure = habit_coach.structure_runner.run(str(new), None)[1]
+    assert expected_structure, "the structure runner gave no text for the crowded write"
+    stdout = io.StringIO()
+
+    rc = habit_coach.main(
+        io.StringIO(json.dumps(_green_payload(str(new)))),
+        stdout,
+        runner=FakeRunner((code, text)),
+    )
+
+    assert rc == 0
+    habit = habit_coach.habit_message(code, text, str(new))
+    context = _context(stdout.getvalue())
+    assert context == f"{habit}\n\n{expected_structure}"
+    _assert_structure_shown(context, new, repo)
+
+
+# --- one session: a second write gives no repeat ---
+
+
+def test_main_second_green_write_in_the_same_session_gives_no_text(
+    habit_coach, tmp_path, coach_temp
+):
+    repo = _committed_folder_repo(tmp_path, "src/pkg", 20)
+    first = _write_new(repo, "src/pkg/new_module.py")
+    second = _write_new(repo, "src/pkg/new_other.py")
+    first_out = io.StringIO()
+    second_out = io.StringIO()
+
+    first_rc = habit_coach.main(
+        io.StringIO(_session_payload(first, "main-session")),
+        first_out,
+        runner=FakeRunner((0, "")),
+    )
+    second_rc = habit_coach.main(
+        io.StringIO(_session_payload(second, "main-session")),
+        second_out,
+        runner=FakeRunner((0, "")),
+    )
+
+    assert first_rc == 0 and second_rc == 0, "the coach must return 0 for every write"
+    assert _context(first_out.getvalue()), "the first write gave no message"
+    assert second_out.getvalue() == "", f"the second write repeated: {second_out.getvalue()!r}"
+
+
+def test_e2e_second_write_in_the_same_session_prints_nothing(tmp_path, coach_temp):
+    repo = _committed_folder_repo(tmp_path, "src/pkg", 20)
+    first = _write_new(repo, "src/pkg/new_module.py")
+    second = _write_new(repo, "src/pkg/new_other.py")
+    clean_bin = _stub_bin(tmp_path, "clean-bin", "", 0)
+    env = dict(os.environ)
+    env["PATH"] = f"{clean_bin}{os.pathsep}{os.environ.get('PATH', '')}"
+    env["TMPDIR"] = str(coach_temp)
+
+    runs = [
+        subprocess.run(
+            [sys.executable, str(HABIT_COACH_PATH)],
+            cwd=str(repo),
+            env=env,
+            input=_session_payload(path, "e2e-session"),
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+        for path in (first, second)
+    ]
+
+    for proc in runs:
+        assert proc.returncode == 0, f"stdout={proc.stdout!r} stderr={proc.stderr!r}"
+    assert _context(runs[0].stdout), "the first write gave no message"
+    assert runs[1].stdout.strip() == "", f"the second write repeated: {runs[1].stdout!r}"
