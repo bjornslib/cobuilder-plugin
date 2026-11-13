@@ -1,13 +1,13 @@
 {
   "schema_version": "1.5",
   "sources": {
-    "git_head": "4f56fe9377653d5d9212ea2945b69eca3654aa6e",
+    "git_head": "115427dd641ce359c8c60d95166c8a3ab642d5c0",
     "trees": {
       "docs/architecture/adr": "sha256:20ca2f731683a3c296a2c76de4eeab9d4a6a07fcfeab163272cc78709195785d",
       "docs/architecture/designs": "sha256:9faf06636e9f4782a1f46ae5507cdec60c96faf0c5824b0a4e154b1b0898c650",
       "docs/architecture/contexts": "sha256:5ba95d850addabe46f6527e72178225cea8307bc3d3d772b5450ec6f5e73718f",
-      "docs/plans": "sha256:a994caf2fe353f930687f1ff51db95537f36d90c627ee6bb73192823532a1810",
-      ".cobuilder/rubrics": "sha256:747e00e2e3f1d305107c0680c8719a9c2c0025abd9fa7196b35649e58568ec06"
+      "docs/plans": "sha256:d181d601f5fc2b12f1d041f124cb8211989bca251bb1602a4668c476e07c650c",
+      ".cobuilder/rubrics": "sha256:c6f2633b11d78a63224c2adf4f4f8f6d7ce3d3322f6d7c5705f876749e80824a"
     }
   },
   "entities": {
@@ -1395,7 +1395,7 @@
         "epic_id": "E5",
         "branch": null,
         "pr": null,
-        "state": "open",
+        "state": "closed",
         "note": null
       },
       {
@@ -5002,9 +5002,9 @@
         "n": 9,
         "title": "The replay with the signals on and off, and the hand label of the findings",
         "ends_with": "`evaluation.md` holds, for each condition, three runs or more of five slices, the follow-on success rate, the folder growth, and the precision of each signal, with a decision on scored criteria.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "structure-coaching/10",
@@ -7918,7 +7918,7 @@
       "structure-coaching/E2": "completed",
       "structure-coaching/E3": "completed",
       "structure-coaching/E4": "completed",
-      "structure-coaching/E5": "unstarted",
+      "structure-coaching/E5": "completed",
       "structure-coaching/E6": "completed",
       "structure-coaching/E7": "unstarted",
       "structure-coaching/E8": "unstarted",
@@ -8984,7 +8984,7 @@
       },
       "structure-coaching": {
         "stage_source": "tracker",
-        "next_ready": "structure-coaching/9",
+        "next_ready": null,
         "pull_requests": []
       },
       "ubiquitous-language": {
