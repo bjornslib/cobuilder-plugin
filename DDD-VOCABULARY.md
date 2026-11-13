@@ -275,6 +275,11 @@ _Avoid_: report (the habit-hooks findings JSON)
 The file `cobuilder-coach-<session_id>.json` in the system temp folder, where `structure_runner.py` keeps the finding key of each structure finding that one session showed, so a later write in that session gives no repeat. A finding key is one string for each structure finding, such as `name-stem-cluster|<folder>|<stem>`.
 _Avoid_: habit-smells record (the `habit-smells.json` file of review mode)
 
+<a id="structure-config"></a>
+**Structure config** (`implement`):
+The JSON file `.cobuilder/structure-signals.json` that holds the structure signal settings, such as `folder_limit`, `generic_names`, and `excluded_paths`. The install writes it after the engineer approves it, `structure_signals.py --defaults` prints the default, and the coach reads it on each GREEN write.
+_Avoid_: structure settings, signals file
+
 <a id="new-code-rule"></a>
 **New-code rule** (`implement`):
 A structure signal reports only on code that the change adds: for the coach a file that is untracked or added since the merge-base, and for VALIDATE the slice diff. The whole-repository view does not use the rule (ADR-0048 decisions 3 and 16).

@@ -71,7 +71,7 @@ modules:
     public_interface: [plugin.json]
     allowed_inbound: []
     allowed_outbound: []
-    rule: "Static JSON. Declares architect and artifact as dependencies. Version 0.15.3 must match marketplace.json."
+    rule: "Static JSON. Declares architect and artifact as dependencies. Version 0.16.0 must match marketplace.json."
 
   - id: commands
     path: plugins/implement/commands

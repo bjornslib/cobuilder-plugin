@@ -5,7 +5,7 @@ Epic ID: E3
 
 ## Scope and Intent
 
-The engineer saw sessions where the main agent wrote a slice itself. Then the coach and the blind score did not run. Text alone cannot force the agent use, and `slice-loop.js` is not the default mode. E3 therefore adds one effect that a script reads before a slice closes, and it makes the loop text stronger. The effect is still open. Slice 6 settles it from the spike.
+The engineer saw sessions where the main agent wrote a slice itself. Then the coach and the blind score did not run. Text alone cannot force the agent use, and `slice-loop.js` is not the default mode. E3 therefore adds one effect that a script reads before a slice closes, and it makes the loop text stronger. The engineer chose the effect on 2026-11-13: the VALIDATE attempt file (candidate A).
 
 ## Files Touched
 
@@ -29,6 +29,8 @@ The two candidate effects, from ADR-0048 decision 9:
 |---|---|---|
 | A. The VALIDATE attempt file | `evidence/slice-<N>-attempt-<M>.md` written by VALIDATE | Cannot see a main agent that writes the code and spawns only VALIDATE |
 | B. A role line in each agent report | A line that RED, GREEN, and VALIDATE each add to the evidence | Needs a change to three agent bodies |
+
+**Chosen: A**, by the engineer on 2026-11-13. A third candidate, the Claude Code subagent transcripts, would also see a skipped RED or GREEN. The engineer chose A because it works in each harness and reads no session content. `check_slice` passes when the newest attempt file of the slice exists, holds an `overall_score`, and holds a verdict of PASS at or above the accept threshold of `manifest.yaml`, or an escalation. It fails otherwise, with the reason.
 
 The check must hold in manual mode and in workflow mode. The coach must not write a marker, because the coach ignores every caller but GREEN.
 

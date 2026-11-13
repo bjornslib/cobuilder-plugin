@@ -1,13 +1,13 @@
 {
   "schema_version": "1.5",
   "sources": {
-    "git_head": "859ef6e7d5bf0f22b45e203791417cc1eba4b95f",
+    "git_head": "777ab1fc89836cbc88ec207084a4f3142ca6575a",
     "trees": {
-      "docs/architecture/adr": "sha256:6f130670ecf52734ece5e57b434711adb00c878ccf4c848c97eb913f994baffa",
+      "docs/architecture/adr": "sha256:20ca2f731683a3c296a2c76de4eeab9d4a6a07fcfeab163272cc78709195785d",
       "docs/architecture/designs": "sha256:9faf06636e9f4782a1f46ae5507cdec60c96faf0c5824b0a4e154b1b0898c650",
-      "docs/architecture/contexts": "sha256:aaf923ca84433a8c5a152bf846f749e852a293aca14e38801bf9a3c84faba20a",
-      "docs/plans": "sha256:24d84b0b08722ca85bdda2feeb2031b2b776995ecb9403633f3602523790fd9a",
-      ".cobuilder/rubrics": "sha256:c4913164fd7007ebf60882b9b75d204bfbd6ce9e3038f3b283b52e7ddf9ce838"
+      "docs/architecture/contexts": "sha256:a8577da6af797170fd9ba5c9a19eec1279a1a8dac1bd7cda9e71a16f6118f836",
+      "docs/plans": "sha256:422540f26583e0783f47b55de7711550518039bebc1dd51993e78ee23df4d42e",
+      ".cobuilder/rubrics": "sha256:9469a29fcf42a24445308dacedbfda39f08ba01d3ff5108bfbbf99ac78f9db68"
     }
   },
   "entities": {
@@ -1365,7 +1365,7 @@
         "epic_id": "E2",
         "branch": null,
         "pr": null,
-        "state": "open",
+        "state": "closed",
         "note": null,
         "design_doc": "structure-coaching/E2"
       },
@@ -2361,7 +2361,7 @@
           ],
           "allowed_inbound": [],
           "allowed_outbound": [],
-          "rule": "Static JSON. Declares architect and artifact as dependencies. Version 0.15.3 must match marketplace.json."
+          "rule": "Static JSON. Declares architect and artifact as dependencies. Version 0.16.0 must match marketplace.json."
         }
       },
       {
@@ -4962,9 +4962,9 @@
         "n": 5,
         "title": "The install writes the default config",
         "ends_with": "The setup step writes `.cobuilder/structure-signals.json` in a temp repo after approval, and the coach reads it on the next write.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "structure-coaching/6",
@@ -5907,7 +5907,7 @@
         "epic_id": "E3",
         "feature_slug": "structure-coaching",
         "title": "Epic Technical Solution Design: E3 — The loop uses the agents",
-        "body_md": "# Epic Technical Solution Design: E3 — The loop uses the agents\n\nFeature: structure-coaching\nEpic ID: E3\n\n## Scope and Intent\n\nThe engineer saw sessions where the main agent wrote a slice itself. Then the coach and the blind score did not run. Text alone cannot force the agent use, and `slice-loop.js` is not the default mode. E3 therefore adds one effect that a script reads before a slice closes, and it makes the loop text stronger. The effect is still open. Slice 6 settles it from the spike.\n\n## Files Touched\n\n- `plugins/implement/scripts/agent_use.py` (new, slice 6)\n- `plugins/implement/scripts/verify_gate.py` (`--slice`, slice 6)\n- `tests/test_agent_use.py` (new, slice 6)\n- `plugins/implement/skills/build/references/slice-loop.md` (slice 7)\n- `plugins/implement/skills/build/SKILL.md` (slice 7)\n\n## Types & Signatures\n\n```python\ndef check_slice(plan_dir: Path, rubrics_dir: Path, slice_id: int) -> str: ...\n```\n\n`verify_gate.py --plan <dir> --slice <N>` runs only this check. It prints `ok` or the reason, and it exits 0 or 1.\n\nThe two candidate effects, from ADR-0048 decision 9:\n\n| Candidate | Reads | Gap |\n|---|---|---|\n| A. The VALIDATE attempt file | `evidence/slice-<N>-attempt-<M>.md` written by VALIDATE | Cannot see a main agent that writes the code and spawns only VALIDATE |\n| B. A role line in each agent report | A line that RED, GREEN, and VALIDATE each add to the evidence | Needs a change to three agent bodies |\n\nThe check must hold in manual mode and in workflow mode. The coach must not write a marker, because the coach ignores every caller but GREEN.\n\n## Slice Decomposition\n\n6. **Slice 6.** Depends on slice 1, which holds the spike. Ends with the four check tests.\n7. **Slice 7.** Depends on slice 6. Ends with a blind main-agent pass and one real slice transcript.\n\n## Test Plan\n\n- Slice 6: `test_agent_use.py` with no attempt file, a pass at attempt 1, a workflow-mode slice, and a main-agent slice.\n- Slice 7: a blind pass. A fresh main agent gets the changed loop text and a two-slice design. The evidence is its transcript: the spawn order and the check call.\n\n## Risks & Open Questions\n\n- Neither candidate sees every skip. The design accepts a gap that the engineer can see in the transcript.\n- A check that the main agent must call can itself be skipped. The `SKILL.md` line and the close step in `slice-loop.md` both name it.\n",
+        "body_md": "# Epic Technical Solution Design: E3 — The loop uses the agents\n\nFeature: structure-coaching\nEpic ID: E3\n\n## Scope and Intent\n\nThe engineer saw sessions where the main agent wrote a slice itself. Then the coach and the blind score did not run. Text alone cannot force the agent use, and `slice-loop.js` is not the default mode. E3 therefore adds one effect that a script reads before a slice closes, and it makes the loop text stronger. The engineer chose the effect on 2026-11-13: the VALIDATE attempt file (candidate A).\n\n## Files Touched\n\n- `plugins/implement/scripts/agent_use.py` (new, slice 6)\n- `plugins/implement/scripts/verify_gate.py` (`--slice`, slice 6)\n- `tests/test_agent_use.py` (new, slice 6)\n- `plugins/implement/skills/build/references/slice-loop.md` (slice 7)\n- `plugins/implement/skills/build/SKILL.md` (slice 7)\n\n## Types & Signatures\n\n```python\ndef check_slice(plan_dir: Path, rubrics_dir: Path, slice_id: int) -> str: ...\n```\n\n`verify_gate.py --plan <dir> --slice <N>` runs only this check. It prints `ok` or the reason, and it exits 0 or 1.\n\nThe two candidate effects, from ADR-0048 decision 9:\n\n| Candidate | Reads | Gap |\n|---|---|---|\n| A. The VALIDATE attempt file | `evidence/slice-<N>-attempt-<M>.md` written by VALIDATE | Cannot see a main agent that writes the code and spawns only VALIDATE |\n| B. A role line in each agent report | A line that RED, GREEN, and VALIDATE each add to the evidence | Needs a change to three agent bodies |\n\n**Chosen: A**, by the engineer on 2026-11-13. A third candidate, the Claude Code subagent transcripts, would also see a skipped RED or GREEN. The engineer chose A because it works in each harness and reads no session content. `check_slice` passes when the newest attempt file of the slice exists, holds an `overall_score`, and holds a verdict of PASS at or above the accept threshold of `manifest.yaml`, or an escalation. It fails otherwise, with the reason.\n\nThe check must hold in manual mode and in workflow mode. The coach must not write a marker, because the coach ignores every caller but GREEN.\n\n## Slice Decomposition\n\n6. **Slice 6.** Depends on slice 1, which holds the spike. Ends with the four check tests.\n7. **Slice 7.** Depends on slice 6. Ends with a blind main-agent pass and one real slice transcript.\n\n## Test Plan\n\n- Slice 6: `test_agent_use.py` with no attempt file, a pass at attempt 1, a workflow-mode slice, and a main-agent slice.\n- Slice 7: a blind pass. A fresh main agent gets the changed loop text and a two-slice design. The evidence is its transcript: the spawn order and the check call.\n\n## Risks & Open Questions\n\n- Neither candidate sees every skip. The design accepts a gap that the engineer can see in the transcript.\n- A check that the main agent must call can itself be skipped. The `SKILL.md` line and the close step in `slice-loop.md` both name it.\n",
         "approved_date": null,
         "source_path": "docs/plans/structure-coaching/epic-E3-design.md"
       },
@@ -7915,7 +7915,7 @@
       "slice-agents-and-vocabulary/E3": "unstarted",
       "slice-agents-and-vocabulary/E4": "unstarted",
       "structure-coaching/E1": "completed",
-      "structure-coaching/E2": "unstarted",
+      "structure-coaching/E2": "completed",
       "structure-coaching/E3": "unstarted",
       "structure-coaching/E4": "unstarted",
       "structure-coaching/E5": "unstarted",
@@ -8984,7 +8984,7 @@
       },
       "structure-coaching": {
         "stage_source": "tracker",
-        "next_ready": "structure-coaching/5",
+        "next_ready": "structure-coaching/6",
         "pull_requests": []
       },
       "ubiquitous-language": {

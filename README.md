@@ -39,7 +39,7 @@ Everything runs in your own Claude Code session, against your own checkout. Your
    /cobuilder-full-lifecycle:install
    ```
 
-   It installs habit-hooks and its detectors, and proves the coach. It checks for `DDD-VOCABULARY.md`. It adds the Hindsight allow rules to your user settings. It also sets up the tracker. It asks for `beads` or `files`, creates `.cobuilder/tracker.yaml`, runs `prepare`, and shows a backfill dry run before it writes. For an existing beads tracker, it takes a snapshot and shows a dry run before each of these steps: `migrate-mapping` for an old mapping, `repair-status` for stale epics and slices, and `strip_goal_stage.py` for the old `stage` in `goal.json`. For the `beads` adapter, install `bd` first (see Prerequisites). It asks before each change.
+   It installs habit-hooks and its detectors, and proves the coach. It checks for `DDD-VOCABULARY.md`. It shows the default structure config and the crowded folders, and writes `.cobuilder/structure-signals.json` after you approve it. It adds the Hindsight allow rules to your user settings. It also sets up the tracker. It asks for `beads` or `files`, creates `.cobuilder/tracker.yaml`, runs `prepare`, and shows a backfill dry run before it writes. For an existing beads tracker, it takes a snapshot and shows a dry run before each of these steps: `migrate-mapping` for an old mapping, `repair-status` for stale epics and slices, and `strip_goal_stage.py` for the old `stage` in `goal.json`. For the `beads` adapter, install `bd` first (see Prerequisites). It asks before each change.
 4. Run a command from the table above.
 
 To start with one job, install one plugin. For example, `/plugin install architect@cobuilder-plugin` gives you the design and review modes.
