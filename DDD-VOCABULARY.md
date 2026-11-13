@@ -350,7 +350,7 @@ The reference can also point to a path that a `forbidden_dependencies` glob name
 <a id="structure-block"></a>
 **Structure block** (`implement`):
 The `### Structure` section that VALIDATE writes after the score. It has one labeled item for each structure finding.
-_Avoid_: structure score
+_Avoid_: structure score, the `## Structure` section of an architect review report (it reports the structure findings record)
 
 The block also has one item each for the contract-drift, cohesion, and dependency judgments. It stays outside `overall_score`. A failed attempt passes the block to the next GREEN attempt (ADR-0048 decision 8).
 
@@ -363,6 +363,10 @@ _Avoid_: report (the habit-hooks findings JSON), structure findings record (the 
 **Structure findings record** (`implement`):
 The JSON output of `structure_evidence.py --repo` for the whole repository, written as `structure-findings.json` beside the review reports. It holds the structure findings ranked by change count, the folder table, and the paths that the run did not analyze.
 _Avoid_: evidence packet (the output for one slice diff)
+
+<a id="trend-tag"></a>
+**Trend tag** (`implement`):
+The label `new`, `worse`, or `unchanged` that `structure_evidence.py --compare` gives each finding of a structure findings record, by its key. A key that only the previous record holds goes into the `fixed` list of the new record.
 
 <a id="folder-table"></a>
 **Folder table** (`implement`):

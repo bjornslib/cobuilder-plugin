@@ -27,7 +27,7 @@ from .repo_signals import (
     locality_findings,
     stem_findings,
 )
-from .repo_trend import compare_findings
+from .repo_trend import apply_trend, compare_findings
 from .slice_edges import Parser, read_records
 from .types import Finding
 
@@ -90,13 +90,21 @@ def empty_record(since: str | None, note: str) -> dict[str, Any]:
     }
 
 
-def record_here(since: str | None, parse: Parser | None) -> dict[str, Any]:
-    """Return the record of the repo that holds the working folder. A git error gives a note."""
+def record_here(
+    since: str | None, parse: Parser | None, compare: str | None = None
+) -> dict[str, Any]:
+    """Return the record of the repo that holds the working folder. A git error gives a note.
+
+    With compare, each finding gets its trend from the record at that path.
+    """
     try:
         root = repo_top(Path.cwd())
     except GitError as error:
         return empty_record(since, " ".join(f"not analysed: {error}".split()))
-    return repo_findings(root, since, parse)
+    record = repo_findings(root, since, parse)
+    if compare is not None:
+        apply_trend(record, Path(compare))
+    return record
 
 
 def change_counts(root: Path, days: int = WINDOW_DAYS) -> dict[str, int]:

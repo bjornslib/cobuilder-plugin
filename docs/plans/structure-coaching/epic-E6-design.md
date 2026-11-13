@@ -27,7 +27,7 @@ def repo_findings(root: Path, since: str | None) -> dict: ...
 def compare_findings(previous: dict, current: dict) -> dict[str, str]: ...   # key -> new | worse | unchanged | fixed
 ```
 
-`structure_evidence.py --repo --out <path> [--since <sha>]` writes the record and prints its path.
+`structure_evidence.py --repo --out <path> [--since <sha>] [--compare <previous record>]` writes the record and prints its path. With `--compare`, each finding gets a `trend` tag from `compare_findings`, and the record gets a `fixed` list.
 
 ## Algorithms
 
@@ -69,7 +69,7 @@ For each folder with three or more code files: `n` (code files), `internal` (imp
 }
 ```
 
-Review mode writes it as `structure-findings.json` beside the reports in `docs/architecture/review/<run>/`.
+Review mode writes it as `docs/architecture/review/structure-findings.json`, beside the dated reports and `habit-smells.json`. The repo has no run folders. The record is committed with the reports, so the committed copy is the previous record for maintenance mode.
 
 ### D6. The trend
 
@@ -78,7 +78,7 @@ Review mode writes it as `structure-findings.json` beside the reports in `docs/a
 ### D7. The skill steps (slice 14)
 
 - Review mode, after the habit-hooks scan: run `structure_evidence.py --repo`, read the record, and write a `## Structure` section in both reports. The section lists the top findings by change count and the folder table. Each finding the agent reports gets a judgment, as `structure-review.md` says: debt, accepted, or false.
-- Maintenance mode: run the script with `--since` set to the commit of the last record, compare with that record, and tag each finding new, worse, unchanged, or fixed.
+- Maintenance mode: copy the committed `structure-findings.json` to a temporary path as the previous record. Run the script with `--since` set to the `commit` of that record and `--compare` set to the copy. The script tags each finding new, worse, or unchanged, and lists the fixed keys. The agent compares nothing by hand.
 - When the script fails, the section says so and claims no clean result.
 
 ## Slice Decomposition

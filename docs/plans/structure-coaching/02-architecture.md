@@ -33,7 +33,7 @@ None. The work changes a hook, two scripts, an agent body, and the loop prose.
 | `.cobuilder/rubrics/<slug>/evidence/slice-<N>-attempt-<M>.md` | VALIDATE | Gets a `### Structure` block. Git ignores the folder. |
 | `docs/plans/structure-coaching/evaluation.md` | The engineer and the main agent | The replay results and the hand labels (E5). |
 | `.cobuilder/rubrics/<slug>/evidence/slice-<N>-packet.json` | `structure_evidence.py` | The evidence packet of one slice. Git ignores the folder. |
-| `docs/architecture/review/<run>/structure-findings.json` | `structure_evidence.py --repo` | The whole-repository record, beside the review reports (E6). Committed with the reports. |
+| `docs/architecture/review/structure-findings.json` | `structure_evidence.py --repo` | The whole-repository record, beside the review reports (E6). Committed with the reports. |
 
 No database. No schema migration. No change to the bundle format.
 

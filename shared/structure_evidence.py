@@ -10,12 +10,12 @@ Python contract drift with the callers that each change may reach, the boundary 
 diff, the prose rules of each touched context, and the vocabulary leads. VALIDATE judges each fact.
 
 Usage: uv run shared/structure_evidence.py [--base <sha>] --out <packet.json>
-       uv run shared/structure_evidence.py --repo [--since <sha>] --out <record.json>
+       uv run shared/structure_evidence.py --repo [--since <sha>] [--compare <file>] --out <record.json>
 
 Without --base, the diff starts at the merge-base with the default branch. The --repo mode
-writes the whole-repository record. A git error or a helper that does not import gives one
-not_analysed line and no finding. A file that does not parse gives one not_analysed line.
-The script exits 0, or 2 for a usage error.
+writes the whole-repository record, and --compare adds the trend of each finding. A git error
+or a helper that does not import gives one not_analysed line and no finding. A file that does
+not parse gives one not_analysed line. The script exits 0, or 2 for a usage error.
 """
 from __future__ import annotations
 
@@ -161,11 +161,11 @@ def _packet_here(base: str | None) -> dict[str, Any]:
     return build_packet(root, base or merge_base(root))
 
 
-def _record_here(since: str | None) -> dict[str, Any]:
+def _record_here(since: str | None, compare: str | None) -> dict[str, Any]:
     """Return the whole-repository record of the repo that holds the working folder."""
     if IMPORT_FAILURE is not None:
         return empty_record(since, _one_line(f"not analysed: {IMPORT_FAILURE}"))
-    return record_here(since, _yaml_parse if yaml is not None else None)
+    return record_here(since, _yaml_parse if yaml is not None else None, compare)
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -178,6 +178,7 @@ def _parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--repo", action="store_true", help="write the whole-repository record")
     parser.add_argument("--since", metavar="SHA", help="with --repo: the base of contract drift")
+    parser.add_argument("--compare", metavar="PATH", help="with --repo: the previous record")
     parser.add_argument("--out", required=True, metavar="PATH", help="the file to write")
     return parser
 
@@ -188,7 +189,9 @@ def main(argv: list[str]) -> int:
     args = parser.parse_args(argv)
     if (args.repo and args.base is not None) or (args.since is not None and not args.repo):
         parser.error("--base is for a slice packet, and --since is for --repo")
-    data = _record_here(args.since) if args.repo else _packet_here(args.base)
+    if args.compare is not None and not args.repo:
+        parser.error("--compare is for --repo")
+    data = _record_here(args.since, args.compare) if args.repo else _packet_here(args.base)
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")

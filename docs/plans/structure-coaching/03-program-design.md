@@ -145,9 +145,9 @@ Review and maintenance (E6, `epic-E6-design.md`):
 
 ```
 architecture skill, review mode
-└── uv run <structure_evidence.py> --repo --out docs/architecture/review/<run>/structure-findings.json [--since <sha>]
+└── uv run <structure_evidence.py> --repo --out docs/architecture/review/structure-findings.json [--since <sha>] [--compare <previous record>]
     └── structure.repo.repo_findings -> findings by change count, folder table
-maintenance mode -> structure.repo.compare_findings(previous, current) -> trend tags
+maintenance mode -> structure_evidence.py --compare <previous record> -> compare_findings -> trend tags in the record
 ```
 
 Slice close:

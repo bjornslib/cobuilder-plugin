@@ -305,6 +305,13 @@ hand-off.
     - The count for a smell group is issue locations, which the record names in count_basis.
     - The `habit.smells` key in `shared/verify_bundle.py` reads the same record file.
 
+12. **Structure findings record, after the habit-hooks scan.** Run `uv run "${CLAUDE_PLUGIN_ROOT}/shared/structure_evidence.py" --repo --out docs/architecture/review/structure-findings.json` from the repo toplevel. The engineer commits the record with the reports. The record sits beside `habit-smells.json`. After the script ends, read the record and `references/structure-review.md`.
+    - Write a `## Structure` section into both HTML reports.
+    - The section lists the top findings by change count, each with a judgment: `debt`, `accepted`, or `false`.
+    - The section also lists the folder table rows that the reference names.
+    - When the script fails, the section says so and claims no clean result.
+    - The section never changes the review score.
+
 Survivors enter the normal P0/P1/P2 severity flow below. The scoring rubric, impact taxonomy, size categorisation, and both report templates need no changes.
 
 **Output:** Two linked HTML artifacts, written to `docs/architecture/review/`:
@@ -351,6 +358,13 @@ When the record says `run_complete: false`, diff no pair and tag nothing. The tr
 Carry the degraded rules of review mode: when the record says `run_complete: false`, that is a P1 finding naming the tool habit-sensors. When the record says `available: false`, the section states
 the reason and claims no clean scan. Name the tool habit-hooks and the
 branch base in the report.
+
+**Structure trend, after the habit-hooks trend.** Use the committed record as the previous record:
+    - Run `git show HEAD:docs/architecture/review/structure-findings.json > <temporary path>` from the repo toplevel.
+    - When git reports that the path does not exist, the trend says so. Run the script with only `--repo` and `--out`, and label every finding `new`.
+    - When `git show` succeeds, read the commit of the previous record. Run `uv run "${CLAUDE_PLUGIN_ROOT}/shared/structure_evidence.py" --repo --out docs/architecture/review/structure-findings.json --since <commit> --compare <temporary path>` from the repo toplevel. When that commit is `null`, leave out `--since`.
+    - Report the trend of each finding, and the fixed list, from the new record. Follow `references/structure-review.md` for the trend rules. The script compares the keys. The agent compares nothing by hand.
+    - When the script fails, or its output says that it cannot read the previous record, say so. Do not claim a clean trend.
 
 **Vocabulary check:** When `DDD-VOCABULARY.md` exists at the repo root,
 load it where the mode names districts or terms. When it is absent,
