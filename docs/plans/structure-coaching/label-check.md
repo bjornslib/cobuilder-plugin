@@ -12,9 +12,9 @@ Labels: `act` is a real cost to fix, `keep` is a real fact with a sound layout, 
 | crowded-folder\|plugins/artifact/viewer/src/shell | act | 65 files; about 40 are flat App.*/Pager.*/LevelSections.* test files beside sources |  |
 | crowded-folder\|shop | keep | 25 tiny modules, 1 isolated group of 9; real count, small cost |  |
 | crowded-folder\|shared | keep | 22 files, 2 over; tracker_port and structure already split out |  |
-| crowded-folder\|tests | keep | 199 files in a flat pytest folder; flat is the pytest norm here, and prefixes keep order |  |
+| crowded-folder\|tests | keep | 199 files in a flat pytest folder; flat is the pytest norm here, and prefixes keep order || act |
 | crowded-folder\|plugins/artifact/viewer/src/shell/change | keep | 22 files, 2 over the limit; Diff and Assessment groups already read as units |  |
-| crowded-folder\|shared/structure | keep | 27 files, but repo_* and slice_* prefixes keep the signal modules findable |  |
+| crowded-folder\|shared/structure | keep | 27 files, but repo_* and slice_* prefixes keep the signal modules findable || act: may grow disorganised, improve the layout |
 
 ## name-stem-cluster: 10 of 34 labels
 
@@ -37,7 +37,7 @@ Labels: `act` is a real cost to fix, `keep` is a real fact with a sound layout, 
 |---|---|---|---|
 | generic-name\|plugins/artifact/viewer/src/shell/testSupport/IntentDrawing/helpers.ts | false | test helper in a one-feature testSupport folder; folder gives the context |  |
 | generic-name\|plugins/artifact/viewer/src/lib/utils.ts | false | one-line cn helper; shadcn convention |  |
-| generic-name\|plugins/artifact/viewer/src/shell/sections/common.tsx | keep | grab-bag of row styles, ScoreChip, and slice badges; a real but mild generic name |  |
+| generic-name\|plugins/artifact/viewer/src/shell/sections/common.tsx | keep | grab-bag of row styles, ScoreChip, and slice badges; a real but mild generic name || act: rename, and split into files that name their content |
 
 ## boundary-edge: 2 of 2 labels
 
@@ -70,7 +70,7 @@ Labels: `act` is a real cost to fix, `keep` is a real fact with a sound layout, 
 | duplicate-group\|shared/structure/boundary.py, shared/structure/slice_edges.py | false | 5-line list-append tail; no shared concept |  |
 | duplicate-group\|plugins/architect/scripts/check_design_svg.py, plugins/architect/scripts/check_options_rep... | false | Result dataclass and main skeleton of two checkers; 6 lines of boilerplate |  |
 | duplicate-group\|shared/tracker_port/beads_claim_next.py, shared/tracker_port/beads_ready.py | false | only imports and a 4-line main guard match |  |
-| duplicate-group\|plugins/artifact/scripts/export_artifact.py, plugins/artifact/scripts/export_index.py, plu... | keep | 11 scripts repeat a 69-line git helper block (resolve_repo, detect_default_branch); a file says it is copied so each script runs alone |  |
+| duplicate-group\|plugins/artifact/scripts/export_artifact.py, plugins/artifact/scripts/export_index.py, plu... | keep | 11 scripts repeat a 69-line git helper block (resolve_repo, detect_default_branch); a file says it is copied so each script runs alone || act: re-evaluated, the copy reason is stale |
 | duplicate-group\|plugins/implement/scripts/tracker_sync_common.py, shared/tracker_port/sync_state.py | keep | 9-line flock probe copied across the hook and the port; one change point is better, but the hook is standalone by design |  |
 
 ## co-change: 1 of 1 labels

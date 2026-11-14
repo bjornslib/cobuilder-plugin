@@ -92,5 +92,22 @@ The false labels in this repository come from three sources. Name families count
 ## 4. Open for the engineer
 
 - Accept the stop, or run a second replay with harder follow-on tasks and a step between slices that may move files.
-- Check the 4 generic-name labels before the signal is dropped.
-- Check 10 labels for each signal in `evaluation-labels.md` and in `spike-signals.md`.
+- Keep or drop the generic-name signal in the coach. Section 5 gives the numbers.
+
+## 5. The engineer check, 2026-11-14
+
+The engineer checked the labels in `label-check.md` and agreed with every label except five.
+
+| Key | Agent label | Engineer label |
+|---|---|---|
+| `crowded-folder\|tests` | keep | act |
+| `crowded-folder\|shared/structure` | keep | act: the folder may grow disorganised |
+| `generic-name\|.../shell/sections/common.tsx` | keep | act: rename, and split into files that name their content |
+| `duplicate-group\|` 11 scripts with one git helper | keep | act: the reason for the copy is stale |
+| `twin-name\|pane` | false | open: the engineer asked whether the folder names are clear |
+
+Each change from keep to act leaves the precision as it is, because both labels count as a real fact. The table in section 2 stands.
+
+The engineer also asked for a filter on test folders. A filter that removes each member under a folder whose name holds `test`, and drops a twin with fewer than two members left, removes 7 of the 27 twin names of this repository. Of those 7, 4 had a label, and all 4 were `false`. It keeps `twin-name\|sections`, which is `act`, at 7 members. The same filter removes the generic name `testSupport/IntentDrawing/helpers.ts`, which is `false`. Generic name then has 1 of 3 labels true, or 33%.
+
+The copy reason of the 11 scripts is stale. `extract_diffs.py` says that it copies the helper so that it runs with no cross-imports. But 10 of the 11 scripts already import from `shared/`, through the `shared` symlink of each plugin.
