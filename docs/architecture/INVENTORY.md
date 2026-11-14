@@ -12,9 +12,25 @@ Tracks the documentation status of each bounded context under
 | `pr` | documented | yes | yes | none anchored (see findings) | 2026-10-08 |
 | `artifact` | documented | yes | yes | none anchored (see findings) | 2026-10-08 |
 | `implement` | documented | yes | yes | ADR-0048 (decided). ADR-0025, ADR-0041, ADR-0042 anchor to cobuilder-packaging | 2026-11-10 |
-| `shared` | documented | yes | yes | none anchored (see findings) | 2026-11-10 |
+| `shared` | documented | yes | yes | none anchored (see findings) | 2026-11-14 |
+| `priority-dev` | documented | yes | yes | none anchored | 2026-11-10 |
 
-All six records carry `verified_at: d086be981401779ba4691faed31a6f64598df589`.
+The six records above carry `verified_at: d086be981401779ba4691faed31a6f64598df589`. The `priority-dev` record carries `verified_at: 4cf849b`.
+
+## Findings of 2026-11-10
+
+Describe mode ran over `priority-dev/` (branch `design/priority-dev-cc-plugin`, commit `4cf849b`). It documented one new context. Each rule below was checked against the AST import graph and grep of path strings. Nothing was fixed.
+
+**Rules that hold (verified):**
+
+- No `.py` file in `priority-dev/src`, `tools`, or `tests` names a `plugins/` or `shared/` path.
+- No module outside `priority-dev/` imports `priority.*`. The context has no inbound edge.
+- `boundary_check.py --paths priority-dev/ --require` returns `priority-dev: ok`.
+
+**Open items (not verified):**
+
+- `replay/drills.py` imports `litellm`. Its importers are not traced.
+- `litellm` and `pydantic` are imported but not declared in `pyproject.toml`.
 
 ## Findings of 2026-10-08
 
