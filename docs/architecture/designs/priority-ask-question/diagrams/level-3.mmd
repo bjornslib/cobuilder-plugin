@@ -1,0 +1,15 @@
+%% Components: the files each epic touches.
+flowchart LR
+    subgraph E1 [E1 probe]
+        probe[probe mod: tool.call hook] --> record[probe-record.md]
+    end
+    subgraph E2 [E2 priority-dev]
+        cli[cli.py: --open-question] --> brief[brief: stop_kind question]
+    end
+    subgraph E3 [E3 mod]
+        hook[register.ts: tool.call hook] --> card[question card in pane.tsx]
+        hook --> reader[reader.ts: queue with questions file]
+        card --> answer[act.ts: answers as result]
+    end
+    record -. decides hold or fallback .-> hook
+    reader --> cli

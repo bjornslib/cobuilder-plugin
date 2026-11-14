@@ -1,10 +1,10 @@
 {
   "schema_version": "1.4",
   "sources": {
-    "git_head": "2f27bf01a8de5872a6d8985407cd6bf4c72956e6",
+    "git_head": "f17b3a95ce793fc26c83b84575db2a9833100fe2",
     "trees": {
-      "docs/architecture/adr": "sha256:6312af9f9bb78c56cd7a91c97bdb2605057a56d8695225a039c552ada47d5eb4",
-      "docs/architecture/designs": "sha256:22e8017109526e8ab91e15e5ed3498fc49675b37db21ace58d2bffe765faf911",
+      "docs/architecture/adr": "sha256:90969144359d2333c3fcd11e4ceb71b64cdddf1ee06c36990087f7f2c99830a8",
+      "docs/architecture/designs": "sha256:a7098896aa8e09deec0d77ccce1a59d5a02751c55a5075619e61dbd12cf30755",
       "docs/architecture/contexts": "sha256:e9537c5da21bf3f32eb547c8c422e8c3eb9acafefb5801143e53491b64ace073",
       "docs/plans": "sha256:59009083e5abb7b6391af2e29ee9d3fa30581a7e9d63cb18a803030eb05f1cfd",
       ".cobuilder/rubrics": "sha256:90d2396b0a34d85ece07a8eef3df300e7f7dbe1dee123084de92b3879c1e33bf"
@@ -236,6 +236,11 @@
         "id": "ADR-0049",
         "title": "cobuilder-priority reads each stop of a live session",
         "state": "approved"
+      },
+      {
+        "id": "ADR-0050",
+        "title": "The priority reader answers an AskUserQuestion call from its pane",
+        "state": "decided"
       }
     ],
     "design": [
@@ -346,6 +351,12 @@
         "name": "plugin-split",
         "outcome": "A user installs one stage of the architecture lifecycle without the other three, and four independently-installed plugins write into one bundle without a stale copy destroying authored or paid content.",
         "stage": "implemented"
+      },
+      {
+        "id": "priority-ask-question",
+        "name": "priority-ask-question",
+        "outcome": "With the reader on, a main-loop AskUserQuestion call opens a question card in the pane at once, and the engine dialog does not open. A reading of that point fills in beside the questions. The person's choice in the pane answers the call, and the agent goes on.",
+        "stage": "review"
       },
       {
         "id": "priority-dev-cc-plugin",
@@ -1080,6 +1091,33 @@
         "pr": 17,
         "state": "closed",
         "note": "The cobuilder- prefix drops from the four non-umbrella plugins named in E1's table (cobuilder-architect, cobuilder-pr, cobuilder-artifact, cobuilder-implement become architect, pr, artifact, implement), since it duplicates the marketplace repo's own name. cobuilder-full-lifecycle keeps its prefix, being the umbrella the repo's own name already carries. Merged as PR #17, then a same-epic follow-up (uncommitted at the time this entry was written) fixes a second-order bug the rename introduced: two of the four renamed plugins (implement, artifact) already shipped a skill folder named after themselves, and once the plugin took that same name too, Skill() resolution inside Claude Code broke -- reproduced directly, not environment-specific. Fixed by renaming the colliding skill folders (implement's skill to build, its command to start; artifact's skill to cobuilder-artifacts) and, for consistency, cobuilder-full-lifecycle's orientation skill to cobuilder-full. See ADR-0016's addendum."
+      },
+      {
+        "id": "priority-ask-question/E1",
+        "design": "priority-ask-question",
+        "epic_id": "E1",
+        "branch": null,
+        "pr": null,
+        "state": null,
+        "note": null
+      },
+      {
+        "id": "priority-ask-question/E2",
+        "design": "priority-ask-question",
+        "epic_id": "E2",
+        "branch": null,
+        "pr": null,
+        "state": null,
+        "note": null
+      },
+      {
+        "id": "priority-ask-question/E3",
+        "design": "priority-ask-question",
+        "epic_id": "E3",
+        "branch": null,
+        "pr": null,
+        "state": null,
+        "note": null
       },
       {
         "id": "priority-dev-cc-plugin/E1",
@@ -5107,9 +5145,9 @@
         "n": 9,
         "title": "The replay with the signals on and off, and the hand label of the findings",
         "ends_with": "`evaluation.md` holds, for each condition, three runs or more of five slices, the follow-on success rate, the folder growth, and the precision of each signal, with a decision on scored criteria.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "structure-coaching/10",
@@ -5137,9 +5175,9 @@
         "n": 12,
         "title": "The vocabulary leads: the script indexes the glossary, and the vocabulary agent judges each lead",
         "ends_with": "The packet lists each `_Avoid_` word in a new name with its glossary reason. A blind vocabulary agent tags a lead AVOID only when the name means the avoided concept.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "0.95",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "structure-coaching/13",
@@ -5147,9 +5185,9 @@
         "n": 13,
         "title": "The whole-repository findings file: each signal on every file, the folder table, and the order by change count",
         "ends_with": "`structure_evidence.py --repo` writes a record for a fixture repo that holds findings in old files, ranked by recent change count, with the folder table. `compare_findings` tags two records new, worse, unchanged, or fixed.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "0.92",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "structure-coaching/14",
@@ -5157,9 +5195,9 @@
         "n": 14,
         "title": "Review mode and maintenance mode report the record and its trend",
         "ends_with": "A blind review agent with a fixture record writes a Structure section with a judgment for each reported finding. Maintenance mode tags each finding with its trend.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "work-drawer/1",
@@ -7740,6 +7778,9 @@
         "pr": null,
         "via": "epic",
         "path": [
+          "priority-ask-question/E1",
+          "priority-ask-question/E2",
+          "priority-ask-question/E3",
           "priority-dev-cc-plugin/E1",
           "priority-dev-cc-plugin/E2",
           "priority-dev-cc-plugin/E3",
@@ -7757,9 +7798,21 @@
         "pr": null,
         "via": "epic",
         "path": [
+          "priority-ask-question/E1",
+          "priority-ask-question/E2",
+          "priority-ask-question/E3",
           "priority-dev-cc-plugin/E1",
           "priority-dev-cc-plugin/E2",
           "priority-dev-cc-plugin/E3"
+        ]
+      },
+      "ADR-0050": {
+        "pr": null,
+        "via": "epic",
+        "path": [
+          "priority-ask-question/E1",
+          "priority-ask-question/E2",
+          "priority-ask-question/E3"
         ]
       }
     },
@@ -7884,6 +7937,9 @@
       "plugin-split/E6": "completed",
       "plugin-split/E7": "completed",
       "plugin-split/E8": "completed",
+      "priority-ask-question/E1": "unstarted",
+      "priority-ask-question/E2": "unstarted",
+      "priority-ask-question/E3": "unstarted",
       "priority-dev-cc-plugin/E1": "unstarted",
       "priority-dev-cc-plugin/E2": "unstarted",
       "priority-dev-cc-plugin/E3": "unstarted",
@@ -8140,7 +8196,8 @@
       "ADR-0042": "cobuilder-packaging",
       "ADR-0043": "tracker-port",
       "ADR-0045": "cobuilder-packaging",
-      "ADR-0049": "cobuilder-packaging"
+      "ADR-0049": "cobuilder-packaging",
+      "ADR-0050": "cobuilder-packaging"
     },
     "adr_to_district": {
       "ADR-0001": "scripts",

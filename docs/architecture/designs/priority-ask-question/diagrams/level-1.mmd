@@ -1,0 +1,23 @@
+%% Overview: the reader at an AskUserQuestion call (ADR-0050).
+C4Container
+    title cobuilder-priority: a reading at an AskUserQuestion call
+
+    Person(person, "Engineer", "Answers the question<br>in the pane")
+    System_Ext(session, "Claude Code session", "The agent calls AskUserQuestion<br>and waits")
+    System_Ext(mercury, "Mercury model service", "Two calls<br>for each reading")
+
+    Container_Boundary(plugin, "cobuilder-priority mod") {
+        Container(hook, "Question hook", "tool.call AskUserQuestion", "Holds the call open,<br>main loop only")
+        Container(pane, "Priority pane", "ui.render", "Question card,<br>reading, and Send")
+    }
+
+    Container_Boundary(pdev, "priority-dev checkout") {
+        Container(interpret, "priority interpret", "--open-question", "Reads the point<br>as stop_kind question")
+    }
+
+    Rel(session, hook, "Calls the tool", "tool.call")
+    Rel(hook, pane, "Opens the question card", "$.ui.open")
+    Rel(hook, interpret, "Starts the reading", "$.process.run")
+    Rel(interpret, mercury, "Reads the point", "HTTPS")
+    Rel(person, pane, "Picks and presses Send")
+    Rel(hook, session, "Returns the answers", "{ result }")

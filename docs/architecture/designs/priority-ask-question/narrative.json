@@ -1,0 +1,64 @@
+{
+  "intent": {
+    "tagline": "Read the point where the agent asks",
+    "narration": "The agent asks a question and waits. Today the reader is silent there. With this change, the pane shows the question at once, a reading fills in beside it, and the person answers in the pane."
+  },
+  "problem_solution": {
+    "problem": "An AskUserQuestion call stops the agent until the person answers, but no Stop fires. The reader stays silent where the person needs a reading most, and the engine dialog shows the question alone.",
+    "solution": "A hook holds the call, the pane shows the question card, and Send answers the call. A probe runs first, and the dialog is the fallback.",
+    "narration": "The hook never answers alone. Only the person's Send, or the fallback dialog, releases the agent.",
+    "beats": [
+      {
+        "kind": "problem",
+        "text": "No Stop fires at an AskUserQuestion call."
+      },
+      {
+        "kind": "decision",
+        "text": "Hold the call, and answer it from the pane."
+      },
+      {
+        "kind": "risk",
+        "text": "A hook budget may cut off the wait, so a probe runs first."
+      }
+    ],
+    "alternatives": [
+      {
+        "option": "A classic.PreToolUse hook",
+        "rejected_because": "It can only allow, ask, or deny a call. It cannot answer one."
+      },
+      {
+        "option": "Refuse the call, so the agent asks in its reply and ends its turn",
+        "rejected_because": "The engineer wants the pane to be the only place that shows the question."
+      },
+      {
+        "option": "Read the point after the answer, in PostToolUse",
+        "rejected_because": "The reading would come after the person decided."
+      },
+      {
+        "option": "Let priority-dev find the open question in the transcript",
+        "rejected_because": "The transcript may lag behind the hook. The call input already holds the questions."
+      },
+      {
+        "option": "Show the questions only when the reading arrives",
+        "rejected_because": "The agent waits during two model calls. The person can answer from the call input at once."
+      },
+      {
+        "option": "Catch subagent calls too",
+        "rejected_because": "The reader reads main-loop stops only."
+      }
+    ]
+  },
+  "architecture": {
+    "narration": "One new hook in the same module catches the call. priority-dev gets an open-question input, and the plugin still calls it only as a process.",
+    "beats": [
+      {
+        "kind": "constraint",
+        "text": "ADR-0045: the plugin never imports priority-dev."
+      },
+      {
+        "kind": "constraint",
+        "text": "ADR-0049: the reader reads main-loop stops only."
+      }
+    ]
+  }
+}
