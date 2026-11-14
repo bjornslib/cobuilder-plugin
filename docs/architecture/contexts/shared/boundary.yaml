@@ -2,12 +2,12 @@
 # Machine-diffable architecture baseline — ../../standard.md §5.2.
 # Authoring procedure: plugins/architect/skills/architecture/references/architecture-documentation.md.
 # Every edge below was checked against code (grep of imports and path strings).
-# Grounded in code as of 2026-11-10.
+# Grounded in code as of 2026-11-14.
 
 id: shared
 path: shared
 name: "Shared kernel vendored into each plugin by symlink"
-verified_at: d1e3f100411d9ce6165b6cfc27e4faa643c898eb
+verified_at: 158ad7cfc2aeaa8dc72c5e62f2f6126ed42bf25c
 
 public_interface:
   - _bundle_meta.SCHEMA_VERSION
@@ -25,6 +25,8 @@ public_interface:
   - slice_table
   - tracker_port.reader
   - "scripts run by shell: build_index.py, migrate_bundle.py, verify_bundle.py, boundary_check.py, prose_budget.py, validate_decision_state.py, migrate_png_assets_to_webp.py, tracker.py, habit_smells.py, strip_goal_stage.py"
+  - "structure_signals.py and structure_evidence.py, run by shell"
+  - structure.keys.finding_key
   - "skills/mermaid and skills/ste-writing"
 
 # Shared is the base layer. It depends on no other context.
@@ -33,7 +35,7 @@ allowed_dependencies: []
 context_map:
   - with: architect
     pattern: shared-kernel
-    note: "Consumed by shell only: build_index, migrate_bundle, prose_budget, boundary_check, validate_decision_state, tracker, habit_smells."
+    note: "Consumed by shell only: build_index, migrate_bundle, prose_budget, boundary_check, validate_decision_state, tracker, habit_smells, and structure_evidence in review mode."
   - with: pr
     pattern: shared-kernel
     note: "Consumed by import (_bundle_meta, _manifest) and by shell (migrate_bundle, build_index, verify_bundle, tracker)."
@@ -42,10 +44,10 @@ context_map:
     note: "Consumed by import (_bundle_meta, ledger, gate_status, slice_table, tracker_port.reader) and by shell (build_index, migrate_bundle, tracker)."
   - with: implement
     pattern: shared-kernel
-    note: "Consumed by import (slice_table, gate_status, tracker_port.reader in verify_gate.py) and by shell (build_index, tracker). The tracker hook scripts run tracker.py by subprocess."
+    note: "Consumed by import (slice_table, gate_status, tracker_port.reader in verify_gate.py) and by shell (build_index, tracker, structure_evidence in VALIDATE). The tracker hook scripts run tracker.py by subprocess. structure_runner.py imports structure_signals and structure.keys."
   - with: cobuilder-packaging
     pattern: shared-kernel
-    note: "The umbrella plugin cobuilder-full-lifecycle imports ledger in watch_feedback.py. Its install command and setup skill run tracker.py by shell."
+    note: "The umbrella plugin cobuilder-full-lifecycle imports ledger in watch_feedback.py. Its install command and setup skill run tracker.py and structure_signals by shell."
 
 forbidden_dependencies:
   - target: "plugins/<name>/ as Python import"
@@ -66,6 +68,10 @@ forbidden_dependencies:
   - target: "sync runs outside the beads adapter and sync_worker.py"
     from: shared/tracker_port/cli_operations.py
     why: "SMELL (rule wording): CLAUDE.md says only the beads adapter and sync_worker.py run a sync. Verified, bd sync runs only in BeadsAdapter.sync (beads.py:178). Its callers are beads_sync._publish (write and async modes), sync_state.sync_once (called by sync_worker.run), and the cli_operations 'sync' operation (line 151, which calls sync_once directly). sync_state.py also holds spawn_worker, which starts 'tracker.py sync-worker' detached. So two modules outside the stated pair take part in a sync. ADR candidate: widen the rule to name sync_state.py and the CLI 'sync' operation, or route the CLI call through the worker. No hook script calls bd: tracker_sync_check.py and tracker_sync_flush.py run tracker.py only."
+
+  - target: "plugins/cache/ path prefix"
+    from: shared/structure/boundary.py
+    why: "SMELL: CACHE_PREFIX (line 22) names the plugin cache path in code. Line 145 skips any reference that starts with it. It is the same coupling as the artifact viewer smell, and the caller could pass the prefix in."
 
   - target: "authored content"
     why: "CLAUDE.md principle 2: a script moves data and never authors judgment. build_index.py is the only writer of data/adrs.json and data/index.json (write_text calls at build_index.py lines 1739 and 1748)."
@@ -133,6 +139,14 @@ modules:
     allowed_inbound: []
     allowed_outbound: []
     rule: "Leaf text. Reached through each plugin's shared symlink."
+
+  - id: structure-signals
+    path: shared
+    members: [structure_signals.py, structure_evidence.py, "structure/*.py"]
+    public_interface: [structure_signals, "structure.keys.finding_key"]
+    allowed_inbound: []
+    allowed_outbound: []
+    rule: "Leaf: standard library and its own modules. implement structure_runner.py imports it. architect runs structure_evidence.py --repo in review mode, and the install command runs structure_signals.py. structure/git.py runs git by subprocess. structure/boundary.py and structure/slice_edges.py read docs/architecture/contexts/*/boundary.yaml."
 
 verifies:
   - scripts
