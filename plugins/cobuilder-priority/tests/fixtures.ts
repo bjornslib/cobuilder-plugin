@@ -1,6 +1,6 @@
 // Readings for the E3.12 live-run tests. The runner reads *.test.ts only,
 // so this file holds no test cases.
-import { WAITING } from './fakes'
+import { ACTIONABLE, WAITING } from './fakes'
 
 // The live run of 0.3.0 (E3.12): a notify step, then one decide step with two options.
 export const LIVE_DECIDE = {
@@ -41,4 +41,29 @@ export const NOTIFY_GAP = {
     { kind: 'notify', excerpt: 'Lint passed.' },
     { kind: 'approve_permission', scope: 'once' },
   ],
+}
+
+// E3.12: a card of twelve reply steps, taller than the pane body.
+export const TALL_CARD = { ...ACTIONABLE, steps: Array.from({ length: 12 }, (_, k) => ({ kind: 'reply', text: `Reply ${k + 1}.` })) }
+
+// A decide step with two questions, each with two options.
+const question = (ask: string) => ({
+  ask,
+  options: [{ label: 'Yes', detail: '' }, { label: 'No', detail: '' }],
+  multi_select: false,
+  free_text: false,
+  helps: [],
+})
+
+export const TWO_QUESTIONS = {
+  ...WAITING,
+  steps: [{ kind: 'ask_human', detail: { role: 'decide', questions: [question('Keep the marks?'), question('Ship it now?')] } }],
+}
+
+// A digest with both lists: two open items and one decision.
+export const DIGEST_LISTS = {
+  ran: 'The agent ran the tests.',
+  result: 'Two items wait.',
+  open_items: ['Ship the fix', 'Ask the owner'],
+  decisions: ['Keep $.store'],
 }

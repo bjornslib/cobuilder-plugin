@@ -3,12 +3,11 @@
 import { atom, read, update } from 'claude-code'
 import type { Act, Mark, Reading } from '../types'
 import { draftOf } from './draft'
+import { scrollPaneToTop } from './reader'
 
 export const EMPTY: Act = { n: 0, steps: [], picks: {}, other: {}, summaryClosed: false, open: null, notice: '' }
 const act = atom({ plugin: 'cobuilder-priority', key: 'act' } as const, EMPTY)
 const tick = atom({ plugin: 'cobuilder-priority', key: 'tick' } as const, 0)
-// An opened card starts at the top of the pane body.
-const scroll = atom({ plugin: 'cobuilder-priority', key: 'scroll' } as const, 0)
 
 export const marksKey = (sessionId: string) => `marks:${sessionId}`
 
@@ -49,9 +48,10 @@ export async function toggleSummary($: any): Promise<void> {
   await update($, act, (a) => ({ ...a, summaryClosed: !a.summaryClosed }))
 }
 
+// An opened card starts at the top of the pane body.
 export async function openCard($: any, n: number | null): Promise<void> {
   await update($, act, (a) => ({ ...a, open: n }))
-  await update($, scroll, () => 0)
+  await scrollPaneToTop($)
 }
 
 export function draftFor(r: Reading, a: Act) {

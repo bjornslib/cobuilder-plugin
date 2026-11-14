@@ -1,10 +1,10 @@
-// One card of layout C: the title row, the steps, the draft block, and the note.
+// One card of layout C: the title row, the steps, and the draft block. The note input sits in the fixed top.
 // The keys sit in keys.tsx. Only the newest card can select and send (contracts.md, "The chosen layout").
-// A card is a list of blocks, so the pane scrolls each block on its own (E3.12).
+// A card is a list of blocks. The pane draws them under its fixed top (pane.tsx).
 import type { Act, Mark, Reading } from '../types'
 import { canSend, visibleNo } from './draft'
 import { answer, draftFor, pick, saveMark, toggleStep } from './act'
-import { isBusy } from './reader'
+import { isQuiet } from './reader'
 import { abstainName, priorityName, statusName, stepName } from './names'
 
 type Step = Record<string, any>
@@ -15,8 +15,8 @@ export function keyed(ui: any, key: string, text: string, style: Record<string, 
   return <Box key={key} {...box}><Text {...style}>{text}</Text></Box>
 }
 
-// While a reading runs, the previous turn draws dim. Each Text in it takes this style.
-export const quiet = (style: Record<string, unknown> = {}) => (isBusy() ? { ...style, dimColor: true } : style)
+// While a reading runs or the reader waits for the next one, the previous turn draws dim. Each Text in it takes this style.
+export const quiet = (style: Record<string, unknown> = {}) => (isQuiet() ? { ...style, dimColor: true } : style)
 
 // The local hour and minute of an ISO time.
 export function clock(at: string): string {
@@ -46,11 +46,11 @@ function questions($: any, ui: any, r: Reading, s: Step, i: number, a: Act) {
       onSubmit={(t: string) => void answer($, r.n, `${i}.0`, t)} />
   }
   return (s.detail.questions as Step[]).map((q, j) => (
-    <Box key={`q-${i}-${j}`} flexDirection="column" paddingLeft={4}>
+    <Box key={`q-${i}-${j}`} flexDirection="column" paddingLeft={4} marginTop={j > 0 ? 1 : 0}>
       <Text {...quiet({ color: 'yellow' })}>{`"${q.ask}"`}</Text>
       <Box flexDirection="row" columnGap={2} flexWrap="wrap">
         {(q.options as Step[]).map((o, k) => (
-          <Button key={`opt-${i}-${j}-${k}`} plain dimColor={isBusy()} label={`${(a.picks[`${i}.${j}`] ?? []).includes(o.label) ? '[•]' : '[ ]'} ${o.label}`}
+          <Button key={`opt-${i}-${j}-${k}`} plain dimColor={isQuiet()} label={`${(a.picks[`${i}.${j}`] ?? []).includes(o.label) ? '[•]' : '[ ]'} ${o.label}`}
             onPress={() => void pick($, r.n, `${i}.${j}`, o.label, Boolean(q.multi_select))} />
         ))}
       </Box>
@@ -74,7 +74,7 @@ function stepRow($: any, ui: any, r: Reading, s: Step, i: number, a: Act, live: 
   return (
     <Box key={`row-${i}`} flexDirection="column" borderStyle={on ? 'round' : undefined} borderColor="cyan" paddingX={on ? 1 : 0}>
       {decide ? keyed(ui, `step-${i}`, head, quiet({ bold: true })) : (
-        <Button key={`step-${i}`} plain dimColor={isBusy()} hotkey={no < 10 ? String(no) : undefined} label={`${on ? '[x]' : '[ ]'} ${head}`}
+        <Button key={`step-${i}`} plain dimColor={isQuiet()} hotkey={no < 10 ? String(no) : undefined} label={`${on ? '[x]' : '[ ]'} ${head}`}
           onPress={() => void toggleStep($, r.n, i)} />
       )}
       {body ? keyed(ui, `step-${i}-body`, body, quiet({ dimColor: !on })) : null}
@@ -89,7 +89,7 @@ function draftBlock(ui: any, r: Reading, a: Act) {
   const names = draft.steps.map((s) => visibleNo(r.result?.steps ?? [], s)).join(', ')
   return (
     <Box key="draft-block" flexDirection="column" borderStyle="round" borderColor="cyan" paddingX={1} marginTop={1}>
-      {keyed(ui, 'draft', draft.text || 'Select a step', quiet({ dimColor: !draft.text }))}
+      {keyed(ui, 'draft', draft.text || 'Provide your response', quiet({ dimColor: !draft.text }))}
       {draft.text ? keyed(ui, 'draft-footer',
         `${draft.steps.length > 1 ? 'steps' : 'step'} ${names} · ${draft.text.length} chars · session prompt`, { dimColor: true }) : null}
       {a.notice ? keyed(ui, 'notice', a.notice, quiet({ color: 'red' })) : null}
@@ -122,17 +122,21 @@ function titleBlock(ui: any, r: Reading, live: boolean, hasSteps: boolean) {
   )
 }
 
-// The blocks of one card, in draw order: the title row, each step row, the draft block, and the note.
+// The blocks of one card, in draw order: the title row, each step row, and the draft block.
 // A notify step draws no row, so it adds no block.
-export function card($: any, ui: any, r: Reading, mark: Mark | undefined, a: Act, live: boolean): any[] {
-  const { Input } = ui
+export function card($: any, ui: any, r: Reading, a: Act, live: boolean): any[] {
   const steps = r.result?.steps ?? []
   const rows = steps.map((s, i) => (s.kind === 'notify' ? null : stepRow($, ui, r, s, i, a, live)))
   return [
     titleBlock(ui, r, live, steps.some((s) => s.kind !== 'notify')),
     ...rows,
     sendableNow(r, live) ? draftBlock(ui, r, a) : null,
-    <Input key={`note-${r.n}`} label="Note" value={mark?.note ?? ''} placeholder="Type an observation" submitLabel="save"
-      onSubmit={(t: string) => void saveMark($, r.sessionId, r.n, { note: t })} />,
   ].filter((b) => b !== null)
+}
+
+// The note input of one reading. The pane draws it in the fixed top, under the key row.
+export function noteInput($: any, ui: any, r: Reading, mark: Mark | undefined) {
+  const { Input } = ui
+  return <Input key={`note-${r.n}`} label="Note" value={mark?.note ?? ''} placeholder="Type an observation" submitLabel="save"
+    onSubmit={(t: string) => void saveMark($, r.sessionId, r.n, { note: t })} />
 }

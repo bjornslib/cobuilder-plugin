@@ -1,13 +1,11 @@
 import { atom, read, update } from 'claude-code'
 import type { Register } from 'claude-code'
 import { renderBand } from './band'
-import { PANE_ID, clampScroll, openPane, paneView, renderPane } from './pane'
-import { enqueue } from './reader'
+import { openPane, renderPane } from './pane'
+import { PANE_ID, enqueue, startWaiting, stopWaiting } from './reader'
 
 // The reader switch: off in each new session, kept through a hot reload.
 const switchedOn = atom({ plugin: 'cobuilder-priority', key: 'on' } as const, false)
-// The pane body's offset in blocks. The pane reads it too.
-const scroll = atom({ plugin: 'cobuilder-priority', key: 'scroll' } as const, 0)
 
 const COMMANDS = [
   { name: 'priority-on', description: 'Read each stop of this session with the priority-dev interpreter' },
@@ -29,6 +27,7 @@ export const register: Register = (on, options) => {
 
   on('command.run', { command: 'priority-off' }, async ($) => {
     await update($, switchedOn, () => false)
+    await stopWaiting($)
     return { text: 'The priority reader is off for this session.' }
   })
 
@@ -46,22 +45,21 @@ export const register: Register = (on, options) => {
     return next(e)
   })
 
-  // The next prompt ends the wait at the stop, so the ready line goes.
+  // The next prompt ends the wait at the stop, so the ready line goes. The reader then waits for the next reading.
   on('prompt.submit', async ($, e, next) => {
     $.ui.status(undefined)
+    if (await read($, switchedOn)) await startWaiting($)
+    return next(e)
+  })
+
+  // A main-loop turn that ends without an answer (an interrupt, a refusal, an error) brings no
+  // reading, so it ends the wait. A turn that answers ends the wait when its reading is saved.
+  on('turn.complete', async ($, e, next) => {
+    if (e.agentId === undefined && e.reason !== 'answer') await stopWaiting($)
     return next(e)
   })
 
   on('ui.render', { component: 'Pane', requestId: PANE_ID }, ($, e) => renderPane($, e))
-
-  // The header and the key row stay first. This hook moves the blocks under them, within the
-  // count that renderPane draws, and answers {} so the engine does not move its window.
-  on('ui.scroll', { requestId: PANE_ID }, async ($, e) => {
-    const view = await paneView($, $.ui.resolve({ surface: 'terminal', component: 'Pane' }))
-    const count = view?.blocks.length ?? 0
-    await update($, scroll, (o) => clampScroll(o + e.by, count))
-    return {}
-  })
 
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => (await renderBand($, e)) ?? next(e))
 }

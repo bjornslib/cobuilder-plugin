@@ -9,8 +9,8 @@ import { agentSummary, answerLabels } from './labels'
 const tick = atom({ plugin: 'cobuilder-priority', key: 'tick' } as const, 0)
 // The reader switch. A stop that waits runs only while the switch is still on.
 const switchedOn = atom({ plugin: 'cobuilder-priority', key: 'on' } as const, false)
-// The pane's scroll offset in blocks. A new reading sets it to 0.
-const scroll = atom({ plugin: 'cobuilder-priority', key: 'scroll' } as const, 0)
+
+export const PANE_ID = 'priority-reader'
 
 export type StopJob = { sessionId: string; transcript: string; repo: string; at: string; lastMessage: string }
 
@@ -22,11 +22,30 @@ const FRAME_MS = 120
 // Module values: a hot reload starts them over, and a reading in flight then ends on its own.
 let busy = false
 let waiting: StopJob | null = null
+// True from a prompt until the next reading is saved. The pane and the band wait for that reading.
+let awaiting = false
 
 export const readingsKey = (sessionId: string) => `readings:${sessionId}`
 
 // True while a reading runs. The pane shows it as running….
 export const isBusy = () => busy
+
+// True while a reading runs or the reader waits for the next one. The previous turn dims then.
+export const isQuiet = () => busy || awaiting
+
+export const isWaiting = () => awaiting
+
+// Called at a prompt.submit. The pane redraws, so the previous turn dims until the next reading.
+export async function startWaiting($: any): Promise<void> {
+  awaiting = true
+  await update($, tick, (n) => n + 1)
+}
+
+// Ends the wait with no reading: a switch off, a stop the switch skips, or a turn that aborts.
+export async function stopWaiting($: any): Promise<void> {
+  awaiting = false
+  await update($, tick, (n) => n + 1)
+}
 
 // Puts the stop in the queue and starts a reading when none runs. Only the newest waiting stop is kept.
 export function enqueue($: any, job: StopJob, options: PluginOptions): void {
@@ -40,7 +59,10 @@ async function drain($: any, options: PluginOptions): Promise<void> {
     while (waiting) {
       const job = waiting
       waiting = null
-      if (!(await readAtom($, switchedOn))) continue
+      if (!(await readAtom($, switchedOn))) {
+        await stopWaiting($)
+        continue
+      }
       await update($, tick, (n) => n + 1)
       await save($, await withSpinner($, job, options))
     }
@@ -134,9 +156,15 @@ async function save($: any, reading: Omit<Reading, 'n'>): Promise<void> {
   const what = reading.state === 'failed' ? 'failed' : `ready${reading.result?.needs_human ? ' · needs you' : ''}`
   $.ui.status(`Priority reader · #${n} ${what}`)
   if (asksPerson(reading)) $.ui.toast(`Priority reader · #${n} needs you`)
-  // A new card opens at the top of the pane body.
-  await update($, scroll, () => 0)
+  awaiting = false
+  await scrollPaneToTop($)
   await update($, tick, (t) => t + 1)
+}
+
+// Moves the pane body to its first row, so a new card opens at the top. The move is cosmetic:
+// a move the engine refuses, or cannot answer, leaves the saved reading as it is.
+export async function scrollPaneToTop($: any): Promise<void> {
+  await $.ui.scroll({ to: 'start', in: PANE_ID }).catch(() => undefined)
 }
 
 // Only a done reading that needs the person raises the toast. A failed or abstained one does not.

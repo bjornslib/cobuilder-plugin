@@ -32,12 +32,15 @@ Claude Code then asks for the settings. You can change them later in
    question. The draft block shows the exact text.
 4. Press `s` to send the draft as your prompt, or `e` to put it in the
    prompt box and edit it first.
-5. Press `r` or `w` to mark the card, and type a note. Press `m` to close
-   or open the agent summary.
+5. Press `r` or `w` to mark the card. Type a note in the Note row under the
+   keys. Press `m` to close or open the agent summary.
 6. Run `/priority-off` to stop. Run `/priority-pane` to open the pane again.
 
 The keys work while the pane has the focus. Press ctrl+x tab to move the
 focus to the pane.
+
+The header, the key row, and the Note row stay at the top of the pane. Scroll
+the pane to move the cards under them. A new reading opens at the top.
 
 ## Signals
 

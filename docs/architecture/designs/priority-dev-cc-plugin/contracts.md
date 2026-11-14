@@ -253,9 +253,10 @@ Top to bottom:
 4. **The draft block.** A `Box` with a cyan border, titled
    `What will be sent`. It holds the exact draft. Its footer row shows the
    source steps, the length in characters, and the target, `session prompt`.
-   With no step selected, it shows `Select a step` dim.
-5. **The action row.** `s Send` on a cyan background, then `e Edit`,
-   `r Right`, and `w Wrong`, as four Buttons with `plain: true`.
+   With no step selected, it shows `Provide your response` dim.
+5. **The key row.** It stands in the fixed top, under the header (E3.7).
+   `s Send` and `e Edit` are dim until a step is selected. Then come
+   `r Right`, `w Wrong`, and `m Show summary` or `m Hide summary`.
 6. **The note.** An `Input` labelled `Note`, with submit label `save`.
 7. **History.** The dim title `History`, then one row for each older
    reading: `#<n>`, time, status, priority, and the mark on the right (`✓`

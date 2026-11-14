@@ -1,9 +1,10 @@
 // E3.12: the fixes from the live run of 0.3.0 (contracts.md, Epic E3). Decide heading, empty send,
-// visible numbering, and the scroll hook of the pane.
+// visible numbering, and the scroll of the pane, which the engine moves one row at a time.
 import { expect, test } from 'claude-code/testing'
+import { scrollPaneToTop } from '../hooks/reader'
 import { ACTIONABLE, DIGESTED, OPTIONS, PANE, childNodes, drain, keyOfNode, nodeByKey, readings, stop, waitFor, walk } from './fakes'
 import type { Node } from './fakes'
-import { LIVE_DECIDE, NOTIFY_GAP } from './fixtures'
+import { LIVE_DECIDE, NOTIFY_GAP, TALL_CARD } from './fixtures'
 
 // The pane's body window in rows. The mount and the scroll input carry the same value.
 const BODY_ROWS = 6
@@ -15,12 +16,6 @@ function textOf(x: unknown): string[] {
   return Array.isArray(kids) ? kids.flatMap(textOf) : []
 }
 
-// The keys of the first two rows the pane draws.
-const firstTwo = (root: Node) => childNodes(root).slice(0, 2).map((n) => keyOfNode(n))
-
-// The text under the rows after the header and the key row.
-const bodyText = (root: Node) => childNodes(root).slice(2).flatMap(textOf)
-
 // The key of the Button that reads `text`. A missing Button fails the test.
 async function buttonKey(ui: any, text: string): Promise<string> {
   const found = await ui.find({ type: 'Button', text })
@@ -30,19 +25,6 @@ async function buttonKey(ui: any, text: string): Promise<string> {
 
 // The stored `sent` of the first stop, once a prompt has been sent or filled.
 const sentMark = (store: Map<string, unknown>) => (store.get('marks:S1') as any)?.['1']?.sent
-
-// The input the engine sends to the pane's ui.scroll hook. The kit has no person's wheel, so the test
-// calls $.ui.scroll with that input. A call that no hook answers throws; the throw is returned, so the assertion names it.
-async function scrollPane($: any, offset: number, by: number): Promise<unknown> {
-  const input = { component: 'Pane', requestId: 'priority-reader', offset, by, bodyRows: BODY_ROWS, contentRows: 30, origin: { kind: 'person' } }
-  try {
-    return await $.ui.scroll(input)
-  } catch (err) {
-    return { threw: String(err) }
-  }
-}
-
-const SMALL_BODY = { ...PANE, props: { ...PANE.props, scroll: { offset: 0, bodyRows: BODY_ROWS } } }
 
 // Decide heading (E3.12, item 1).
 
@@ -124,67 +106,93 @@ test('selecting both visible steps stores the reading indexes 1 and 3 on the mar
   await ui.unmount()
 })
 
-// Scroll (E3.12, item 4). The header and the key row stay drawn first; the rows under them move.
+// Scroll (E3.12). The engine owns the body's window and moves it one row at a time. The plugin draws
+// the fixed top at that offset, as the last child, and draws every body block under a spacer.
 
-test('the pane answers a scroll of its body with an empty result, so no deny', { options: OPTIONS }, async ($, on) => {
+// The rows of the fixed top: the header, the key row, one blank row, and the note input.
+const FIXED_TOP_ROWS = 4
+
+// The pane mounted with the engine's window at `offset`.
+const mountAt = ($: any, offset: number) =>
+  $.ui.mount({ ...PANE, surface: 'terminal', props: { ...PANE.props, scroll: { offset, bodyRows: BODY_ROWS } } })
+
+// The fixed top is the last child of the pane root. A missing child reads as an empty node.
+const fixedOf = (root: Node): Node => childNodes(root).at(-1) ?? {}
+
+// The body is every child between the spacer at the top and the fixed top at the bottom.
+const bodyOf = (root: Node): Node[] => childNodes(root).slice(1, -1)
+
+// The keys under the nodes, in document order. An unkeyed node reads as an empty key.
+const keysUnder = (nodes: Node[]): string[] => nodes.flatMap(walk).map((n) => keyOfNode(n) ?? '')
+
+// The input the engine raises for the person's wheel on the pane. The kit has no wheel, so the test calls the event.
+const scrollPane = ($: any, offset: number, by: number) =>
+  $.ui.scroll({ component: 'Pane', requestId: 'priority-reader', offset, by, bodyRows: BODY_ROWS, contentRows: 30, origin: { kind: 'person' } })
+
+// Two stops: the older one is a history row, and the newest card is open.
+const TWO_STOPS = [DIGESTED, ACTIONABLE, DIGESTED, ACTIONABLE]
+
+test('the fixed top is the last child, at the engine offset, and holds the header, the keys, and the note', { options: OPTIONS }, async ($, on) => {
   await readings($, on, [DIGESTED, ACTIONABLE])
-  const ui = await $.ui.mount({ ...SMALL_BODY, surface: 'terminal' })
-  expect(await scrollPane($, 5, 5), 'the ui.scroll hook of priority-reader keeps the window').toEqual({})
-  await ui.unmount()
-})
-
-test('a scroll down by 5 keeps the header and the key row first and moves the rows under them, and scrolling back restores them', { options: OPTIONS }, async ($, on) => {
-  await readings($, on, [DIGESTED, ACTIONABLE])
-  const ui = await $.ui.mount({ ...SMALL_BODY, surface: 'terminal' })
-  const before = (await ui.drawn()) as Node
-  expect(firstTwo(before), 'before the scroll the header then the key row').toEqual(['header', 'keys'])
-
-  await scrollPane($, 5, 5)
-  const down = (await ui.drawn()) as Node
-  expect(firstTwo(down), 'after a scroll by 5 the header then the key row are still first').toEqual(['header', 'keys'])
-  expect(bodyText(down)[0], 'the first row under the key row moved').not.toBe(bodyText(before)[0])
-
-  await scrollPane($, 0, -5)
-  const back = (await ui.drawn()) as Node
-  expect(firstTwo(back), 'after scrolling back the header then the key row are still first').toEqual(['header', 'keys'])
-  expect(bodyText(back), 'scrolling back restores the rows under the key row').toEqual(bodyText(before))
-  await ui.unmount()
-})
-
-// A card taller than the window: every step row and the draft block must come to the top of the body by scrolling.
-const TALL = { ...ACTIONABLE, steps: Array.from({ length: 12 }, (_, k) => ({ kind: 'reply', text: `Reply ${k + 1}.` })) }
-
-test('a card taller than the window can scroll every step row and the draft block to the top of the body', { options: OPTIONS }, async ($, on) => {
-  await readings($, on, [DIGESTED, TALL])
-  const ui = await $.ui.mount({ ...SMALL_BODY, surface: 'terminal' })
-  const seen = new Set<string>()
-  for (let k = 0; k < 40; k++) {
-    const root = (await ui.drawn()) as Node
-    expect(firstTwo(root), 'the header then the key row stay first').toEqual(['header', 'keys'])
-    const top = childNodes(root)[2]
-    if (top) for (const n of walk(top)) { const key = keyOfNode(n); if (key) seen.add(key) }
-    if (seen.has('step-11') && seen.has('draft-block')) break
-    await scrollPane($, k + 1, 1)
+  for (const offset of [0, 5]) {
+    const ui = await mountAt($, offset)
+    const fixed = fixedOf((await ui.drawn()) as Node)
+    expect(keyOfNode(fixed), `offset ${offset}: the last child is the fixed top`).toBe('fixed-top')
+    expect(fixed.props?.position, `offset ${offset}: the fixed top is absolute`).toBe('absolute')
+    expect(fixed.props?.top, `offset ${offset}: the fixed top sits at the engine offset`).toBe(offset)
+    expect(nodeByKey(fixed, 'header'), `offset ${offset}: the header is in the fixed top`).toBeDefined()
+    expect(nodeByKey(fixed, 'keys'), `offset ${offset}: the key row is in the fixed top`).toBeDefined()
+    expect(nodeByKey(fixed, 'note-1')?.type, `offset ${offset}: the note input is in the fixed top`).toBe('Input')
+    await ui.unmount()
   }
-  expect(seen.has('step-11'), 'the last step row reaches the top of the body').toBe(true)
-  expect(seen.has('draft-block'), 'the draft block reaches the top of the body').toBe(true)
-  const last = (await ui.drawn()) as Node
-  expect(walk(childNodes(last)[2] as Node).some((n) => keyOfNode(n) === 'step-0'), 'scrolled past the first step, it is no longer at the top').toBe(false)
+})
+
+test('every body block is drawn at both offsets, under a spacer as tall as the fixed top, and the note stays in the fixed top', { options: OPTIONS }, async ($, on) => {
+  await readings($, on, TWO_STOPS, 2)
+  for (const offset of [0, 5]) {
+    const ui = await mountAt($, offset)
+    const root = (await ui.drawn()) as Node
+    expect(childNodes(root)[0]?.props?.height, `offset ${offset}: the spacer is as tall as the fixed top`).toBe(FIXED_TOP_ROWS)
+    const keys = keysUnder(bodyOf(root))
+    for (const key of ['summary-box', 'step-0', 'step-1', 'step-2', 'step-3', 'step-4', 'draft-block', 'history-label', 'history-1']) {
+      expect(keys, `offset ${offset}: ${key} is drawn in the body`).toContain(key)
+    }
+    expect(walk(root).map((n) => keyOfNode(n)).filter((k) => k?.startsWith('note-')), `offset ${offset}: one note input is drawn`).toEqual(['note-2'])
+    expect(keys, `offset ${offset}: no body block holds the note input`).not.toContain('note-2')
+    expect(keysUnder([fixedOf(root)]), `offset ${offset}: the note input is in the fixed top`).toContain('note-2')
+    await ui.unmount()
+  }
+})
+
+test('a card taller than the window keeps its first and last step rows and its draft block in the body', { options: OPTIONS }, async ($, on) => {
+  await readings($, on, [DIGESTED, TALL_CARD])
+  for (const offset of [0, 5]) {
+    const ui = await mountAt($, offset)
+    const root = (await ui.drawn()) as Node
+    expect(keyOfNode(fixedOf(root)), `offset ${offset}: the last child is the fixed top`).toBe('fixed-top')
+    const keys = keysUnder(bodyOf(root))
+    expect(keys, `offset ${offset}: the first step row is in the body`).toContain('step-0')
+    expect(keys, `offset ${offset}: the last step row is in the body`).toContain('step-11')
+    expect(keys, `offset ${offset}: the draft block is in the body`).toContain('draft-block')
+    await ui.unmount()
+  }
+})
+
+test('a person scroll of the pane reaches the engine, so no plugin hook answers it', { options: OPTIONS }, async ($, on) => {
+  const reached: any[] = []
+  on('ui.scroll', { requestId: 'priority-reader' }, (_$: any, e: any) => { reached.push(e); return {} })
+  await readings($, on, [DIGESTED, ACTIONABLE])
+  const ui = await mountAt($, 0)
+  await scrollPane($, 0, 5)
+  expect(reached, 'the engine gets the person scroll once').toHaveLength(1)
+  expect(reached[0]?.by, 'the engine gets the rows asked').toBe(5)
   await ui.unmount()
 })
 
-// A new reading opens at the top of its card, not at the scroll position of the previous card.
-test('a new reading resets the scroll, so its card opens at the top', { options: OPTIONS }, async ($, on) => {
-  const store = await readings($, on, [DIGESTED, TALL, DIGESTED, TALL])
-  const ui = await $.ui.mount({ ...SMALL_BODY, surface: 'terminal' })
-  const topKey = async () => keyOfNode(childNodes((await ui.drawn()) as Node)[2] as Node)
-  const first = await topKey()
-  for (let k = 1; k <= 4; k++) await scrollPane($, k, 1)
-  expect(await topKey(), 'the scroll moved the body').not.toBe(first)
-
-  await stop($)
-  await waitFor(() => ((store.get('readings:S1') as unknown[]) ?? []).length >= 2)
-  await drain()
-  expect(await topKey(), 'the new card opens at the top of the body').toBe(first)
-  await ui.unmount()
+// The kit does not dispatch a scroll that the plugin itself starts, so this checks the call.
+test('a new reading asks the engine to scroll the pane to its first row', async () => {
+  const calls: unknown[] = []
+  await scrollPaneToTop({ ui: { scroll: async (a: unknown) => { calls.push(a) } } })
+  expect(calls, 'one scroll of the reader pane to its start').toEqual([{ to: 'start', in: 'priority-reader' }])
+  await scrollPaneToTop({ ui: { scroll: async () => { throw new Error('refused') } } })
 })

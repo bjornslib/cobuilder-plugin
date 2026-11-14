@@ -128,7 +128,7 @@ test('Send and Edit are dim with no step selected, and lit once a step is picked
   await ui.unmount()
 })
 
-test('the old action row under the draft is gone, and the note stays in the card', { options: OPTIONS }, async ($, on) => {
+test('the old action row under the draft is gone, and the note stays in the fixed top', { options: OPTIONS }, async ($, on) => {
   await readings($, on, [DIGESTED, ACTIONABLE])
   const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
   const root = (await ui.drawn()) as Node
