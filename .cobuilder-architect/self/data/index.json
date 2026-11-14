@@ -1,12 +1,12 @@
 {
   "schema_version": "1.5",
   "sources": {
-    "git_head": "4a8e73bd3cc20da5b2308372f40c87cc0fc93b67",
+    "git_head": "ecc627a19f77e83da16484103184dc1e0efc758b",
     "trees": {
       "docs/architecture/adr": "sha256:20ca2f731683a3c296a2c76de4eeab9d4a6a07fcfeab163272cc78709195785d",
-      "docs/architecture/designs": "sha256:9faf06636e9f4782a1f46ae5507cdec60c96faf0c5824b0a4e154b1b0898c650",
-      "docs/architecture/contexts": "sha256:5ba95d850addabe46f6527e72178225cea8307bc3d3d772b5450ec6f5e73718f",
-      "docs/plans": "sha256:0e4db1dbb20dc781b6c937f7edd2545410be06da413e4df798aef12ca97f7e98",
+      "docs/architecture/designs": "sha256:3cf25b5ab1982d5532354f008e2a3bb54561e629b4d34885b83478b004ea485d",
+      "docs/architecture/contexts": "sha256:905ed86b726f44d6a07d9d55b86216cefcc6247b7ea40ec0fa51c963886edc27",
+      "docs/plans": "sha256:85dd527f75dc2f50daea578c46705a34f637a1a269c29da64399e50453ce8a24",
       ".cobuilder/rubrics": "sha256:c6f2633b11d78a63224c2adf4f4f8f6d7ce3d3322f6d7c5705f876749e80824a"
     }
   },
@@ -415,6 +415,13 @@
         "name": "structure-coaching",
         "outcome": "GREEN gets structure coaching when it adds a file, VALIDATE reports structure findings beside the slice score, and the main agent runs each slice through the RED, GREEN, and VALIDATE agents.",
         "stage": "decided",
+        "stage_source": "tracker"
+      },
+      {
+        "id": "tracker-slice-edit",
+        "name": "tracker-slice-edit",
+        "outcome": "A slice's editable fields change through tracker.py after the slice exists, and its immutable fields stay fixed once RED or GREEN has run.",
+        "stage": "backlog",
         "stage_source": "tracker"
       },
       {
@@ -1414,7 +1421,7 @@
         "epic_id": "E7",
         "branch": null,
         "pr": null,
-        "state": "open",
+        "state": "closed",
         "note": null
       },
       {
@@ -1423,7 +1430,7 @@
         "epic_id": "E8",
         "branch": null,
         "pr": null,
-        "state": "open",
+        "state": "closed",
         "note": null
       },
       {
@@ -2856,6 +2863,16 @@
         "context": "shared",
         "kind": "forbidden-dependency",
         "detail": {
+          "target": "plugins/cache/ path prefix",
+          "from": "shared/structure/boundary.py",
+          "why": "SMELL: CACHE_PREFIX (line 22) names the plugin cache path in code. Line 145 skips any reference that starts with it. It is the same coupling as the artifact viewer smell, and the caller could pass the prefix in."
+        }
+      },
+      {
+        "id": "shared/forbidden-dependency/7",
+        "context": "shared",
+        "kind": "forbidden-dependency",
+        "detail": {
           "target": "authored content",
           "why": "CLAUDE.md principle 2: a script moves data and never authors judgment. build_index.py is the only writer of data/adrs.json and data/index.json (write_text calls at build_index.py lines 1739 and 1748)."
         }
@@ -3044,13 +3061,34 @@
         }
       },
       {
+        "id": "shared/module-invariant/9",
+        "context": "shared",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "structure-signals",
+          "path": "shared",
+          "members": [
+            "structure_signals.py",
+            "structure_evidence.py",
+            "structure/*.py"
+          ],
+          "public_interface": [
+            "structure_signals",
+            "structure.keys.finding_key"
+          ],
+          "allowed_inbound": [],
+          "allowed_outbound": [],
+          "rule": "Leaf: standard library and its own modules. implement structure_runner.py imports it. architect runs structure_evidence.py --repo in review mode, and the install command runs structure_signals.py. structure/git.py runs git by subprocess. structure/boundary.py and structure/slice_edges.py read docs/architecture/contexts/*/boundary.yaml."
+        }
+      },
+      {
         "id": "shared/context-map/1",
         "context": "shared",
         "kind": "context-map",
         "detail": {
           "with": "architect",
           "pattern": "shared-kernel",
-          "note": "Consumed by shell only: build_index, migrate_bundle, prose_budget, boundary_check, validate_decision_state, tracker, habit_smells."
+          "note": "Consumed by shell only: build_index, migrate_bundle, prose_budget, boundary_check, validate_decision_state, tracker, habit_smells, and structure_evidence in review mode."
         }
       },
       {
@@ -3080,7 +3118,7 @@
         "detail": {
           "with": "implement",
           "pattern": "shared-kernel",
-          "note": "Consumed by import (slice_table, gate_status, tracker_port.reader in verify_gate.py) and by shell (build_index, tracker). The tracker hook scripts run tracker.py by subprocess."
+          "note": "Consumed by import (slice_table, gate_status, tracker_port.reader in verify_gate.py) and by shell (build_index, tracker, structure_evidence in VALIDATE). The tracker hook scripts run tracker.py by subprocess. structure_runner.py imports structure_signals and structure.keys."
         }
       },
       {
@@ -3090,7 +3128,7 @@
         "detail": {
           "with": "cobuilder-packaging",
           "pattern": "shared-kernel",
-          "note": "The umbrella plugin cobuilder-full-lifecycle imports ledger in watch_feedback.py. Its install command and setup skill run tracker.py by shell."
+          "note": "The umbrella plugin cobuilder-full-lifecycle imports ledger in watch_feedback.py. Its install command and setup skill run tracker.py and structure_signals by shell."
         }
       }
     ],
@@ -7920,8 +7958,8 @@
       "structure-coaching/E4": "completed",
       "structure-coaching/E5": "completed",
       "structure-coaching/E6": "completed",
-      "structure-coaching/E7": "unstarted",
-      "structure-coaching/E8": "unstarted",
+      "structure-coaching/E7": "completed",
+      "structure-coaching/E8": "completed",
       "ubiquitous-language/E1": "unstarted",
       "ubiquitous-language/E2": "unstarted",
       "ubiquitous-language/E3": "unstarted",
@@ -8983,6 +9021,11 @@
         "pull_requests": []
       },
       "structure-coaching": {
+        "stage_source": "tracker",
+        "next_ready": null,
+        "pull_requests": []
+      },
+      "tracker-slice-edit": {
         "stage_source": "tracker",
         "next_ready": null,
         "pull_requests": []
