@@ -56,7 +56,7 @@ Labels: `act` is a real cost to fix, `keep` is a real fact with a sound layout, 
 | twin-name\|rail | false | second file is a test helper in testSupport |  |
 | twin-name\|config | false | two per-package config modules in different packages |  |
 | twin-name\|hooks | false | second file is a testSupport stub |  |
-| twin-name\|pane | false | two different plugins; no shared scope |  |
+| twin-name\|pane | false | two different plugins; no shared scope | keep: renamed to memory-pane.tsx |
 | twin-name\|records | false | two of three are testSupport fixtures |  |
 | twin-name\|core | false | types/core and state/core; the folder gives the context |  |
 | twin-name\|fixtures | false | per-feature testSupport fixtures; one name per folder is the pattern |  |

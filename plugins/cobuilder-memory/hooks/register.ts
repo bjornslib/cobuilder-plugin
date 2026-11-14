@@ -1,5 +1,5 @@
 import type { Register } from 'claude-code'
-import { PANE_ID, renderPane } from './pane'
+import { PANE_ID, renderPane } from './memory-pane'
 import { shouldStore, storePrompt } from './prompts'
 import { runCheck, runMemory } from './run'
 

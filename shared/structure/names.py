@@ -46,6 +46,15 @@ def is_test_name(name: str, config: Config) -> bool:
     return stem.startswith(config.test_prefixes) or stem.endswith(config.test_suffixes)
 
 
+def in_test_folder(rel: str) -> bool:
+    """Return True when a folder of rel is a test folder, such as tests, __tests__, or testSupport."""
+    for part in rel.split("/")[:-1]:
+        name = part.strip("_").lower()
+        if name.startswith("test") or name.endswith("tests"):
+            return True
+    return False
+
+
 def is_code(rel: str, config: Config) -> bool:
     """Return True when the suffix of rel is one of the code extensions, test names included."""
     return posixpath.splitext(rel)[1] in config.code_extensions
@@ -54,7 +63,8 @@ def is_code(rel: str, config: Config) -> bool:
 def is_product(rel: str, config: Config) -> bool:
     """Return True for a code file that is not a test name and that no excluded path holds."""
     code = posixpath.splitext(rel)[1] in config.code_extensions
-    return code and not is_test_name(rel, config) and excluded_by(rel, config) is None
+    test = is_test_name(rel, config) or in_test_folder(rel)
+    return code and not test and excluded_by(rel, config) is None
 
 
 def stem_cluster(rel: str, files: list[str], config: Config) -> Finding | None:
@@ -77,10 +87,13 @@ def stem_cluster(rel: str, files: list[str], config: Config) -> Finding | None:
 def generic_name(rel: str, config: Config) -> Finding | None:
     """Return a generic-name finding when the stem is in generic_names, or None.
 
-    The match ignores case and a leading underscore. A test name never matches.
+    The match ignores case and a leading underscore. A test name, or a file in a
+    test folder, never matches.
     """
     stem = stem_of(rel)
-    if is_test_name(rel, config) or stem.lower().lstrip("_") not in config.generic_names:
+    if is_test_name(rel, config) or in_test_folder(rel):
+        return None
+    if stem.lower().lstrip("_") not in config.generic_names:
         return None
     return Finding("generic-name", rel, folder_of(rel), {"stem": stem})
 

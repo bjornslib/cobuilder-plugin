@@ -104,7 +104,7 @@ The engineer checked the labels in `label-check.md` and agreed with every label 
 | `crowded-folder\|shared/structure` | keep | act: the folder may grow disorganised |
 | `generic-name\|.../shell/sections/common.tsx` | keep | act: rename, and split into files that name their content |
 | `duplicate-group\|` 11 scripts with one git helper | keep | act: the reason for the copy is stale |
-| `twin-name\|pane` | false | open: the engineer asked whether the folder names are clear |
+| `twin-name\|pane` | false | keep: the folders `state` and `hooks` name a layer, so the second file is now `memory-pane.tsx` |
 
 Each change from keep to act leaves the precision as it is, because both labels count as a real fact. The table in section 2 stands.
 
