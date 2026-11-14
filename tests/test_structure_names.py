@@ -205,6 +205,7 @@ def test_is_test_name_is_false_for_names_that_only_contain_test(name):
     [
         ("pkg/docs/readme.md", "**/docs/**"),
         ("docs/readme.md", "**/docs/**"),
+        ("documentation/prds/phase1-guide.md", "**/documentation/**"),
         ("fixtures/a.json", "**/fixtures/**"),
         ("src/fixtures/a.json", "**/fixtures/**"),
         (".cache/x.py", "**/.*/**"),

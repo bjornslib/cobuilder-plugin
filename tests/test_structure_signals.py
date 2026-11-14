@@ -96,7 +96,7 @@ def test_config_defaults_match_the_design():
         ".java", ".rb", ".go", ".rs", ".kt", ".cs", ".swift",
     }
     assert set(config.excluded_paths) == {
-        "**/.*/**", "**/docs/**", "**/fixtures/**", "**/__snapshots__/**",
+        "**/.*/**", "**/docs/**", "**/documentation/**", "**/fixtures/**", "**/__snapshots__/**",
         "**/migrations/**", "**/vendor/**", "**/generated/**",
     }
 

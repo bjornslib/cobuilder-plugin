@@ -34,7 +34,8 @@ class Config:
         ".java", ".rb", ".go", ".rs", ".kt", ".cs", ".swift",
     })
     excluded_paths: tuple[str, ...] = (
-        "**/.*/**", "**/docs/**", "**/fixtures/**", "**/__snapshots__/**",
+        "**/.*/**", "**/docs/**", "**/documentation/**", "**/fixtures/**",
+        "**/__snapshots__/**",
         "**/migrations/**", "**/vendor/**", "**/generated/**",
     )
     test_prefixes: tuple[str, ...] = ("test_", "test-")
