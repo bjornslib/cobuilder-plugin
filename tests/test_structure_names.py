@@ -432,6 +432,44 @@ def test_crowded_finding_names_the_families_largest_first_and_skips_test_files(t
     assert pairs == [("alpha", 4), ("beta", 2)], f"families were {families!r}"
 
 
+def test_files_that_hold_no_code_give_no_name_stem_cluster(tmp_path):
+    signals = _load_structure_signals()
+    repo = _committed_repo(tmp_path, _names("src/pkg", "prd", 3, ".md"))
+    new = _write(repo, "src/pkg/prd_d.md")
+
+    report = signals.signals_for(str(new), repo, signals.Config())
+
+    assert _clusters(report) == [], f"documents are not code: {report.findings!r}"
+
+
+def test_the_whole_repo_view_gives_no_name_stem_cluster_for_documents(tmp_path):
+    signals = _load_structure_signals()
+    from structure.repo_signals import stem_findings
+
+    files = _names("src/pkg", "prd", 4, ".md") + _names("src/pkg", "beads", 3)
+    found = stem_findings(files, signals.Config())
+
+    assert [finding.facts["stem"] for finding in found] == ["beads"], f"got {found!r}"
+
+
+def test_the_families_text_counts_only_code_files(tmp_path):
+    signals = _load_structure_signals()
+    base = (
+        _names("src/pkg", "alpha", 2)
+        + _names("src/pkg", "dockerfile", 4, ".prod")
+        + [f"src/pkg/{stem}.py" for stem in FILLER_STEMS]
+        + [f"src/pkg/{stem}_x.py" for stem in FILLER_STEMS[:6]]
+    )
+    repo = _committed_repo(tmp_path, base)
+    new = _write(repo, "src/pkg/zed.py")
+
+    crowded = _crowded(signals.signals_for(str(new), repo, signals.Config()))
+
+    assert len(crowded) == 1, "control: the folder is crowded"
+    assert "dockerfile" not in crowded[0].facts["families"], crowded[0].facts["families"]
+    assert "alpha (2)" in crowded[0].facts["families"], crowded[0].facts["families"]
+
+
 # ---------------------------------------------------------------------------
 # The config file: defaults, bad files, and each limit
 # ---------------------------------------------------------------------------

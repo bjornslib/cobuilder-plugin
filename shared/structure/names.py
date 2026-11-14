@@ -70,10 +70,12 @@ def is_product(rel: str, config: Config) -> bool:
 def stem_cluster(rel: str, files: list[str], config: Config) -> Finding | None:
     """Return a name-stem cluster for a new file that starts one, or None.
 
-    The siblings are the non-test files of the folder that share the first token.
+    The siblings are the non-test code files of the folder that share the first token.
     """
     stem = first_token(rel)
-    if stem is None or is_test_name(rel, config) or _blocked(rel, files, stem, config):
+    if stem is None or not is_code(rel, config) or is_test_name(rel, config):
+        return None
+    if _blocked(rel, files, stem, config):
         return None
     folder = folder_of(rel)
     siblings = sorted(name for name in files if _is_sibling(name, folder, stem, config))
@@ -99,14 +101,14 @@ def generic_name(rel: str, config: Config) -> Finding | None:
 
 
 def family_text(names: list[str], config: Config) -> str:
-    """Return the first-token groups of two or more non-test names, largest first.
+    """Return the first-token groups of two or more non-test code names, largest first.
 
     Each group reads as a token and its count, such as 'alpha (4)'. The groups join with a comma.
     """
     groups: dict[str, int] = {}
     for name in names:
         token = first_token(name)
-        if token is not None and not is_test_name(name, config):
+        if token is not None and is_code(name, config) and not is_test_name(name, config):
             groups[token] = groups.get(token, 0) + 1
     ranked = sorted(groups.items(), key=lambda item: (-item[1], item[0]))
     return ", ".join(f"{token} ({count})" for token, count in ranked if count >= 2)
@@ -137,9 +139,10 @@ def _sub_folders(folder: str, files: list[str]) -> set[str]:
 
 
 def _is_sibling(name: str, folder: str, stem: str, config: Config) -> bool:
-    """Return True when name sits in folder, is not a test name, and starts with stem."""
+    """Return True when name is a code file in folder, is not a test name, and starts with stem."""
     return (
         folder_of(name) == folder
+        and is_code(name, config)
         and not is_test_name(name, config)
         and first_token(name) == stem
     )

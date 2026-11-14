@@ -13,7 +13,7 @@ from .config import Config, drop_excluded
 from .folders import crowded_folder, folder_counts, folder_limit
 from .git import slice_files
 from .locality import Graph, consumer_locality
-from .names import first_token, folder_of, generic_name, is_test_name, stem_cluster
+from .names import first_token, folder_of, generic_name, is_code, is_test_name, stem_cluster
 from .slice_drift import drift_part
 from .slice_edges import edge_findings
 from .types import Boundary, Finding
@@ -53,7 +53,7 @@ def stem_findings(files: list[str], config: Config) -> list[Finding]:
     groups: dict[tuple[str, str], list[str]] = {}
     for rel in sorted(files):
         token = first_token(rel)
-        if token is not None and not is_test_name(rel, config):
+        if token is not None and is_code(rel, config) and not is_test_name(rel, config):
             groups.setdefault((folder_of(rel), token), []).append(rel)
     found: list[Finding] = []
     for members in groups.values():
