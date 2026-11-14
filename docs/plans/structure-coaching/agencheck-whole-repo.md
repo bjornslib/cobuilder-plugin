@@ -36,3 +36,7 @@ These labels are agent labels. The engineer has not checked them.
 - Apply the code-file rule to the name-stem cluster.
 - Compare a renamed Python file with its old path in contract drift.
 - Consider a twin-name filter for separate apps and for layer pairs, after more labels.
+
+## After the documentation exclusion
+
+The default `excluded_paths` now holds `**/documentation/**`. A second run gave 166 findings: 33 name families instead of 150. 19 of the 33 families still hold no code file, such as Dockerfiles, `.env` files, data files, and email templates.
