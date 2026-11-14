@@ -89,10 +89,11 @@ The false labels in this repository come from three sources. Name families count
 - GREEN cannot act on the folder advice without a change to earlier slices, which its scope contract forbids. The advice needs a role that may move files: the orchestrator between slices, or the refactor skill of E8.
 - The labels are agent labels. The engineer has not checked them.
 
-## 4. Open for the engineer
+## 4. The engineer decisions, 2026-11-14
 
-- Accept the stop, or run a second replay with harder follow-on tasks and a step between slices that may move files.
-- Keep or drop the generic-name signal in the coach. Section 5 gives the numbers.
+- **The stop.** The engineer accepted the stop of the third abort rule. The built signals stay as advice. E7 and E8 do not start.
+- **The generic-name signal.** The engineer kept it in the coach, so GREEN sees the name early. This overrides the second abort rule for this one signal, which has 3 labels.
+- **The act labels.** Each `act` label becomes a follow-up, whatever the precision of its signal. Precision decides only what the coach shows. The tracker note on `structure-coaching` lists the 11 follow-ups.
 
 ## 5. The engineer check, 2026-11-14
 
