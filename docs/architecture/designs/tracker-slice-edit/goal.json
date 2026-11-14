@@ -1,0 +1,13 @@
+{
+  "name": "tracker-slice-edit",
+  "title": "tracker.py edits an existing slice, and a slice keeps its immutable fields once RED or GREEN has run",
+  "created": "2026-11-14",
+  "outcome": "A slice's editable fields change through tracker.py after the slice exists, and its immutable fields stay fixed once RED or GREEN has run.",
+  "done_when": [
+    "tracker.py has one edit subcommand for a slice, and tracker.py --help lists it",
+    "the edit subcommand changes an editable field on the beads adapter, and a read after it returns the new value. On the files adapter it exits with the refusal code and writes nothing",
+    "the edit subcommand refuses a change to an immutable field once RED or GREEN has run for that slice, exits with the refusal code, and writes nothing",
+    "the fake adapter passes the same contract test for the edit subcommand as the beads adapter",
+    "shared/tracker-usage.md documents the edit subcommand, and tests/test_tracker_usage_doc.py passes"
+  ]
+}
