@@ -16,10 +16,8 @@ import re
 from collections import defaultdict
 from dataclasses import dataclass
 
-MIN_LINE_CHARS = 4
-MIN_DISTINCT_LINES = 4
-NAMED_LINES_DROP = 4
-SKIP_PREFIXES = ("#", "//", "*", "/*", "import ", "from ", "export {", "}", ")", "]")
+from .config import Config
+
 _STRING = re.compile(r"""["](?:\\.|[^"\\])*["]|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`""")
 _NUMBER = re.compile(r"\b\d+(?:\.\d+)?\b")
 _NAMED = re.compile(r"\w+\s*[=:].*,$")
@@ -40,12 +38,13 @@ class DuplicateBlock:
     second_lines: tuple[int, ...]
 
 
-def duplicate_blocks(files: list[tuple[str, str]], window: int, min_chars: int) -> list[DuplicateBlock]:
+def duplicate_blocks(files: list[tuple[str, str]], config: Config) -> list[DuplicateBlock]:
     """Return the blocks that the files share. Each file is a repo path and its text."""
-    kept = {rel: _kept_lines(text) for rel, text in files}
+    window = config.dup_window
+    kept = {rel: _kept_lines(text, config) for rel, text in files}
     holders: dict[str, list[tuple[str, int]]] = defaultdict(list)
     for rel, lines in kept.items():
-        for start, digest in _windows(lines, window, min_chars):
+        for start, digest in _windows(lines, config):
             holders[digest].append((rel, start))
     blocks: list[DuplicateBlock] = []
     for pair, hits in sorted(_pair_hits(holders).items()):
@@ -53,12 +52,12 @@ def duplicate_blocks(files: list[tuple[str, str]], window: int, min_chars: int) 
     return blocks
 
 
-def _kept_lines(text: str) -> list[tuple[int, str]]:
+def _kept_lines(text: str, config: Config) -> list[tuple[int, str]]:
     """Return the line number and the normalized text of each line that the index keeps."""
     kept: list[tuple[int, str]] = []
     for number, raw in enumerate(text.split("\n"), start=1):
         line = raw.strip()
-        if len(line) >= MIN_LINE_CHARS and not line.startswith(SKIP_PREFIXES):
+        if len(line) >= config.dup_min_line_chars and not line.startswith(config.dup_skip_prefixes):
             kept.append((number, _normal(line)))
     return kept
 
@@ -69,30 +68,29 @@ def _normal(line: str) -> str:
     return " ".join(text.split())
 
 
-def _windows(
-    lines: list[tuple[int, str]], window: int, min_chars: int
-) -> list[tuple[int, str]]:
+def _windows(lines: list[tuple[int, str]], config: Config) -> list[tuple[int, str]]:
     """Return the start index and the hash of each window that passes the filters."""
     texts = [text for _, text in lines]
+    window = config.dup_window
     found: list[tuple[int, str]] = []
     for start in range(len(texts) - window + 1):
         chunk = texts[start:start + window]
-        if _keeps(chunk, min_chars):
+        if _keeps(chunk, config):
             found.append((start, _digest(chunk)))
     return found
 
 
-def _keeps(chunk: list[str], min_chars: int) -> bool:
+def _keeps(chunk: list[str], config: Config) -> bool:
     """Return True when a window has enough distinct lines and characters, and few named lines.
 
     The named lines have the form name=value, or name: type,. Filter B drops a window
-    with NAMED_LINES_DROP or more of them.
+    with dup_named_lines_drop or more of them.
     """
     named = sum(1 for line in chunk if _NAMED.match(line))
     return (
-        len(set(chunk)) >= MIN_DISTINCT_LINES
-        and named < NAMED_LINES_DROP
-        and sum(len(line) for line in chunk) >= min_chars
+        len(set(chunk)) >= config.dup_min_distinct_lines
+        and named < config.dup_named_lines_drop
+        and sum(len(line) for line in chunk) >= config.dup_min_chars
     )
 
 

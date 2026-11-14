@@ -1,7 +1,7 @@
 """The folder table of the whole-repository record: the edges and the ratios of each folder.
 
-A folder gets a row when it holds FOLDER_MIN_CODE code files. An edge is an import between two
-code files of the input set. A ratio with no edge to count is None. The rules follow epic E6,
+A folder gets a row when it holds folder_table_min_code code files. An edge is an import between
+two code files of the input set. A ratio with no edge to count is None. The rules follow epic E6,
 step D4, and the import groups come from the reader of epic E1, step A9.
 """
 from __future__ import annotations
@@ -15,14 +15,13 @@ from .config import Config
 from .locality import Graph
 from .names import folder_of, is_code, is_test_name
 
-FOLDER_MIN_CODE = 3
 Edges = tuple[int, int, int]
 
 
 def folder_table(
     root: Path, files: list[str], graph: Graph, config: Config, notes: list[str]
 ) -> list[dict[str, Any]]:
-    """Return one row for each folder that holds FOLDER_MIN_CODE code files, sorted by folder."""
+    """Return one row for each folder with folder_table_min_code code files, sorted by folder."""
     code = [rel for rel in files if is_code(rel, config)]
     internal, outgoing, incoming = _edge_counts(graph, set(code))
     by_folder: dict[str, list[str]] = {}
@@ -30,10 +29,10 @@ def folder_table(
         by_folder.setdefault(folder_of(rel), []).append(rel)
     rows: list[dict[str, Any]] = []
     for folder, members in sorted(by_folder.items()):
-        if len(members) < FOLDER_MIN_CODE:
+        if len(members) < config.folder_table_min_code:
             continue
         edges = (internal[folder], outgoing[folder], incoming[folder])
-        groups = _groups(root, folder, files, notes)
+        groups = _groups(root, folder, files, config, notes)
         rows.append(_row(folder, members, edges, groups, config))
     return rows
 
@@ -60,9 +59,11 @@ def _edge_counts(graph: Graph, code: set[str]) -> tuple[Counter[str], Counter[st
     return internal, outgoing, incoming
 
 
-def _groups(root: Path, folder: str, files: list[str], notes: list[str]) -> list[list[str]]:
+def _groups(
+    root: Path, folder: str, files: list[str], config: Config, notes: list[str]
+) -> list[list[str]]:
     """Return the import groups of one folder. A folder over the parse cap gives none and a note."""
-    groups, problems = import_groups(folder, files, root)
+    groups, problems = import_groups(folder, files, root, config)
     notes.extend(problems)
     return [list(group) for group in groups or ()]
 

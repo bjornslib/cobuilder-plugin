@@ -17,13 +17,6 @@ from .names import folder_of, is_product, is_test_name, stem_of
 from .source import language_of
 from .types import Finding
 
-TWIN_EXCLUDED_STEMS = frozenset({
-    "index", "__init__", "main", "types", "conftest",
-    "page", "route", "layout", "loading", "error", "not-found", "template", "default",
-})
-MAX_COMMIT_FILES = 30
-MIN_SUPPORT = 5
-MIN_JACCARD = 0.5
 Pairs = dict[tuple[str, str], int]
 
 
@@ -39,7 +32,8 @@ def twin_names(files: list[str], config: Config) -> list[Finding]:
     by_stem: dict[str, list[tuple[str, str]]] = {}
     for rel in files:
         family, stem = language_of(rel), stem_of(rel).lower()
-        if family is not None and is_product(rel, config) and stem not in TWIN_EXCLUDED_STEMS:
+        skipped = stem in config.twin_excluded_stems
+        if family is not None and is_product(rel, config) and not skipped:
             by_stem.setdefault(stem, []).append((family, rel))
     found: list[Finding] = []
     for stem in sorted(by_stem):
@@ -63,7 +57,7 @@ def co_change_groups(commits: list[list[str]], files: set[str], config: Config) 
     counts: dict[str, int] = {}
     support: Pairs = {}
     for names in commits:
-        if len(names) > MAX_COMMIT_FILES:
+        if len(names) > config.co_change_max_commit_files:
             continue
         members = sorted({rel for rel in names if rel in files and not is_test_name(rel, config)})
         for rel in members:
@@ -71,14 +65,14 @@ def co_change_groups(commits: list[list[str]], files: set[str], config: Config) 
         for pair in itertools.combinations(members, 2):
             if folder_of(pair[0]) != folder_of(pair[1]):
                 support[pair] = support.get(pair, 0) + 1
-    passing = {pair: both for pair, both in support.items() if _passes(pair, both, counts)}
+    passing = {pair: both for pair, both in support.items() if _passes(pair, both, counts, config)}
     return _pair_groups("co-change", passing, "support")
 
 
-def _passes(pair: tuple[str, str], both: int, counts: dict[str, int]) -> bool:
+def _passes(pair: tuple[str, str], both: int, counts: dict[str, int], config: Config) -> bool:
     """Return True when a pair meets the support limit and the Jaccard limit."""
     union = counts[pair[0]] + counts[pair[1]] - both
-    return both >= MIN_SUPPORT and both / union >= MIN_JACCARD
+    return both >= config.co_change_min_support and both / union >= config.co_change_min_jaccard
 
 
 def duplicate_groups(root: Path, files: list[str], config: Config) -> list[Finding]:
@@ -88,7 +82,7 @@ def duplicate_groups(root: Path, files: list[str], config: Config) -> list[Findi
         for rel in files if is_product(rel, config)
     ]
     sizes: Pairs = {}
-    for block in duplicate_blocks(texts, config.dup_window, config.dup_min_chars):
+    for block in duplicate_blocks(texts, config):
         size = max(block.first_lines) - min(block.first_lines) + 1
         pair = (block.first, block.second)
         sizes[pair] = max(sizes.get(pair, 0), size)

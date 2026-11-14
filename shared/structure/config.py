@@ -43,14 +43,43 @@ class Config:
     # Duplicated code, from epic-E4-design.md step C6.
     dup_window: int = 6
     dup_min_chars: int = 120
+    dup_min_line_chars: int = 4
+    dup_min_distinct_lines: int = 4
+    dup_named_lines_drop: int = 4
+    dup_skip_prefixes: tuple[str, ...] = (
+        "#", "//", "*", "/*", "import ", "from ", "export {", "}", ")", "]",
+    )
+    # The most file names that a finding lists as examples.
+    examples_max: int = 5
+    # A folder with more code files than parse_cap is not read for import groups.
+    parse_cap: int = 60
+    locality_min_importers: int = 2
+    layer_limit: int = 3
+    folder_table_min_code: int = 3
+    caller_cap: int = 10
+    # The whole-repository view: twin names, co-change groups, and the change window.
+    twin_excluded_stems: frozenset[str] = frozenset({
+        "index", "__init__", "main", "types", "conftest",
+        "page", "route", "layout", "loading", "error", "not-found", "template", "default",
+    })
+    co_change_max_commit_files: int = 30
+    co_change_min_support: int = 5
+    co_change_min_jaccard: float = 0.5
+    change_window_days: int = 90
+    wide_change_window_days: int = 365
+    min_window_commits: int = 20
+    co_change_days: int = 365
     problem: str | None = None
 
 
 # The names that the config file may set, in the order of the dataclass.
 _SETTINGS = tuple(field.name for field in dataclasses.fields(Config) if field.name != "problem")
-_SET_FIELDS = frozenset({"generic_names", "excluded_stems", "code_extensions"})
-_LOWER_FIELDS = frozenset({"generic_names", "excluded_stems"})
-_TUPLE_FIELDS = frozenset({"excluded_paths", "test_prefixes", "test_suffixes"})
+_SET_FIELDS = frozenset({
+    "generic_names", "excluded_stems", "code_extensions", "twin_excluded_stems",
+})
+_LOWER_FIELDS = frozenset({"generic_names", "excluded_stems", "twin_excluded_stems"})
+_TUPLE_FIELDS = frozenset({"excluded_paths", "test_prefixes", "test_suffixes", "dup_skip_prefixes"})
+_FRACTION_FIELDS = frozenset({"co_change_min_jaccard"})
 
 
 def load_config(root: Path) -> Config:
@@ -84,6 +113,8 @@ def _value(name: str, value: object) -> object:
     if name in _SET_FIELDS:
         items = _strings(name, value)
         return frozenset(item.lower() if name in _LOWER_FIELDS else item for item in items)
+    if name in _FRACTION_FIELDS:
+        return _fraction(name, value)
     return _whole(name, value)
 
 
@@ -103,6 +134,15 @@ def _whole(name: str, value: object) -> int:
     if value < 0:
         raise ValueError(f"{name} must not be negative")
     return value
+
+
+def _fraction(name: str, value: object) -> float:
+    """Return the value as a float when it is from 0 to 1. Raise TypeError or ValueError."""
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise TypeError(f"{name} must be a number")
+    if not 0 <= value <= 1:
+        raise ValueError(f"{name} must be from 0 to 1")
+    return float(value)
 
 
 def config_json(config: Config) -> dict[str, object]:

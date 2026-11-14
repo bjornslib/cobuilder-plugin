@@ -4,8 +4,10 @@ A failed git command raises GitError. The callers write the error into not_analy
 """
 from __future__ import annotations
 
+import os
 import re
 import subprocess
+import tempfile
 from pathlib import Path
 
 _HUNK = re.compile(r"^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@", re.MULTILINE)
@@ -15,11 +17,14 @@ class GitError(Exception):
     """A git command did not run, or it failed."""
 
 
-def _git(root: Path, *args: str, ok_codes: tuple[int, ...] = (0,)) -> str:
+def _git(
+    root: Path, *args: str, ok_codes: tuple[int, ...] = (0,), env: dict[str, str] | None = None
+) -> str:
     """Return the output of git run in root. Raise GitError when the exit code is not allowed."""
     try:
         result = subprocess.run(
-            ["git", "-C", str(root), *args], capture_output=True, timeout=30, check=False
+            ["git", "-C", str(root), *args], capture_output=True, timeout=30, check=False,
+            env=None if env is None else {**os.environ, **env},
         )
     except (OSError, subprocess.SubprocessError) as error:
         raise GitError(f"git {args[0]} did not run: {error}") from error
@@ -111,6 +116,28 @@ def slice_files(root: Path, base: str) -> dict[str, list[str]]:
         elif status == "M":
             modified.add(name)
     return {"added": sorted(added), "modified": sorted(modified)}
+
+
+def renamed_pairs(root: Path, base: str) -> list[tuple[str, str]]:
+    """Return the old path and the new path of each file that moved from base to the work tree.
+
+    A temporary index holds the work tree, so git also finds the rename of an untracked file.
+    The real index does not change. Raise GitError when base is not a commit.
+    """
+    with tempfile.TemporaryDirectory() as folder:
+        env = {"GIT_INDEX_FILE": str(Path(folder) / "index")}
+        _git(root, "add", "-A", env=env)
+        output = _git(root, "diff", "-z", "--cached", "-M", "--name-status", base, env=env)
+    tokens = output.split("\0")
+    pairs: list[tuple[str, str]] = []
+    index = 0
+    while index < len(tokens) - 2:
+        if tokens[index].startswith("R"):
+            pairs.append((tokens[index + 1], tokens[index + 2]))
+            index += 3
+        else:
+            index += 2
+    return pairs
 
 
 def added_lines(root: Path, base: str, path: str) -> list[int]:

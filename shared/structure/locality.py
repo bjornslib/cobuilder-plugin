@@ -1,10 +1,10 @@
 """Consumer locality from the import graph of the product files.
 
-An added file gets an entry when two or more product files import it, and all of them sit in
-one folder. That folder must be neither the folder of the file nor an ancestor of it. The
-layer rule drops an entry when the consumer folder imports three or more files of the folder
-of the file. An entry is evidence for the cohesion judgment, and it never makes a finding.
-E6 reuses this module for the whole repository.
+An added file gets an entry when locality_min_importers or more product files import it, and
+all of them sit in one folder. That folder must be neither the folder of the file nor an
+ancestor of it. The layer rule drops an entry when the consumer folder imports layer_limit or
+more files of the folder of the file. An entry is evidence for the cohesion judgment, and it
+never makes a finding. E6 reuses this module for the whole repository.
 """
 from __future__ import annotations
 
@@ -12,10 +12,9 @@ from pathlib import Path
 from typing import Any
 
 from .boundary import scan_file
+from .config import Config
 from .names import folder_of
 
-MIN_IMPORTERS = 2
-LAYER_LIMIT = 3
 Graph = dict[str, set[str]]
 
 
@@ -35,10 +34,18 @@ def import_graph(root: Path, files: list[str]) -> tuple[Graph, list[str]]:
     return graph, notes
 
 
-def consumer_locality(graph: Graph, targets: list[str]) -> list[dict[str, Any]]:
-    """Return one entry for each target that the rules keep, sorted by path."""
+def consumer_locality(
+    graph: Graph, targets: list[str], config: Config | None = None
+) -> list[dict[str, Any]]:
+    """Return one entry for each target that the rules keep, sorted by path.
+
+    Without a config, the default limits apply.
+    """
+    limits = config or Config()
     importers = _importers(graph)
-    entries = [_entry(rel, graph, importers.get(rel, set())) for rel in sorted(targets)]
+    entries = [
+        _entry(rel, graph, importers.get(rel, set()), limits) for rel in sorted(targets)
+    ]
     return [entry for entry in entries if entry is not None]
 
 
@@ -51,16 +58,18 @@ def _importers(graph: Graph) -> dict[str, set[str]]:
     return found
 
 
-def _entry(rel: str, graph: Graph, sources: set[str]) -> dict[str, Any] | None:
+def _entry(rel: str, graph: Graph, sources: set[str], config: Config) -> dict[str, Any] | None:
     """Return the locality entry of one file, or None when a rule drops it."""
-    if len(sources) < MIN_IMPORTERS:
+    if len(sources) < config.locality_min_importers:
         return None
     folders = {folder_of(source) for source in sources}
     if len(folders) != 1:
         return None
     consumer = folders.pop()
     own = folder_of(rel)
-    if _is_ancestor(consumer, own) or _layer_count(graph, consumer, own) >= LAYER_LIMIT:
+    if _is_ancestor(consumer, own):
+        return None
+    if _layer_count(graph, consumer, own) >= config.layer_limit:
         return None
     return {
         "path": rel,

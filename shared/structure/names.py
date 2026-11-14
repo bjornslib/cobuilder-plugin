@@ -11,7 +11,6 @@ import re
 from .config import Config, excluded_by
 from .types import Finding
 
-EXAMPLES_MAX = 5
 _SEPARATORS = re.compile(r"[_\-.\s]+")
 _TOKEN = re.compile(r"[A-Z]+(?=[A-Z][a-z])|[A-Z]?[a-z]+\d*|[A-Z]+\d*|\d+")
 
@@ -81,7 +80,7 @@ def stem_cluster(rel: str, files: list[str], config: Config) -> Finding | None:
     siblings = sorted(name for name in files if _is_sibling(name, folder, stem, config))
     if len(siblings) < config.cluster_min:
         return None
-    examples = ", ".join(posixpath.basename(name) for name in siblings[:EXAMPLES_MAX])
+    examples = ", ".join(posixpath.basename(name) for name in siblings[:config.examples_max])
     facts = {"stem": stem, "count": len(siblings), "examples": examples}
     return Finding("name-stem-cluster", rel, folder, facts)
 

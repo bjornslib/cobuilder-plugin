@@ -16,8 +16,6 @@ from .drift import drift_events, public_surface
 from .git import GitError, file_at, files_with_word
 from .names import is_test_name
 
-CALLER_CAP = 10
-
 
 def file_drift(
     root: Path, base: str, rel: str, diff_files: set[str], config: Config
@@ -70,13 +68,15 @@ def caller_files(root: Path, symbol: str, diff_files: set[str], config: Config) 
 
 
 def callers_untouched(
-    root: Path, symbol: str, diff_files: set[str], cap: int = 10
+    root: Path, symbol: str, diff_files: set[str], cap: int | None = None
 ) -> list[str]:
     """Return up to cap files outside the diff that name the last part of the symbol, sorted.
 
-    The default cap of 10 matches the list that each contract-drift finding holds.
+    Without a cap, the caller_cap of the config applies, as in each contract-drift finding.
     """
-    return caller_files(root, symbol, diff_files, load_config(root))[:cap]
+    config = load_config(root)
+    limit = config.caller_cap if cap is None else cap
+    return caller_files(root, symbol, diff_files, config)[:limit]
 
 
 def definer(root: Path, symbol: str, source: str, config: Config) -> str | None:
@@ -114,7 +114,7 @@ def _finding(
     callers = caller_files(root, event["symbol"], diff_files, config)
     facts: dict[str, Any] = {
         **event,
-        "callers_untouched": callers[:CALLER_CAP],
+        "callers_untouched": callers[:config.caller_cap],
         "callers_total": len(callers),
     }
     return {"signal": "contract-drift", "path": rel, "facts": facts}

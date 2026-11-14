@@ -28,7 +28,7 @@ def copy_part(
         blocks: list[DuplicateBlock] = []
         if slice_lines:
             texts = _texts(root, config)
-            blocks = duplicate_blocks(texts, config.dup_window, config.dup_min_chars)
+            blocks = duplicate_blocks(texts, config)
     except (GitError, OSError) as error:
         return [], [_note("duplicated code", error)]
     return _findings(blocks, slice_lines), []
@@ -45,7 +45,7 @@ def locality_part(
         graph, notes = import_graph(root, _product_rels(root, config))
     except (GitError, OSError) as error:
         return [], [_note("consumer locality", error)]
-    return consumer_locality(graph, targets), notes
+    return consumer_locality(graph, targets, config), notes
 
 
 def _slice_lines(

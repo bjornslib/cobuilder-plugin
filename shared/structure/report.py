@@ -15,7 +15,6 @@ from .config import Config, drop_excluded, excluded_by, load_config
 from .folders import crowded_folder, folder_counts, folder_limit
 from .git import GitError, new_files, repo_files, repo_top
 from .names import (
-    EXAMPLES_MAX,
     first_token,
     folder_of,
     generic_name,
@@ -63,15 +62,15 @@ def _group_facts(
     """Return the components and nearest_group facts, and the notes of the import reader.
 
     The import group of the file comes first. Without one, the name family of the file
-    is the nearest group, and it names at most EXAMPLES_MAX files. Above the parse cap,
+    is the nearest group, and it names at most config.examples_max files. Above the parse cap,
     the facts are absent.
     """
-    groups, notes = import_groups(folder_of(rel), files, top)
+    groups, notes = import_groups(folder_of(rel), files, top, config)
     if groups is None:
         return {}, notes
     members = next((group for group in groups if rel in group), ())
     nearest = [name for name in members if name != rel]
-    nearest = nearest or _family(rel, files, config)[:EXAMPLES_MAX]
+    nearest = nearest or _family(rel, files, config)[:config.examples_max]
     facts: dict[str, object] = {
         "components": "; ".join(_names_text(group) for group in groups),
         "nearest_group": _names_text(nearest) or None,

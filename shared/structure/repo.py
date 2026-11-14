@@ -37,10 +37,6 @@ __all__ = [
 ]
 
 SCHEMA = 1
-WINDOW_DAYS = 90
-WIDE_DAYS = 365
-MIN_COMMITS = 20
-CO_CHANGE_DAYS = 365
 
 
 def repo_findings(root: Path, since: str | None, parse: Parser | None = None) -> dict[str, Any]:
@@ -56,13 +52,13 @@ def repo_findings(root: Path, since: str | None, parse: Parser | None = None) ->
     commit: str | None = None
     with _guarded("the commit", notes):
         commit = head_commit(root)
-    counts, window = _history(root, notes)
+    counts, window = _history(root, config, notes)
     findings = _file_findings(root, files, config, parse, notes)
     findings += _group_findings(root, files, config, notes)
     graph = _import_graph(root, files, config, notes)
     product = [rel for rel in files if is_product(rel, config)]
     product_graph = {src: targets for src, targets in graph.items() if is_product(src, config)}
-    findings += locality_findings(product_graph, product)
+    findings += locality_findings(product_graph, product, config)
     if since is not None:
         with _guarded("contract drift", notes):
             findings += drift_findings(root, since, config, notes)
@@ -78,12 +74,15 @@ def repo_findings(root: Path, since: str | None, parse: Parser | None = None) ->
 
 
 def empty_record(since: str | None, note: str) -> dict[str, Any]:
-    """Return a record with no finding and one not_analysed line, for a repo that cannot be read."""
+    """Return a record with no finding and one not_analysed line, for a repo that cannot be read.
+
+    The repo gives no config, so the window is the default change window.
+    """
     return {
         "schema": SCHEMA,
         "commit": None,
         "since": since,
-        "window_days": WINDOW_DAYS,
+        "window_days": Config().change_window_days,
         "findings": [],
         "folders": [],
         "not_analysed": [note],
@@ -107,24 +106,30 @@ def record_here(
     return record
 
 
-def change_counts(root: Path, days: int = WINDOW_DAYS) -> dict[str, int]:
-    """Return the number of commits of the last days that change each path."""
+def change_counts(root: Path, days: int | None = None) -> dict[str, int]:
+    """Return the number of commits of the last days that change each path.
+
+    Without days, the change_window_days of the config applies.
+    """
     counts: dict[str, int] = {}
-    for names in commit_file_sets(root, days):
+    window = load_config(root).change_window_days if days is None else days
+    for names in commit_file_sets(root, window):
         for name in set(names):
             counts[name] = counts.get(name, 0) + 1
     return counts
 
 
-def _history(root: Path, notes: list[str]) -> tuple[dict[str, int], int]:
+def _history(root: Path, config: Config, notes: list[str]) -> tuple[dict[str, int], int]:
     """Return the change count of each path, and the window of those counts in days.
 
-    The window is 90 days. It widens to 365 days when the 90-day window holds fewer than 20 commits.
+    The window is change_window_days. It widens to wide_change_window_days when the first
+    window holds fewer than min_window_commits commits.
     """
-    window = WINDOW_DAYS
+    window = config.change_window_days
     with _guarded("the change window", notes):
-        recent = len(commit_file_sets(root, WINDOW_DAYS))
-        window = WINDOW_DAYS if recent >= MIN_COMMITS else WIDE_DAYS
+        recent = len(commit_file_sets(root, config.change_window_days))
+        enough = recent >= config.min_window_commits
+        window = config.change_window_days if enough else config.wide_change_window_days
     counts: dict[str, int] = {}
     with _guarded("the change counts", notes):
         counts = change_counts(root, window)
@@ -161,7 +166,7 @@ def _group_findings(
     """Return the findings of the twin-name, co-change, and duplicate-group signals."""
     found = twin_names(files, config)
     with _guarded("the co-change groups", notes):
-        commits = commit_file_sets(root, CO_CHANGE_DAYS)
+        commits = commit_file_sets(root, config.co_change_days)
         found += co_change_groups(commits, set(files), config)
     with _guarded("the duplicate groups", notes):
         found += duplicate_groups(root, files, config)

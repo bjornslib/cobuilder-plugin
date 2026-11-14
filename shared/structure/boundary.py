@@ -11,6 +11,7 @@ import tokenize
 from collections.abc import Sequence
 from pathlib import Path
 
+from .config import Config
 from .names import folder_of
 from .python_refs import python_refs
 from .records import parse_record
@@ -20,7 +21,6 @@ from .types import Boundary, Finding, Reference, Scan
 
 CONTEXTS_GLOB = "docs/architecture/contexts/*/boundary.yaml"
 CACHE_PREFIX = "plugins/cache/"
-SIBLING_PARSE_MAX = 60
 _SIGNAL = "boundary-edge"
 
 
@@ -84,18 +84,18 @@ def scan_file(rel: str, top: Path, paths: Sequence[str]) -> Scan:
 
 
 def import_groups(
-    folder: str, rels: Sequence[str], top: Path
+    folder: str, rels: Sequence[str], top: Path, config: Config
 ) -> tuple[tuple[tuple[str, ...], ...] | None, tuple[str, ...]]:
     """Return the import groups of the code files in one folder, and the lines that say why.
 
     Two files join one group when one imports the other. A group holds two or more
     files, and the largest group comes first. A folder with more than
-    SIBLING_PARSE_MAX code files is not read, so the groups are None.
+    config.parse_cap code files is not read, so the groups are None.
     """
     siblings = sorted(rel for rel in rels if folder_of(rel) == folder and language_of(rel))
-    if len(siblings) > SIBLING_PARSE_MAX:
+    if len(siblings) > config.parse_cap:
         note = (
-            f"{folder}: {len(siblings)} code files, over the parse cap of {SIBLING_PARSE_MAX}. "
+            f"{folder}: {len(siblings)} code files, over the parse cap of {config.parse_cap}. "
             "The import groups are not read."
         )
         return None, (note,)

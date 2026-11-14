@@ -36,7 +36,8 @@ try:
     from structure.config import Config, drop_excluded, load_config
     from structure.git import GitError, added_lines, merge_base, repo_top, slice_files
     from structure.repo import empty_record, record_here
-    from structure.slice_drift import callers_untouched, drift_part
+    from structure.rename_drift import drift_with_renames
+    from structure.slice_drift import callers_untouched
     from structure.slice_edges import edge_part, prose_rules, read_records
     from structure.slice_reuse import copy_part, locality_part
     from structure.slice_vocab import vocabulary_part
@@ -77,7 +78,7 @@ def _analyse(root: Path, base: str, config: Config, notes: list[str]) -> dict[st
     diff = set(added) | set(modified)
     parse = _yaml_parse if yaml is not None else None
     boundaries, record_notes = read_records(root, parse)
-    drift, moves, drift_notes = drift_part(root, base, modified, diff, config)
+    drift, moves, drift_notes = drift_with_renames(root, base, modified, diff, config)
     edges, edge_notes = edge_part(root, base, added, modified, boundaries)
     copies, copy_notes = copy_part(root, base, added, modified, config)
     locality, locality_notes = locality_part(root, added, config)

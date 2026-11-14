@@ -91,6 +91,10 @@ def test_config_defaults_match_the_design():
     assert config.folder_limit == 20
     assert config.percentile == 90
     assert config.min_folders == 10
+    assert (config.examples_max, config.parse_cap, config.caller_cap) == (5, 60, 10)
+    assert (config.locality_min_importers, config.layer_limit) == (2, 3)
+    assert (config.co_change_min_support, config.co_change_min_jaccard) == (5, 0.5)
+    assert (config.change_window_days, config.wide_change_window_days) == (90, 365)
     assert set(config.code_extensions) == {
         ".py", ".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".php",
         ".java", ".rb", ".go", ".rs", ".kt", ".cs", ".swift",

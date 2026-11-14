@@ -14,7 +14,7 @@ from .folders import crowded_folder, folder_counts, folder_limit
 from .git import slice_files
 from .locality import Graph, consumer_locality
 from .names import first_token, folder_of, generic_name, is_code, is_test_name, stem_cluster
-from .slice_drift import drift_part
+from .rename_drift import drift_with_renames
 from .slice_edges import edge_findings
 from .types import Boundary, Finding
 
@@ -83,10 +83,10 @@ def boundary_findings(
     return found
 
 
-def locality_findings(graph: Graph, product: list[str]) -> list[Finding]:
+def locality_findings(graph: Graph, product: list[str], config: Config) -> list[Finding]:
     """Return one consumer-locality finding for each product file that the layer rules keep."""
     found: list[Finding] = []
-    for entry in consumer_locality(graph, product):
+    for entry in consumer_locality(graph, product, config):
         facts = {key: value for key, value in entry.items() if key != "path"}
         found.append(Finding("consumer-locality", entry["path"], folder_of(entry["path"]), facts))
     return found
@@ -97,7 +97,7 @@ def drift_findings(root: Path, since: str, config: Config, notes: list[str]) -> 
     raw = slice_files(root, since)
     modified = drop_excluded(raw["modified"], config)[0]
     diff = set(drop_excluded(raw["added"], config)[0]) | set(modified)
-    items, _moves, problems = drift_part(root, since, modified, diff, config)
+    items, _moves, problems = drift_with_renames(root, since, modified, diff, config)
     notes.extend(problems)
     return [_from_mapping(item) for item in items]
 
