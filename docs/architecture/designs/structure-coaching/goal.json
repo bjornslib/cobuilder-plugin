@@ -92,6 +92,12 @@
       "slug": "refactor-skill",
       "title": "An /architect:refactor skill reads the E6 findings file and plans refactor slices. This epic is in the backlog, after E6.",
       "outcome": "The skill turns the ranked whole-repository findings into a refactor plan that /implement:start can build."
+    },
+    {
+      "id": "E9",
+      "slug": "follow-ups",
+      "title": "Follow-ups after the replay: review mode proposes a backlog design from its debt findings, and four smaller fixes.",
+      "outcome": "Review mode turns confirmed debt into a proposed backlog design, the scripted loop gives VALIDATE a slice base, and the four known gaps are closed."
     }
   ],
   "supersedes": null,
