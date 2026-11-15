@@ -75,12 +75,14 @@ integrate this one.`
 
 const RED_SCHEMA = {
   type: 'object',
-  required: ['testFiles', 'newFailingTests', 'failuresAreAssertions', 'preexistingPassCount'],
+  required: ['testFiles', 'newFailingTests', 'failuresAreAssertions', 'preexistingPassCount', 'sliceBase'],
   properties: {
     testFiles: { type: 'array', items: { type: 'string' } },
     newFailingTests: { type: 'integer' },
     failuresAreAssertions: { type: 'boolean', description: 'false if any new test fails on an import/collection/syntax error rather than an assertion' },
     preexistingPassCount: { type: 'integer' },
+    sliceBase: { type: 'string', description: 'the full sha from git rev-parse HEAD, run before RED writes any file' },
+    dirtyFiles: { type: 'array', items: { type: 'string' }, description: 'the paths that git status --porcelain lists before RED writes any file' },
     notes: { type: 'string' },
   },
 }
@@ -199,6 +201,9 @@ epic design doc: ${epicDesignDoc}
 04-slices.md: ${plan}/04-slices.md
 test command: ${testCommand}
 
+Before you write any file, run git rev-parse HEAD. Report its full sha as sliceBase.
+Then run git status --porcelain. Report each path it lists as dirtyFiles.
+
 ${scopeContract(s)}
 ${BLIND}`,
     { label: `red:slice-${s.id}`, phase: 'Red', schema: RED_SCHEMA, model: BUILD_MODEL, agentType: 'implement:red' },
@@ -208,12 +213,21 @@ ${BLIND}`,
     results.push({ slice: s, verdict: 'ERROR', reason: 'RED agent returned nothing' })
     continue
   }
+  // The packet and the slice diff both start at sliceBase, so the slice cannot run without it.
+  if (!red.sliceBase) {
+    results.push({ slice: s, verdict: 'ERROR', reason: 'RED did not report sliceBase', red })
+    break
+  }
+  if (red.dirtyFiles && red.dirtyFiles.length) {
+    log(`Slice ${s.id}: the work tree held uncommitted files before RED. They enter the slice diff from ${red.sliceBase}: ${red.dirtyFiles.join(', ')}`)
+  }
   if (!red.failuresAreAssertions) {
     log(`Slice ${s.id}: RED produced tests that fail on errors, not assertions — the contract is not real. Skipping to report.`)
     results.push({ slice: s, verdict: 'VOID', reason: 'RED tests fail on errors, not assertions', red })
     continue
   }
 
+  const packet = `${evidence}/slice-${s.id}-packet.json`
   let attempt = 0
   let verdict = null
   let last = null
@@ -249,7 +263,13 @@ ${evidence}/slice-${s.id}-browser.md recording the page(s) you loaded, the
 actions you took, a screenshot or DOM excerpt proving the behavior, and the
 full console log for that session. A run with a console error in it is not
 evidence of a working slice — fix the error before reporting. Report the
-file's path as browserEvidencePath.` : ''}`,
+file's path as browserEvidencePath.` : ''}
+
+After the checks in step 3 of your body pass, commit this attempt on the current feature branch.
+Run git add with the failing test files and each file you changed, and nothing else.
+Then run git commit -m "slice ${s.id} attempt ${attempt}: <one-line summary>".
+When nothing changed, skip the commit and say so in your report.
+Never run git push.`,
       { label: `green:slice-${s.id}:a${attempt}`, phase: 'Green', schema: GREEN_SCHEMA, model: BUILD_MODEL, agentType: 'implement:green' },
     )
 
@@ -262,7 +282,8 @@ file's path as browserEvidencePath.` : ''}`,
     // VALIDATE scores this attempt against the blind rubric. VOCABULARY
     // checks the same diff against DDD-VOCABULARY.md. Neither reads the
     // other's output, so they run together instead of one after the other.
-    const diffCommand = 'git diff HEAD; git status --porcelain'
+    // Both read the diff from the slice base. GREEN commits each attempt, so a diff from HEAD is empty.
+    const diffCommand = `git diff ${red.sliceBase}; git status --porcelain`
     // parallel() is the Workflow runtime's own global, not a local helper.
     const [v, vocab] = await parallel([
       () => agent(
@@ -274,6 +295,10 @@ feedback file (if it exists): ${evidence}/slice-${s.id}-feedback.md
 test command: ${testCommand}
 this is attempt ${attempt} of ${MAX_ATTEMPTS}
 accept threshold: ${ACCEPT}
+GREEN commits each attempt, so a diff from HEAD is empty. Read the slice diff with the diff command below.
+diff command: ${diffCommand}
+structure evidence: uv run \${CLAUDE_PLUGIN_ROOT}/shared/structure_evidence.py --base ${red.sliceBase} --out ${packet}
+structure judgment: \${CLAUDE_PLUGIN_ROOT}/skills/build/references/structure-judgment.md
 ${s.browserEvidence ? `\nThis slice requires browser evidence. Read
 ${green.browserEvidencePath || `${evidence}/slice-${s.id}-browser.md`}. Score
 every browser-related criterion 0.0, with that fact as the cited evidence, if
@@ -288,6 +313,7 @@ append the same block to ${evidence}/slice-${s.id}-feedback.md.`,
         `slug: ${slug}
 slice: ${s.id} — "${s.name}"
 diff command: ${diffCommand}
+structure packet: ${packet}. VALIDATE writes it with uv run \${CLAUDE_PLUGIN_ROOT}/shared/structure_evidence.py --base ${red.sliceBase} --out ${packet}
 this is attempt ${attempt} of ${MAX_ATTEMPTS}
 
 Append your "### Vocabulary" section to

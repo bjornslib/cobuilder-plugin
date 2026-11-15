@@ -1,13 +1,13 @@
 {
   "schema_version": "1.5",
   "sources": {
-    "git_head": "b044ff1ca3ac3e29084b95f74e3c47bdb7a5d13e",
+    "git_head": "40237f4de96d171b2b1d23b2d55ed1dbe87b876b",
     "trees": {
       "docs/architecture/adr": "sha256:20ca2f731683a3c296a2c76de4eeab9d4a6a07fcfeab163272cc78709195785d",
       "docs/architecture/designs": "sha256:36064aebf0a1a2af87ad4d9703cbe56dd3a2a7bc59f11b4f00a2252e6dcd20c9",
       "docs/architecture/contexts": "sha256:8ca7133e5a38a3c614862d9fb6550d40e2333ff772d6d7a4bd3a786914327670",
-      "docs/plans": "sha256:4bdfaf5e222ffe5305f243f2d225aaa72c3cc30fd051fca1262abfe16913fd71",
-      ".cobuilder/rubrics": "sha256:82e75de82e6a976a8c8f9c602d5baba8c877873a022ecf7b74641cd76d5a07a6"
+      "docs/plans": "sha256:59d178578cc1d4369212d2fdb29ed5a25f5e6316e492ba886f8d770990dad9cb",
+      ".cobuilder/rubrics": "sha256:8fa6a742939328489ad8fe718b9be9f2fce3f129f98ff498c87b157376f5415e"
     }
   },
   "entities": {
@@ -5161,9 +5161,9 @@
         "n": 17,
         "title": "The scripted loop gives VALIDATE and the vocabulary agent a slice base and a packet path",
         "ends_with": "`slice-loop.js` takes the slice base from RED, GREEN commits each attempt, and VALIDATE gets the base and the out path. A packet of the second slice holds only that slice.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "structure-coaching/18",
@@ -9172,7 +9172,7 @@
       },
       "structure-coaching": {
         "stage_source": "tracker",
-        "next_ready": "structure-coaching/17",
+        "next_ready": "structure-coaching/18",
         "pull_requests": []
       },
       "tracker-slice-edit": {

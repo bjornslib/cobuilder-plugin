@@ -219,7 +219,7 @@ to multi-agent orchestration before running the script. Invoke it with
 input only looks up built-in or `.claude/workflows/`-registered workflows,
 not plugin-shipped scripts. The script also has no filesystem access, so
 each slice's `epicDesignExists` must be computed and passed in by the
-orchestrating session (see the script's own args comment). The script does not run the agent-use check. Before the main session records a PASS from the script, it runs the check for that slice. The script also passes no structure values to VALIDATE or to the vocabulary agent. In this mode, both agents work from the diff alone, and VALIDATE names the missing packet on its `Script:` line.
+orchestrating session (see the script's own args comment). The script does not run the agent-use check. Before the main session records a PASS from the script, it runs the check for that slice. RED reports `sliceBase`, the full sha from `git rev-parse HEAD`, before it writes a file. GREEN commits each attempt with `git commit` on the feature branch, and VALIDATE and the vocabulary agent get `--base <sliceBase>` and `--out <packet path>`. A failed attempt leaves a commit that git can roll back, and the diff from `sliceBase` still covers every attempt.
 
 ---
 
