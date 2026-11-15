@@ -85,9 +85,11 @@ These rules prefer caution to speed. For a trivial task, use judgment.
    - Act on your own recommendation when the action is local, can be undone,
      and gives a clear gain. Examples: edit a file, run a test, or commit on a
      feature branch.
-   - Ask first when the action leaves the machine, such as a push, a pull
-     request, or a merge. Also ask first when the action changes behavior
-     outside the request, or when two answers cost differently.
+   - Ask first before you open a pull request, merge a branch, or push to
+     master or main. A push to a feature branch or a new branch needs no
+     question, because git can roll it back. Also ask first when the action
+     changes behavior outside the request, or when two answers cost
+     differently.
    - Only an ask-first question may end "With no answer, I do nothing". For a
      local action, do it and report it.
    - Give each action you took without being asked one line under Summary, so
@@ -174,8 +176,9 @@ tests/                            pytest suite for packaging, scripts, and gates
 6. **Never overwrite authored content.** `extract_story.py` keeps authored
    narrative fields. A data migration declares the fields it touches. Its guard
    stops the run before any write that changes another authored field.
-7. **Outside the bundle, only two actions.** `pr:generate` may push and open a
-   PR, after an explicit confirmation. Nothing else on GitHub is in scope.
+7. **Outside the bundle, only two actions.** An agent may push a feature
+   branch or a new branch without a question. `pr:generate` may open a PR
+   after an explicit confirmation. Nothing else on GitHub is in scope.
 8. **Verify before you trust.** A slice is done when an independent validator
    scores it 0.90 or higher against a blind rubric. A self-report is not
    evidence.

@@ -32,12 +32,13 @@ lives in the `architecture` skill. See that skill's own `SKILL.md`.
 
 **This skill never edits application source.** The sanctioned writes are the
 bundle directory (`<bundle-dir>`, see Hub resolution below), `docs/`
-(self-only: reviews and pull-request files), and the confirmed
-`git push` / `gh pr create` of Generate mode. Baseline, Review, View, and
-Publish read the target, and write only inside the bundle. Generate mode
-takes the one action outside the bundle. That action is narrow. After an
-explicit confirmation, it pushes the branch and runs `gh pr create`. It
-still writes no application source, and it takes no other outward action.
+(self-only: reviews and pull-request files), the `git push` of a feature
+branch, and the confirmed `gh pr create` of Generate mode. Baseline, Review,
+View, and Publish read the target, and write only inside the bundle. Generate mode
+takes the two actions outside the bundle. Both are narrow. After an
+explicit confirmation, it runs `gh pr create`. It pushes a feature branch
+without asking. It still writes no application source, and it takes no other
+outward action.
 It posts no comments, edits no existing PR body, sets no labels, adds no
 reviewers, and performs no merges. See Generate mode.
 
@@ -743,17 +744,17 @@ tiers.
 Assess first, create second. The assessment is part of the author's
 decision about whether to open the PR at all.
 
-1. **Make sure the branch is pushed.** If `git rev-parse --abbrev-ref
-   --symbolic-full-name @{u}` finds no upstream, the branch needs
-   `git push -u origin <branch>` before `gh pr create` can work.
+1. **Push the feature branch.** Push a feature branch without asking.
+   A push to master or main still needs a confirmation. If
+   `git rev-parse --abbrev-ref --symbolic-full-name @{u}` finds no
+   upstream, run `git push -u origin <branch>` before `gh pr create`.
 
-2. **Confirm once, covering both outward actions.** Show the author the
+2. **Confirm once, before the pull request opens.** Show the author the
    rendered description, the base branch, the verdict, and the risk
-   tier. Then ask to "push `<branch>` and open a PR against `<base>`".
-   Pushing a branch and opening a PR are public actions, and they are
-   hard to walk back. **Nothing fires without this confirmation**, not
-   with `--force`, and not in `--non-interactive`, which takes the
-   `--no-create` path instead.
+   tier. Then ask to "open a PR against `<base>`". Opening a PR is a
+   public action, so this confirmation covers it. **Nothing opens
+   without this confirmation**, not with `--force`, and not in
+   `--non-interactive`, which takes the `--no-create` path instead.
    - A `rework` verdict does not block anything. Offer three ways
      forward: open it, open it as a draft, or stop and fix first. Let the
      author pick. This mode reports. It never gates.
@@ -846,8 +847,9 @@ This stage runs after the PR merges. Run the same steps 1 through 4, then:
   pull-request files). `<target>/.env` is a read-only check, never
   written by this skill. `git push` and `gh pr create` in Generate mode
   are the only actions that reach past this line. They never write a
-  source file, and they run only after the explicit confirmation in
-  Generate mode. Design Mode, in the `architecture` skill, writes
+  source file. The push of a feature branch needs no question. The
+  `gh pr create` runs only after the explicit confirmation in Generate
+  mode. Design Mode, in the `architecture` skill, writes
   `docs/architecture/designs/` and creates the first local branch after
   confirmation. It never pushes, and never opens a pull request.
 

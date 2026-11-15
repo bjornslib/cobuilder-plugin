@@ -159,7 +159,7 @@ The assessment asks four things a diff cannot show:
 
 The verdict is `sound`, `concerns`, or `rework`. It never blocks a merge. The command also records whether the change is `human`, `agent-assisted`, or `agent-generated`, and which parts the author cannot explain.
 
-Opening the pull request is the only GitHub action. The command shows you the description and asks first.
+Pushing a feature branch and opening the pull request are the two GitHub actions. The command pushes the feature branch without asking. It shows you the description and asks before it opens the pull request.
 
 ```
 /pr:generate --no-create          # write the files, open nothing
