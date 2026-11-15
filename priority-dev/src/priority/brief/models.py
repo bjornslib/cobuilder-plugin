@@ -32,6 +32,13 @@ class AfterLine:
 
 
 @dataclass(frozen=True)
+class OpenQuestion:
+    """A question the agent asked at the stop: its text and the labels of its options."""
+    question: str
+    labels: tuple[str, ...]
+
+
+@dataclass(frozen=True)
 class TextItem:
     text: str
     type: str = "text"
@@ -85,6 +92,11 @@ class StopBrief:
     session_id: str = ""
     stop: str = ""
     digest_label: str = "PREVIOUS RUN"  # "CURRENT RUN" when the digest is of this stop's own run
+    open_questions: tuple[OpenQuestion, ...] = ()
+
+    @property
+    def stop_kind(self) -> str:
+        return "question" if self.open_questions else "turn_end"
 
     def for_model(self) -> str:
         return BriefText(self._render(exclude_older_payloads=False))
@@ -122,9 +134,19 @@ class StopBrief:
             lines.append("CLIENT MESSAGE:")
             for msg in self.client_messages:
                 lines.append(msg)
+        lines += self._question_lines()
         for line in self.after_stop:
             if line.source == "human":
                 lines.append(f"[human] {line.text}")
+        return lines
+
+    def _question_lines(self) -> list[str]:
+        if not self.open_questions:
+            return []
+        lines = ["OPEN QUESTION:"]
+        for item in self.open_questions:
+            lines.append(item.question)
+            lines.extend(f"- {label}" for label in item.labels)
         return lines
 
     def _render_previous(self) -> list[str]:

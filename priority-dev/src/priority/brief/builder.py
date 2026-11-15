@@ -11,6 +11,7 @@ from priority.brief.models import (
     Ask,
     BriefText,
     HumanItem,
+    OpenQuestion,
     RunItem,
     StopBrief,
     TextItem,
@@ -106,13 +107,33 @@ def _check_budget(brief: StopBrief) -> Abstain | None:
     )
 
 
+def _open_questions(raw: list[dict[str, Any]] | None) -> tuple[tuple[OpenQuestion, ...], int]:
+    """The open questions with their text redacted, and the number of redactions."""
+    redactions = 0
+
+    def clean(text: str) -> str:
+        nonlocal redactions
+        result, count = redact_with_count(text)
+        redactions += count
+        return result
+
+    questions = tuple(
+        OpenQuestion(question=clean(item["question"]),
+                     labels=tuple(clean(option["label"]) for option in item["options"]))
+        for item in raw or ()
+    )
+    return questions, redactions
+
+
 def build_brief(transcript: Path, stop: int | None = None, previous: Any = None, *,
                 shrink_lm: Any = None, log_dir: Path | str | None = None,
-                digest_label: str = "PREVIOUS RUN") -> StopBrief | Abstain:
+                digest_label: str = "PREVIOUS RUN",
+                open_questions: list[dict[str, Any]] | None = None) -> StopBrief | Abstain:
     """Build a StopBrief from a transcript path and optional 1-based stop index.
 
     `previous` is the RunDigest of the run before. With `shrink_lm`, an over-budget brief shrinks its largest
-    older inputs and results, one call at a time, until it fits.
+    older inputs and results, one call at a time, until it fits. `open_questions` is a list in the
+    AskUserQuestion input shape, checked by the caller. With it, the stop is a question stop.
     """
     records = read_records(transcript)
     tool_results = collect_tool_results(records)
@@ -136,6 +157,7 @@ def build_brief(transcript: Path, stop: int | None = None, previous: Any = None,
 
     ask_idx, ask_text, ask_redactions = find_ask(classified, target_idx)
     items, final_str, item_redactions = _build_items_and_final(classified, ask_idx, target_idx, tool_results)
+    questions, question_redactions = _open_questions(open_questions)
 
     brief = StopBrief(
         ask=Ask(text=ask_text),
@@ -144,11 +166,12 @@ def build_brief(transcript: Path, stop: int | None = None, previous: Any = None,
         stop_source=stop_source,
         client_messages=client_messages,
         after_stop=tuple(after_stop),
-        redactions=after_redactions + ask_redactions + item_redactions,
+        redactions=after_redactions + ask_redactions + item_redactions + question_redactions,
         previous=previous,
         digest_label=digest_label,
         session_id=transcript.stem,
         stop=f"{stop:03d}",
+        open_questions=questions,
     )
 
     abstain = _check_budget(brief)

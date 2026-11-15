@@ -8,6 +8,7 @@ import sys
 from pathlib import Path
 
 from priority.brief import StopBrief, build_brief
+from priority.brief.questions import QuestionFileError, load_open_questions
 from priority.digest_store import load_digest, save_digest
 from priority.replay import options
 from priority.valset import METHODS, ValsetSize
@@ -19,17 +20,25 @@ DIGEST_LABELS = {"previous": "PREVIOUS RUN", "current": "CURRENT RUN"}
 
 
 def interpret(transcript: Path, stop: int | None, log_dir: Path | None, program: Path | None,
-              digest: str = "previous") -> int:
+              digest: str = "previous", open_question: Path | None = None) -> int:
     """Build the brief, run the interpreter, and print the Prediction fields as one JSON object.
 
-    A saved program loads into the interpreter before the one model call. An Abstain also exits with 0."""
+    A saved program loads into the interpreter before the one model call. An Abstain also exits with 0.
+    A bad question file ends with one line on stderr, before the model call."""
     if program is not None and not program.is_file():
         print(f"interpret failed: no program file at {program}")
         return 1
+    questions = None
+    if open_question is not None:
+        try:
+            questions = load_open_questions(open_question)
+        except QuestionFileError as exc:
+            print(f"interpret failed: {exc}", file=sys.stderr)
+            return 1
     from priority import interpreter  # a lazy import: only this command needs dspy and the key
 
     brief = build_brief(transcript, stop=stop, previous=load_digest(log_dir, transcript.stem),
-                        digest_label=DIGEST_LABELS[digest])
+                        digest_label=DIGEST_LABELS[digest], open_questions=questions)
     if isinstance(brief, StopBrief):
         model = interpreter.Interpreter(interpreter.interpreter_lm(), log_dir=log_dir, session_id=transcript.stem)
         if program is not None:
@@ -43,6 +52,7 @@ def interpret(transcript: Path, stop: int | None, log_dir: Path | None, program:
     else:
         abstain = {"reason": brief.reason, "detail": brief.detail, "raw": ""}
         fields = {"status": None, "needs_human": None, "priority": None, "steps": [], "abstain": abstain}
+    fields["stop_kind"] = "question" if questions else "turn_end"
     print(json.dumps(fields, indent=2))
     return 0
 
@@ -146,6 +156,8 @@ def main(argv: list[str] | None = None) -> int:
                                                  help="A saved program to load before the model call")
     subparsers.choices["interpret"].add_argument("--digest", choices=tuple(DIGEST_LABELS), default="previous",
                                                  help="Whether the stored digest is of the run before or of this run")
+    subparsers.choices["interpret"].add_argument("--open-question", type=Path, default=None,
+                                                 help="A JSON list of open questions in the AskUserQuestion input shape")
 
     replay_parser = subparsers.add_parser("replay", help="Replay the last stop of each transcript of a folder")
     replay_parser.add_argument("fixtures", type=Path, help="Folder with the transcripts (*.jsonl, at any depth)")
@@ -238,7 +250,7 @@ def main(argv: list[str] | None = None) -> int:
             print(res.reason)
         return 0
     if args.command == "interpret":
-        return interpret(args.transcript, args.stop, args.log_dir, args.program, args.digest)
+        return interpret(args.transcript, args.stop, args.log_dir, args.program, args.digest, args.open_question)
     if args.command == "digest":
         return digest(args.transcript, args.stop, args.log_dir)
 
