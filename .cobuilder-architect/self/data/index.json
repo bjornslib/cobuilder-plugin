@@ -1,12 +1,12 @@
 {
   "schema_version": "1.4",
   "sources": {
-    "git_head": "738de88c278dd5ad7769afc0fdd52d48b50809be",
+    "git_head": "11aeb6a2a8637762bda6d2b658531f7157b7df58",
     "trees": {
       "docs/architecture/adr": "sha256:90969144359d2333c3fcd11e4ceb71b64cdddf1ee06c36990087f7f2c99830a8",
       "docs/architecture/designs": "sha256:77408c59737c44b8be3b80d643e8a098036e8da6f345e8ca61e7b30a39ba4f30",
       "docs/architecture/contexts": "sha256:e9537c5da21bf3f32eb547c8c422e8c3eb9acafefb5801143e53491b64ace073",
-      "docs/plans": "sha256:bd437da9da890b171f6ec075214c76d71a3b877cea1c71076562b2fbc5f016ef",
+      "docs/plans": "sha256:c4971e5fb95a9a5fed652cde314e126316ffe5bf8318faa13ef1bd5eeb2c3840",
       ".cobuilder/rubrics": "sha256:5692a7f5dfb80b64c26ad3a1bfb4a9ee04b301dc0a9b680240076ae34d002775"
     }
   },
@@ -4656,9 +4656,9 @@
         "n": 2,
         "title": "**Probe record**",
         "ends_with": "`probe-record.md` states, from a live run: if the call stayed open for two minutes, which answer shape the agent received, what a refused shape showed, and if the transcript held the `tool_use` at the catch. Each answer quotes its `probe.jsonl` line",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "priority-ask-question/3",
