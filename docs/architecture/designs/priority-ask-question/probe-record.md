@@ -34,15 +34,43 @@ probe tests a hold that waits inside `$.process.run`.
 `priority_dev_dir` setting is set, and the engine message alone settles
 this question.
 
+### Second run: `hold-spawn` (2026-11-16)
+
+Answer: held. The hook waited inside `$.process.spawn`, and the engine did
+not cut it.
+
+```
+{"at":"2026-11-15T21:11:36.500Z","kind":"caught","inTranscript":true}
+{"at":"2026-11-15T21:12:17.623Z","kind":"answered","elapsedMs":41131,"shape":"answers-by-question","via":"spawn"}
+```
+
+The hold lasted 41 seconds, four times the budget. A hold of three
+minutes, and Esc during a hold, are not yet measured.
+
 ## 2. Which answer shape does the agent receive?
+
+The engine checks a hook's result against the tool's output schema. The
+first Send failed that check:
+
+```
+tool.call step resolved AskUserQuestion with a result that does not match its output shape:
+"path": ["questions"], "message": "Invalid input: expected array, received undefined"
+```
+
+The schema, from the engine's tool types, is
+`{ questions: [...], answers: { "<question text>": "<answer>" } }`, with a
+multi-select answer comma-joined. `response`, `annotations`, and
+`followUp` are optional. `answers-by-question` now returns the asked
+questions with the answers. `answers-list` and `text` do not fit the
+schema, so E3 uses only the first shape.
 
 Not measured. The engine skips the hook before a person can press Send,
 so no shape reaches the agent from a held call.
 
 ## 3. Is the tool_use in the transcript at the catch?
 
-Not measured. No log line exists. E3 does not need the answer, because the
-reading no longer runs inside the hook.
+Answer: yes. Each `caught` line in both runs has `"inTranscript":true`, so
+the reader can find the open question in the transcript at the catch.
 
 ## 4. The dialog path
 
@@ -51,7 +79,7 @@ its own path, so the dialog opens.
 
 ## 5. Decision for E3
 
-Open. A hold on a plain promise fails at 10 seconds. The second probe
-tests a hold that waits inside `$.process.run`. If that hold lasts two
-minutes, E3 holds the call in the pane. If it fails, E3 uses the fallback:
-the dialog stays, and the pane reads that point beside it.
+Hold, with the wait inside `$.process.spawn`. A hold on a plain promise
+fails at 10 seconds, and a hold inside a `$` call lasted 41 seconds. The
+answer must match the tool's output schema. Two checks stay open before E3
+ships: a hold of three minutes, and Esc during a hold.

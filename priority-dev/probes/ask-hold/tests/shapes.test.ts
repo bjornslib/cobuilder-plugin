@@ -7,7 +7,7 @@ const LINT = [QUESTIONS[0]!]
 const CHECKS = [QUESTIONS[1]!]
 
 test('answers-by-question gives the one label of a single answer, keyed by the question', async () => {
-  expect(answerOf('answers-by-question', LINT, { 0: ['Format'] }), 'one label under its question').toEqual({ answers: { 'Which lint?': 'Format' } })
+  expect(answerOf('answers-by-question', LINT, { 0: ['Format'] }), 'one label under its question').toEqual({ questions: LINT, answers: { 'Which lint?': 'Format' } })
 })
 
 test('answers-by-question joins a multi-select answer with commas', async () => {
@@ -16,7 +16,7 @@ test('answers-by-question joins a multi-select answer with commas', async () => 
 })
 
 test('answers-by-question gives the Other text as the answer', async () => {
-  expect(answerOf('answers-by-question', LINT, { 0: ['my own answer'] }), 'the free text under its question').toEqual({ answers: { 'Which lint?': 'my own answer' } })
+  expect(answerOf('answers-by-question', LINT, { 0: ['my own answer'] }), 'the free text under its question').toEqual({ questions: LINT, answers: { 'Which lint?': 'my own answer' } })
 })
 
 test('answers-list gives one entry per question, with the single answer', async () => {

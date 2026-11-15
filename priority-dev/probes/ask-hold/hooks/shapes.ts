@@ -8,7 +8,8 @@ const pairsOf = (questions: Question[], picks: Picks) =>
 export function answerOf(shape: ShapeId, questions: Question[], picks: Picks): unknown {
   switch (shape) {
     case 'answers-by-question':
-      return { answers: Object.fromEntries(pairsOf(questions, picks).map((p) => [p.question, p.answer])) }
+      // The engine checks this against the tool's output schema: the asked questions, then answers by question text.
+      return { questions, answers: Object.fromEntries(pairsOf(questions, picks).map((p) => [p.question, p.answer])) }
     case 'answers-list':
       return { answers: pairsOf(questions, picks) }
     case 'text':
