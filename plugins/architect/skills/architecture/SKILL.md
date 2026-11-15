@@ -311,6 +311,7 @@ hand-off.
     - The section also lists the folder table rows that the reference names.
     - When the script fails, the section says so and claims no clean result.
     - The section never changes the review score.
+    - When a finding holds the judgment `debt`, follow "Propose a backlog design" in `references/structure-review.md`. When the engineer does not decline, that section writes `docs/architecture/designs/<name>/goal.json`.
 
 Survivors enter the normal P0/P1/P2 severity flow below. The scoring rubric, impact taxonomy, size categorisation, and both report templates need no changes.
 

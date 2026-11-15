@@ -98,6 +98,48 @@ A record with `not_analysed` lines is partial. Write each line into the section.
 
 A record with no finding and no `not_analysed` line holds no finding. The section says so.
 
+## Propose a backlog design
+
+Review mode proposes a backlog design from the `debt` findings. Design mode decides it, as ADR-0035 sets. This step starts no build and creates no slice.
+
+Group the `debt` findings by one reason to change. Findings that one change would fix share a group. Each group becomes one planned epic. Leave out each finding that holds `accepted` or `false`.
+
+When no finding holds `debt`, write nothing. Tell the engineer so.
+
+Propose a name in kebab case, such as `debt-follow-up`, that no design uses yet. Never overwrite an existing `goal.json`.
+
+Ask the engineer with `AskUserQuestion`. Show the name, the groups, and the findings of each group. The engineer confirms the judgments and the groups, or changes them. Wait for the answer.
+
+When the engineer declines, write nothing. The step ends there.
+
+Otherwise, write `docs/architecture/designs/<name>/goal.json` from the final groups, with these keys:
+
+- `name`: the design name.
+- `title`: a short title for the design.
+- `outcome`: the state that the backlog design reaches.
+- `done_when` and `abort_if`: empty lists, written as `[]`.
+- `epics`: one object for each group.
+
+Each epic has these keys:
+
+- `id`: `E1`, `E2`, and so on.
+- `slug`: a short name in kebab case.
+- `title`: a short title for the epic.
+- `outcome`: one testable state that the epic reaches.
+- `findings`: the `key` of each finding in the group, from the record.
+
+Set the program stage through the tracker. Run these calls in order:
+
+1. Run `uv run "${CLAUDE_PLUGIN_ROOT}/shared/tracker.py" sync`.
+2. Run `uv run "${CLAUDE_PLUGIN_ROOT}/shared/tracker.py" set-program-stage <name> backlog --plans-dir docs/plans`.
+3. Run `uv run "${CLAUDE_PLUGIN_ROOT}/shared/tracker.py" sync`.
+
+Exit 2 means the repo does not have a tracker. When a call exits 2, skip the remaining calls. In that case, write `"stage": "backlog"` into `goal.json`.
+
+On any other exit code, stop and tell the engineer the error message.
+
+Name `/architect:design` as the next step for the engineer. Design mode decides the backlog design.
+
 ## The advice rule
 
 A structure signal is advice, and ADR-0048 sets that rule. The record is advice too. It never changes the review score unless the engineer decides that it should. Keep the `## Structure` section outside the score.

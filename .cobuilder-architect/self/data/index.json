@@ -1,13 +1,13 @@
 {
   "schema_version": "1.5",
   "sources": {
-    "git_head": "2324f61f9bd347799cf82264a7511c28395d69bf",
+    "git_head": "4d1825c183e766de4197a8f85324b9f309f6431f",
     "trees": {
       "docs/architecture/adr": "sha256:20ca2f731683a3c296a2c76de4eeab9d4a6a07fcfeab163272cc78709195785d",
       "docs/architecture/designs": "sha256:36064aebf0a1a2af87ad4d9703cbe56dd3a2a7bc59f11b4f00a2252e6dcd20c9",
       "docs/architecture/contexts": "sha256:9493f2d3ae353ca69d059c875d091fa366015e74dceaa43db115d0f72cd63e81",
-      "docs/plans": "sha256:2584505a77536d37aa55dbd2f4666b1dbfd1527541561fe0cecea86d3c928350",
-      ".cobuilder/rubrics": "sha256:a1960d3aff8d707f6ed673077597c537864f080105b665f86c6504ae465ea6d8"
+      "docs/plans": "sha256:7de0adf20f90dcafd5101472f8834415710e2a74fb7c673e564c1d11c9b616ea",
+      ".cobuilder/rubrics": "sha256:c34ddb90fa9726c865476724ee297b391a4a5e143d4b149c366c353d0510d22b"
     }
   },
   "entities": {
@@ -5141,9 +5141,9 @@
         "n": 15,
         "title": "Review mode proposes a backlog design from the confirmed debt findings",
         "ends_with": "A blind review agent with a fixture record groups the debt findings and writes a backlog `goal.json` with one planned epic for each group, and each epic cites its findings. It starts no build.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "structure-coaching/16",
@@ -9172,7 +9172,7 @@
       },
       "structure-coaching": {
         "stage_source": "tracker",
-        "next_ready": "structure-coaching/15",
+        "next_ready": "structure-coaching/16",
         "pull_requests": []
       },
       "tracker-slice-edit": {
