@@ -1,59 +1,57 @@
 # Probe record: priority-ask-question, E1
 
-Slice 2. The engineer fills this record from a live run of the probe
-`priority-dev/probes/ask-hold`. Its README gives the steps. Quote each
-answer from `probe.jsonl`.
+Slice 2. The engineer ran the probe `priority-dev/probes/ask-hold` in a
+live session with `/ask-probe hold`.
 
-Claude Code version: _(run `claude --version`)_
-Date: _
+Claude Code version: 2.1.325
+Date: 2026-11-16
 
 ## What the test kit already showed
-
-The mod tests run in `claude plugin test`, not in a live session. There:
 
 - The kit cut off a held `tool.call` hook at 10000 ms, and the `.catch`
   handler logged `cut-off` with the kind `timeout`.
 - While a call was held, each find or press in the kit took about 500 ms.
 
-A live session may use another budget. The questions below need the
-live answer.
-
 ## 1. Does the call stay open for two minutes?
 
-Answer: held | cut off at _ seconds | not measured
-Log line:
+Answer: cut off at 10 seconds.
+
+The live session showed this engine message:
 
 ```
+ask-hold-probe: tool.call hook skipped: ran past its 10s budget
 ```
+
+A live session uses the same 10-second budget as the test kit. The engine
+skips the hook when the budget runs out. The budget is a fixed engine value
+(`HookBudget.ms: 10_000`), so a plugin cannot raise it.
+
+The budget counts only the hook's own time. The probe waited on a plain
+promise, which counts. A wait inside a `$` call does not count, so a second
+probe tests a hold that waits inside `$.process.run`.
+
+`probe.jsonl` holds no lines. The probe writes its log only when the
+`priority_dev_dir` setting is set, and the engine message alone settles
+this question.
 
 ## 2. Which answer shape does the agent receive?
 
-| Shape | What the agent received | Log line |
-|---|---|---|
-| answers-by-question | | |
-| answers-list | | |
-| text | | |
-
-Engine error text for a refused shape:
-
-```
-```
+Not measured. The engine skips the hook before a person can press Send,
+so no shape reaches the agent from a held call.
 
 ## 3. Is the tool_use in the transcript at the catch?
 
-Answer: `inTranscript` = _
-Log line:
-
-```
-```
+Not measured. No log line exists. E3 does not need the answer, because the
+reading no longer runs inside the hook.
 
 ## 4. The dialog path
 
-With `/ask-probe pass`, did the dialog open, and did a `passed` line
-appear?
-
-Answer: _
+Not measured separately. After the skip, the engine handles the call on
+its own path, so the dialog opens.
 
 ## 5. Decision for E3
 
-Hold | fallback. Reason: _
+Open. A hold on a plain promise fails at 10 seconds. The second probe
+tests a hold that waits inside `$.process.run`. If that hold lasts two
+minutes, E3 holds the call in the pane. If it fails, E3 uses the fallback:
+the dialog stays, and the pane reads that point beside it.

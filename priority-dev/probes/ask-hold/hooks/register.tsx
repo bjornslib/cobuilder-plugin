@@ -1,5 +1,6 @@
-import { atom, read, update, type EngineInterface, type PluginOptions, type Register } from 'claude-code'
+import { atom, read, update, type EngineInterface, type PluginOptions, type Register, type ToolCallResult } from 'claude-code'
 import { answerOf } from './shapes'
+import { holdInChild, spawnPaths } from './spawn'
 import type { Held, Mode, Picks, Question, ShapeId } from '../types'
 
 type Ui = ReturnType<EngineInterface['ui']['resolve']>
@@ -10,6 +11,7 @@ export type ProbeEvent = {
   kind: 'caught' | 'passed' | 'answered' | 'refused' | 'cut-off'
   elapsedMs?: number
   shape?: ShapeId
+  via?: 'spawn'
   inTranscript?: boolean
   detail?: string
 }
@@ -20,8 +22,8 @@ const tickAtom = atom({ plugin: 'ask-hold-probe', key: 'tick' } as const, 0)
 
 const PANE_ID = 'ask-hold'
 const SHAPES: ShapeId[] = ['answers-by-question', 'answers-list', 'text']
-const MODES: Mode[] = ['hold', 'pass', 'off']
-const COMMANDS = [{ name: 'ask-probe', description: 'Hold each AskUserQuestion call of the main loop in the probe pane', argumentHint: 'hold|pass|off' }]
+const MODES: Mode[] = ['hold', 'hold-spawn', 'pass', 'off']
+const COMMANDS = [{ name: 'ask-probe', description: 'Hold each AskUserQuestion call of the main loop in the probe pane', argumentHint: 'hold|hold-spawn|pass|off' }]
 
 let release: ((st: Held) => void) | null = null
 let ticker: { cancel: () => void } | null = null
@@ -99,12 +101,22 @@ function stopTicker(): void {
   ticker = null
 }
 
-async function cutOff($: EngineInterface, options: PluginOptions, failure?: { kind: string; message?: string; budget: number }): Promise<void> {
+async function closeHold($: EngineInterface): Promise<void> {
   stopTicker()
   release = null
   await update($, heldAtom, () => null)
+}
+
+async function cutOff($: EngineInterface, options: PluginOptions, failure?: { kind: string; message?: string; budget: number }): Promise<void> {
+  await closeHold($)
   const detail = `${failure?.kind ?? 'unknown'}${failure?.message ? `: ${failure.message}` : ''} (budget ${failure?.budget ?? 0} ms)`
   await log($, options, { kind: 'cut-off', detail })
+}
+
+async function openPane($: EngineInterface, questions: Question[], startedAt: number): Promise<void> {
+  await update($, heldAtom, () => ({ questions, picks: {}, other: {}, shape: 'answers-by-question', startedAt }))
+  await $.ui.open({ id: PANE_ID, title: 'Ask hold', focus: true })
+  ticker = $.clock.every(1000, () => void update($, tickAtom, (n: number) => n + 1))
 }
 
 async function holdCall($: EngineInterface, options: PluginOptions, e: { tool_use_id: string; questions?: Question[] }) {
@@ -113,17 +125,37 @@ async function holdCall($: EngineInterface, options: PluginOptions, e: { tool_us
   const sent = new Promise<Held>((resolve) => {
     release = resolve
   })
-  await update($, heldAtom, () => ({ questions: e.questions ?? [], picks: {}, other: {}, shape: 'answers-by-question', startedAt }))
-  await $.ui.open({ id: PANE_ID, title: 'Ask hold', focus: true })
-  ticker = $.clock.every(1000, () => void update($, tickAtom, (n: number) => n + 1))
+  await openPane($, e.questions ?? [], startedAt)
   await caught
   const st = await sent
-  stopTicker()
-  release = null
-  await update($, heldAtom, () => null)
+  await closeHold($)
   const result = answerOf(st.shape, st.questions, picksOf(st))
   await log($, options, { kind: 'answered', elapsedMs: Date.now() - startedAt, shape: st.shape })
   return { result }
+}
+
+type Pass = { signal: AbortSignal; next: () => Promise<ToolCallResult> }
+
+async function holdSpawnCall($: EngineInterface, options: PluginOptions, e: { tool_use_id: string; questions?: Question[] }, pass: Pass): Promise<ToolCallResult> {
+  const startedAt = Date.now()
+  const caught = noteCaught($, options, e.tool_use_id)
+  const sent = new Promise<Held>((resolve) => {
+    release = resolve
+  })
+  await openPane($, e.questions ?? [], startedAt)
+  await caught
+  const paths = spawnPaths(await $.session.cwd(), e.tool_use_id)
+  const outcome = await holdInChild($, paths, sent.then((st) => answerOf(st.shape, st.questions, picksOf(st))))
+  // Esc kills the child; the engine has moved on, so touch nothing more.
+  if (pass.signal.aborted) return { deny: 'The person interrupted the question.' }
+  await closeHold($)
+  if (outcome.kind === 'cut-off') {
+    await log($, options, { kind: 'cut-off', detail: outcome.detail })
+    return pass.next()
+  }
+  const st = await sent
+  await log($, options, { kind: 'answered', elapsedMs: Date.now() - startedAt, shape: st.shape, via: 'spawn' })
+  return { result: outcome.result }
 }
 
 function optionRow($: EngineInterface, ui: Ui, st: Held, q: Question, i: number) {
@@ -179,7 +211,7 @@ export const register: Register = (on, options) => {
 
   on('command.run', { command: 'ask-probe' }, async ($, e) => {
     const mode = e.args.trim()
-    if (!isMode(mode)) return { text: 'Use /ask-probe hold, pass, or off.' }
+    if (!isMode(mode)) return { text: 'Use /ask-probe hold, hold-spawn, pass, or off.' }
     await update($, modeAtom, () => mode)
     return { text: `The ask probe is ${mode}.` }
   })
@@ -187,10 +219,13 @@ export const register: Register = (on, options) => {
   on('tool.call', { tool: 'AskUserQuestion' }, async ($, e, next) => {
     const mode = await read($, modeAtom)
     if (e.agentId === undefined && mode === 'pass') await log($, options, { kind: 'passed' })
-    if (e.agentId !== undefined || mode !== 'hold') return next(e)
-    return holdCall($, options, e as { tool_use_id: string; questions?: Question[] })
+    if (e.agentId !== undefined || (mode !== 'hold' && mode !== 'hold-spawn')) return next(e)
+    const call = e as { tool_use_id: string; questions?: Question[] }
+    if (mode === 'hold-spawn') return holdSpawnCall($, options, call, { signal: next.signal, next: () => next(e) })
+    return holdCall($, options, call)
   }).catch(async ($, _e, next) => {
     await cutOff($, options, next.error)
+    return undefined
   })
 
   on('ui.render', { component: 'Pane', requestId: PANE_ID }, ($, e) => renderPane($, e))

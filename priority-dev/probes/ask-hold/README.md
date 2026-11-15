@@ -29,6 +29,16 @@ The probe writes its log to `<priority-dev folder>/reports/logs/ask-hold/probe.j
 
 The engine may end a held call before two minutes. A held call that runs past its hook budget logs a `cut-off` line, with the word `timeout`. Record that line as the result.
 
+## Run the hold-spawn mode
+
+`/ask-probe hold-spawn` holds each main-loop call inside a child process. Send writes the answer file, then the done file, under `.cobuilder/ask-hold` in the session folder. The probe does not delete these files, so they stay for the record.
+
+1. Run `/ask-probe hold-spawn`. The command confirms the mode.
+2. Ask the agent to call AskUserQuestion, then open the pane `Ask hold`.
+3. Hold the call for 3 minutes. The pane must not show a `skipped` message.
+4. Pick an option, press Send after 20 seconds, and check that the agent gets the answer.
+5. Start a hold, press Esc, and run `ps aux | grep "until \[ -e"`. The child must not appear.
+
 ## Read the log
 
 Each line is one JSON event. The kinds are:

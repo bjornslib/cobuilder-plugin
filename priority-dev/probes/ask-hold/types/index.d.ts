@@ -9,7 +9,7 @@ export type Picks = Record<number, string[]>
 
 export type ShapeId = 'answers-by-question' | 'answers-list' | 'text'
 
-export type Mode = 'hold' | 'pass' | 'off'
+export type Mode = 'hold' | 'hold-spawn' | 'pass' | 'off'
 
 export type Held = { questions: Question[]; picks: Picks; other: Record<number, string>; shape: ShapeId; startedAt: number }
 

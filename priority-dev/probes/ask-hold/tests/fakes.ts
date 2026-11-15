@@ -75,6 +75,33 @@ export function stubFiles(on: any) {
   return files
 }
 
+// The session folder the probe names its answer files under (`$.session.cwd()`).
+export const CWD = '/work/session'
+
+// Answers $.session.cwd with CWD.
+export function stubCwd(on: any) {
+  on('session.cwd', () => ({ value: CWD }))
+}
+
+// The kit's types leave out the timer; the runtime has it.
+declare function setTimeout(callback: () => void, ms: number): unknown
+
+// Waits `ms` of real time.
+export const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
+
+// Like stubFiles, and also keeps every written path in the order of the writes.
+export function stubWrites(on: any) {
+  const files = new Map<string, string>()
+  const writes: string[] = []
+  on('fs.read', (_$: any, e: any) => (files.has(e.path) ? { value: files.get(e.path) } : { deny: `ENOENT ${e.path}` }))
+  on('fs.write', (_$: any, e: any) => {
+    files.set(e.path, e.text)
+    writes.push(e.path)
+    return { value: undefined }
+  })
+  return { files, writes }
+}
+
 // The probe log lines, parsed, in the order written.
 export function logLines(files: Map<string, string>): { at: string; kind: string; [key: string]: any }[] {
   return (files.get(LOG) ?? '')
@@ -84,7 +111,7 @@ export function logLines(files: Map<string, string>): { at: string; kind: string
 }
 
 // Runs one /ask-probe command. The test fails when the command does not run.
-export async function setMode($: any, args: 'hold' | 'pass' | 'off') {
+export async function setMode($: any, args: 'hold' | 'pass' | 'off' | 'hold-spawn') {
   let ran = true
   try {
     await $.command.run({ command: 'ask-probe', args })
