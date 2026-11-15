@@ -1,13 +1,13 @@
 {
   "schema_version": "1.4",
   "sources": {
-    "git_head": "f17b3a95ce793fc26c83b84575db2a9833100fe2",
+    "git_head": "607b38c6ad08c83cac7793bdcabd9c880c9a6ef9",
     "trees": {
       "docs/architecture/adr": "sha256:90969144359d2333c3fcd11e4ceb71b64cdddf1ee06c36990087f7f2c99830a8",
-      "docs/architecture/designs": "sha256:a7098896aa8e09deec0d77ccce1a59d5a02751c55a5075619e61dbd12cf30755",
+      "docs/architecture/designs": "sha256:77408c59737c44b8be3b80d643e8a098036e8da6f345e8ca61e7b30a39ba4f30",
       "docs/architecture/contexts": "sha256:e9537c5da21bf3f32eb547c8c422e8c3eb9acafefb5801143e53491b64ace073",
-      "docs/plans": "sha256:59009083e5abb7b6391af2e29ee9d3fa30581a7e9d63cb18a803030eb05f1cfd",
-      ".cobuilder/rubrics": "sha256:90d2396b0a34d85ece07a8eef3df300e7f7dbe1dee123084de92b3879c1e33bf"
+      "docs/plans": "sha256:a686d392fa391de595a1ec204d5a5abb2e2812d21c2322e0fb64c7c63bdb19e4",
+      ".cobuilder/rubrics": "sha256:c514c9b792da5fab1ffc99cdfca66a43be790cdede3fa4b3334b75a7df1d1d4f"
     }
   },
   "entities": {
@@ -1098,8 +1098,9 @@
         "epic_id": "E1",
         "branch": null,
         "pr": null,
-        "state": null,
-        "note": null
+        "state": "open",
+        "note": null,
+        "design_doc": "priority-ask-question/E1"
       },
       {
         "id": "priority-ask-question/E2",
@@ -1107,7 +1108,7 @@
         "epic_id": "E2",
         "branch": null,
         "pr": null,
-        "state": null,
+        "state": "open",
         "note": null
       },
       {
@@ -4640,6 +4641,36 @@
         "state": "completed"
       },
       {
+        "id": "priority-ask-question/1",
+        "feature": "priority-ask-question",
+        "n": 1,
+        "title": "**Probe mod**",
+        "ends_with": "`claude --plugin-dir priority-dev/probes/ask-hold` loads a mod. `/ask-probe hold` and `/ask-probe pass` set the mode. In hold mode, a main-loop AskUserQuestion call opens a pane with each question, its options, a shape choice, and Send, and Send returns that shape as the tool's result. Each event writes one line to `probe.jsonl`. The mod tests pass",
+        "score": "0.917",
+        "attempts": 1,
+        "state": "completed"
+      },
+      {
+        "id": "priority-ask-question/2",
+        "feature": "priority-ask-question",
+        "n": 2,
+        "title": "**Probe record**",
+        "ends_with": "`probe-record.md` states, from a live run: if the call stayed open for two minutes, which answer shape the agent received, what a refused shape showed, and if the transcript held the `tool_use` at the catch. Each answer quotes its `probe.jsonl` line",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
+        "id": "priority-ask-question/3",
+        "feature": "priority-ask-question",
+        "n": 3,
+        "title": "**Open-question input**",
+        "ends_with": "`uv run priority interpret <transcript> --open-question q.json` builds a brief with an `OPEN QUESTION` section and prints a reading with `stop_kind: question`. Without the flag, the brief equals the stored snapshot and `stop_kind` is `turn_end`",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
         "id": "priority-dev-spike/1",
         "feature": "priority-dev-spike",
         "n": 1,
@@ -5200,6 +5231,56 @@
         "state": "completed"
       },
       {
+        "id": "structure-coaching/15",
+        "feature": "structure-coaching",
+        "n": 15,
+        "title": "Review mode proposes a backlog design from the confirmed debt findings",
+        "ends_with": "A blind review agent with a fixture record groups the debt findings and writes a backlog `goal.json` with one planned epic for each group, and each epic cites its findings. It starts no build.",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
+        "id": "structure-coaching/16",
+        "feature": "structure-coaching",
+        "n": 16,
+        "title": "One name for each review mode in the glossary and the prose",
+        "ends_with": "The glossary holds a qualified entry for the architect audit and for the pull request narration, and no architect prose calls the audit by the narration name.",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
+        "id": "structure-coaching/17",
+        "feature": "structure-coaching",
+        "n": 17,
+        "title": "The scripted loop gives VALIDATE and the vocabulary agent a slice base and a packet path",
+        "ends_with": "`slice-loop.js` takes the slice base from RED, GREEN commits each attempt, and VALIDATE gets the base and the out path. A packet of the second slice holds only that slice.",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
+        "id": "structure-coaching/18",
+        "feature": "structure-coaching",
+        "n": 18,
+        "title": "No duplicate vocabulary leads",
+        "ends_with": "A file and a function of one name give one lead in each list of `evidence.vocabulary`.",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
+        "id": "structure-coaching/19",
+        "feature": "structure-coaching",
+        "n": 19,
+        "title": "`structure_evidence.py` keeps to the size guide",
+        "ends_with": "The entry script has 200 lines or fewer, and each test of the evidence script still passes.",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
         "id": "work-drawer/1",
         "feature": "work-drawer",
         "n": 1,
@@ -5356,6 +5437,15 @@
         "source_path": "docs/plans/options-mode/01-product.md"
       },
       {
+        "id": "priority-ask-question",
+        "feature_slug": "priority-ask-question",
+        "gate": 1,
+        "title": "Product: The priority reader answers an AskUserQuestion call",
+        "body_md": "# Product: The priority reader answers an AskUserQuestion call\n\n## Problem\n\nWhen the agent asks a question with AskUserQuestion, it stops and waits\nfor the person. The priority reader is silent at that point, because it\nreads only the end of a turn. The person answers in the engine dialog with\nno reading beside the question.\n\n## Success metric\n\nIn one week of use, at least eight of every ten AskUserQuestion calls in a\nsession with the reader on get a question card in the pane, and the\nperson answers them there. The person counts the cards in the reading\nhistory, and counts the dialogs they still saw.\n\n## Announcement — the blog post before the feature\n\nThe priority reader now reads the moment the agent asks you a question.\nThe pane opens with the question and its options at once. A reading of\nthat moment fills in beside them, with the status, the priority, and the\nsteps it suggests. You pick your answer in the pane, press Send, and the\nagent goes on. If the pane cannot take the question, the usual dialog\nopens, and the reading still arrives.\n\n## Screens\n\nThe question card extends layout C of the approved reader pane\n(`docs/architecture/designs/priority-dev-cc-plugin/pane-design/layout-c.png`).\nThe E1 probe draws a test pane only, which is not a product screen.\n",
+        "approved_date": null,
+        "source_path": "docs/plans/priority-ask-question/01-product.md"
+      },
+      {
         "id": "priority-dev-spike",
         "feature_slug": "priority-dev-spike",
         "gate": 1,
@@ -5502,6 +5592,15 @@
         "source_path": "docs/plans/options-mode/02-architecture.md"
       },
       {
+        "id": "priority-ask-question",
+        "feature_slug": "priority-ask-question",
+        "gate": 2,
+        "title": "Architecture: The priority reader answers an AskUserQuestion call",
+        "body_md": "# Architecture: The priority reader answers an AskUserQuestion call\n\nGrounded in `docs/architecture/designs/priority-ask-question/contracts.md`\nand ADR-0050.\n\n## Fit\n\n- `priority-dev/probes/ask-hold/`, new: a probe mod that a person loads\n  with `--plugin-dir`. It is test equipment and ships in no marketplace\n  entry (E1).\n- `priority-dev/src/priority/cli.py` and `priority-dev/src/priority/brief/`:\n  the `--open-question` input and `stop_kind` (E2).\n- `plugins/cobuilder-priority/hooks/`: the `tool.call` hook, the question\n  card, and the answer (E3, planned after the probe).\n\n## Endpoints\n\nNone. The mod hooks the engine event `tool.call` for `AskUserQuestion`.\n\n## Data\n\n- The probe writes one JSON line for each event to\n  `priority-dev/reports/logs/ask-hold/probe.jsonl`, which Git ignores.\n- E2 reads a questions file: a JSON list in the AskUserQuestion input\n  shape.\n- E3 adds `stop_kind` and `answers` to a stored reading and its mark.\n\n## Flow\n\n1. The agent calls AskUserQuestion. The engine raises `tool.call`.\n2. The probe hook checks the main loop and its mode. In hold mode, it\n   opens the probe pane, logs the time and whether the transcript holds\n   the `tool_use`, and waits for a press.\n3. The person picks options and presses Send with one candidate answer\n   shape. The hook returns `{ result }`. The probe logs the elapsed time,\n   the shape, and the result or the engine error.\n4. In pass mode, the hook calls `next`, so the dialog opens. The probe\n   logs that it passed.\n\n## External\n\n- No new service. E2 and E3 use the same Mercury calls as ADR-0049.\n- No new environment variable.\n",
+        "approved_date": null,
+        "source_path": "docs/plans/priority-ask-question/02-architecture.md"
+      },
+      {
         "id": "priority-dev-spike",
         "feature_slug": "priority-dev-spike",
         "gate": 2,
@@ -5646,6 +5745,15 @@
         "body_md": "# Program Design: architect options mode\n\n## Files\n\n| File | Action | Why |\n|---|---|---|\n| `plugins/architect/commands/options.md` | create | dispatch line and the list of what the mode writes |\n| `plugins/architect/skills/architecture/SKILL.md` | edit | `### Options Mode`, frontmatter, intro, invocation, layout, Quick Reference |\n| `plugins/architect/skills/architecture/references/options-mode.md` | create | full procedure, stages 0 to 6 |\n| `plugins/architect/skills/architecture/references/reports/options-report-TEMPLATE.html` | create | report skeleton with placeholders and one worked example |\n| `plugins/architect/scripts/check_options_report.py` | create | structure validator |\n| `tests/test_options_report.py`, `tests/fixtures/options_report/*.html` | create | good and broken fixtures |\n| `tests/test_commands.py` | edit | seven modes, and command files equal the declared modes |\n| `DDD-VOCABULARY.md` | edit | `Inquiry` entry |\n| `plugins/architect/.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json` | edit | version 0.7.0, description |\n| `README.md`, `CLAUDE.md`, `plugins/cobuilder-full-lifecycle/skills/cobuilder-full/SKILL.md` | edit | mode count and lists |\n\n## Types & signatures\n\n```python\n# plugins/architect/scripts/check_options_report.py  (PEP 723, no dependencies)\nANCHORS: tuple[str, ...]          # summary, current, flow, inquiries, directions,\n                                  # proposed, gaps, order, decide, evidence\nCONFIDENCE: frozenset[str]        # {\"Verified\", \"ADR only\", \"Hypothesis\"}\n\n@dataclass(frozen=True)\nclass Result:\n    check: int                    # 1..9\n    severity: str                 # \"error\" | \"warning\"\n    message: str\n\ndef check_report(html: str) -> list[Result]: ...\ndef main(argv: list[str] | None = None) -> int: ...   # 0 when no error result, else 1\n```\n\nOutput: one line per result, `ERROR check N: message` or `WARN check N: message`.\n\n## Call stack\n\n`/architect:options` → `commands/options.md` → `Skill(\"architecture\", \"options ...\")` → `references/options-mode.md` stage 0 to 6 → copy template → `check_options_report.py <report>` → print path and inquiry IDs.\n\n## Test plan\n\n- `tests/test_commands.py`: the dispatch of `options.md`, the seven declared modes, and command files equal the declared modes.\n- `tests/test_options_report.py`: the template and a good fixture exit 0. One broken fixture for each error check exits 1 with the check number in the output. A report with only a long SVG text exits 0 and prints a warning.\n- Existing manifest and vocabulary tests stay green.\n\n## Least confident decisions\n\n- The exact set of ten anchors and the `#inquiries` rename come from the brief and the reference report. The reference report is outside this repo and may drift.\n- The validator parses HTML with `html.parser`. A malformed fixture may parse in a way the check does not expect.\n- Whether the viewer files `model.ts` and `sections.tsx` count architect modes with a \"six\" is not yet checked.\n",
         "approved_date": null,
         "source_path": "docs/plans/options-mode/03-program-design.md"
+      },
+      {
+        "id": "priority-ask-question",
+        "feature_slug": "priority-ask-question",
+        "gate": 3,
+        "title": "Program Design: The priority reader answers an AskUserQuestion call",
+        "body_md": "# Program Design: The priority reader answers an AskUserQuestion call\n\nThis program design covers E1 and E2. E3 gets its own addendum after the\nprobe record exists, because the record decides between hold and\nfallback.\n\n## Files\n\nE1, the probe mod (test equipment, loaded with `--plugin-dir`):\n\n- `priority-dev/probes/ask-hold/.claude-plugin/plugin.json`: the mod\n  manifest, name `ask-hold-probe`.\n- `priority-dev/probes/ask-hold/hooks/hooks.json`: names the module.\n- `priority-dev/probes/ask-hold/hooks/register.tsx`: the commands, the\n  `tool.call` hook, and the pane.\n- `priority-dev/probes/ask-hold/hooks/shapes.ts`: the candidate answer\n  shapes, as pure functions.\n- `priority-dev/probes/ask-hold/tests/*.test.ts(x)`: `claude plugin test`.\n- `docs/architecture/designs/priority-ask-question/probe-record.md`: the\n  record, with one blank row for each question that the person fills\n  after the live run.\n\nE2, priority-dev:\n\n- `priority-dev/src/priority/cli.py`: the `--open-question` option.\n- `priority-dev/src/priority/brief/`: the open questions and `stop_kind`\n  on the brief.\n- `priority-dev/tests/`: pytest cases.\n\n## Types & signatures\n\n```ts\n// shapes.ts\ntype Question = { question: string; header?: string; multiSelect?: boolean; options: { label: string; description?: string }[] }\ntype Picks = Record<number, string[]>          // question index -> chosen labels, or one free text\ntype ShapeId = 'answers-by-question' | 'answers-list' | 'text'\nfunction answerOf(shape: ShapeId, questions: Question[], picks: Picks): unknown\n\n// register.tsx\ntype Mode = 'hold' | 'pass'\ntype ProbeEvent = { at: string; kind: 'caught' | 'passed' | 'answered' | 'refused' | 'cut-off'; elapsedMs?: number; shape?: ShapeId; inTranscript?: boolean; detail?: string }\n```\n\n```python\n# cli.py\ndef interpret(transcript, stop, log_dir, program, digest=\"previous\", open_question: Path | None = None) -> int\n# brief\nStopBrief.stop_kind: Literal[\"turn_end\", \"question\"]\nStopBrief.open_questions: tuple[OpenQuestion, ...]\n```\n\n## Call stack\n\nE1: `tool.call (AskUserQuestion)` → main loop and hold mode → log\n`caught` with `inTranscript` → `$.ui.open` the probe pane → await the\npress → `answerOf(shape)` → return `{ result }` → log `answered`, or log\n`refused` with the engine error. A `.catch` handler logs `cut-off` when\nthe hook outruns its budget.\n\nE2: `priority interpret --open-question f` → `build_brief(...,\nopen_questions=read(f))` → the brief text shows an `OPEN QUESTION`\nsection → the reading carries `stop_kind: question`.\n\n## Test plan\n\n- E1: `claude plugin test priority-dev/probes/ask-hold`. A stub beneath\n  the plugin answers `tool.call`. Tests cover: pass mode calls `next`; a\n  subagent call calls `next`; hold mode opens the pane and returns\n  `{ result }` after a press; each shape function gives its documented\n  shape; each event writes one log line.\n- E2: pytest. With the flag, the brief has the section and `stop_kind`\n  question. Without it, the brief equals the stored snapshot.\n\n## Least confident decisions\n\n- The answer shape: the probe offers three candidates, because no local\n  type file holds the output schema.\n- Whether a `.catch` handler fires on a budget cut-off for a `tool.call`\n  hook. If it does not, the record relies on the person's report of a\n  dialog.\n- Whether `transcript_path` is readable from a `tool.call` hook. If not,\n  the probe reads the newest transcript of the session folder.\n",
+        "approved_date": null,
+        "source_path": "docs/plans/priority-ask-question/03-program-design.md"
       },
       {
         "id": "priority-dev-spike",
@@ -5936,6 +6044,15 @@
         "body_md": "# Epic Technical Solution Design: E1 — The /architect:options mode\n\nFeature: options-mode\nEpic ID: E1\n\n## Scope and Intent\n\nAdd `/architect:options` as a seventh architect mode. The mode writes one self-contained HTML report. A validator script checks the structure of the report. The design record is `docs/architecture/designs/options-mode/` and `ADR-0035`. The source requirements are the brief at `/Users/theb/Documents/Windsurf/think-with-ai/.claude/worktrees/think-with-ai-architecture-review/docs/prompts/options-mode/brief.md`, as changed by the decisions in `00-status.md`.\n\n## Files Touched\n\nSee `03-program-design.md`, Files. One epic owns all of them. Slice 1 owns the command, `SKILL.md`, `options-mode.md`, and `tests/test_commands.py`. Slice 2 owns the template, the validator, and its tests and fixtures. Slice 3 owns the glossary, the manifests, and the count wording. Slice 4 owns the one generated report.\n\n## Types & Signatures\n\nThe validator interface is in `03-program-design.md`, Types & signatures. The report contract: ten anchors (`summary`, `current`, `flow`, `inquiries`, `directions`, `proposed`, `gaps`, `order`, `decide`, `evidence`), three figures (`fig-current`, `fig-flow`, `fig-proposed`), one row `row-<ID>` and one block `dir-<ID>` for each inquiry, and the confidence values `Verified`, `ADR only`, and `Hypothesis`.\n\n## Slice Decomposition\n\n1. Slice 1 is the tracer bullet. It makes the mode exist and the test count seven. It needs nothing else.\n2. Slice 2 depends on nothing in slice 1 for its code. `options-mode.md` names the template and the validator by path.\n3. Slice 3 depends on slice 1 (the mode exists) and slice 2 (the validator exists), because the count and glossary text refers to both.\n4. Slice 4 depends on slices 1 to 3. It runs the finished mode.\n\n## Test Plan\n\n- Slice 1: `uv run --with pytest pytest tests/test_commands.py -q`.\n- Slice 2: `uv run --with pytest pytest tests/test_options_report.py -q`, plus a `node --check` of the inline script of the template.\n- Slice 3: `uv run --with pytest pytest tests/ -q`.\n- Slice 4: `uv run plugins/architect/scripts/check_options_report.py <report>` and a `git status` of the working tree.\n\n## Risks & Open Questions\n\n- The reference report lives outside this repo. Slice 2 reads it from the path above. If the path is missing, GREEN stops and reports.\n- The viewer files `plugins/artifact/viewer/src/shell/model.ts` and `plugins/artifact/viewer/src/variations/sections-e/sections.tsx` hold the word \"six\". Slice 3 must check whether it counts architect modes. A change there needs a viewer rebuild, which is out of scope. If a change is needed, record it as a follow-up.\n- A blind run of the mode in slice 4 cannot use the installed plugin, which is version 0.6.1 and has no options mode. The agent reads the skill files from the repo path.\n",
         "approved_date": null,
         "source_path": "docs/plans/options-mode/epic-E1-design.md"
+      },
+      {
+        "id": "priority-ask-question/E1",
+        "epic_id": "E1",
+        "feature_slug": "priority-ask-question",
+        "title": "Epic Technical Solution Design: E1 — Probe",
+        "body_md": "# Epic Technical Solution Design: E1 — Probe\n\nFeature: priority-ask-question\nEpic ID: E1\n\n## Scope and Intent\n\nE1 answers three engine questions before any product code holds a call.\nCan a `tool.call` hook hold an AskUserQuestion call open while a person\ndecides? Which answer shape does the engine accept? Is the `tool_use` in\nthe transcript when the hook fires? The probe mod is test equipment. It\nlives under `priority-dev/probes/`, and no marketplace entry names it.\n\n## Files Touched\n\n- `priority-dev/probes/ask-hold/.claude-plugin/plugin.json`\n- `priority-dev/probes/ask-hold/hooks/hooks.json`\n- `priority-dev/probes/ask-hold/hooks/register.tsx`\n- `priority-dev/probes/ask-hold/hooks/shapes.ts`\n- `priority-dev/probes/ask-hold/tests/` (mod tests)\n- `priority-dev/probes/ask-hold/README.md` (how to run the probe)\n- `docs/architecture/designs/priority-ask-question/probe-record.md`\n  (slice 2, filled from the live run)\n\n## Types & Signatures\n\n`03-program-design.md` holds the types. The probe contract:\n\n- **Mode.** An atom, `hold` by default after `/ask-probe hold`, and `off`\n  until a person runs a command. `/ask-probe pass` sets `pass`.\n  `/ask-probe off` stops the probe.\n- **The hook.** `on('tool.call', { tool: 'AskUserQuestion' }, ...)`. It\n  calls `next(e)` when the mode is not `hold`, or when `agentId` is set.\n  In hold mode it logs `caught`, opens the pane, and awaits a promise that\n  the pane's Send resolves. It returns `{ result: answerOf(shape, ...) }`.\n- **The pane.** Id `ask-hold`. It shows the elapsed seconds, each\n  question with its options as toggle Buttons, an Other input for each\n  question, a shape choice (`answers-by-question`, `answers-list`,\n  `text`), and Send. A redraw each second shows the elapsed time.\n- **The log.** One JSON line for each event, appended to\n  `<priority_dev_dir>/reports/logs/ask-hold/probe.jsonl`, or to the\n  plugin data folder when no folder is set. `inTranscript` is true when\n  the transcript text holds the `tool_use_id` at the catch.\n- **The cut-off.** A `.catch` handler on the hook logs `cut-off` with the\n  failure kind and the budget.\n\n## Slice Decomposition\n\n1. **Probe mod.** The mod, its commands, the hook, the pane, the shapes,\n   the log, and its tests. Ends with passing mod tests and a README.\n2. **Probe record.** The person runs the probe live. The record states\n   each answer and quotes its log line. Depends on slice 1.\n\n## Test Plan\n\n- `tests/shapes.test.ts`: each shape function gives its documented\n  value for one, multi-select, and Other answers.\n- `tests/hook.test.tsx`: with a stub beneath the plugin for `tool.call`,\n  a pass-mode call and a subagent call reach the stub; a hold-mode call\n  opens the pane, a press of Send returns `{ result }` with the chosen\n  shape, and the log gets `caught` then `answered`.\n- Slice 2 has no automated test. Its rubric scores the record.\n\n## Risks & Open Questions\n\n- The test kit may cut off a held hook after ten seconds. The tests\n  press Send before that.\n- A `.catch` handler may not fire for a cut-off in a live session. The\n  person then reports that the dialog opened.\n- The engine may refuse each candidate shape. The record then holds the\n  error text, which names the schema.\n",
+        "approved_date": null,
+        "source_path": "docs/plans/priority-ask-question/epic-E1-design.md"
       },
       {
         "id": "priority-dev-spike/E1",
@@ -6952,6 +7069,30 @@
         "title": "Slice 4 — One real run of the mode",
         "body_md": "# Rubric: Slice 4 — One real run of the mode\n\nFeature: options-mode\nEpic: options-mode/E1\nSlice goal: A fresh agent follows `SKILL.md` and `options-mode.md` with `--non-interactive` on this repo. It writes one report under `docs/architecture/options/<name>/`. The validator exits 0 on it. The run edits nothing outside that folder.\nTest command: `uv run --with pytest pytest tests/ -q`\n\nSources: `04-slices.md` row 4, `epic-E1-design.md`.\n\n## Criteria\n\n### C1 — The report exists and passes the validator [CRITICAL]\n**Must be true:** Exactly one file `docs/architecture/options/<name>/options-report-YYYY-MM-DD.html` exists and the validator exits 0 on it. No other file exists in that folder.\n**Evidence to check:**\n- `ls docs/architecture/options/*/`.\n- `uv run plugins/architect/scripts/check_options_report.py <report>; echo $?` prints `0`.\n**Scoring:**\n- 1.0 — one file, exit 0.\n- 0.5 — exit 0 but an extra file exists (for example a JSON file).\n- 0.0 — no report or a non-zero exit.\n\n### C2 — The run touched nothing outside its folder [CRITICAL]\n**Must be true:** `git status --short` shows only `docs/architecture/options/` as new or changed from this slice, apart from the changes that earlier slices and the plan files already hold.\n**Evidence to check:** `git status --short` before the run (the orchestrator records it) and after. Compare the two.\n**Scoring:**\n- 1.0 — the only difference is the new folder.\n- 0.0 — any other file differs.\n\n### C3 — A blind agent ran the stages in order [CRITICAL] (behavioral)\n**Must be true:** The fresh agent's tool calls show: it created the output folder before it wrote the report. It read the corpus index and the stack card before it read the ADRs. It spawned no divergent-exploration agent. It ran the validator on its own report before it ended. Its last message prints the report path, the inquiry IDs, and `/architect:design` as the next command, and it did not start that command.\n**Evidence to check:** The orchestrator spawns one fresh Sonnet subagent with no memory of this session. It gets only the task \"Run the options mode on this repository with --non-interactive. Scope: the install surface of the architect plugin.\" and the repo path. It captures the tool calls.\n**Scoring:**\n- 1.0 — all five behaviors are in the transcript.\n- 0.5 — four of five.\n- 0.0 — three or fewer.\n\n### C4 — The confidence tags are honest [CRITICAL]\n**Must be true:** Each inquiry row carries one confidence tag. Pick three claims that carry `Verified`. Each one cites a `path:line` or a command. The file exists and the line is inside the file. The evidence section lists what the agent did not read.\n**Evidence to check:** Open the report. For three `Verified` claims, run `test -f <path>` and `wc -l <path>`, and read the cited line.\n**Scoring:**\n- 1.0 — all three cites resolve and the evidence section lists the limits.\n- 0.5 — two of three resolve, or the limits are missing.\n- 0.0 — fewer than two resolve.\n\n### C5 — The report is self-contained and uses the agreed names\n**Must be true:** The report has `#inquiries`, no `#findings`, no `window.lavish`, and no external resource. It calls the item an inquiry.\n**Evidence to check:** `grep -c 'id=\"inquiries\"' <report>` prints `1`. `grep -n \"lavish\\|id=\\\"findings\\\"\" <report>` prints nothing. If a browser tool exists, open the report from `file://` and read the console messages. Otherwise the report's evidence section says so.\n**Scoring:**\n- 1.0 — all hold.\n- 0.5 — one issue.\n- 0.0 — two or more.\n\n## Weights\n\nC1 25%, C2 20%, C3 25%, C4 20%, C5 10%.\n",
         "source_path": ".cobuilder/rubrics/options-mode/slice-4.md"
+      },
+      {
+        "id": "priority-ask-question/1",
+        "feature_slug": "priority-ask-question",
+        "n": 1,
+        "title": "Slice 1 — Probe mod",
+        "body_md": "# Rubric: Slice 1 — Probe mod\n\nFeature: priority-ask-question\nEpic: E1\nSlice goal: `claude --plugin-dir priority-dev/probes/ask-hold` loads a mod. `/ask-probe hold` and `/ask-probe pass` set the mode. In hold mode, a main-loop AskUserQuestion call opens a pane with each question, its options, a shape choice, and Send, and Send returns that shape as the tool's result. Each event writes one line to `probe.jsonl`. The mod tests pass.\nTest command: `claude plugin test priority-dev/probes/ask-hold`\n\n## Criteria\n\n### C1 — The mod loads and its tests pass [CRITICAL]\n**Must be true:** `claude plugin validate priority-dev/probes/ask-hold` passes, and `claude plugin test priority-dev/probes/ask-hold` passes with 0 failures and at least 6 tests.\n**Evidence to check:** run both commands from the repo root.\n**Scoring:**\n- 1.0 — validate passes, and the tests pass with 6 or more tests.\n- 0.5 — the tests pass with fewer than 6 tests, or validate passes only with an error-class warning.\n- 0.0 — a test fails, or validate fails.\n\n### C2 — Pass mode, the off state, and subagent calls never hold the call [CRITICAL]\n**Must be true:** a test drives `tool.call` for AskUserQuestion with a stub beneath the plugin. In pass mode, before any command, and with `agentId` set, the stub receives the call, and the result is the stub's.\n**Evidence to check:** read the hook and the tests. Change the hook so it holds every call, run the tests, and confirm one fails. Restore the hook.\n**Scoring:**\n- 1.0 — all three cases are tested, and the mutation fails a test.\n- 0.5 — two of three cases are tested.\n- 0.0 — no such test, or the mutation passes.\n\n### C3 — Hold mode opens the pane and returns the chosen shape after Send [CRITICAL]\n**Must be true:** in hold mode, a main-loop call opens the pane `ask-hold`, which shows each question and each option. After option presses, a shape choice and Send, the call resolves to `{ result }` with the value of `answerOf` for that shape. The stub beneath is not called.\n**Evidence to check:** read the test that drives the call to its result. Check that the asserted result equals the shape function's output for the same picks.\n**Scoring:**\n- 1.0 — the test asserts the pane contents, the result value, and that the stub was not called.\n- 0.5 — the result is asserted, but the pane contents or the stub check are missing.\n- 0.0 — no test drives a hold to a result.\n\n### C4 — Three shape functions, multi-select and Other covered\n**Must be true:** `shapes.ts` exports `answerOf` for `answers-by-question`, `answers-list` and `text`. Tests cover one answer, a multi-select answer, and free text under Other.\n**Evidence to check:** read `shapes.ts` and its tests.\n**Scoring:**\n- 1.0 — three shapes, each with the three cases tested.\n- 0.5 — three shapes, but a case is missing.\n- 0.0 — fewer than three shapes.\n\n### C5 — Each event writes one log line with the probe facts\n**Must be true:** `caught`, `passed`, `answered` and `refused` each append one JSON line with `at` and `kind`. `caught` carries `inTranscript`. `answered` carries `elapsedMs` and `shape`. A `.catch` handler logs `cut-off`. The README names the log path and the probe steps.\n**Evidence to check:** read the log code, the `.catch` registration, a test that reads the log lines, and the README.\n**Scoring:**\n- 1.0 — all fields are present and a test reads at least `caught` and `answered`.\n- 0.5 — the lines exist, but a field or the test is missing.\n- 0.0 — no log.\n\n### C6 — The probe stays test equipment\n**Must be true:** no marketplace entry and no file under `plugins/` names the probe. The probe imports nothing from `plugins/` or `shared/`. Each file has about 200 lines or fewer.\n**Evidence to check:** `grep -rn ask-hold .claude-plugin plugins`, and read the imports.\n**Scoring:**\n- 1.0 — all hold.\n- 0.5 — one file is over 200 lines.\n- 0.0 — a marketplace entry, or an import from `plugins/` or `shared/`.\n",
+        "source_path": ".cobuilder/rubrics/priority-ask-question/slice-1.md"
+      },
+      {
+        "id": "priority-ask-question/2",
+        "feature_slug": "priority-ask-question",
+        "n": 2,
+        "title": "Slice 2 — Probe record",
+        "body_md": "# Rubric: Slice 2 — Probe record\n\nFeature: priority-ask-question\nEpic: E1\nSlice goal: `probe-record.md` states, from a live run: if the call stayed open for two minutes, which answer shape the agent received, what a refused shape showed, and if the transcript held the `tool_use` at the catch. Each answer quotes its `probe.jsonl` line.\nTest command: none. The validator reads the record and the log.\n\n## Criteria\n\n### C1 — The hold question has a measured answer [CRITICAL]\n**Must be true:** the record says held, cut off, or not measured, with the elapsed seconds, and quotes the `answered` or `cut-off` line.\n**Evidence to check:** compare the quote with `probe.jsonl`.\n**Scoring:** 1.0 — answer, seconds, and an exact quote. 0.5 — answer without a quote. 0.0 — no answer.\n\n### C2 — The answer shape has a measured answer [CRITICAL]\n**Must be true:** the record names each shape tried, what the agent received for each, and the engine error text for a refused shape.\n**Evidence to check:** compare with the log lines and with the agent text the person pasted.\n**Scoring:** 1.0 — each tried shape has a result. 0.5 — one shape lacks its result. 0.0 — no shape result.\n\n### C3 — The transcript question has a measured answer\n**Must be true:** the record states `inTranscript` from the `caught` line.\n**Scoring:** 1.0 — stated with a quote. 0.0 — missing.\n\n### C4 — The record names its decision for E3\n**Must be true:** the record says hold or fallback for E3, and the reason.\n**Scoring:** 1.0 — decision and reason. 0.5 — decision only. 0.0 — none.\n",
+        "source_path": ".cobuilder/rubrics/priority-ask-question/slice-2.md"
+      },
+      {
+        "id": "priority-ask-question/3",
+        "feature_slug": "priority-ask-question",
+        "n": 3,
+        "title": "Slice 3 — Open-question input",
+        "body_md": "# Rubric: Slice 3 — Open-question input\n\nFeature: priority-ask-question\nEpic: E2\nSlice goal: `uv run priority interpret <transcript> --open-question q.json` builds a brief with an `OPEN QUESTION` section and prints a reading with `stop_kind: question`. Without the flag, the brief equals the stored snapshot and `stop_kind` is `turn_end`.\nTest command: `uv run pytest priority-dev/tests -q`\n\n## Criteria\n\n### C1 — The flag adds the section and the kind [CRITICAL]\n**Must be true:** with the flag, the brief text holds an `OPEN QUESTION` section with each question and its option labels, and the reading has `stop_kind: question`.\n**Evidence to check:** a pytest case that builds the brief from a fixture and a questions file.\n**Scoring:** 1.0 — tested and true. 0.5 — the section is tested, but not the kind. 0.0 — no test.\n\n### C2 — Without the flag nothing changes [CRITICAL]\n**Must be true:** the existing brief snapshot tests pass unchanged, and `stop_kind` is `turn_end`.\n**Evidence to check:** run the suite, and `git diff` the snapshot files.\n**Scoring:** 1.0 — no snapshot changed. 0.0 — a snapshot changed.\n\n### C3 — A bad questions file is refused cleanly\n**Must be true:** a file that is not a JSON list of questions exits non-zero with a one-line message, and no model call runs.\n**Scoring:** 1.0 — tested. 0.0 — a traceback or a model call.\n",
+        "source_path": ".cobuilder/rubrics/priority-ask-question/slice-3.md"
       },
       {
         "id": "priority-dev-spike/1",
@@ -8075,6 +8216,9 @@
       "options-mode/2": "options-mode/E1",
       "options-mode/3": "options-mode/E1",
       "options-mode/4": "options-mode/E1",
+      "priority-ask-question/1": "priority-ask-question/E1",
+      "priority-ask-question/2": "priority-ask-question/E1",
+      "priority-ask-question/3": "priority-ask-question/E2",
       "priority-dev-spike/1": "priority-dev-spike/E1",
       "priority-dev-spike/2": "priority-dev-spike/E1",
       "priority-dev-spike/3": "priority-dev-spike/E1",
@@ -8669,6 +8813,43 @@
           "name": "Slice plan, epic designs, and rubrics",
           "state": "APPROVED 2026-10-01",
           "view": "#/options-mode/build/epics"
+        }
+      ],
+      "priority-ask-question": [
+        {
+          "n": "1",
+          "name": "Product",
+          "state": "APPROVED 2026-11-15",
+          "view": "#/priority-ask-question/build/plan/product",
+          "doc": "priority-ask-question",
+          "doc_kind": "product"
+        },
+        {
+          "n": "2",
+          "name": "Architecture",
+          "state": "APPROVED 2026-11-15",
+          "view": "#/priority-ask-question/build/plan/architecture",
+          "doc": "priority-ask-question",
+          "doc_kind": "architecture"
+        },
+        {
+          "n": "2b",
+          "name": "Interaction design",
+          "state": "n/a (no UI) — Screens: \"The E1 probe draws a test pane only, which is not a product screen.\" The E3 question card runs Gate 2b in the E3 addendum, on layout C."
+        },
+        {
+          "n": "3",
+          "name": "Program Design",
+          "state": "APPROVED 2026-11-15",
+          "view": "#/priority-ask-question/build/plan/program",
+          "doc": "priority-ask-question",
+          "doc_kind": "program"
+        },
+        {
+          "n": "4",
+          "name": "Slice plan, epic designs, and rubrics",
+          "state": "APPROVED 2026-11-15",
+          "view": "#/priority-ask-question/build/epics"
         }
       ],
       "priority-dev-spike": [
