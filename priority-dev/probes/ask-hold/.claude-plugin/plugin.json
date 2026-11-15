@@ -1,0 +1,13 @@
+{
+  "name": "ask-hold-probe",
+  "version": "0.1.0",
+  "description": "Test equipment. Holds an AskUserQuestion call in a pane, so the probe can record what the engine does. No marketplace lists it.",
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "priority_dev_dir": {
+      "type": "string",
+      "title": "priority-dev folder",
+      "description": "Optional. The priority-dev checkout. The probe writes its log under reports/logs/ask-hold. Without it the probe writes no log."
+    }
+  }
+}
