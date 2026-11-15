@@ -35,7 +35,7 @@ if _HERE not in sys.path:
 try:
     from structure.config import Config, drop_excluded, load_config
     from structure.git import GitError, added_lines, merge_base, repo_top, slice_files
-    from structure.repo import empty_record, record_here
+    from structure.repo import record_here
     from structure.rename_drift import drift_with_renames
     from structure.slice_drift import callers_untouched
     from structure.slice_edges import edge_part, prose_rules, read_records
@@ -164,8 +164,11 @@ def _packet_here(base: str | None) -> dict[str, Any]:
 
 def _record_here(since: str | None, compare: str | None) -> dict[str, Any]:
     """Return the whole-repository record of the repo that holds the working folder."""
-    if IMPORT_FAILURE is not None:
-        return empty_record(since, _one_line(f"not analysed: {IMPORT_FAILURE}"))
+    if IMPORT_FAILURE is not None:  # the record keys of repo.py, with no import of it
+        note = _one_line(f"not analysed: {IMPORT_FAILURE}")
+        keys = ("schema", "commit", "since", "window_days", "findings", "folders")
+        return {**dict.fromkeys(keys), "schema": 1, "since": since, "findings": [],
+                "folders": [], "not_analysed": [note]}
     return record_here(since, _yaml_parse if yaml is not None else None, compare)
 
 

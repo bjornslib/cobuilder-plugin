@@ -1,12 +1,12 @@
 {
   "schema_version": "1.5",
   "sources": {
-    "git_head": "ecc627a19f77e83da16484103184dc1e0efc758b",
+    "git_head": "fdaba4e21191f90ba9fc7d4ff1255defa0d8ae27",
     "trees": {
       "docs/architecture/adr": "sha256:20ca2f731683a3c296a2c76de4eeab9d4a6a07fcfeab163272cc78709195785d",
-      "docs/architecture/designs": "sha256:3cf25b5ab1982d5532354f008e2a3bb54561e629b4d34885b83478b004ea485d",
-      "docs/architecture/contexts": "sha256:905ed86b726f44d6a07d9d55b86216cefcc6247b7ea40ec0fa51c963886edc27",
-      "docs/plans": "sha256:85dd527f75dc2f50daea578c46705a34f637a1a269c29da64399e50453ce8a24",
+      "docs/architecture/designs": "sha256:105ba3fcb234f9d463a450294fda5a279be39a29d2585a24232d82b332e69016",
+      "docs/architecture/contexts": "sha256:9493f2d3ae353ca69d059c875d091fa366015e74dceaa43db115d0f72cd63e81",
+      "docs/plans": "sha256:50594fd6c87513038fd9d9541cd02d97fc5af43f683371a6108727339a078ff6",
       ".cobuilder/rubrics": "sha256:c6f2633b11d78a63224c2adf4f4f8f6d7ce3d3322f6d7c5705f876749e80824a"
     }
   },
@@ -1852,7 +1852,7 @@
           ],
           "allowed_inbound": [],
           "allowed_outbound": [],
-          "rule": "Static JSON, no dependencies. Version 0.10.0 must match marketplace.json."
+          "rule": "Static JSON, no dependencies. Version 0.12.2 must match marketplace.json."
         }
       },
       {
@@ -1949,7 +1949,7 @@
             "skill-cobuilder-artifacts"
           ],
           "allowed_outbound": [],
-          "rule": "Leaf. Source is React, TypeScript, Vite, Tailwind, and Vitest in src (174 ts and tsx files). It reads the bundle over HTTP, root at .cobuilder-architect/. Build, then commit index.html."
+          "rule": "Leaf. Source is React, TypeScript, Vite, Tailwind, and Vitest in src (334 ts and tsx files). It reads the bundle over HTTP, root at .cobuilder-architect/. Build, then commit index.html."
         }
       },
       {
@@ -1982,7 +1982,8 @@
             "ledger.LedgerPaths",
             "ledger.append_comment",
             "gate_status",
-            "slice_table"
+            "slice_table",
+            "tracker_port.reader"
           ],
           "note": "Five scripts add the plugin's shared symlink to sys.path and import these modules. The skill also runs shared/build_index.py and migrate_bundle.py by shell."
         }
