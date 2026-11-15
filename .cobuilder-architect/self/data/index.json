@@ -1,13 +1,13 @@
 {
   "schema_version": "1.5",
   "sources": {
-    "git_head": "fdaba4e21191f90ba9fc7d4ff1255defa0d8ae27",
+    "git_head": "2324f61f9bd347799cf82264a7511c28395d69bf",
     "trees": {
       "docs/architecture/adr": "sha256:20ca2f731683a3c296a2c76de4eeab9d4a6a07fcfeab163272cc78709195785d",
-      "docs/architecture/designs": "sha256:105ba3fcb234f9d463a450294fda5a279be39a29d2585a24232d82b332e69016",
+      "docs/architecture/designs": "sha256:36064aebf0a1a2af87ad4d9703cbe56dd3a2a7bc59f11b4f00a2252e6dcd20c9",
       "docs/architecture/contexts": "sha256:9493f2d3ae353ca69d059c875d091fa366015e74dceaa43db115d0f72cd63e81",
-      "docs/plans": "sha256:50594fd6c87513038fd9d9541cd02d97fc5af43f683371a6108727339a078ff6",
-      ".cobuilder/rubrics": "sha256:c6f2633b11d78a63224c2adf4f4f8f6d7ce3d3322f6d7c5705f876749e80824a"
+      "docs/plans": "sha256:2584505a77536d37aa55dbd2f4666b1dbfd1527541561fe0cecea86d3c928350",
+      ".cobuilder/rubrics": "sha256:a1960d3aff8d707f6ed673077597c537864f080105b665f86c6504ae465ea6d8"
     }
   },
   "entities": {
@@ -420,7 +420,7 @@
       {
         "id": "tracker-slice-edit",
         "name": "tracker-slice-edit",
-        "outcome": "A slice's editable fields change through tracker.py after the slice exists, and its immutable fields stay fixed once RED or GREEN has run.",
+        "outcome": "A slice's editable fields change through tracker.py after the slice exists, and its immutable fields stay fixed once RED or GREEN has run. Running seed-from-files brings each held slice in line with its plan file. regenerate-status-files writes the Gate 4a, 4b, and 4c states that the tracker holds into 00-status.md.",
         "stage": "backlog",
         "stage_source": "tracker"
       },
@@ -1432,6 +1432,16 @@
         "pr": null,
         "state": "closed",
         "note": null
+      },
+      {
+        "id": "structure-coaching/E9",
+        "design": "structure-coaching",
+        "epic_id": "E9",
+        "branch": null,
+        "pr": null,
+        "state": "open",
+        "note": null,
+        "design_doc": "structure-coaching/E9"
       },
       {
         "id": "ubiquitous-language/E1",
@@ -4536,6 +4546,36 @@
         "state": "completed"
       },
       {
+        "id": "priority-ask-question/1",
+        "feature": "priority-ask-question",
+        "n": 1,
+        "title": "**Probe mod**",
+        "ends_with": "`claude --plugin-dir priority-dev/probes/ask-hold` loads a mod. `/ask-probe hold` and `/ask-probe pass` set the mode. In hold mode, a main-loop AskUserQuestion call opens a pane with each question, its options, a shape choice, and Send, and Send returns that shape as the tool's result. Each event writes one line to `probe.jsonl`. The mod tests pass",
+        "score": "0.917",
+        "attempts": 1,
+        "state": "completed"
+      },
+      {
+        "id": "priority-ask-question/2",
+        "feature": "priority-ask-question",
+        "n": 2,
+        "title": "**Probe record**",
+        "ends_with": "`probe-record.md` states, from a live run: if the call stayed open for two minutes, which answer shape the agent received, what a refused shape showed, and if the transcript held the `tool_use` at the catch. Each answer quotes its `probe.jsonl` line",
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
+      },
+      {
+        "id": "priority-ask-question/3",
+        "feature": "priority-ask-question",
+        "n": 3,
+        "title": "**Open-question input**",
+        "ends_with": "`uv run priority interpret <transcript> --open-question q.json` builds a brief with an `OPEN QUESTION` section and prints a reading with `stop_kind: question`. Without the flag, the brief equals the stored snapshot and `stop_kind` is `turn_end`",
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
+      },
+      {
         "id": "priority-dev-spike/1",
         "feature": "priority-dev-spike",
         "n": 1,
@@ -5094,6 +5134,56 @@
         "score": "1.00",
         "attempts": 1,
         "state": "completed"
+      },
+      {
+        "id": "structure-coaching/15",
+        "feature": "structure-coaching",
+        "n": 15,
+        "title": "Review mode proposes a backlog design from the confirmed debt findings",
+        "ends_with": "A blind review agent with a fixture record groups the debt findings and writes a backlog `goal.json` with one planned epic for each group, and each epic cites its findings. It starts no build.",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
+        "id": "structure-coaching/16",
+        "feature": "structure-coaching",
+        "n": 16,
+        "title": "One name for each review mode in the glossary and the prose",
+        "ends_with": "The glossary holds a qualified entry for the architect audit and for the pull request narration, and no architect prose calls the audit by the narration name.",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
+        "id": "structure-coaching/17",
+        "feature": "structure-coaching",
+        "n": 17,
+        "title": "The scripted loop gives VALIDATE and the vocabulary agent a slice base and a packet path",
+        "ends_with": "`slice-loop.js` takes the slice base from RED, GREEN commits each attempt, and VALIDATE gets the base and the out path. A packet of the second slice holds only that slice.",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
+        "id": "structure-coaching/18",
+        "feature": "structure-coaching",
+        "n": 18,
+        "title": "No duplicate vocabulary leads",
+        "ends_with": "A file and a function of one name give one lead in each list of `evidence.vocabulary`.",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
+        "id": "structure-coaching/19",
+        "feature": "structure-coaching",
+        "n": 19,
+        "title": "`structure_evidence.py` keeps to the size guide",
+        "ends_with": "The entry script has 200 lines or fewer, and each test of the evidence script still passes.",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
       },
       {
         "id": "work-drawer/1",
@@ -5967,6 +6057,15 @@
         "body_md": "# Epic Technical Solution Design: E6 — Whole-repository view\n\nFeature: structure-coaching\nEpic ID: E6\n\n## Scope and Intent\n\nE6 runs each structure signal on the whole repository, for review mode and maintenance mode. Each signal uses the same algorithm as in E1 and E4. Only the input set changes: every file that is not excluded, with no new-code rule (ADR-0048 decision 16). The output is one findings file with a fixed schema. Review mode reports it, maintenance mode shows its trend, and a later `/architect:refactor` skill (E8) plans work from it.\n\nSlice 13 writes the findings file. Slice 14 makes review mode and maintenance mode use it. E6 follows the pattern of the habit-hooks scan: a script writes a JSON record beside the reports, and maintenance compares it with the record of the last run.\n\n## Files Touched\n\n- `shared/structure_evidence.py` (slice 13): a `--repo` mode.\n- `shared/structure/repo.py` (new, slice 13): the whole-repository run, the folder table, the change count, and `compare_findings`.\n- `plugins/architect/skills/architecture/SKILL.md` (slice 14): one step in review mode and one in maintenance mode.\n- `plugins/architect/skills/architecture/references/structure-review.md` (new, slice 14): how the agent reads the record and judges the rows.\n- `tests/test_structure_repo.py` (new)\n\n## Types & Signatures\n\n```python\n# shared/structure/repo.py\ndef change_counts(root: Path, days: int = 90) -> dict[str, int]: ...\ndef folder_table(root: Path, files: list[str]) -> list[dict]: ...\ndef repo_findings(root: Path, since: str | None) -> dict: ...\ndef compare_findings(previous: dict, current: dict) -> dict[str, str]: ...   # key -> new | worse | unchanged | fixed\n```\n\n`structure_evidence.py --repo --out <path> [--since <sha>] [--compare <previous record>]` writes the record and prints its path. With `--compare`, each finding gets a `trend` tag from `compare_findings`, and the record gets a `fixed` list.\n\n## Algorithms\n\n### D1. The input set\n\nEvery file from E1 A1, after the excluded paths. No new-code rule applies. For contract drift, `--since <sha>` gives the base: maintenance mode passes the commit of the last report. With no `--since`, the record holds no drift.\n\n### D2. The signals\n\nThe script runs each coach signal of E1 on each file, and the duplicated code and consumer locality of E4. The key of each finding is the key of E2 B3, so a finding in two runs has one key. A crowded folder gives one finding for each folder, not one for each file. Three signals run in this view only, because the agencheck spike found them weak in the change view and useful here:\n\n| Signal | Rule | Key | Result on agencheck |\n|---|---|---|---|\n| Twin name | Two or more non-test code files in different folders have the same lower-case stem, in one language family (Python, or TypeScript and JavaScript). Skip `twin_excluded_stems`: `index`, `__init__`, `main`, `types`, `conftest`, and the Next.js names `page`, `route`, `layout`, `loading`, `error`, `not-found`, `template`, and `default` | `twin-name|<stem>` | 55%, and 67% with the two filters |\n| Co-change group | Over the last 365 days of `git log --no-merges --name-only`, skip commits with more than 30 files. Two files in different folders form a pair when `support >= 5` and `support / union >= 0.5`. Connected pairs form one group | `co-change|<sorted paths>` | 14 of 14 real, 7 `act` |\n| Duplicate group | The duplicate windows of E4 C6 on all product code. Files that share a block form one group, a clone class | `duplicate-group|<sorted paths>` | 360 pairs became 79 groups, precision 87% |\n\nCode-and-test pairs do not count as a co-change pair.\n\n### D3. The change count and the order\n\n`change_counts` runs `git log --since=<days>.days --name-only --no-merges --format=` once. When the 90-day window holds fewer than 20 commits, it uses 365 days, and the record states the window. The agencheck spike had 3 commits in 90 days. The count of a finding is the count of its path, or the largest count of a file in its folder for a folder finding. The record lists the findings with the largest count first, then by key. No formula with weights, because the research found no source for one.\n\n### D4. The folder table\n\nFor each folder with three or more code files: `n` (code files), `internal` (import edges between siblings), `out` and `in` (edges that leave or enter the folder), `cf` = `2 × internal / (2 × internal + out + in)`, `instability` = `out / (out + in)`, `groups` (the import groups of E1 A9), and `test_share`. A folder with no edges gets `null` for `cf` and `instability`. The table has no limit. The agent reads the lowest rows and the rows that changed.\n\n### D5. The record\n\n```json\n{\n  \"schema\": 1,\n  \"commit\": \"<sha>\",\n  \"since\": \"<sha or null>\",\n  \"window_days\": 90,\n  \"findings\": [{\"key\": \"\", \"signal\": \"\", \"path\": \"\", \"folder\": \"\", \"facts\": {}, \"changes\": 0}],\n  \"folders\": [{\"folder\": \"\", \"n\": 0, \"internal\": 0, \"out\": 0, \"in\": 0, \"cf\": 0.0, \"instability\": 0.0, \"groups\": [], \"test_share\": 0.0}],\n  \"not_analysed\": []\n}\n```\n\nReview mode writes it as `docs/architecture/review/structure-findings.json`, beside the dated reports and `habit-smells.json`. The repo has no run folders. The record is committed with the reports, so the committed copy is the previous record for maintenance mode.\n\n### D6. The trend\n\n`compare_findings` matches the findings of two records by key. A key only in the current record is `new`. A key only in the previous record is `fixed`. A key in both is `worse` when a count fact grew, such as `count` of a crowded folder, and `unchanged` otherwise.\n\n### D7. The skill steps (slice 14)\n\n- Review mode, after the habit-hooks scan: run `structure_evidence.py --repo`, read the record, and write a `## Structure` section in both reports. The section lists the top findings by change count and the folder table. Each finding the agent reports gets a judgment, as `structure-review.md` says: debt, accepted, or false.\n- Maintenance mode: copy the committed `structure-findings.json` to a temporary path as the previous record. Run the script with `--since` set to the `commit` of that record and `--compare` set to the copy. The script tags each finding new, worse, or unchanged, and lists the fixed keys. The agent compares nothing by hand.\n- When the script fails, the section says so and claims no clean result.\n\n## Slice Decomposition\n\n1. **Slice 13.** Depends on E5. D1 to D6. Ends with a record on a fixture repo, ranked by change count, and a trend of two records.\n2. **Slice 14.** Depends on slice 13. D7. Ends with a blind review agent that writes the Structure section from a fixture record.\n\n## Test Plan\n\n- `test_structure_repo.py`: a fixture repo with a crowded folder, a name family, and a boundary edge gives each finding in an old file, which the change view does not report. The folder with more recent commits comes first. The folder table gives `cf` and `instability` for a folder with known edges, and `null` for a folder with no edges. `compare_findings` gives each of the four tags. Two `page.tsx` files give no twin. Two `util.py` files in two folders give one twin finding. A pair of files committed together in 5 of 6 commits gives one co-change group. A block in three files gives one duplicate group. A window of 5 commits in 90 days widens to 365 days. The record has the D5 keys.\n- Slice 14: a blind pass. A fresh agent in review mode gets a fixture record and writes the section with a judgment for each reported finding. The transcript stays in the slice evidence. `tests/test_install_command.py` and the existing architect tests stay green.\n\n## Risks & Open Questions\n\n- The whole-repository run on a large repo may take seconds. The research measured 550 ms for the import graph of this repo.\n- A finding key that holds a path changes when the file moves. A move gives one `fixed` and one `new`.\n- E8 depends on the record schema. A schema change bumps `schema`.\n",
         "approved_date": null,
         "source_path": "docs/plans/structure-coaching/epic-E6-design.md"
+      },
+      {
+        "id": "structure-coaching/E9",
+        "epic_id": "E9",
+        "feature_slug": "structure-coaching",
+        "title": "Epic Technical Solution Design: E9 — Follow-ups",
+        "body_md": "# Epic Technical Solution Design: E9 — Follow-ups\n\nFeature: structure-coaching\nEpic ID: E9\n\n## Scope and Intent\n\nThe replay stopped the work on E7 and E8. Five gaps stayed open. The engineer chose all five on 2026-11-15.\n\nReview mode labels a structure finding `debt`, but nothing turns that debt into work. Slice 15 closes that gap. Review mode proposes a backlog design, and design mode decides (ADR-0035). `/implement:start` then builds the design with the normal gates. This is a small form of the stopped E8, and it adds no command.\n\nSlices 16 to 19 close four smaller gaps that the build found.\n\n## Files Touched\n\n| Slice | Files |\n|---|---|\n| 15 | `plugins/architect/skills/architecture/references/structure-review.md`, `plugins/architect/skills/architecture/SKILL.md` (Review Mode step 12) |\n| 16 | `DDD-VOCABULARY.md`, `plugins/architect/skills/architecture/SKILL.md`, `plugins/architect/skills/architecture/references/structure-review.md` |\n| 17 | `plugins/implement/skills/build/workflows/slice-loop.js`, `plugins/implement/skills/build/references/slice-loop.md` (scripted mode paragraph) |\n| 18 | `shared/structure/vocabulary.py` or `shared/structure/slice_vocab.py`, a test file |\n| 19 | `shared/structure_evidence.py`, one new module under `shared/structure/` |\n\n## Types & Signatures\n\n- **Slice 15.** No code. The review step writes `docs/architecture/designs/<name>/goal.json` with `stage: \"backlog\"` and one epic for each group of `debt` findings. Each epic has `id`, `slug`, `title`, `outcome`, and `findings`, a list of finding keys. The step writes the file only after the engineer confirms the labels and the groups.\n- **Slice 16.** Two glossary entries with qualified names: one for `/architect:review` and one for `/pr:review`. The architect prose uses the architect name.\n- **Slice 17.** `RED_SCHEMA` gains `sliceBase`, the output of `git rev-parse HEAD` before RED writes a file. The GREEN prompt in `slice-loop.js` ends each attempt with a commit of the slice files on the feature branch. The VALIDATE and vocabulary prompts get the evidence script path, `--base <sliceBase>`, and `--out <evidence>/slice-<N>-packet.json`.\n- **Slice 18.** `vocabulary_leads` returns one entry for each name, path, and word in each list.\n- **Slice 19.** No signature changes. Code moves out of the entry script.\n\n## Slice Decomposition\n\n| # | Slice | Depends on |\n|---|---|---|\n| 15 | Review mode proposes a backlog design from the confirmed debt findings | none |\n| 16 | One name for each review mode | 15 |\n| 17 | The scripted loop gives VALIDATE a slice base and a packet path | 16 |\n| 18 | No duplicate vocabulary leads | 17 |\n| 19 | `structure_evidence.py` keeps to the size guide | 18 |\n\nThe order follows the tracker blockers. Slices 18 and 19 touch the same code, so 19 comes last.\n\n## Test Plan\n\n- **15.** A reference test checks that `structure-review.md` names `stage`, `epics`, and `findings` as `goal.json` keys. A blind review agent with a fixture record writes the backlog `goal.json`. `build_index.py` accepts the file.\n- **16.** The glossary tests pass. VALIDATE reads the changed prose. No test asserts wording.\n- **17.** A test runs the workflow script with a fake `agent()` and checks the VALIDATE prompt for `--base` and the base that RED returned. A test checks that the GREEN prompt holds a commit step. A scratch run of two slices gives a packet for slice 2 with no slice 1 file.\n- **18.** A test with a file `issue_invoice.py` and a function `issue_invoice` gives one lead in each list.\n- **19.** A line count test of the entry script, and the existing evidence tests.\n\n## Risks & Open Questions\n\n- **Commits in scripted mode.** A GREEN commit lands before VALIDATE scores the attempt. A failed attempt therefore leaves a commit on the feature branch. Git can roll it back, and a later attempt commits on top. The diff from `sliceBase` still covers every attempt.\n- **A dirty work tree at the start.** Files that the engineer changed outside the slice enter the diff from `sliceBase`. RED reports the dirty files, and the script names them in the run log.\n- **Backlog quality.** Slice 15 depends on the labels. A wrong `debt` label gives a wrong epic. The engineer confirms the groups before the file is written.\n",
+        "approved_date": null,
+        "source_path": "docs/plans/structure-coaching/epic-E9-design.md"
       }
     ],
     "interaction_design": [
@@ -7261,6 +7360,46 @@
         "source_path": ".cobuilder/rubrics/structure-coaching/slice-14.md"
       },
       {
+        "id": "structure-coaching/15",
+        "feature_slug": "structure-coaching",
+        "n": 15,
+        "title": "Slice 15 — Review mode proposes a backlog design",
+        "body_md": "# Rubric: Slice 15 — Review mode proposes a backlog design\n\nFeature: structure-coaching\nEpic: E9\nSlice goal: see row 15 of docs/plans/structure-coaching/04-slices.md\nTest command: uv run pytest tests -q\n\n## Criteria\n\n### C1 — The step and its keys [CRITICAL]\n**Must be true:** Review Mode in the architect SKILL.md and `structure-review.md` tell the agent to group the confirmed `debt` findings and propose a backlog design. The reference names the `goal.json` keys `stage`, `epics`, and `findings`.\n**Evidence to check:**\n- Read both files.\n- Run the reference tests for slice 15.\n**Scoring:**\n- 1.0 — the step and the keys are there, and the tests pass\n- 0.5 — the step is there, but a key is missing\n- 0.0 — no step\n\n### C2 — A blind review agent writes the design [CRITICAL]\n**Must be true:** A fresh agent with a fixture record and confirmed labels writes one backlog `goal.json`. It has one epic for each group, and each epic lists the keys of its findings.\n**Evidence to check:**\n- Read the blind-pass transcript and the written file in the slice evidence.\n**Scoring:**\n- 1.0 — one epic for each group, each with its finding keys\n- 0.5 — the file exists, but an epic has no finding keys or a group is missing\n- 0.0 — no file, or no blind pass\n\n### C3 — The engineer decides [CRITICAL]\n**Must be true:** The step writes the file only after the engineer confirms the labels and the groups, and it starts no build or slice.\n**Evidence to check:**\n- Read the step text and the transcript.\n**Scoring:**\n- 1.0 — a confirmation comes before the write, and no build starts\n- 0.0 — the agent writes without a confirmation, or starts a build\n\n### C4 — The index accepts the design\n**Must be true:** `build_index.py` reads the written backlog design with no error, and the stage is `backlog`.\n**Evidence to check:**\n- Run build_index.py on a copy that holds the file.\n**Scoring:**\n- 1.0 — no error\n- 0.0 — an error\n",
+        "source_path": ".cobuilder/rubrics/structure-coaching/slice-15.md"
+      },
+      {
+        "id": "structure-coaching/16",
+        "feature_slug": "structure-coaching",
+        "n": 16,
+        "title": "Slice 16 — One name for each review mode",
+        "body_md": "# Rubric: Slice 16 — One name for each review mode\n\nFeature: structure-coaching\nEpic: E9\nSlice goal: see row 16 of docs/plans/structure-coaching/04-slices.md\nTest command: uv run pytest tests -q\n\n## Criteria\n\n### C1 — Two qualified glossary entries [CRITICAL]\n**Must be true:** `DDD-VOCABULARY.md` holds one entry for the `/architect:review` audit and one for the `/pr:review` narration. Each names the other in its avoid list, and the glossary tests pass.\n**Evidence to check:**\n- Read the glossary.\n- Run the glossary tests.\n**Scoring:**\n- 1.0 — both entries, cross-referenced, tests pass\n- 0.5 — one entry is missing its cross-reference\n- 0.0 — the collision remains\n\n### C2 — The architect prose uses the audit name [CRITICAL]\n**Must be true:** No architect skill or reference, and no structure entry of the glossary, calls the audit by the narration name.\n**Evidence to check:**\n- grep the architect plugin and the glossary for 'review mode' and read each hit.\n**Scoring:**\n- 1.0 — no hit means the narration\n- 0.0 — a hit still calls the audit by the narration name\n\n### C3 — No other change\n**Must be true:** The slice changes names only, and no procedure step changes.\n**Evidence to check:**\n- Read the diff.\n**Scoring:**\n- 1.0 — names only\n- 0.0 — a step changed\n",
+        "source_path": ".cobuilder/rubrics/structure-coaching/slice-16.md"
+      },
+      {
+        "id": "structure-coaching/17",
+        "feature_slug": "structure-coaching",
+        "n": 17,
+        "title": "Slice 17 — The scripted loop gives VALIDATE a slice base",
+        "body_md": "# Rubric: Slice 17 — The scripted loop gives VALIDATE a slice base\n\nFeature: structure-coaching\nEpic: E9\nSlice goal: see row 17 of docs/plans/structure-coaching/04-slices.md\nTest command: uv run pytest tests -q\n\n## Criteria\n\n### C1 — RED reports the slice base [CRITICAL]\n**Must be true:** `RED_SCHEMA` holds `sliceBase`, and the RED prompt asks for `git rev-parse HEAD` before RED writes a file.\n**Evidence to check:**\n- Read slice-loop.js.\n- Run the slice 17 tests.\n**Scoring:**\n- 1.0 — both\n- 0.0 — no base\n\n### C2 — GREEN commits each attempt [CRITICAL]\n**Must be true:** The GREEN prompt in `slice-loop.js` ends each attempt with a commit of the slice files on the feature branch.\n**Evidence to check:**\n- Read the GREEN prompt.\n- Run the tests that read the prompt.\n**Scoring:**\n- 1.0 — a commit step that names the slice and the attempt\n- 0.0 — no commit step\n\n### C3 — VALIDATE and the vocabulary agent get the packet values [CRITICAL]\n**Must be true:** Both prompts name the evidence script, `--base` with the base from RED, and `--out` with the packet path.\n**Evidence to check:**\n- Run the test with a fake agent() that captures the prompts.\n**Scoring:**\n- 1.0 — both prompts hold the three values\n- 0.5 — one prompt lacks a value\n- 0.0 — neither\n\n### C4 — A second slice gives its own packet [CRITICAL]\n**Must be true:** In a scratch run of two slices, the packet of slice 2 holds no file of slice 1.\n**Evidence to check:**\n- Read the scratch-run evidence.\n**Scoring:**\n- 1.0 — only slice 2 files\n- 0.0 — slice 1 files appear, or no run\n\n### C5 — The loop text matches\n**Must be true:** The scripted-mode paragraph of `slice-loop.md` no longer names the missing packet as a limit, and it names the commit step.\n**Evidence to check:**\n- Read the paragraph.\n**Scoring:**\n- 1.0 — it matches\n- 0.0 — it still names the old limit\n",
+        "source_path": ".cobuilder/rubrics/structure-coaching/slice-17.md"
+      },
+      {
+        "id": "structure-coaching/18",
+        "feature_slug": "structure-coaching",
+        "n": 18,
+        "title": "Slice 18 — No duplicate vocabulary leads",
+        "body_md": "# Rubric: Slice 18 — No duplicate vocabulary leads\n\nFeature: structure-coaching\nEpic: E9\nSlice goal: see row 18 of docs/plans/structure-coaching/04-slices.md\nTest command: uv run pytest tests -q\n\n## Criteria\n\n### C1 — One lead for each name [CRITICAL]\n**Must be true:** A slice with `issue_invoice.py` that defines `issue_invoice` gives one entry for that name in `avoid_candidates` and in `defined_terms_used`, and one `invoice` in `new_tokens`.\n**Evidence to check:**\n- Run the new test, or run structure_evidence.py on a scratch repo.\n**Scoring:**\n- 1.0 — one entry in each list\n- 0.0 — a duplicate remains\n\n### C2 — No lost lead [CRITICAL]\n**Must be true:** Two different names that hold one word still give two leads.\n**Evidence to check:**\n- Run the tests for slice 12 and slice 18.\n**Scoring:**\n- 1.0 — both leads\n- 0.0 — a lead is lost\n",
+        "source_path": ".cobuilder/rubrics/structure-coaching/slice-18.md"
+      },
+      {
+        "id": "structure-coaching/19",
+        "feature_slug": "structure-coaching",
+        "n": 19,
+        "title": "Slice 19 — structure_evidence.py keeps to the size guide",
+        "body_md": "# Rubric: Slice 19 — structure_evidence.py keeps to the size guide\n\nFeature: structure-coaching\nEpic: E9\nSlice goal: see row 19 of docs/plans/structure-coaching/04-slices.md\nTest command: uv run pytest tests -q\n\n## Criteria\n\n### C1 — The size [CRITICAL]\n**Must be true:** `shared/structure_evidence.py` has 200 lines or fewer, and each moved function sits in a module under `shared/structure/` that also keeps the guide.\n**Evidence to check:**\n- wc -l the files.\n**Scoring:**\n- 1.0 — 200 or fewer\n- 0.0 — over 200\n\n### C2 — No change in behaviour [CRITICAL]\n**Must be true:** Every test of the evidence script, the repo record, the trend option, and the import failure passes, and the script runs on this repo with exit 0.\n**Evidence to check:**\n- Run the tests.\n- Run the script with --repo and with --base.\n**Scoring:**\n- 1.0 — all pass\n- 0.0 — a test fails\n",
+        "source_path": ".cobuilder/rubrics/structure-coaching/slice-19.md"
+      },
+      {
         "id": "work-drawer/1",
         "feature_slug": "work-drawer",
         "n": 1,
@@ -7356,7 +7495,8 @@
           "structure-coaching/E5",
           "structure-coaching/E6",
           "structure-coaching/E7",
-          "structure-coaching/E8"
+          "structure-coaching/E8",
+          "structure-coaching/E9"
         ]
       },
       "ADR-0013": {
@@ -7516,7 +7656,8 @@
           "structure-coaching/E5",
           "structure-coaching/E6",
           "structure-coaching/E7",
-          "structure-coaching/E8"
+          "structure-coaching/E8",
+          "structure-coaching/E9"
         ]
       },
       "ADR-0026": {
@@ -7708,7 +7849,8 @@
           "structure-coaching/E5",
           "structure-coaching/E6",
           "structure-coaching/E7",
-          "structure-coaching/E8"
+          "structure-coaching/E8",
+          "structure-coaching/E9"
         ]
       },
       "ADR-0039": {
@@ -7801,7 +7943,8 @@
           "structure-coaching/E5",
           "structure-coaching/E6",
           "structure-coaching/E7",
-          "structure-coaching/E8"
+          "structure-coaching/E8",
+          "structure-coaching/E9"
         ]
       }
     },
@@ -7961,6 +8104,7 @@
       "structure-coaching/E6": "completed",
       "structure-coaching/E7": "completed",
       "structure-coaching/E8": "completed",
+      "structure-coaching/E9": "unstarted",
       "ubiquitous-language/E1": "unstarted",
       "ubiquitous-language/E2": "unstarted",
       "ubiquitous-language/E3": "unstarted",
@@ -8112,6 +8256,11 @@
       "structure-coaching/9": "structure-coaching/E5",
       "structure-coaching/13": "structure-coaching/E6",
       "structure-coaching/14": "structure-coaching/E6",
+      "structure-coaching/15": "structure-coaching/E9",
+      "structure-coaching/16": "structure-coaching/E9",
+      "structure-coaching/17": "structure-coaching/E9",
+      "structure-coaching/18": "structure-coaching/E9",
+      "structure-coaching/19": "structure-coaching/E9",
       "work-drawer/1": "work-drawer/E1",
       "work-drawer/2": "work-drawer/E2"
     },
@@ -8978,7 +9127,7 @@
         "pull_requests": [
           {
             "ref": "55",
-            "number": 55,
+            "number": null,
             "state": "open",
             "epics": [
               "mechanical-smells/E1"
@@ -9023,7 +9172,7 @@
       },
       "structure-coaching": {
         "stage_source": "tracker",
-        "next_ready": null,
+        "next_ready": "structure-coaching/15",
         "pull_requests": []
       },
       "tracker-slice-edit": {
