@@ -1,13 +1,13 @@
 {
   "schema_version": "1.4",
   "sources": {
-    "git_head": "607b38c6ad08c83cac7793bdcabd9c880c9a6ef9",
+    "git_head": "738de88c278dd5ad7769afc0fdd52d48b50809be",
     "trees": {
       "docs/architecture/adr": "sha256:90969144359d2333c3fcd11e4ceb71b64cdddf1ee06c36990087f7f2c99830a8",
       "docs/architecture/designs": "sha256:77408c59737c44b8be3b80d643e8a098036e8da6f345e8ca61e7b30a39ba4f30",
       "docs/architecture/contexts": "sha256:e9537c5da21bf3f32eb547c8c422e8c3eb9acafefb5801143e53491b64ace073",
-      "docs/plans": "sha256:a686d392fa391de595a1ec204d5a5abb2e2812d21c2322e0fb64c7c63bdb19e4",
-      ".cobuilder/rubrics": "sha256:c514c9b792da5fab1ffc99cdfca66a43be790cdede3fa4b3334b75a7df1d1d4f"
+      "docs/plans": "sha256:bd437da9da890b171f6ec075214c76d71a3b877cea1c71076562b2fbc5f016ef",
+      ".cobuilder/rubrics": "sha256:5692a7f5dfb80b64c26ad3a1bfb4a9ee04b301dc0a9b680240076ae34d002775"
     }
   },
   "entities": {
@@ -4666,9 +4666,9 @@
         "n": 3,
         "title": "**Open-question input**",
         "ends_with": "`uv run priority interpret <transcript> --open-question q.json` builds a brief with an `OPEN QUESTION` section and prints a reading with `stop_kind: question`. Without the flag, the brief equals the stored snapshot and `stop_kind` is `turn_end`",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "priority-dev-spike/1",

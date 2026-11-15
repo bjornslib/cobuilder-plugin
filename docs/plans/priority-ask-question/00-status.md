@@ -21,7 +21,7 @@ Memory (before Gate 3, or Gate 2): absent
 ## Slices
 - [x] Slice 1 — Probe mod   score: 0.917 on attempt 1   note: —
 - [ ] Slice 2 — Probe record   score: —   note: the engineer runs the live probe
-- [ ] Slice 3 — Open-question input   score: —   note: —
+- [x] Slice 3 — Open-question input   score: 1 on attempt 1   note: —
 
 ## Escalated
 
