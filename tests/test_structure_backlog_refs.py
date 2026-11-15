@@ -130,7 +130,7 @@ def test_backlog_section_moves_the_stage_through_the_tracker():
 
 
 def test_review_step_12_names_the_backlog_design_path():
-    step = _step_block(_heading_blocks(_text(SKILL_MD), "review mode"), 12)
+    step = _step_block(_heading_blocks(_text(SKILL_MD), "architect review mode"), 12)
     assert REFERENCE_NAME in step, f"Review Mode step 12 does not name {REFERENCE_NAME}"
     assert DESIGN_PATH_RE.search(step), (
         "Review Mode step 12 does not name docs/architecture/designs/<name>/goal.json"

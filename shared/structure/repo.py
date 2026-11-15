@@ -1,4 +1,4 @@
-"""The whole-repository record of epic E6, for review mode and maintenance mode.
+"""The whole-repository record of epic E6, for architect review mode and maintenance mode.
 
 repo_findings runs each signal on every file that no excluded path holds. It ranks the findings
 by change count, and it adds the folder table. The record has the keys of epic E6, step D5.

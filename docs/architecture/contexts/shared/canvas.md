@@ -16,7 +16,7 @@ related:
 
 ## 1. Name & purpose
 
-**shared** (`shared`). It holds the code that more than one plugin needs: bundle version constants, the record index builder, the bundle verifier, the migration ladder, the comments ledger, the gate and slice parsers, the boundary check, the prose budget, and the tracker. The tracker is the tracker port, its three adapters (beads, files, fake), the projector, the sync worker, and the `tracker.py` command. Two skills, `mermaid` and `ste-writing`, live here too. The structure signals (`structure_signals.py`, `structure_evidence.py`, and the `structure/` helpers) find the facts that the coach and the review mode report. It is the base layer. It does not depend on a plugin.
+**shared** (`shared`). It holds the code that more than one plugin needs: bundle version constants, the record index builder, the bundle verifier, the migration ladder, the comments ledger, the gate and slice parsers, the boundary check, the prose budget, and the tracker. The tracker is the tracker port, its three adapters (beads, files, fake), the projector, the sync worker, and the `tracker.py` command. Two skills, `mermaid` and `ste-writing`, live here too. The structure signals (`structure_signals.py`, `structure_evidence.py`, and the `structure/` helpers) find the facts that the coach and the architect review mode report. It is the base layer. It does not depend on a plugin.
 
 ## 2. Strategic classification
 
@@ -57,7 +57,7 @@ related:
 | pr | Import `_bundle_meta` and `_manifest`. Shell: `migrate_bundle`, `build_index`, `verify_bundle`, `tracker` |
 | artifact | Import `_bundle_meta`, `ledger`, `gate_status`, `slice_table`, and `tracker_port.reader`. Shell: `build_index`, `migrate_bundle`, `tracker` |
 | implement | Import `slice_table`, `gate_status`, and `tracker_port.reader` in `verify_gate.py`. Import `structure_signals` and `structure.keys` in `structure_runner.py`. Shell: `build_index`, `tracker`, and `structure_evidence` in VALIDATE. The tracker hook scripts run `tracker.py` by subprocess |
-| architect | Shell only: `build_index`, `migrate_bundle`, `prose_budget`, `boundary_check`, `validate_decision_state`, `habit_smells`, `tracker`, and `structure_evidence` in review mode |
+| architect | Shell only: `build_index`, `migrate_bundle`, `prose_budget`, `boundary_check`, `validate_decision_state`, `habit_smells`, `tracker`, and `structure_evidence` in architect review mode |
 | cobuilder-packaging | `watch_feedback.py` imports `ledger`. The install command and setup skill run `tracker.py` and `structure_signals` |
 | cobuilder-memory | Holds the symlink. It imports and runs nothing from `shared/`. |
 
@@ -82,7 +82,7 @@ The symbols in `boundary.yaml` `public_interface`: the `_bundle_meta` constants 
 - The code, the reference documents, the formula `tracker_port/formulas/slice-loop.toml`, and the two shared skills.
 - The derived files it writes into a bundle: `data/index.json`, `data/adrs.json`, `bundle.json` updates, and the refreshed `viewer/index.html` copy.
 - The sync files in `.cobuilder/` of the host repo: `sync-dirty`, `sync-lock`, `sync-status.json`, and `sync-worker.log`.
-- It owns no authored source. It reads `docs/`. It writes derived records into `docs/` only: `habit-smells.json` from `habit_smells.py`, and `structure-findings.json` from `structure_evidence.py --out`, which review mode points at `docs/architecture/review/`.
+- It owns no authored source. It reads `docs/`. It writes derived records into `docs/` only: `habit-smells.json` from `habit_smells.py`, and `structure-findings.json` from `structure_evidence.py --out`, which architect review mode points at `docs/architecture/review/`.
 
 ---
 

@@ -1,13 +1,13 @@
 {
   "schema_version": "1.5",
   "sources": {
-    "git_head": "4d1825c183e766de4197a8f85324b9f309f6431f",
+    "git_head": "b044ff1ca3ac3e29084b95f74e3c47bdb7a5d13e",
     "trees": {
       "docs/architecture/adr": "sha256:20ca2f731683a3c296a2c76de4eeab9d4a6a07fcfeab163272cc78709195785d",
       "docs/architecture/designs": "sha256:36064aebf0a1a2af87ad4d9703cbe56dd3a2a7bc59f11b4f00a2252e6dcd20c9",
-      "docs/architecture/contexts": "sha256:9493f2d3ae353ca69d059c875d091fa366015e74dceaa43db115d0f72cd63e81",
-      "docs/plans": "sha256:7de0adf20f90dcafd5101472f8834415710e2a74fb7c673e564c1d11c9b616ea",
-      ".cobuilder/rubrics": "sha256:c34ddb90fa9726c865476724ee297b391a4a5e143d4b149c366c353d0510d22b"
+      "docs/architecture/contexts": "sha256:8ca7133e5a38a3c614862d9fb6550d40e2333ff772d6d7a4bd3a786914327670",
+      "docs/plans": "sha256:4bdfaf5e222ffe5305f243f2d225aaa72c3cc30fd051fca1262abfe16913fd71",
+      ".cobuilder/rubrics": "sha256:82e75de82e6a976a8c8f9c602d5baba8c877873a022ecf7b74641cd76d5a07a6"
     }
   },
   "entities": {
@@ -1635,7 +1635,7 @@
         "detail": {
           "target": "pr skill odyssey: SKILL.md, references/interview-guide.md, references/review-mode.md, references/pr-description-template.md, references/decision-records-lite.md",
           "from": "plugins/architect/skills/architecture",
-          "why": "SMELL: design mode tells Claude to read files inside the odyssey skill of the pr plugin. Grep counts 10 mentions of 'odyssey' in references/design-mode.md, 8 in SKILL.md (Hub resolution at line 85, odyssey Review mode step 4 at line 163), and 1 in references/decision-records.md. A name in prose is not an import, but the file path inside another plugin's cache cannot resolve when pr is not installed. The pr plugin is not in architect's manifest dependencies. ADR candidate: copy the interview, assessment, and PR-template text into architect or into shared."
+          "why": "SMELL: design mode tells Claude to read files inside the odyssey skill of the pr plugin. Grep counts 10 mentions of 'odyssey' in references/design-mode.md, 8 in SKILL.md (Hub resolution at line 85, odyssey PR review mode step 4 at line 163), and 1 in references/decision-records.md. A name in prose is not an import, but the file path inside another plugin's cache cannot resolve when pr is not installed. The pr plugin is not in architect's manifest dependencies. ADR candidate: copy the interview, assessment, and PR-template text into architect or into shared."
         }
       },
       {
@@ -3089,7 +3089,7 @@
           ],
           "allowed_inbound": [],
           "allowed_outbound": [],
-          "rule": "Leaf: standard library and its own modules. implement structure_runner.py imports it. architect runs structure_evidence.py --repo in review mode, and the install command runs structure_signals.py. structure/git.py runs git by subprocess. structure/boundary.py and structure/slice_edges.py read docs/architecture/contexts/*/boundary.yaml."
+          "rule": "Leaf: standard library and its own modules. implement structure_runner.py imports it. architect runs structure_evidence.py --repo in architect review mode, and the install command runs structure_signals.py. structure/git.py runs git by subprocess. structure/boundary.py and structure/slice_edges.py read docs/architecture/contexts/*/boundary.yaml."
         }
       },
       {
@@ -3099,7 +3099,7 @@
         "detail": {
           "with": "architect",
           "pattern": "shared-kernel",
-          "note": "Consumed by shell only: build_index, migrate_bundle, prose_budget, boundary_check, validate_decision_state, tracker, habit_smells, and structure_evidence in review mode."
+          "note": "Consumed by shell only: build_index, migrate_bundle, prose_budget, boundary_check, validate_decision_state, tracker, habit_smells, and structure_evidence in architect review mode."
         }
       },
       {
@@ -5151,9 +5151,9 @@
         "n": 16,
         "title": "One name for each review mode in the glossary and the prose",
         "ends_with": "The glossary holds a qualified entry for the architect audit and for the pull request narration, and no architect prose calls the audit by the narration name.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "structure-coaching/17",
@@ -9172,7 +9172,7 @@
       },
       "structure-coaching": {
         "stage_source": "tracker",
-        "next_ready": "structure-coaching/16",
+        "next_ready": "structure-coaching/17",
         "pull_requests": []
       },
       "tracker-slice-edit": {

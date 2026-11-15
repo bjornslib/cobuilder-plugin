@@ -152,12 +152,12 @@ A design at `stage: "backlog"`, with only a `goal.json` of planned epics.
 
 `inflight-record-store` is a backlog design today. `maintainable-viewer` was one, and it now reads `stage: "superseded"`. The state is deliberate and sparse. It comes before the later stages of Design mode, so it is not an abandoned design.
 
-<a id="review"></a>
-**Review** (`architect`):
+<a id="architect-review-mode"></a>
+**Architect review mode** (`architect`):
 `/architect:review`, the self-only audit of security, architecture, and quality. It produces paired Technical and Founder HTML reports under `docs/architecture/review/`.
-_Avoid_: code review
+_Avoid_: code review, PR review mode (the per-PR narration), review mode (ambiguous)
 
-See "Review mode" for the Odyssey per-PR sweep. That entry is a different entry.
+See "PR review mode" for the Odyssey per-PR sweep. That entry is a different entry.
 
 <a id="bounded-context"></a>
 **Bounded context** (`architect`):
@@ -228,16 +228,16 @@ A `world.districts` entry in `story.json` or `inventory.yaml`. Odyssey's describ
 
 See "Bounded context" for the verified version. That version never covers a foreign repo.
 
-<a id="review-mode"></a>
-**Review mode** (`pr`):
+<a id="pr-review-mode"></a>
+**PR review mode** (`pr`):
 The per-PR narration sweep, `/pr:review`. It narrates merged history into the bundle.
-_Avoid_: Review (a different corpus, a different output shape, and no HTML report), review-mode.md (a same-named but unrelated reference file)
+_Avoid_: Architect review mode (the self-only audit), Review (a different corpus, a different output shape, and no HTML report), review-mode.md (a same-named but unrelated reference file)
 
 <a id="review-mode-md"></a>
 **review-mode.md** (`pr`):
 The PR-assessment reference for the `--stage post` step of `/pr:generate`. It holds three questions with evidence, verdicts, and drift detection.
 
-See "Review mode" for the narration sweep. That mode has a different job, despite the shared word.
+See "PR review mode" for the narration sweep. That mode has a different job, despite the shared word.
 
 <a id="assessment-stage"></a>
 **Assessment stage** (`pr`):
@@ -324,7 +324,7 @@ A signal is advice, and it stays outside the slice score. The new-code rule limi
 One result of a structure signal for one path, with its facts. Code names it `structure_signals.Finding`, and JSON holds it under `findings`.
 _Avoid_: issue, smell
 
-VALIDATE labels a finding confirmed, accepted, or dismissed. Review mode labels a finding debt, accepted, or false.
+VALIDATE labels a finding confirmed, accepted, or dismissed. Architect review mode labels a finding debt, accepted, or false.
 
 <a id="name-family"></a>
 **Name family** (`implement`):
@@ -385,7 +385,7 @@ VALIDATE and the vocabulary agent read the packet. It holds facts, never a verdi
 <a id="session-record"></a>
 **Session record** (`implement`):
 The file `cobuilder-coach-<session_id>.json` in the system temp folder. `structure_runner.py` keeps in it the finding key of each structure finding that one session showed.
-_Avoid_: habit-smells record (the `habit-smells.json` file of review mode)
+_Avoid_: habit-smells record (the `habit-smells.json` file of architect review mode)
 
 A finding key is one string for each structure finding, such as `name-stem-cluster|<folder>|<stem>`. A later write in the same session does not repeat a key.
 

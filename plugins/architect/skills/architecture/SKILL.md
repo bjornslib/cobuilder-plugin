@@ -20,7 +20,7 @@ Accept a mode argument if the user supplies one at invocation. Prompt for one if
 
 **Argument-based invocation:**
 - `/architect:design` -- Design mode
-- `/architect:review` -- Review mode
+- `/architect:review` -- Architect review mode
 - `/architect:maintenance` -- Maintenance mode
 
 - `/architect:decisions` -- Decision Records mode. Internal: `pr:generate` and `pr:review` call it. It has no command file.
@@ -30,7 +30,7 @@ Accept a mode argument if the user supplies one at invocation. Prompt for one if
 
 These modes are self-only. They analyse only the repo of the current session. Odyssey can target another checkout. Architecture cannot. If the user asks to analyse a different local checkout, or to override where output lands, refuse.
 
-**Interactive fallback:** If invoked without an argument, prompt: "Which mode? (design / review / maintenance / decisions / describe / debug / options)". Do not assume review mode by default.
+**Interactive fallback:** If invoked without an argument, prompt: "Which mode? (design / review / maintenance / decisions / describe / debug / options)". Do not assume architect review mode by default.
 
 **Content-inferred fallback:** If the user says "help me design this" without a mode argument, infer `design`. If the user says "audit my codebase", infer `review`. If the user says "record this decision", "create an ADR", or "extract decisions from this PR", infer `decisions`. If the user says "document this module or context" or "write the boundary record", infer `describe`. If the user asks "why is X failing", asks to "find the root cause", or says "debug this", infer `debug`. If the user asks "is this flow right", "are these the right technology choices", or "what are the alternatives", infer `options`.
 
@@ -166,7 +166,7 @@ that join here.
    frame set. This is the pre-flight gate in
    `references/divergent-exploration.md` §1, run using the design frame
    set (§3). Use the same dual-path guard as mermaid authoring
-   (odyssey Review mode step 4):
+   (odyssey PR review mode step 4):
 
    1. Run divergent exploration per `references/divergent-exploration.md`
       with the design frame set. Return survivors and risks. Do not
@@ -270,7 +270,7 @@ It holds three inline SVG figures and the inquiries `F1`, `T1`, `G1`. It
 is the only output. Run `scripts/check_options_report.py` on it before the
 hand-off.
 
-### Review Mode
+### Architect Review Mode
 
 **Scope:** An audit of security, architecture, code quality, scaling, maintainability, dependency health, and testing. Produces two linked self-contained HTML reports.
 
@@ -279,7 +279,7 @@ hand-off.
 2. Load design corpus (`references/corpus/principles/architecture/*`, `references/corpus/principles/ddd/*`, `references/corpus/principles/design_patterns/*`).
 3. Detect the stack through `references/stacks/` (precedence and fallback rules live in `references/stacks/README.md`), then load the Corpus Load list of the matched card. Apply its Boundary Rules and Review Checks. Report deviations from its Reference Structure as architecture findings.
 
-4. **Read security corpus (applicability read, ADR-0021 addendum):** For all 14 files under `references/corpus/principles/security/*`, this is mandatory for review mode and has two passes:
+4. **Read security corpus (applicability read, ADR-0021 addendum):** For all 14 files under `references/corpus/principles/security/*`, this is mandatory for architect review mode and has two passes:
    1. Read the first ~30 lines of every file (this covers `id`/`name`/`category`/`canonical_tags`/`sources`/`summary` for all 14, with margin — never fewer than 30 lines, never fewer than all 14 files). Never skip a category's summary.
    2. For each file, read the remainder in full unless the summary clearly shows the category has no applicable surface area in the codebase under review. **When applicability is ambiguous, read the file in full** — this is the opposite default from book-index.md's Tier 2 escalation (§ below), because a missed security finding in this skill's compliance-weighted report is worse than a wasted read.
 5. Load `references/corpus/principles/testing/*`, `references/corpus/principles/resilience/*`, and `references/corpus/principles/data_systems/*` (as design choices).
@@ -343,10 +343,10 @@ If a prior scan exists:
 
 If no prior report exists, state: "This is the first scan. Future audits will compare against this baseline."
 
-**Corpus chain:** Same as Review mode.
+**Corpus chain:** Same as architect review mode.
 
 **Habit-hooks trend, after the corpus re-audit and before the trend
-report.** Run the same scan review mode runs:
+report.** Run the same scan that architect review mode runs:
 `uv run "${CLAUDE_PLUGIN_ROOT}/shared/habit_smells.py" --repo . --branch <base>`. The
 script writes `habit-smells.json` beside the reports. Read the record, then
 diff each (smell, file) pair against the previous report's
@@ -356,7 +356,7 @@ corpus findings, in the same NEW/ESCALATED/STABLE/RESOLVED language the
 corpus findings already use.
 When the previous report holds no `## Mechanical smells` section, every pair is NEW. This scan sets the baseline for later trends.
 When the record says `run_complete: false`, diff no pair and tag nothing. The trend waits for a complete run.
-Carry the degraded rules of review mode: when the record says `run_complete: false`, that is a P1 finding naming the tool habit-sensors. When the record says `available: false`, the section states
+Carry the degraded rules of architect review mode: when the record says `run_complete: false`, that is a P1 finding naming the tool habit-sensors. When the record says `available: false`, the section states
 the reason and claims no clean scan. Name the tool habit-hooks and the
 branch base in the report.
 
@@ -545,7 +545,7 @@ Four findings go to another category than their row:
 - A `business_risk` finding about a single point of failure counts under Architecture.
 - A vocabulary finding from step 10 counts under Maintainability.
 
-The checklist's Phase 4 scorer belongs to its 5-phase pipeline (Section 10), which review mode does not run. It uses 14 categories and its own weights. If a run uses the pipeline anyway, do not report its score. The reported score comes only from the P0/P1/P2 counts and `compute_scores.py`, below.
+The checklist's Phase 4 scorer belongs to its 5-phase pipeline (Section 10), which architect review mode does not run. It uses 14 categories and its own weights. If a run uses the pipeline anyway, do not report its score. The reported score comes only from the P0/P1/P2 counts and `compute_scores.py`, below.
 
 ### Category Score Formula
 

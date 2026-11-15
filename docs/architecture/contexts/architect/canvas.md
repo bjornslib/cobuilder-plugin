@@ -29,7 +29,7 @@ related:
 |------|-----------------------------|
 | [**Design**](../../../../DDD-VOCABULARY.md#design) | The `/architect:design` mode. It interviews, explores, challenges, and drafts. |
 | [**a design**](../../../../DDD-VOCABULARY.md#a-design) | The `docs/architecture/designs/<name>/` directory the mode writes. |
-| [**Review**](../../../../DDD-VOCABULARY.md#review) | The `/architect:review` self-only audit. It is not the pr plugin's review mode. |
+| [**Architect review mode**](../../../../DDD-VOCABULARY.md#architect-review-mode) | The `/architect:review` self-only audit. It is not PR review mode. |
 | [**Bounded context**](../../../../DDD-VOCABULARY.md#bounded-context) | A `canvas.md` and `boundary.yaml` pair that describe mode writes. |
 | [**Stale boundary**](../../../../DDD-VOCABULARY.md#stale-boundary) | A context whose `verified_at` commit is missing or older than a change under its path. |
 | [**Inquiry**](../../../../DDD-VOCABULARY.md#inquiry) | One question that options mode raises, with evidence and alternatives. |
@@ -135,7 +135,7 @@ flowchart LR
 
 ## Recorded smells (→ ADR candidates)
 
-1. **Design mode reads the pr plugin's odyssey skill by file.** `references/design-mode.md` has 10 mentions, `SKILL.md` has 8 (Hub resolution at line 85, Review mode step 4 at line 163), and `references/decision-records.md` has 1. They name `interview-guide.md`, `review-mode.md`, `pr-description-template.md`, and `decision-records-lite.md`. The pr plugin is not in the architect manifest, so the files may not exist. ADR candidate: move the shared text to `shared/`.
+1. **Design mode reads the pr plugin's odyssey skill by file.** `references/design-mode.md` has 10 mentions, `SKILL.md` has 8 (Hub resolution at line 85, PR review mode step 4 at line 163), and `references/decision-records.md` has 1. They name `interview-guide.md`, `review-mode.md`, `pr-description-template.md`, and `decision-records-lite.md`. The pr plugin is not in the architect manifest, so the files may not exist. ADR candidate: move the shared text to `shared/`.
 2. **Unprefixed cross-plugin Skill names.** architect calls `Skill("cobuilder-artifacts")` with no `artifact:` prefix. The pr plugin prefixes its calls. Low risk, but the form should match.
 
 ## Governing decisions

@@ -35,7 +35,7 @@ allowed_dependencies: []
 context_map:
   - with: architect
     pattern: shared-kernel
-    note: "Consumed by shell only: build_index, migrate_bundle, prose_budget, boundary_check, validate_decision_state, tracker, habit_smells, and structure_evidence in review mode."
+    note: "Consumed by shell only: build_index, migrate_bundle, prose_budget, boundary_check, validate_decision_state, tracker, habit_smells, and structure_evidence in architect review mode."
   - with: pr
     pattern: shared-kernel
     note: "Consumed by import (_bundle_meta, _manifest) and by shell (migrate_bundle, build_index, verify_bundle, tracker)."
@@ -146,7 +146,7 @@ modules:
     public_interface: [structure_signals, "structure.keys.finding_key"]
     allowed_inbound: []
     allowed_outbound: []
-    rule: "Leaf: standard library and its own modules. implement structure_runner.py imports it. architect runs structure_evidence.py --repo in review mode, and the install command runs structure_signals.py. structure/git.py runs git by subprocess. structure/boundary.py and structure/slice_edges.py read docs/architecture/contexts/*/boundary.yaml."
+    rule: "Leaf: standard library and its own modules. implement structure_runner.py imports it. architect runs structure_evidence.py --repo in architect review mode, and the install command runs structure_signals.py. structure/git.py runs git by subprocess. structure/boundary.py and structure/slice_edges.py read docs/architecture/contexts/*/boundary.yaml."
 
 verifies:
   - scripts

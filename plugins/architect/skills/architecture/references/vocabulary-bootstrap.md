@@ -13,7 +13,7 @@ stage 1, and design stage 5's update step write it.
 Design stage 1 runs this procedure as its primary caller, before the
 hypothesis is drafted. It is also called as an offer, not a run: the options
 mode hand-off stage offers it when its stage-1 check found the file absent,
-and review mode offers it when its run ends. An offer waits for a yes. A run
+and architect review mode offers it when its run ends. An offer waits for a yes. A run
 declares itself. Design stage 1 is the only caller that runs it inside a
 stage; the offers never start without consent.
 

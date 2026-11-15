@@ -1,12 +1,12 @@
 ---
 title: Structure Review
-description: How review mode and maintenance mode read the structure findings record, judge each finding, and tag its trend.
+description: How architect review mode and maintenance mode read the structure findings record, judge each finding, and tag its trend.
 status: active
 ---
 
 # Structure Review
 
-This file tells review mode and maintenance mode how to read the structure findings record. The script `structure_evidence.py --repo` writes the record. `SKILL.md` holds the steps. This file holds the judgment rules.
+This file tells architect review mode and maintenance mode how to read the structure findings record. The script `structure_evidence.py --repo` writes the record. `SKILL.md` holds the steps. This file holds the judgment rules.
 
 ## Read the record
 
@@ -100,7 +100,7 @@ A record with no finding and no `not_analysed` line holds no finding. The sectio
 
 ## Propose a backlog design
 
-Review mode proposes a backlog design from the `debt` findings. Design mode decides it, as ADR-0035 sets. This step starts no build and creates no slice.
+Architect review mode proposes a backlog design from the `debt` findings. Design mode decides it, as ADR-0035 sets. This step starts no build and creates no slice.
 
 Group the `debt` findings by one reason to change. Findings that one change would fix share a group. Each group becomes one planned epic. Leave out each finding that holds `accepted` or `false`.
 
