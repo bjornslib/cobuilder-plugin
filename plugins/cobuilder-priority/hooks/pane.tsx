@@ -1,16 +1,18 @@
 // The reader pane, layout C: header, agent summary, one open card, and the history of this session.
 // The header, the key row, and the note sit in a fixed top. The engine scrolls the body under it.
 import { atom, read } from 'claude-code'
-import type { Act, Mark, Reading } from '../types'
+import type { Act, HeldQuestion, Mark, Reading } from '../types'
 import { EMPTY, actFor, marksKey, openCard } from './act'
 import { card, clock, keyed, noteInput, quiet } from './card'
-import { keyRow } from './keys'
+import { keyRow, questionKeyRow } from './keys'
+import { questionBlocks } from './question'
 import { PANE_ID, isBusy, readingsKey } from './reader'
 import { abstainName, briefName, priorityName, statusName } from './names'
 
 const switchedOn = atom({ plugin: 'cobuilder-priority', key: 'on' } as const, false)
 const tick = atom({ plugin: 'cobuilder-priority', key: 'tick' } as const, 0)
 const act = atom({ plugin: 'cobuilder-priority', key: 'act' } as const, EMPTY)
+const heldAtom = atom({ plugin: 'cobuilder-priority', key: 'held' } as const, null as HeldQuestion | null)
 
 // The rows of the fixed top: the header, the key row, one empty row, and the note. The body starts under them.
 const FIXED_TOP_ROWS = 4
@@ -101,7 +103,7 @@ function history($: any, ui: any, rows: Reading[], marks: Record<string, Mark>, 
 
 // The reading shown, its marks and selection, and the blocks of the body, in draw order.
 // renderPane draws this view. Null with no reading.
-export async function paneView($: any, ui: any) {
+export async function paneView($: any, ui: any, columns: number) {
   const sessionId = await $.session.id()
   const readings = ((await $.store.get(readingsKey(sessionId))) as Reading[] | undefined) ?? []
   const newest = readings[readings.length - 1]
@@ -117,7 +119,29 @@ export async function paneView($: any, ui: any) {
     ...card($, ui, shown, a, live),
     ...history($, ui, others, marks, newest.n),
   ].filter((b) => b !== null)
-  return { readings, marks, a, shown, live, blocks }
+  return { readings, blocks, keys: keyRow($, ui, shown, marks[String(shown.n)], a, live, columns), note: noteInput($, ui, shown, marks[String(shown.n)]) }
+}
+
+// A held question: its card, then its reading under the card when the reading has arrived.
+async function heldView($: any, ui: any, held: HeldQuestion, columns: number) {
+  const sessionId = await $.session.id()
+  const readings = ((await $.store.get(readingsKey(sessionId))) as Reading[] | undefined) ?? []
+  const marks = ((await $.store.get(marksKey(sessionId))) as Record<string, Mark> | undefined) ?? {}
+  const own = readings.find((r) => r.toolUseId === held.toolUseId)
+  const a: Act = await read($, act)
+  const mark = own ? marks[String(own.n)] : undefined
+  const others = readings.filter((r) => r !== own).reverse()
+  const blocks = [
+    ...questionBlocks($, ui, held),
+    own ? summary(ui, own, a.summaryClosed) : null,
+    ...history($, ui, others, marks, readings[readings.length - 1]?.n ?? 0),
+  ].filter((b) => b !== null)
+  return {
+    readings,
+    blocks,
+    keys: questionKeyRow($, ui, held, own, mark, a.summaryClosed, columns),
+    note: own ? noteInput($, ui, own, mark) : null,
+  }
 }
 
 // The engine gives the window's offset in e.props.scroll. The fixed top sits at that row.
@@ -127,13 +151,13 @@ export async function renderPane($: any, e: any) {
   const frame = await read($, tick)
   await read($, act)
   const on = await read($, switchedOn)
-  const view = await paneView($, ui)
+  const held = await read($, heldAtom)
+  const view = held ? await heldView($, ui, held, e.props.bodyColumns) : await paneView($, ui, e.props.bodyColumns)
   if (!view) {
     const hint = on ? 'No reading yet. The next stop starts one.' : 'The reader is off. Run /priority-on to read each stop.'
     return <Box flexDirection="column">{header(ui, on, 0, frame)}<Text dimColor>{hint}</Text></Box>
   }
-  const { readings, marks, a, shown, live, blocks } = view
-  const mark = marks[String(shown.n)]
+  const { readings, blocks, keys, note } = view
   return (
     <Box flexDirection="column" rowGap={0}>
       <Box key="fixed-spacer" height={FIXED_TOP_ROWS} />
@@ -141,9 +165,9 @@ export async function renderPane($: any, e: any) {
       {cover(ui, e.props.bodyColumns, e.props.scroll.offset)}
       <Box key="fixed-top" position="absolute" top={e.props.scroll.offset} left={0} right={0} height={FIXED_TOP_ROWS} overflow="hidden" flexDirection="column">
         {header(ui, on, readings.length, frame)}
-        {keyRow($, ui, shown, mark, a, live, e.props.bodyColumns)}
+        {keys}
         <Box key="fixed-gap" height={1} />
-        {noteInput($, ui, shown, mark)}
+        {note}
       </Box>
     </Box>
   )

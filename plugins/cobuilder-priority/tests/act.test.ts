@@ -11,7 +11,7 @@ test('selecting two steps toggles their rows and fills the draft block', { optio
   await ui.press({ key: 'step-3' })
   expect((await ui.find({ key: 'step-0' }))?.text).toBe('[x] 1. Reply')
   expect((await ui.find({ key: 'draft' }))?.text).toBe('Run the migration before the tests.\n\nYes, go ahead. You may do the same for the rest of this session.')
-  expect((await ui.find({ key: 'draft-footer' }))?.text).toMatch(/^steps 1, 4 · \d+ chars · session prompt$/)
+  expect((await ui.find({ type: 'Text', text: 'Source:' }))?.text, 'the Source footer names steps 1 and 4').toMatch(/^Source: .*\b1\b.*\b4\b/)
   await ui.unmount()
 })
 

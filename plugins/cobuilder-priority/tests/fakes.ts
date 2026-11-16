@@ -119,10 +119,14 @@ export function stubStore(on: any) {
 }
 
 // Returns the status lines that the module set, in order. `opts.toasts` collects the text of each toast.
-export function stubEngine(on: any, opts: { commands?: boolean; toasts?: string[] } = {}) {
+// `opts.opened` collects each pane the module opens, with its focus flag (E3.4).
+export function stubEngine(on: any, opts: { commands?: boolean; toasts?: string[]; opened?: { id: string; focus?: boolean }[] } = {}) {
   const statuses: (string | undefined)[] = []
   if (opts.commands !== false) on('command.register', (_$: any, e: any) => ({ value: { command: e.name } }))
-  on('ui.open', () => ({ value: { isPlaced: true } }))
+  on('ui.open', (_$: any, e: any) => {
+    opts.opened?.push({ id: e.id, focus: e.focus })
+    return { value: { isPlaced: true } }
+  })
   on('ui.toast', (_$: any, e: any) => { opts.toasts?.push(e.text); return { value: undefined } })
   on('ui.status', (_$: any, e: any) => { statuses.push(e.text); return { value: undefined } })
   on('session.start', (_$: any, e: any) => ({ cwd: e.cwd }))

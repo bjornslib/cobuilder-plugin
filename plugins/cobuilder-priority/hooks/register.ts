@@ -1,6 +1,8 @@
 import { atom, read, update } from 'claude-code'
 import type { Register } from 'claude-code'
 import { renderBand } from './band'
+import { dropHeld, holdAsk, isHolding } from './ask'
+import type { AskEvent, Next } from './ask'
 import { openPane, renderPane } from './pane'
 import { PANE_ID, enqueue, startWaiting, stopWaiting } from './reader'
 
@@ -48,6 +50,8 @@ export const register: Register = (on, options) => {
   // The next prompt ends the wait at the stop, so the ready line goes. The reader then waits for the next reading.
   on('prompt.submit', async ($, e, next) => {
     $.ui.status(undefined)
+    // A card left by an Esc during a hold has no call behind it any more.
+    if (!isHolding()) await dropHeld($)
     if (await read($, switchedOn)) await startWaiting($)
     return next(e)
   })
@@ -58,6 +62,15 @@ export const register: Register = (on, options) => {
     if (e.agentId === undefined && e.reason !== 'answer') await stopWaiting($)
     return next(e)
   })
+
+  // A main-loop AskUserQuestion call is held in the pane. A throw passes the call to the dialog.
+  on('tool.call', { tool: 'AskUserQuestion' }, ($, e, next) => holdAsk($, options, e as unknown as AskEvent, next as unknown as Next))
+    .catch(async ($, e, next) => {
+      // After Esc the engine has moved on: touch nothing. The next prompt clears the card.
+      if (next.signal.aborted) return { deny: 'The person interrupted the question.' }
+      await dropHeld($)
+      return next(e)
+    })
 
   on('ui.render', { component: 'Pane', requestId: PANE_ID }, ($, e) => renderPane($, e))
 

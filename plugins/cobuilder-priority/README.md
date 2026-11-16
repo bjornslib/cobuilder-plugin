@@ -42,6 +42,25 @@ focus to the pane.
 The header, the key row, and the Note row stay at the top of the pane. Scroll
 the pane to move the cards under them. A new reading opens at the top.
 
+## Agent questions
+
+With the reader on, an `AskUserQuestion` call from the main loop opens in the
+pane. The dialog does not open. Each question shows its number, its text, its
+header, and its options with their descriptions. Each question has one Other
+input.
+
+1. Press an option to select it. A multi-select question takes several options.
+2. Type in Other to replace the picks of that question.
+3. Press `s` when every question has an answer. Send returns the answers to
+   the agent.
+
+The reading of the question fills in under the card when it is ready. The
+reading never changes your picks, and a slow reading does not delay Send. Send
+stores your answers on the reading's mark.
+
+A subagent call, or a call with the reader off, opens the dialog as before. If
+the hold fails, the dialog opens.
+
 ## Signals
 
 - The row above the prompt shows each `notify` message of the newest

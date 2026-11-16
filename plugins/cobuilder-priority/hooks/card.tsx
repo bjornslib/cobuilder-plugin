@@ -83,18 +83,33 @@ function stepRow($: any, ui: any, r: Reading, s: Step, i: number, a: Act, live: 
   )
 }
 
-function draftBlock(ui: any, r: Reading, a: Act) {
+const TITLE = '▸ WHAT WILL BE SENT'
+
+// The "What will be sent" block of every draft (question-card.svg). It is lit when Send can act.
+export function draftBox(ui: any, o: { text: string; footer?: string; lit: boolean; notice: string }) {
   const { Box } = ui
-  const draft = draftFor(r, a)
-  const names = draft.steps.map((s) => visibleNo(r.result?.steps ?? [], s)).join(', ')
   return (
     <Box key="draft-block" flexDirection="column" borderStyle="round" borderColor="cyan" paddingX={1} marginTop={1}>
-      {keyed(ui, 'draft', draft.text || 'Provide your response', quiet({ dimColor: !draft.text }))}
-      {draft.text ? keyed(ui, 'draft-footer',
-        `${draft.steps.length > 1 ? 'steps' : 'step'} ${names} · ${draft.text.length} chars · session prompt`, { dimColor: true }) : null}
-      {a.notice ? keyed(ui, 'notice', a.notice, quiet({ color: 'red' })) : null}
+      {keyed(ui, 'draft-title', TITLE, { dimColor: !o.lit })}
+      {keyed(ui, 'draft', o.text || 'Provide your response', { dimColor: !o.lit })}
+      {o.footer ? keyed(ui, 'draft-footer', o.footer, { dimColor: true }) : null}
+      {o.notice ? keyed(ui, 'notice', o.notice, { color: 'red' }) : null}
     </Box>
   )
+}
+
+// The footer names the picked steps: one step with its name, or the numbers of several.
+function sourceOf(r: Reading, picked: number[]): string | undefined {
+  if (!picked.length) return undefined
+  const steps = r.result?.steps ?? []
+  const numbers = picked.map((i) => visibleNo(steps, i))
+  if (picked.length > 1) return `Source: steps ${numbers.join(', ')}`
+  return `Source: step ${numbers[0]} ${stepName(steps[picked[0] as number] as Step)}`
+}
+
+function draftBlock(ui: any, r: Reading, a: Act) {
+  const draft = draftFor(r, a)
+  return draftBox(ui, { text: draft.text, footer: sourceOf(r, draft.steps), lit: Boolean(draft.text) && !isQuiet(), notice: a.notice })
 }
 
 function statusText(r: Reading): string {

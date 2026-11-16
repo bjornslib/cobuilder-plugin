@@ -2,7 +2,8 @@
 // It starts the priority-dev CLI as a process and never imports priority-dev (ADR-0045, ADR-0049).
 import { atom, read as readAtom, update } from 'claude-code'
 import type { PluginOptions } from 'claude-code'
-import type { Digest, Reading, ReadingResult } from '../types'
+import type { Digest, Question, Reading, ReadingResult } from '../types'
+import { takeAnswers } from './answers'
 import { agentSummary, answerLabels } from './labels'
 
 // The pane reads the same tick, so a write here redraws it.
@@ -12,7 +13,10 @@ const switchedOn = atom({ plugin: 'cobuilder-priority', key: 'on' } as const, fa
 
 export const PANE_ID = 'priority-reader'
 
-export type StopJob = { sessionId: string; transcript: string; repo: string; at: string; lastMessage: string }
+// A held AskUserQuestion call: its questions file is the --open-question input of the reading.
+export type QuestionJob = { toolUseId: string; questions: Question[]; file: string }
+
+export type StopJob = { sessionId: string; transcript: string; repo: string; at: string; lastMessage: string; question?: QuestionJob }
 
 const LOG_DIR = 'reports/logs/live'
 const MAX_SECONDS = 600
@@ -50,7 +54,8 @@ export async function stopWaiting($: any): Promise<void> {
 // Puts the stop in the queue and starts a reading when none runs. Only the newest waiting stop is kept.
 export function enqueue($: any, job: StopJob, options: PluginOptions): void {
   waiting = job
-  if (!busy) void drain($, options)
+  // A reading may outlive its session or a module reload. Its $ calls then reject, and the reading is lost.
+  if (!busy) drain($, options).catch(() => {})
 }
 
 async function drain($: any, options: PluginOptions): Promise<void> {
@@ -75,11 +80,20 @@ async function drain($: any, options: PluginOptions): Promise<void> {
 
 // Runs one reading while the timer moves the running indicator. The timer stops on every path.
 async function withSpinner($: any, job: StopJob, options: PluginOptions): Promise<Omit<Reading, 'n'>> {
-  const timer = $.clock.every(FRAME_MS, () => void update($, tick, (n) => n + 1))
+  const timer = frameTimer($)
   try {
     return await read($, job, options)
   } finally {
     timer.cancel()
+  }
+}
+
+// The indicator is cosmetic. A clock the engine refuses leaves the reading as it is.
+function frameTimer($: any): { cancel: () => void } {
+  try {
+    return $.clock.every(FRAME_MS, () => void update($, tick, (n) => n + 1))
+  } catch {
+    return { cancel: () => undefined }
   }
 }
 
@@ -89,7 +103,7 @@ function missingSettings(options: PluginOptions): string[] {
 
 async function read($: any, job: StopJob, options: PluginOptions): Promise<Omit<Reading, 'n'>> {
   const started = Date.now()
-  const base = { sessionId: job.sessionId, at: job.at, repo: job.repo, program: String(options.program ?? ''), ...answersOf(job.lastMessage) }
+  const base = { sessionId: job.sessionId, at: job.at, repo: job.repo, program: String(options.program ?? ''), ...answersOf(job.lastMessage), ...questionFields(job) }
   const failed = (error: string) => ({ ...base, brief: 'digest-current' as const, state: 'failed' as const, error, ms: Date.now() - started })
   const missing = missingSettings(options)
   if (missing.length) return failed(`Set ${missing.join(' and ')} in /config for cobuilder-priority.`)
@@ -97,13 +111,22 @@ async function read($: any, job: StopJob, options: PluginOptions): Promise<Omit<
     const digest = await cli($, ['digest', job.transcript, '--log-dir', LOG_DIR], options)
     const brief = await briefShape($, job.sessionId, isAbstain(digest))
     const label = brief === 'digest-current' ? 'current' : 'previous'
-    const args = ['interpret', job.transcript, '--log-dir', LOG_DIR, '--program', base.program, '--digest', label]
+    const args = ['interpret', job.transcript, '--log-dir', LOG_DIR, '--program', base.program, '--digest', label, ...openQuestionArgs(job)]
     const result = (await cli($, args, options)) as ReadingResult
     const kept = isAbstain(digest) ? {} : { digest: digest as Digest }
     return { ...base, brief, state: 'done', result, ...kept, ms: Date.now() - started }
   } catch (err) {
     return failed(String((err as Error)?.message ?? err))
   }
+}
+
+// The fields of a reading of a held question. A turn-end reading has none.
+function questionFields(job: StopJob): Partial<Pick<Reading, 'stop_kind' | 'questions' | 'toolUseId'>> {
+  return job.question ? { stop_kind: 'question', questions: job.question.questions, toolUseId: job.question.toolUseId } : {}
+}
+
+function openQuestionArgs(job: StopJob): string[] {
+  return job.question ? ['--open-question', job.question.file] : []
 }
 
 // The labels always; the Summary text only when the message has one.
@@ -152,6 +175,7 @@ async function save($: any, reading: Omit<Reading, 'n'>): Promise<void> {
   const list = ((await $.store.get(key)) as Reading[] | undefined) ?? []
   const n = list.length + 1
   await $.store.set(key, [...list, { ...reading, n }])
+  if (reading.stop_kind === 'question') await takeAnswers($, { ...reading, n })
   // At a stop the session waits for the next prompt. The status line says a reading is ready.
   const what = reading.state === 'failed' ? 'failed' : `ready${reading.result?.needs_human ? ' · needs you' : ''}`
   $.ui.status(`Priority reader · #${n} ${what}`)

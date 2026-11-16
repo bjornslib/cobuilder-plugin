@@ -5,7 +5,20 @@ export type Verdict = 'right' | 'wrong'
 
 export type Sent = { how: 'submit' | 'fill'; steps: number[]; text: string; at: string }
 
-export type Mark = { verdict: Verdict | null; note: string; at: string; sent?: Sent }
+// The answers of a held AskUserQuestion call, keyed by question text. Set when Send answers a question.
+export type Mark = { verdict: Verdict | null; note: string; at: string; sent?: Sent; answers?: Record<string, string> }
+
+// One question of an AskUserQuestion call, in the shape the tool takes.
+export type Question = { question: string; header?: string; multiSelect?: boolean; options: { label: string; description?: string }[] }
+
+// The call the pane holds. Picks and Other text are keyed by question index.
+export type HeldQuestion = {
+  toolUseId: string
+  questions: Question[]
+  picks: Record<number, string[]>
+  other: Record<number, string>
+  notice: string
+}
 
 export type ReadingResult = {
   status: string | null
@@ -34,6 +47,10 @@ export type Reading = {
   labels?: string[]
   // The text of the agent's own Summary part, when the message has one.
   agentSummary?: string
+  // A reading of a held question: its stop kind, the asked questions, and the call's id.
+  stop_kind?: 'turn_end' | 'question'
+  questions?: Question[]
+  toolUseId?: string
 }
 
 // What the pane holds between presses. `n` names the reading the selection belongs to.
@@ -50,6 +67,6 @@ export type Act = {
 
 declare module 'claude-code' {
   interface PluginState {
-    'cobuilder-priority': { on: boolean; tick: number; act: Act }
+    'cobuilder-priority': { on: boolean; tick: number; act: Act; held: HeldQuestion | null }
   }
 }

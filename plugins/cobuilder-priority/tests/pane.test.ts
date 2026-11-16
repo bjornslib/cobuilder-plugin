@@ -31,11 +31,11 @@ test('the agent summary shows the digest, and m closes it', { options: OPTIONS }
   await ui.unmount()
 })
 
-test('the draft block has no title row', { options: OPTIONS }, async ($, on) => {
+test('the draft block has the title row, ▸ WHAT WILL BE SENT', { options: OPTIONS }, async ($, on) => {
   await readings($, on, [DIGESTED, ACTIONABLE])
   const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
   expect(await ui.find({ key: 'draft' }), 'the draft block is drawn').toBeDefined()
-  expect(await ui.find({ type: 'Text', text: /What will be sent/ })).toBeUndefined()
+  expect((await ui.find({ type: 'Text', text: '▸ WHAT WILL BE SENT' }))?.text, 'the title row reads ▸ WHAT WILL BE SENT').toBe('▸ WHAT WILL BE SENT')
   await ui.unmount()
 })
 
