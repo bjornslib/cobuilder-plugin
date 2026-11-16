@@ -44,8 +44,19 @@ not cut it.
 {"at":"2026-11-15T21:12:17.623Z","kind":"answered","elapsedMs":41131,"shape":"answers-by-question","via":"spawn"}
 ```
 
-The hold lasted 41 seconds, four times the budget. A hold of three
-minutes, and Esc during a hold, are not yet measured.
+The hold lasted 41 seconds, four times the budget.
+
+### Third run: the schema fix (2026-11-16)
+
+```
+{"at":"2026-11-15T21:16:28.340Z","kind":"caught","inTranscript":true}
+{"at":"2026-11-15T21:16:43.055Z","kind":"answered","elapsedMs":14722,"shape":"answers-by-question","via":"spawn"}
+```
+
+The agent received the answers with no schema error. The engineer
+reported that the run worked. The log holds no hold of three minutes. Esc
+writes no line by design, because the hook makes no `$` call after an
+abort. E3 tests both again.
 
 ## 2. Which answer shape does the agent receive?
 
@@ -81,5 +92,5 @@ its own path, so the dialog opens.
 
 Hold, with the wait inside `$.process.spawn`. A hold on a plain promise
 fails at 10 seconds, and a hold inside a `$` call lasted 41 seconds. The
-answer must match the tool's output schema. Two checks stay open before E3
-ships: a hold of three minutes, and Esc during a hold.
+answer must match the tool's output schema. E3 checks a hold of three
+minutes and Esc during a hold again, with the reader's own pane.
