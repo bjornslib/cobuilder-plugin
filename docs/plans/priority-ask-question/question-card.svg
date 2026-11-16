@@ -46,8 +46,6 @@
   <!-- What will be sent -->
   <rect x="36" y="326" width="568" height="118" fill="#0f2a2e" stroke="#39c5cf" stroke-width="2"/>
   <text x="50" y="350" fill="#39c5cf" font-weight="bold">┌ ▸ WHAT WILL BE SENT ─────────</text>
-  <rect x="534" y="337" width="58" height="18" fill="#39c5cf"/>
-  <text x="543" y="350" fill="#0b0f14" font-size="11" font-weight="bold">READY</text>
   <rect x="50" y="362" width="540" height="48" fill="#0b0f14" stroke="#2a313b"/>
   <text x="62" y="381" fill="#e6e6e6">Which store keeps the marks? → $.store</text>
   <text x="62" y="400" fill="#e6e6e6">Which checks run on save? → Unit, E2E</text>
@@ -58,8 +56,6 @@
   <rect x="20" y="512" width="600" height="150" fill="#11161d" stroke="#2a313b"/>
   <rect x="36" y="528" width="568" height="118" fill="#0f2a2e" stroke="#39c5cf" stroke-width="2"/>
   <text x="50" y="552" fill="#39c5cf" font-weight="bold">┌ ▸ WHAT WILL BE SENT ─────────</text>
-  <rect x="534" y="539" width="58" height="18" fill="#39c5cf"/>
-  <text x="543" y="552" fill="#0b0f14" font-size="11" font-weight="bold">READY</text>
   <rect x="50" y="564" width="540" height="48" fill="#0b0f14" stroke="#2a313b"/>
   <text x="62" y="583" fill="#e6e6e6">Run the migration before the tests, then</text>
   <text x="62" y="602" fill="#e6e6e6">re-run the suite.</text>

@@ -41,8 +41,8 @@ answer pairs, and the "What will be sent" block.
 The block from layout C now frames every draft in the pane, not only a
 question (frames A, B, and C of the SVG):
 
-- A title row, `▸ WHAT WILL BE SENT`, with a `READY` tag when Send can
-  act.
+- A title row, `▸ WHAT WILL BE SENT`. The block is lit when Send can
+  act, and dim when it cannot.
 - The exact text that Send sends, in an inner box.
 - A footer with one field: Source (the answers, or the chosen steps).
 - With nothing chosen, the block is dim and says "Provide your response".
@@ -62,7 +62,7 @@ Files, all in `plugins/cobuilder-priority/`:
 - `hooks/hold.ts` (new): the answer paths, the `$.process.spawn` argv,
   the stdout drain, and the outcome. This is the probe's `spawn.ts`.
 - `hooks/question.tsx` (new): the question card.
-- `hooks/card.tsx`: the "What will be sent" block, with its title, `READY` tag, and footer, for every draft.
+- `hooks/card.tsx`: the "What will be sent" block, with its title and its Source footer, for every draft.
 - `hooks/register.ts`: registers the hook.
 - `hooks/reader.ts`: a question job that runs `priority digest`, then
   `priority interpret --open-question <file>`.
