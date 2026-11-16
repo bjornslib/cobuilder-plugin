@@ -112,11 +112,20 @@ def _one_line_packet(base: str | None, text: str) -> dict[str, Any]:
     return _packet(base, _files([], []), [], _evidence([], []), [_one_line(text)])
 
 
+def _fallback_packet(base: str | None, failure: str) -> dict[str, Any]:
+    """Return the packet keys of packet.py with no import of it, for a run with no helpers."""
+    note = _one_line(f"not analysed: the structure helpers did not import: {failure}")
+    leads: dict[str, list[Any]] = {"avoid_candidates": [], "defined_terms_used": [], "new_tokens": []}
+    evidence = {"boundary_rules_for_agent": [], "vocabulary": leads, "moves": [],
+                "consumer_locality": []}
+    return {"schema": 1, "base": base, "files": {"added": [], "modified": []}, "findings": [],
+            "evidence": evidence, "not_analysed": [note]}
+
+
 def _packet_here(base: str | None) -> dict[str, Any]:
     """Return the packet of the repo that holds the working folder."""
     if IMPORT_FAILURE is not None:
-        text = f"not analysed: the structure helpers did not import: {IMPORT_FAILURE}"
-        return _one_line_packet(base, text)
+        return _fallback_packet(base, IMPORT_FAILURE)
     try:
         root = repo_top(Path.cwd())
     except GitError as error:

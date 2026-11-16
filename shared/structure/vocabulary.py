@@ -48,7 +48,8 @@ def vocabulary_leads(
 ) -> dict[str, list[dict[str, Any]]]:
     """Return the leads of the names. The stems are the file names that the diff does not add.
 
-    Each list holds one lead for each name, path, and word. The first lead of each one stays.
+    Each list holds one lead for each name, path, and word. An avoid lead also keys on its
+    glossary entry. The first lead of each one stays.
     """
     held = _held_tokens(index, stems)
     leads = empty_leads()
@@ -57,17 +58,17 @@ def vocabulary_leads(
         leads["defined_terms_used"] += _term_hits(name, index)
         leads["new_tokens"] += _new_hits(name, held)
     return {
-        "avoid_candidates": _unique_leads(leads["avoid_candidates"], "word"),
+        "avoid_candidates": _unique_leads(leads["avoid_candidates"], "word", "entry"),
         "defined_terms_used": _unique_leads(leads["defined_terms_used"], "term"),
         "new_tokens": _unique_leads(leads["new_tokens"], "token"),
     }
 
 
-def _unique_leads(found: list[dict[str, Any]], field: str) -> list[dict[str, Any]]:
-    """Return one lead for each name, path, and field value. The first lead of each one stays."""
-    kept: dict[tuple[str, str, str], dict[str, Any]] = {}
+def _unique_leads(found: list[dict[str, Any]], *fields: str) -> list[dict[str, Any]]:
+    """Return one lead for each name, path, and value of the fields. The first lead stays."""
+    kept: dict[tuple[str, ...], dict[str, Any]] = {}
     for lead in found:
-        kept.setdefault((lead["name"], lead["path"], lead[field]), lead)
+        kept.setdefault((lead["name"], lead["path"], *(lead[field] for field in fields)), lead)
     return list(kept.values())
 
 

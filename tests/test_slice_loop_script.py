@@ -196,16 +196,20 @@ def _packet_text(repo: Path, base: str, out: Path) -> str:
 
 
 def _scripted_paragraph() -> str:
-    """Return the Scripted paragraph of the slice loop reference, joined into one line."""
+    """Return the whole Scripted text of the slice loop reference, joined into one line.
+
+    The text runs from the **Scripted label to the next bold mode label, the next heading,
+    or a rule line, and it can hold more than one paragraph.
+    """
     lines = SLICE_LOOP_MD.read_text(encoding="utf-8").splitlines()
     starts = [index for index, line in enumerate(lines) if line.startswith("**Scripted")]
     assert starts, f"{SLICE_LOOP_MD}: no paragraph starts with **Scripted"
-    paragraph = []
+    text = []
     for line in lines[starts[0]:]:
-        if not line.strip():
+        if text and (line.startswith(("**", "#")) or line.strip() == "---"):
             break
-        paragraph.append(line)
-    return " ".join(paragraph)
+        text.append(line)
+    return " ".join(line for line in text if line.strip())
 
 
 # ---------------------------------------------------------------------------

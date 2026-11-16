@@ -29,12 +29,11 @@ Steps:
    own line — and stop. Never return a silent `CLEAN` from a missing
    file.
 1. Read `DDD-VOCABULARY.md` in full.
-2. Run the diff command the spawn message gave you. It is `git diff HEAD`
-   followed by `git status --porcelain`, so tracked changes and new
-   untracked files both show up — `git diff` alone never lists a file
-   nobody has staged yet. For each path `git status --porcelain` marks
-   `??` (untracked), read that file directly with Read, since no diff
-   command shows its content.
+2. Run the diff command that the spawn message gives. It diffs from the
+   slice base, so it covers every committed attempt. Then run
+   `git status --porcelain`. For each path that it marks `??` (untracked),
+   read that file directly with Read, since no diff command shows its
+   content.
 3. Check these six kinds of name against the glossary: district,
    directory, file, class, function, and method. Also check the prose the
    diff changed, for example a comment, a docstring, or a markdown file.

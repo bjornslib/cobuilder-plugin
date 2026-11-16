@@ -157,3 +157,22 @@ def test_one_name_in_two_files_keeps_one_lead_per_file():
     for key in LIST_KEYS:
         paths = sorted(_field(lead, "path") for lead in _field(leads, key))
         assert paths == ["a/issue_invoice.py", "b/issue_invoice.py"], f"{key} gives the paths {paths}"
+
+
+def test_two_entries_that_avoid_one_word_keep_one_lead_each_for_one_name():
+    """Two glossary entries that list one avoided word give two avoid leads for one name."""
+    index = [
+        {"term": "Issue", "context": "implement",
+         "avoid": [{"word": "invoice", "reason": "a bill that a customer pays"}]},
+        {"term": "Ticket", "context": "pr",
+         "avoid": [{"word": "invoice", "reason": "a paper that a clerk files"}]},
+    ]
+    names = [("issue_invoice", "a/issue_invoice.py", "implement")]
+    leads = _api("vocabulary_leads")(names, index, [])
+    avoid = [lead for lead in _field(leads, "avoid_candidates") if lead["word"] == "invoice"]
+    assert sorted(_field(lead, "entry") for lead in avoid) == ["Issue", "Ticket"], (
+        f"the avoid leads for one name hold the entries {[lead['entry'] for lead in avoid]}"
+    )
+    assert sorted(_field(lead, "reason") for lead in avoid) == [
+        "a bill that a customer pays", "a paper that a clerk files",
+    ], f"the avoid leads lost a reason: {avoid}"
