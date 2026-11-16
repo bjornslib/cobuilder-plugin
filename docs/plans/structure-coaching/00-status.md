@@ -19,7 +19,7 @@ Memory (before Gate 3, or Gate 2): pending
 none
 
 ## Notes for a fresh session
-- The design is `docs/architecture/designs/structure-coaching/` and ADR-0048, decided 2026-11-11. One PR, on branch `design/structure-coaching`.
+- The design is `docs/architecture/designs/structure-coaching/` and ADR-0049, decided 2026-11-11. One PR, on branch `design/structure-coaching`.
 - Gate 1 memory: the `consult` tool answered that the Hindsight server is not found, so the call counts as absent.
 - The engineer reviews and approves the coaching language in the first slice of E2 before the coach and VALIDATE use it.
 - The coach has no cap on structure findings at first. The second runner in `habit_coach.py` is the one delivery route.

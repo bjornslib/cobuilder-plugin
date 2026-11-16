@@ -142,4 +142,4 @@ Name `/architect:design` as the next step for the engineer. Design mode decides 
 
 ## The advice rule
 
-A structure signal is advice, and ADR-0048 sets that rule. The record is advice too. It never changes the review score unless the engineer decides that it should. Keep the `## Structure` section outside the score.
+A structure signal is advice, and ADR-0049 sets that rule. The record is advice too. It never changes the review score unless the engineer decides that it should. Keep the `## Structure` section outside the score.

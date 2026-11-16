@@ -5,7 +5,7 @@ Epic ID: E2
 
 ## Scope and Intent
 
-E2 turns the signals into coaching that GREEN acts on. Slice 3 writes the wording, and the engineer approves it before any code uses it. Slice 4 applies the wording in the coach, with no repeat in a session and no smell output for an unscanned extension. Slice 5 makes the install write the default config. The coach has no cap on structure findings, as ADR-0048 decision 5 says.
+E2 turns the signals into coaching that GREEN acts on. Slice 3 writes the wording, and the engineer approves it before any code uses it. Slice 4 applies the wording in the coach, with no repeat in a session and no smell output for an unscanned extension. Slice 5 makes the install write the default config. The coach has no cap on structure findings, as ADR-0049 decision 5 says.
 
 ## Files Touched
 
@@ -47,7 +47,7 @@ Slice 3 writes the words. This design fixes the parts, so a test can check the s
 
 A template uses only the placeholders that its signal puts in `facts`, plus `path` and `folder`. The research found that a message that names the decision gave real fixes in 83.3% of trials, against 28.9% and 5.6% for bare metrics.
 
-Slice 3 also writes the format of the Structure block for VALIDATE (E4). The block lists each script finding for the new files of the slice. Each finding gets a judgment, confirmed or dismissed, and one line of reason. It then gives the three judgments of ADR-0048 decision 8: contract drift, cohesion, and each new dependency.
+Slice 3 also writes the format of the Structure block for VALIDATE (E4). The block lists each script finding for the new files of the slice. Each finding gets a judgment, confirmed or dismissed, and one line of reason. It then gives the three judgments of ADR-0049 decision 8: contract drift, cohesion, and each new dependency.
 
 ### B2. The extension guard (slice 4)
 

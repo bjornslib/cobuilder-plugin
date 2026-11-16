@@ -5,7 +5,7 @@ Epic ID: E4
 
 ## Scope and Intent
 
-E4 gives VALIDATE evidence about the structure of the slice diff, and VALIDATE judges it beside the score. A script writes one evidence packet. It reports facts and no verdict. VALIDATE labels each finding and writes three judgments in a `### Structure` block outside `overall_score`. The vocabulary agent judges the vocabulary leads, because it is the one judge of names (ADR-0048 decision 15).
+E4 gives VALIDATE evidence about the structure of the slice diff, and VALIDATE judges it beside the score. A script writes one evidence packet. It reports facts and no verdict. VALIDATE labels each finding and writes three judgments in a `### Structure` block outside `overall_score`. The vocabulary agent judges the vocabulary leads, because it is the one judge of names (ADR-0049 decision 15).
 
 Slice 8 is the tracer. It carries one signal, Python contract drift, plus the boundary edges of E1, from the script to the block. Slice 11 adds each VALIDATE signal that the spike keeps. Slice 12 adds the vocabulary leads.
 

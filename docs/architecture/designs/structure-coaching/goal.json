@@ -1,9 +1,9 @@
 {
   "name": "structure-coaching",
   "title": "Structure signals coach GREEN, and VALIDATE reports them beside the slice score",
-  "adr": "ADR-0048",
+  "adr": "ADR-0049",
   "adrs": [
-    "ADR-0048",
+    "ADR-0049",
     "ADR-0025",
     "ADR-0038",
     "ADR-0012"

@@ -128,7 +128,7 @@ def _record(
         lines += ["", "forbidden_dependencies:"]
         for target, why in forbidden:
             lines += [f'  - target: "{target}"', f'    why: "{why}"']
-    lines += ["", "governed_by:", "  - ADR-0048", ""]
+    lines += ["", "governed_by:", "  - ADR-0049", ""]
     return "\n".join(lines)
 
 

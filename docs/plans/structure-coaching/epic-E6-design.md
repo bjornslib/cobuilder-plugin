@@ -5,7 +5,7 @@ Epic ID: E6
 
 ## Scope and Intent
 
-E6 runs each structure signal on the whole repository, for review mode and maintenance mode. Each signal uses the same algorithm as in E1 and E4. Only the input set changes: every file that is not excluded, with no new-code rule (ADR-0048 decision 16). The output is one findings file with a fixed schema. Review mode reports it, maintenance mode shows its trend, and a later `/architect:refactor` skill (E8) plans work from it.
+E6 runs each structure signal on the whole repository, for review mode and maintenance mode. Each signal uses the same algorithm as in E1 and E4. Only the input set changes: every file that is not excluded, with no new-code rule (ADR-0049 decision 16). The output is one findings file with a fixed schema. Review mode reports it, maintenance mode shows its trend, and a later `/architect:refactor` skill (E8) plans work from it.
 
 Slice 13 writes the findings file. Slice 14 makes review mode and maintenance mode use it. E6 follows the pattern of the habit-hooks scan: a script writes a JSON record beside the reports, and maintenance compares it with the record of the last run.
 

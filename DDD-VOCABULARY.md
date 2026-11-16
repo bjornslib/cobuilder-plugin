@@ -85,7 +85,7 @@ An adapter maps the tracker record to the record of its own tracker.
 One implementation of the tracker port for one tracker. The `beads` adapter comes first, and `fake` keeps records in memory.
 _Avoid_: connector (a loose word for any tool that moves data, and an adapter must pass the contract test)
 
-`files` reads today's files. The `linear` and `jira` adapters are later programs.
+`files` reads today's files. ADR-0048 designs the `linear` adapter, and the `jira` adapter is a later program.
 
 <a id="projector"></a>
 **Projector** (`cobuilder-packaging`):
@@ -98,6 +98,16 @@ The one command, `shared/tracker.py`, that an agent calls to read or write workf
 _Avoid_: bd, gh (the native CLI of a tracker, which only an adapter calls), the `bd` bridges (a different tool with its own sync)
 
 It prints JSON on stdout. It exits 2 when the config names no adapter.
+
+<a id="plan-change"></a>
+**Plan change** (`cobuilder-packaging`):
+A difference between the plan fields of a tracker issue now and the values that the last sync stored. The `linear` adapter lists each one in `plan_changes` (ADR-0048).
+_Avoid_: conflict (a conflict is a difference between a plan file and the tracker that a seed reports, and a plan change is an edit by a person)
+
+<a id="unplanned-issue"></a>
+**Unplanned issue** (`cobuilder-packaging`):
+An issue that a person creates in the tracker with no envelope. It lists with the state `unplanned`, the projector skips it, and it is never ready until a gate links its plan row (ADR-0048).
+_Avoid_: foreign issue (the beads adapter ignores a foreign issue and the `linear` adapter lists an unplanned one), backlog item (backlog is a design stage)
 
 ## architect
 
@@ -317,7 +327,7 @@ VALIDATE scores the slice against the blind rubric. It is the only role that rea
 A kind of structure fact that a script reports. Examples are a crowded folder, a name-stem cluster, a generic file name, a boundary edge, contract drift, and duplicated code.
 _Avoid_: mechanical smell (a pattern inside one file that habit-sensors counts), finding without the word structure (an `assessment.json` entry, judged by a curator)
 
-A signal is advice, and it stays outside the slice score. The new-code rule limits it in the change view (ADR-0048).
+A signal is advice, and it stays outside the slice score. The new-code rule limits it in the change view (ADR-0049).
 
 <a id="structure-finding"></a>
 **Structure finding** (`implement`):
@@ -352,7 +362,7 @@ The reference can also point to a path that a `forbidden_dependencies` glob name
 The `### Structure` section that VALIDATE writes after the score. It has one labeled item for each structure finding.
 _Avoid_: structure score, the `## Structure` section of an architect review report (it reports the structure findings record)
 
-The block also has one item each for the contract-drift, cohesion, and dependency judgments. It stays outside `overall_score`. A failed attempt passes the block to the next GREEN attempt (ADR-0048 decision 8).
+The block also has one item each for the contract-drift, cohesion, and dependency judgments. It stays outside `overall_score`. A failed attempt passes the block to the next GREEN attempt (ADR-0049 decision 8).
 
 <a id="evidence-packet"></a>
 **Evidence packet** (`implement`):
@@ -408,14 +418,14 @@ It holds the score, the verdict, and each criterion score. The vocabulary agent 
 The check in `agent_use.py` that `verify_gate.py --slice <N>` runs before a slice closes. It passes when the newest attempt file of the slice holds a PASS at or above the accept threshold, or an escalation.
 _Avoid_: agent check, spawn check
 
-It shows that VALIDATE scored the slice. It cannot see a main agent that wrote the code and then spawned only VALIDATE (ADR-0048 decision 9).
+It shows that VALIDATE scored the slice. It cannot see a main agent that wrote the code and then spawned only VALIDATE (ADR-0049 decision 9).
 
 <a id="new-code-rule"></a>
 **New-code rule** (`implement`):
 A structure signal reports only on code that the change adds. For the coach, that code is an untracked file or a file added since the merge-base.
 _Avoid_: ratchet
 
-For VALIDATE, that code is the slice diff. The whole-repository view does not use this rule (ADR-0048 decisions 3 and 16).
+For VALIDATE, that code is the slice diff. The whole-repository view does not use this rule (ADR-0049 decisions 3 and 16).
 
 <a id="structure-coaching"></a>
 **Structure coaching** (`implement`):

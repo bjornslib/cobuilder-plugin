@@ -80,7 +80,7 @@ The false labels in this repository come from three sources. Name families count
 
 1. The third abort rule holds. By the rule, the structure work stops here. No structure signal enters a slice score, and E7 and E8 do not start.
 2. By the second rule, the generic-name signal is dropped from the coach. Its sample is 4 labels, so the engineer checks those labels before the drop.
-3. No scored criterion enters the rubrics. ADR-0048 already keeps each signal outside the score until this decision. That stays.
+3. No scored criterion enters the rubrics. ADR-0049 already keeps each signal outside the score until this decision. That stays.
 
 **Limits of this replay, which the engineer weighs before the stop:**
 

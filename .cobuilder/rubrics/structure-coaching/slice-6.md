@@ -10,7 +10,7 @@ Test command: uv run pytest tests -q
 ### C1 — The effect is chosen and recorded [CRITICAL]
 **Must be true:** 00-status.md notes or the ADR record which effect the check reads, and why, from the spike.
 **Evidence to check:**
-- Read the notes and ADR-0048 decision 9.
+- Read the notes and ADR-0049 decision 9.
 **Scoring:**
 - 1.0 — chosen with a reason
 - 0.5 — chosen with no reason

@@ -43,10 +43,10 @@ The `Script:` line gives the count of structure findings and the count of lines 
 analysed in the evidence packet. When `uv run` fails, name the failure on the `Script:`
 line. Then write the block from the diff alone.
 
-The last three lines hold the judgments of ADR-0048 decision 8: contract drift,
+The last three lines hold the judgments of ADR-0049 decision 8: contract drift,
 cohesion, and each new dependency. Write `none` for a judgment that has nothing to report.
 
-When the attempt fails, the block also goes to the feedback file, so the next GREEN attempt reads it. ADR-0048 decision 8 sets this rule.
+When the attempt fails, the block also goes to the feedback file, so the next GREEN attempt reads it. ADR-0049 decision 8 sets this rule.
 
 ## 4. Decision questions
 

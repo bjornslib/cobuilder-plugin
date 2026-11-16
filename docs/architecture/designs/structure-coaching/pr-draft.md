@@ -54,5 +54,5 @@ behaviour only. In some sessions the main agent wrote the slice itself.
 A structure signal never blocks a write. It enters the slice score only after
 the replay evaluation and an engineer decision.
 
-See `docs/architecture/adr/ADR-0048` and
+See `docs/architecture/adr/ADR-0049` and
 `docs/architecture/designs/structure-coaching/intent.json`.

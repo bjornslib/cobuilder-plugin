@@ -23,7 +23,7 @@ def check_slice(plan_dir: Path, rubrics_dir: Path, slice_id: int) -> str: ...
 
 `verify_gate.py --plan <dir> --slice <N>` runs only this check. It prints `ok` or the reason, and it exits 0 or 1.
 
-The two candidate effects, from ADR-0048 decision 9:
+The two candidate effects, from ADR-0049 decision 9:
 
 | Candidate | Reads | Gap |
 |---|---|---|

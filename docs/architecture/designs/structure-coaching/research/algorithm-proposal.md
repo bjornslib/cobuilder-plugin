@@ -317,7 +317,7 @@ Cohesion: <one line per added file: its reason to change, and fits | does not fi
 Dependencies: <none | each new edge, with the boundary rule it meets or breaks>
 ```
 
-The block stays outside `overall_score`, as ADR-0048 decision 8 says.
+The block stays outside `overall_score`, as ADR-0049 decision 8 says.
 
 ### 3.3 Vocabulary: how the script and the agents share the work
 
@@ -331,7 +331,7 @@ The `_Avoid_` words are rejected synonyms for one concept. Whether a name means 
 2. **The vocabulary agent stays the one judge.** It still reads `DDD-VOCABULARY.md` in full, as its step 1 says. The packet replaces its own grep for names, and it adds the reason text beside each candidate. Its three tags and its block do not change. Add one rule to its body: "A candidate is a lead. Tag `[AVOID]` only when the name means the concept of the entry it lost to."
 3. **VALIDATE does not judge names.** Its cohesion judgment may cite a `[CONFLICT]` from the Vocabulary block. One judge per question keeps the two blocks from a conflict.
 4. **The coach says nothing about `_Avoid_` words.** With 0 true hits in 25, a coach message would teach GREEN to ignore the coach. GREEN gets P3 (generic name, from the config) and P4 (twin name) only. A failed attempt already passes the Vocabulary block to the next GREEN attempt.
-5. **ADR-0048 decision 2 needs an amendment.** It says that the generic list starts from the `_Avoid_` terms. The data does not support that. The two checks still use one glossary: the script indexes it, and the agent judges with it.
+5. **ADR-0049 decision 2 needs an amendment.** It says that the generic list starts from the `_Avoid_` terms. The data does not support that. The two checks still use one glossary: the script indexes it, and the agent judges with it.
 
 Open point: the vocabulary agent may read no file under `.cobuilder/` except its evidence file. So the build skill passes the packet path in the spawn message, or VALIDATE and VOCABULARY each run the script. I recommend the spawn message.
 
@@ -350,7 +350,7 @@ Pull forward: P5 and V5 (boundary), the stdlib import graph for V4. Defer: R1 to
 
 **E5 label protocol.** One unit is one finding. Three labels: `act` (true, and the agent should change the code), `keep` (true, and the current code is right for a stated reason), `false` (the fact is wrong or has no meaning). Precision is `(act + keep) / all`. Act rate is `act / all`. A signal needs both numbers, because a signal with high precision and no `act` only adds reading. Label 30 findings per signal, or all when fewer exist. Two people label 10 of them, and the agreement is reported. The earlier synthesis cites a bar of 50% precision from the Entropy project. I did not check that number at its source, so treat the bar as an engineer decision.
 
-Two replays exist. The agent replay of ADR-0048 decision 10 measures behaviour. A history replay runs `structure_evidence.py` on each past merged PR as a "slice" and needs no agent, so it gives the precision numbers at low cost. V2 also has the automatic proxy of 1.5.
+Two replays exist. The agent replay of ADR-0049 decision 10 measures behaviour. A history replay runs `structure_evidence.py` on each past merged PR as a "slice" and needs no agent, so it gives the precision numbers at low cost. V2 also has the automatic proxy of 1.5.
 
 ## 5. The standard-library rule, and where a library pays
 
@@ -363,11 +363,11 @@ The engineer said during this work that the rule can give way when a library add
 
 **Recommendation.** Keep the hook and `structure_signals.py` on the standard library. Not because of the rule, but because no coach signal gains from a library. Use libraries in `structure_evidence.py`, which VALIDATE runs with `uv run`: `tree-sitter` with `tree-sitter-typescript` for V1 in TypeScript, and `PyYAML` for a full read of `boundary.yaml`. That is where the value is: 358 of 620 code files are TypeScript, and name-level drift found 0 real events there, so V1 covers under half the code without a parser. Tree-sitter parsed 332 viewer files in 155 ms. It also gives Java, PHP, and Ruby later with one more wheel each.
 
-ADR-0048 rejected "run the script from the coach with uv run". This recommendation does not revive it. If the engineer wants TypeScript drift at coach time, that would revive it, and I advise against it: drift is a property of the finished diff, not of one write.
+ADR-0049 rejected "run the script from the coach with uv run". This recommendation does not revive it. If the engineer wants TypeScript drift at coach time, that would revive it, and I advise against it: drift is a property of the finished diff, not of one write.
 
 ## 6. Risks, conflicts with the record, and what I could not verify
 
-**Conflicts with ADR-0048 and `intent.json`. Each needs an engineer decision.**
+**Conflicts with ADR-0049 and `intent.json`. Each needs an engineer decision.**
 
 1. P5 and V5 are an import check against `forbidden_dependencies` in the first version. `intent.json` lists that as out of scope, and decision 12 puts the parser in E7. The rejected alternative named dependency-cruiser and import-linter, with the reasons "two tool dependencies" and "two languages only". P5 has neither problem: it uses no tool, and the path-string scan works in each language. It is still a scope change.
 2. V1, V2, and V3 fire for modified files. Decision 3 says a signal fires only for a new file. The spirit holds, because each event exists only when the slice changed the symbol or the lines. The wording needs an amendment: "new files for the coach, the slice diff for VALIDATE".

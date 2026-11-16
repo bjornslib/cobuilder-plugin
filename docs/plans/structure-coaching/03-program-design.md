@@ -104,7 +104,7 @@ def main(stdin, stdout, runner=run_habit_hooks, structure=structure_runner.run, 
 def check_slice(plan_dir: Path, rubrics_dir: Path, slice_id: int) -> str: ...  # "ok" or a reason
 ```
 
-The effect that `check_slice` reads is an open decision. Slice 6 settles it from the spike, as ADR-0048 decision 9 says.
+The effect that `check_slice` reads is an open decision. Slice 6 settles it from the spike, as ADR-0049 decision 9 says.
 
 ## Call stack
 

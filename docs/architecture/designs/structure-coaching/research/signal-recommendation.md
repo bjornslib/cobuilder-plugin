@@ -8,7 +8,7 @@ Date: 2026-11-12. Source: `algorithm-proposal.md` (Fable 5.2), filtered after th
 |---|---|---|
 | 1 | A small boundary check now, before E7 | Yes |
 | 2 | Ratchet: new files for the coach, the slice diff for VALIDATE | Yes |
-| 3 | Amend ADR-0048 decision 2: `_Avoid_` words are leads, and the vocabulary agent judges | Yes |
+| 3 | Amend ADR-0049 decision 2: `_Avoid_` words are leads, and the vocabulary agent judges | Yes |
 | 4 | tree-sitter and PyYAML in the VALIDATE script only | Yes |
 | 5 | E4 grows to three slices | Yes |
 | 6 | Count only non-test files for a crowded folder | No. The count keeps every file that is not excluded |

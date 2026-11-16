@@ -161,7 +161,7 @@ flowchart LR
 
 ## Governing decisions
 
-ADR-0012 (implement), ADR-0013 (design-mode and implement join), ADR-0024 (vendored design-to-code), ADR-0025 (slice agents and a coaching hook), ADR-0030 (check a change against the program), ADR-0040 (tracker port), ADR-0041 (SessionStart reminder hook), and ADR-0042 (Stop and SessionEnd sync hooks). ADR-0024, ADR-0025, ADR-0030, and ADR-0041 anchor to `cobuilder-packaging`. Only ADR-0048 (structure signals) anchors to `implement`, so `governed_by` lists it. The code of ADR-0048 is not built yet: `shared/structure_signals.py` does not exist.
+ADR-0012 (implement), ADR-0013 (design-mode and implement join), ADR-0024 (vendored design-to-code), ADR-0025 (slice agents and a coaching hook), ADR-0030 (check a change against the program), ADR-0040 (tracker port), ADR-0041 (SessionStart reminder hook), and ADR-0042 (Stop and SessionEnd sync hooks). ADR-0024, ADR-0025, ADR-0030, and ADR-0041 anchor to `cobuilder-packaging`. Only ADR-0049 (structure signals) anchors to `implement`, so `governed_by` lists it. The code of ADR-0049 is not built yet: `shared/structure_signals.py` does not exist.
 
 ## Other observation
 

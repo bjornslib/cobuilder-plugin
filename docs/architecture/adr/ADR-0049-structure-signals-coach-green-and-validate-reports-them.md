@@ -1,10 +1,10 @@
 ---
-title: "ADR-0048 — structure signals coach GREEN, and VALIDATE reports them beside the slice score"
+title: "ADR-0049 — structure signals coach GREEN, and VALIDATE reports them beside the slice score"
 status: active
 type: architecture
 last_verified: 2026-11-12
 owner: bjornslib
-id: ADR-0048
+id: ADR-0049
 source_pr: null
 name: "structure signals coach GREEN, and VALIDATE reports them beside the slice score"
 state: decided
@@ -76,7 +76,7 @@ related:
   - "plugins/implement/skills/build/references/rubric-authoring.md"
 ---
 
-# ADR-0048 — structure signals coach GREEN, and VALIDATE reports them beside the slice score
+# ADR-0049 — structure signals coach GREEN, and VALIDATE reports them beside the slice score
 
 ## Context
 

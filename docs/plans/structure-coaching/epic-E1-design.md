@@ -104,7 +104,7 @@ The signal fires when the written file is new, its folder has more files than th
 | `cluster_min` | 3 | `shared/tracker_port` holds 14 `beads*` files and 5 `fake*` files. `plugins/implement/scripts` holds 4 `tracker*` files. |
 | `excluded_stems` | `a`, `an`, `the`, `index`, `main`, `init`, `use` | Without them, `references/books` gives clusters on `a` and `the`. On agencheck, React hooks gave three false `use` families. With the folder-path rule and `use`, precision on families with code rose from 57% to 81%. |
 
-The rule compares the first token only, as ADR-0048 decision 2 says. A folder such as `tracker_port` does not stop a `tracker` cluster, because its tokens are `tracker` and `port`.
+The rule compares the first token only, as ADR-0049 decision 2 says. A folder such as `tracker_port` does not stop a `tracker` cluster, because its tokens are `tracker` and `port`.
 
 ### A7. Signal 3: a generic name
 
@@ -114,7 +114,7 @@ The signal fires when the written file is new and is not a test name, and its st
 
 Default `generic_names`: `utils`, `util`, `helpers`, `helper`, `common`, `misc`, `manager`, `base`. On this repo three files match: `viewer/src/lib/utils.ts`, `sections/common.tsx`, and `IntentDrawing/helpers.ts`. The first is a shadcn/ui convention, so E5 may label it a false signal.
 
-The list comes from the config only, as amended ADR-0048 decision 2 says. The `_Avoid_` terms of `DDD-VOCABULARY.md` are leads for the vocabulary agent (E4, slice 12), not generic names. A plain match of them gave 25 hits on this repo and none was real.
+The list comes from the config only, as amended ADR-0049 decision 2 says. The `_Avoid_` terms of `DDD-VOCABULARY.md` are leads for the vocabulary agent (E4, slice 12), not generic names. A plain match of them gave 25 hits on this repo and none was real.
 
 ### A8. The report and the command
 

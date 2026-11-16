@@ -147,4 +147,4 @@ verifies:
   - scripts
 
 governed_by:
-  - ADR-0048
+  - ADR-0049

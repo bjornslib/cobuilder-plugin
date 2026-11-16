@@ -11,7 +11,7 @@ Tracks the documentation status of each bounded context under
 | `architect` | documented | yes | yes | none anchored (see findings) | 2026-10-08 |
 | `pr` | documented | yes | yes | none anchored (see findings) | 2026-10-08 |
 | `artifact` | documented | yes | yes | none anchored (see findings) | 2026-10-08 |
-| `implement` | documented | yes | yes | ADR-0048 (decided). ADR-0025, ADR-0041, ADR-0042 anchor to cobuilder-packaging | 2026-11-10 |
+| `implement` | documented | yes | yes | ADR-0049 (decided). ADR-0025, ADR-0041, ADR-0042 anchor to cobuilder-packaging | 2026-11-10 |
 | `shared` | documented | yes | yes | none anchored (see findings) | 2026-11-14 |
 | `priority-dev` | documented | yes | yes | none anchored | 2026-11-10 |
 

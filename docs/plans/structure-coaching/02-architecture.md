@@ -1,6 +1,6 @@
 # Architecture: Structure signals coach GREEN, and VALIDATE reports them beside the slice score
 
-Design record: `docs/architecture/designs/structure-coaching/`, decided in ADR-0048.
+Design record: `docs/architecture/designs/structure-coaching/`, decided in ADR-0049.
 
 ## Fit
 

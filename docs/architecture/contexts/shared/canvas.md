@@ -189,4 +189,4 @@ flowchart LR
 
 ## Governing decisions
 
-ADR-0017 (vendored shared code and bundle compatibility), ADR-0006 (three-phase bundle self-migration), and ADR-0022 (gate doc projection into the index). The tracker code follows ADR-0040 (tracker port), ADR-0031 (beads storage), ADR-0041 (tracker reminder hook), and ADR-0042 (sync). ADR-0047 covers the program stage from the tracker. ADR-0048 covers the structure signals that the coach and VALIDATE report. These ADRs anchor to `cobuilder-packaging`, so `governed_by` here stays empty.
+ADR-0017 (vendored shared code and bundle compatibility), ADR-0006 (three-phase bundle self-migration), and ADR-0022 (gate doc projection into the index). The tracker code follows ADR-0040 (tracker port), ADR-0031 (beads storage), ADR-0041 (tracker reminder hook), and ADR-0042 (sync). ADR-0047 covers the program stage from the tracker. ADR-0049 covers the structure signals that the coach and VALIDATE report. These ADRs anchor to `cobuilder-packaging`, so `governed_by` here stays empty.
