@@ -221,7 +221,7 @@ not plugin-shipped scripts. The script also has no filesystem access, so
 each slice's `epicDesignExists` must be computed and passed in by the
 orchestrating session (see the script's own args comment). The script does not run the agent-use check. Before the main session records a PASS from the script, it runs the check for that slice.
 
-RED reports `sliceBase`, the full sha from `git rev-parse HEAD`, before it writes a file. GREEN commits each attempt with `git commit` on the feature branch, and VALIDATE and the vocabulary agent get `--base <sliceBase>` and `--out <packet path>`. A failed attempt leaves a commit that git can roll back, and the diff from `sliceBase` still covers every attempt.
+RED reports `sliceBase`, the full sha from `git rev-parse HEAD`, and `branch`, the output of `git rev-parse --abbrev-ref HEAD`, before it writes a file. The loop stops before GREEN when RED reports `master`, `main`, or a detached `HEAD`, so no commit lands on a protected branch. GREEN commits each attempt with `git commit` on the feature branch, and VALIDATE and the vocabulary agent get `--base <sliceBase>` and `--out <packet path>`. A failed attempt leaves a commit that git can roll back, and the diff from `sliceBase` still covers every attempt.
 
 ---
 

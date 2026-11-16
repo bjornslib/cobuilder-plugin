@@ -75,13 +75,14 @@ integrate this one.`
 
 const RED_SCHEMA = {
   type: 'object',
-  required: ['testFiles', 'newFailingTests', 'failuresAreAssertions', 'preexistingPassCount', 'sliceBase'],
+  required: ['testFiles', 'newFailingTests', 'failuresAreAssertions', 'preexistingPassCount', 'sliceBase', 'branch'],
   properties: {
     testFiles: { type: 'array', items: { type: 'string' } },
     newFailingTests: { type: 'integer' },
     failuresAreAssertions: { type: 'boolean', description: 'false if any new test fails on an import/collection/syntax error rather than an assertion' },
     preexistingPassCount: { type: 'integer' },
     sliceBase: { type: 'string', description: 'the full sha from git rev-parse HEAD, run before RED writes any file' },
+    branch: { type: 'string', description: 'the output of git rev-parse --abbrev-ref HEAD, run before RED writes any file' },
     dirtyFiles: { type: 'array', items: { type: 'string' }, description: 'the paths that git status --porcelain lists before RED writes any file' },
     notes: { type: 'string' },
   },
@@ -202,6 +203,7 @@ epic design doc: ${epicDesignDoc}
 test command: ${testCommand}
 
 Before you write any file, run git rev-parse HEAD. Report its full sha as sliceBase.
+Then run git rev-parse --abbrev-ref HEAD. Report its output as branch.
 Then run git status --porcelain. Report each path it lists as dirtyFiles.
 
 ${scopeContract(s)}
@@ -216,6 +218,19 @@ ${BLIND}`,
   // The packet and the slice diff both start at sliceBase, so the slice cannot run without it.
   if (!red.sliceBase) {
     results.push({ slice: s, verdict: 'ERROR', reason: 'RED did not report sliceBase', red })
+    break
+  }
+  // GREEN commits each attempt, and the script has no git access. RED reports the branch, and RED never commits.
+  // A protected or detached branch stops the run before GREEN, so no commit lands on it.
+  if (!red.branch || ['master', 'main', 'HEAD'].includes(red.branch)) {
+    const named = red.branch ? `branch ${red.branch}` : 'no branch name'
+    log(`Slice ${s.id} stopped: RED reported ${named}. Start the loop on a feature branch.`)
+    results.push({
+      slice: s,
+      verdict: 'ERROR',
+      reason: `RED reported ${named}. Start the loop on a feature branch, not master, main, or a detached HEAD.`,
+      red,
+    })
     break
   }
   if (red.dirtyFiles && red.dirtyFiles.length) {
@@ -266,6 +281,7 @@ evidence of a working slice — fix the error before reporting. Report the
 file's path as browserEvidencePath.` : ''}
 
 After the checks in step 3 of your body pass, commit this attempt on the current feature branch.
+Never commit on master or main. When the current branch is master or main, stop and say so in your report.
 Run git add with the failing test files and each file you changed, and nothing else.
 Then run git commit -m "slice ${s.id} attempt ${attempt}: <one-line summary>".
 When nothing changed, skip the commit and say so in your report.
