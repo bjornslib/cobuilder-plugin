@@ -52,10 +52,6 @@
   <text x="62" y="381" fill="#e6e6e6">Which store keeps the marks? → $.store</text>
   <text x="62" y="400" fill="#e6e6e6">Which checks run on save? → Unit, E2E</text>
   <text x="50" y="432" fill="#6b7480">Source: 2 answers</text>
-  <text x="222" y="432" fill="#2a313b">│</text>
-  <text x="238" y="432" fill="#6b7480">Length: 77 chars</text>
-  <text x="392" y="432" fill="#2a313b">│</text>
-  <text x="408" y="432" fill="#6b7480">Target: tool result</text>
 
   <!-- Frame B: the same block for a turn-end stop -->
   <text x="20" y="500" fill="#6b7480" font-size="11">B · THE SAME BLOCK FOR A TURN-END STOP</text>
@@ -68,10 +64,6 @@
   <text x="62" y="583" fill="#e6e6e6">Run the migration before the tests, then</text>
   <text x="62" y="602" fill="#e6e6e6">re-run the suite.</text>
   <text x="50" y="634" fill="#6b7480">Source: step 1 Reply</text>
-  <text x="222" y="634" fill="#2a313b">│</text>
-  <text x="238" y="634" fill="#6b7480">Length: 58 chars</text>
-  <text x="392" y="634" fill="#2a313b">│</text>
-  <text x="408" y="634" fill="#6b7480">Target: session prompt</text>
 
   <!-- Frame C: empty state -->
   <text x="20" y="696" fill="#6b7480" font-size="11">C · NOTHING CHOSEN YET</text>

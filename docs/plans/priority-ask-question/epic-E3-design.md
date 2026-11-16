@@ -44,9 +44,11 @@ question (frames A, B, and C of the SVG):
 - A title row, `▸ WHAT WILL BE SENT`, with a `READY` tag when Send can
   act.
 - The exact text that Send sends, in an inner box.
-- A footer with three fields: Source (the answers or the steps), Length
-  (in characters), and Target (`tool result` or `session prompt`).
+- A footer with one field: Source (the answers, or the chosen steps).
 - With nothing chosen, the block is dim and says "Provide your response".
+
+The key row of frame A is the key row in every case: `s` in cyan, `r` in
+green, `w` in red, and a key that cannot act now dimmed.
 
 This brings back the title row that slice E3.13 of `priority-dev-cc-plugin`
 removed, now with the footer.
