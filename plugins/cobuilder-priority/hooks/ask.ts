@@ -15,6 +15,14 @@ export type Next = { (e: unknown): Promise<ToolCallResult>; signal: AbortSignal 
 
 let release: ((answer: AskResult) => void) | null = null
 let holding = false
+let prompt: { transcript: string; repo: string } | null = null
+
+// The transcript path and folder of the last prompt. A tool.call event may lack them.
+export function notePrompt(e: { transcript_path?: string; cwd?: string }): void {
+  if (e.transcript_path) prompt = { transcript: e.transcript_path, repo: e.cwd ?? '' }
+}
+
+const DECLINED = 'The user declined to answer these questions.'
 
 // True while a call waits in the child. A queued prompt must not clear a live card.
 export const isHolding = () => holding
@@ -26,6 +34,9 @@ export async function holdAsk($: EngineInterface, options: PluginOptions, e: Ask
   let outcome: Awaited<ReturnType<typeof waitForAnswer>>
   try {
     outcome = await waitForAnswer($, options, e)
+  } catch (err) {
+    if (next.signal.aborted || /aborted/.test(String((err as Error)?.message ?? err))) return { deny: 'The person interrupted the question.' }
+    throw err
   } finally {
     holding = false
   }
@@ -47,10 +58,11 @@ async function waitForAnswer($: EngineInterface, options: PluginOptions, e: AskE
 }
 
 function questionJob(e: AskEvent, file: string, sessionId: string): StopJob {
+  const transcript = e.transcript_path || prompt?.transcript || ''
   return {
     sessionId,
-    transcript: e.transcript_path ?? '',
-    repo: e.cwd ?? '',
+    transcript,
+    repo: e.cwd || prompt?.repo || '',
     at: new Date().toISOString(),
     lastMessage: '',
     question: { toolUseId: e.tool_use_id, questions: e.questions, file },
@@ -64,6 +76,11 @@ export async function sendAnswers($: EngineInterface): Promise<void> {
   const result = answerOf(held)
   await recordAnswers($, { sessionId: await $.session.id(), toolUseId: held.toolUseId, answers: result.answers })
   release?.(result)
+}
+
+export async function declineAnswers($: EngineInterface): Promise<void> {
+  const held = await read($, heldAtom)
+  if (held) release?.({ questions: held.questions, answers: {}, response: DECLINED })
 }
 
 async function noteHeld($: EngineInterface, notice: string): Promise<void> {

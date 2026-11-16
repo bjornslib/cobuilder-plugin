@@ -1,7 +1,7 @@
 import { atom, read, update } from 'claude-code'
 import type { Register } from 'claude-code'
 import { renderBand } from './band'
-import { dropHeld, holdAsk, isHolding } from './ask'
+import { dropHeld, holdAsk, isHolding, notePrompt } from './ask'
 import type { AskEvent, Next } from './ask'
 import { openPane, renderPane } from './pane'
 import { PANE_ID, enqueue, startWaiting, stopWaiting } from './reader'
@@ -60,6 +60,12 @@ export const register: Register = (on, options) => {
   // reading, so it ends the wait. A turn that answers ends the wait when its reading is saved.
   on('turn.complete', async ($, e, next) => {
     if (e.agentId === undefined && e.reason !== 'answer') await stopWaiting($)
+    return next(e)
+  })
+
+  // The prompt event knows the transcript path. A question job reads it when its own event lacks one.
+  on('classic.UserPromptSubmit', async ($, e, next) => {
+    notePrompt(e)
     return next(e)
   })
 

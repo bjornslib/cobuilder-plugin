@@ -3,7 +3,7 @@
 import type { EngineInterface, ProcessSpawnChunk, ProcessSpawnResult } from 'claude-code'
 import type { HeldQuestion, Question } from '../types'
 
-export type AskResult = { questions: Question[]; answers: Record<string, string> }
+export type AskResult = { questions: Question[]; answers: Record<string, string>; response?: string }
 
 export type HoldPaths = { answer: string; done: string }
 

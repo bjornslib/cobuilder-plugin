@@ -1,6 +1,6 @@
 // The question card of a held AskUserQuestion call (question-card.svg, frame A).
 import type { HeldQuestion, Question } from '../types'
-import { pickOption, setOther } from './ask'
+import { declineAnswers, pickOption, setOther } from './ask'
 import { draftBox, keyed } from './card'
 import { allAnswered, answeredCount, typedOr } from './hold'
 
@@ -11,9 +11,11 @@ function optionRows($: any, ui: any, held: HeldQuestion, q: Question, i: number)
   const chosen = held.picks[i] ?? []
   const multi = q.multiSelect === true
   return q.options.map((o, k) => (
-    <Box key={`opt-row-${i}-${k}`} flexDirection="row" columnGap={1}>
-      <Button key={`opt-${i}-${k}`} plain label={`${option(multi, chosen.includes(o.label))} ${o.label}`}
-        onPress={() => void pickOption($, i, o.label)} />
+    <Box key={`opt-${i}-${k}-block`} flexDirection="column">
+      <Box key={`opt-row-${i}-${k}`} flexDirection="row" columnGap={1}>
+        <Button key={`opt-${i}-${k}`} plain label={`${option(multi, chosen.includes(o.label))} ${o.label}`}
+          onPress={() => void pickOption($, i, o.label)} />
+      </Box>
       {o.description ? keyed(ui, `desc-${i}-${k}`, o.description, { dimColor: true }) : null}
     </Box>
   ))
@@ -51,8 +53,10 @@ function sourceOf(held: HeldQuestion): string | undefined {
 
 // The card's blocks in draw order: each question, then the draft block that holds the answers.
 export function questionBlocks($: any, ui: any, held: HeldQuestion): any[] {
+  const { Button } = ui
   return [
     ...held.questions.map((q, i) => questionRow($, ui, held, q, i)),
     draftBox(ui, { text: answerLines(held), footer: sourceOf(held), lit: allAnswered(held), notice: held.notice }),
+    <Button key="decline" plain label="Decline to answer" onPress={() => void declineAnswers($)} />,
   ]
 }

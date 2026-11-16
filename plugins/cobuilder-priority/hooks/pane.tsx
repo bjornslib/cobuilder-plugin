@@ -65,7 +65,7 @@ function digestRows(ui: any, list: DigestList, items: string[] | undefined): any
 
 function summary(ui: any, r: Reading, closed: boolean) {
   const { Box, Text } = ui
-  const body = r.digest ? `${r.digest.ran} ${r.digest.result}` : 'No digest for this stop'
+  const body = r.digest ? `${r.digest.ran} ${r.digest.result}` : r.stop_kind === 'question' ? 'A question for you' : 'No digest for this stop'
   const source = briefName(r.brief)
   const lists = closed ? [] : DIGEST_LISTS.flatMap((list) => digestRows(ui, list, r.digest?.[list.field]))
   return (
@@ -94,7 +94,7 @@ function history($: any, ui: any, rows: Reading[], marks: Record<string, Mark>, 
   const { Box, Text, Button } = ui
   if (!rows.length) return []
   const sign = (m?: Mark) => (m?.verdict === 'right' ? '✓' : m?.verdict === 'wrong' ? '✗' : '-')
-  const line = (r: Reading) => `#${r.n} ${clock(r.at)} ${resultWords(r).trim()}  ${sign(marks[String(r.n)])}`
+  const line = (r: Reading) => `#${r.n} ${clock(r.at)} ${r.stop_kind === 'question' ? 'Question ' : ''}${resultWords(r).trim()}  ${sign(marks[String(r.n)])}`
   return [
     <Box key="history-label" marginTop={1}><Text dimColor>History</Text></Box>,
     ...rows.map((r) => <Button key={`history-${r.n}`} plain label={line(r)} onPress={() => void openCard($, r.n === newest ? null : r.n)} />),
