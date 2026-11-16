@@ -17,6 +17,8 @@ E3. The probe record decided the path: hold the call, with the wait inside
 
 ## Gate 2b: the question card, on layout C
 
+Layout C is the pane design of `priority-dev-cc-plugin`:
+`docs/architecture/designs/priority-dev-cc-plugin/pane-design/layout-c.png`.
 The pane keeps layout C: the fixed top (header, key row, note), then the
 body. While a question is held, the question card replaces the newest
 turn-end card at the top of the body.
@@ -26,7 +28,7 @@ Priority reader  ● on  #5  ⠹ reading…
 s Send · e Edit · r Right · w Wrong · m Hide summary
 Note: Type an observation
 
-The agent asks you  ·  held 0:42
+The agent asks you
 1. Which store keeps the marks?            [Store]
    [•] $.store      Keeps marks per plugin
    [ ] JSONL file   One file per session
@@ -51,7 +53,6 @@ Reading for this question
   text, `s` shows "Answer each question first" and sends nothing.
 - `Edit` is not used for a question card. The answer goes back as the
   tool result, not as a prompt.
-- The "held" timer counts up, so the person sees that the agent waits.
 - The reading fills in under the questions when it arrives. It never
   changes the person's picks.
 - The pane opens and takes focus when the call is caught.
@@ -101,8 +102,8 @@ child, log and return `next(e)`, so the dialog opens.
 
 ## Risks
 
-- A hold of three minutes and Esc during a hold have no live evidence
-  yet. Slice 7 checks both.
+- A hold of three minutes and Esc during a hold have no logged evidence.
+  The live check of slice 4 covers both.
 - The answer files need a folder. The probe used
   `<session cwd>/.cobuilder/ask-hold/`. The decision for E3 is open.
 - The reader runs one job at a time. A question job waits behind a
