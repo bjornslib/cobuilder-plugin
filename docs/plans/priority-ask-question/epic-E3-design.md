@@ -97,11 +97,19 @@ child, log and return `next(e)`, so the dialog opens.
 - **Fallback:** if the child fails to start or ends with an error, the
   hook returns `next(e)`, and the engine's dialog opens.
 
+## Storage
+
+- The record of each answer goes into `$.store`, with its reading and its
+  mark, beside the rest of the reader's history.
+- The two hand-off files go next to the run logs:
+  `<priority_dev_dir>/reports/logs/live/ask/<tool_use_id>.answer.json` and
+  `<tool_use_id>.done`. They pass the answer from the pane to the waiting
+  child process.
+
 ## Risks
 
 - A hold of three minutes and Esc during a hold have no logged evidence.
   The live check of slice 4 covers both.
-- The answer files need a folder. The probe used
-  `<session cwd>/.cobuilder/ask-hold/`. The decision for E3 is open.
+- None for storage. The engineer approved it on 2026-11-16.
 - The reader runs one job at a time. A question job waits behind a
   running turn-end reading.
