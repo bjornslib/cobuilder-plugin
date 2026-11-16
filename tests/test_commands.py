@@ -20,7 +20,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 PLUGINS_DIR = REPO_ROOT / "plugins"
 
 DISPATCH_RE = re.compile(r'Skill\(\s*"([\w-]+)"\s*,\s*args\s*=\s*"(\S+)')
-MODE_HEADING_RE = re.compile(r'^#{1,6}\s+(?:Architect\s+)?(\S+)\s+[Mm]ode\b')
+MODE_HEADING_RE = re.compile(r'^#{1,6}\s+(?:(?:Architect|PR)\s+)?(\S+)\s+[Mm]ode\b')
 
 
 def plugin_dirs() -> list[Path]:

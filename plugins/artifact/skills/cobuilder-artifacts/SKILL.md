@@ -64,7 +64,7 @@ below work.
 - `self/`, the hub's own self-analysis bundle (the repo that contains this
   `.cobuilder-architect/`), and one subfolder per foreign-repo bundle
   (`<repo-slug>/`). Each is a peer full bundle root (`data/`, `viewer/`,
-  `assets/`), created by Baseline or Review mode per the storage rule in
+  `assets/`), created by Baseline or PR review mode per the storage rule in
   Hub resolution above. This has a harmless side effect worth knowing, so
   nobody "fixes" it later: `self/` is therefore also directly reachable
   at `http://localhost:<port>/self/viewer/`, in addition to the usual
@@ -233,7 +233,7 @@ does not touch `<target>` at all.
    to the artifact path silently.
 
 3. **Resolve the PR list** from `--prs` (comma list or `N..M` range, the
-   same parsing as Review mode). For each requested PR, confirm it
+   same parsing as PR review mode). For each requested PR, confirm it
    exists in the timeline of `<bundle-dir>/data/story.json`. If any do
    not, tell the user to run `/pr:review --prs <N>`
    first, and STOP before publishing any of the others. A partial
