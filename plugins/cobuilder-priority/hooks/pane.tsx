@@ -6,7 +6,7 @@ import { EMPTY, actFor, marksKey, openCard } from './act'
 import { card, clock, keyed, noteInput, quiet } from './card'
 import { keyRow, questionKeyRow } from './keys'
 import { questionBlocks } from './question'
-import { PANE_ID, isBusy, readingsKey } from './reader'
+import { PANE_ID, isBusy, isQuestionBusy, readingsKey } from './reader'
 import { abstainName, briefName, priorityName, statusName } from './names'
 
 const switchedOn = atom({ plugin: 'cobuilder-priority', key: 'on' } as const, false)
@@ -34,8 +34,9 @@ function header(ui: any, on: boolean, count: number, frame: number) {
       <Text bold {...CUT}>Priority reader</Text>
       {keyed(ui, 'state', on ? '● on' : '○ off', on ? { color: 'green', ...CUT } : { dimColor: true, ...CUT })}
       {keyed(ui, 'count', `${count} readings`, { dimColor: true, ...CUT })}
-      {isBusy() ? keyed(ui, 'spinner', FRAMES[frame % FRAMES.length] ?? '', { color: 'yellow', ...CUT }) : null}
-      {isBusy() ? keyed(ui, 'running', 'running…', { color: 'yellow', ...CUT }) : null}
+      {isBusy() && !isQuestionBusy() ? keyed(ui, 'spinner', FRAMES[frame % FRAMES.length] ?? '', { color: 'yellow', ...CUT }) : null}
+      {isBusy() && !isQuestionBusy() ? keyed(ui, 'running', 'running…', { color: 'yellow', ...CUT }) : null}
+      {isQuestionBusy() ? keyed(ui, 'ready', 'ready', { color: 'green', ...CUT }) : null}
     </Box>
   )
 }

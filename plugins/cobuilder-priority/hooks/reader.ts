@@ -25,6 +25,8 @@ const FRAME_MS = 120
 
 // Module values: a hot reload starts them over, and a reading in flight then ends on its own.
 let busy = false
+// True while the reading that runs is the one of a held question.
+let onQuestion = false
 let waiting: StopJob | null = null
 // True from a prompt until the next reading is saved. The pane and the band wait for that reading.
 let awaiting = false
@@ -33,6 +35,9 @@ export const readingsKey = (sessionId: string) => `readings:${sessionId}`
 
 // True while a reading runs. The pane shows it as running….
 export const isBusy = () => busy
+
+// True while the running reading is the one of a held question. The pane header shows ready then.
+export const isQuestionBusy = () => busy && onQuestion
 
 // True while a reading runs or the reader waits for the next one. The previous turn dims then.
 export const isQuiet = () => busy || awaiting
@@ -64,6 +69,7 @@ async function drain($: any, options: PluginOptions): Promise<void> {
     while (waiting) {
       const job = waiting
       waiting = null
+      onQuestion = Boolean(job.question)
       if (!(await readAtom($, switchedOn))) {
         await stopWaiting($)
         continue
@@ -73,6 +79,7 @@ async function drain($: any, options: PluginOptions): Promise<void> {
     }
   } finally {
     busy = false
+    onQuestion = false
     // busy is not an atom, so this write redraws the pane without the indicator.
     await update($, tick, (n) => n + 1)
   }

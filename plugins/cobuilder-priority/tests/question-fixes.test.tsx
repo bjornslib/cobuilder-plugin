@@ -1,6 +1,6 @@
 // E3 fixes: the transcript path, question readings in the pane, the option rows, the Decline row, and a quiet Esc.
 import { expect, test } from 'claude-code/testing'
-import { DIGESTED, OPTIONS, nodeByKey, parentOfKey, startReader, stubEngine, stubProcess, stubStore, walk } from './fakes'
+import { DIGESTED, OPTIONS, nodeByKey, parentOfKey, startReader, stop, stubEngine, stubProcess, stubStore, walk } from './fakes'
 import type { Node } from './fakes'
 import { ASKED, HOLD, QUESTION_READING, STUB, askCall, mountPane, pressText, settle, startAsk, stubTool, stubWrites } from './ask-fakes'
 import { allText } from './ask-tree'
@@ -78,6 +78,28 @@ test('Decline to answer resolves the call with no answers, writes no mark, and r
   expect((ctx.store.get('marks:S1') as any)?.['1']?.answers, 'no answer is stored').toBeUndefined()
   expect(await ui.find({ key: 'decline' }), 'the card is gone').toBeUndefined()
   expect(await ui.find({ key: 'send' }), 'the Send key is gone').toBeUndefined()
+})
+
+test('the header shows ready, with no spinner, while a held question reads; a turn-end reading shows running…', HOLD, async ($, on) => {
+  const ctx = await startAsk($, on, { gate: new Promise<void>(() => {}) })
+  const pending = askCall($)
+  await settle(() => ctx.calls.length > 0)
+  const ui = await mountPane($)
+  expect(await ui.find({ key: 'ready' }), 'the header shows ready').toBeDefined()
+  expect(await ui.find({ key: 'spinner' }), 'no spinner is drawn').toBeUndefined()
+  expect(await ui.find({ key: 'running' }), 'no running… is drawn').toBeUndefined()
+  await ui.press({ key: 'decline' })
+  await pending
+})
+
+test('a turn-end reading in progress still shows running…', { options: OPTIONS }, async ($, on) => {
+  const { calls } = await startReader($, on, [DIGESTED, DIGESTED], new Promise<void>(() => {}))
+  await stop($, 'S1', 'done')
+  await settle(() => calls.length > 0)
+  const ui = await mountPane($)
+  expect(await ui.find({ key: 'running' }), 'running… is drawn').toBeDefined()
+  expect(await ui.find({ key: 'spinner' }), 'the spinner is drawn').toBeDefined()
+  expect(await ui.find({ key: 'ready' }), 'ready is not drawn').toBeUndefined()
 })
 
 // A quiet Esc has no test: the kit cannot abort a hook, and a stub that throws is skipped by the engine
