@@ -1,13 +1,13 @@
 {
   "schema_version": "1.5",
   "sources": {
-    "git_head": "40b79e02213325be7178bd0c1633dacfbb23cee8",
+    "git_head": "0b174f0d58af04ad66cbc3ca51b808c5fcf11205",
     "trees": {
       "docs/architecture/adr": "sha256:20ca2f731683a3c296a2c76de4eeab9d4a6a07fcfeab163272cc78709195785d",
       "docs/architecture/designs": "sha256:36064aebf0a1a2af87ad4d9703cbe56dd3a2a7bc59f11b4f00a2252e6dcd20c9",
       "docs/architecture/contexts": "sha256:8ca7133e5a38a3c614862d9fb6550d40e2333ff772d6d7a4bd3a786914327670",
-      "docs/plans": "sha256:414df72f38a4a2f80ba1b2c040d6d00d39ec6e1ac528f61bee3ddede1bb107f8",
-      ".cobuilder/rubrics": "sha256:3d377a730300f81ee0c05e7181cc21be113a600b1065afdc1cd35d4d5875878b"
+      "docs/plans": "sha256:7d6a1d1cf21550a0eb12cf1e62f6a6e2359df6d42c3143e355fc8f6ae5c42078",
+      ".cobuilder/rubrics": "sha256:04f222e6081f21b1694f8216fda5cbe03305cbb55dcfac7afc80414f2450e184"
     }
   },
   "entities": {
@@ -1439,7 +1439,7 @@
         "epic_id": "E9",
         "branch": null,
         "pr": null,
-        "state": "open",
+        "state": "closed",
         "note": null,
         "design_doc": "structure-coaching/E9"
       },
@@ -4576,6 +4576,16 @@
         "state": "completed"
       },
       {
+        "id": "priority-ask-question/4",
+        "feature": "priority-ask-question",
+        "n": 4,
+        "title": "**Question in the reader**",
+        "ends_with": "The probe's hold, card, and answer move into `cobuilder-priority`. With the reader on, a main-loop AskUserQuestion call opens the pane with each question, its options, and one Other input. Send returns `{ questions, answers }`. A question job runs `priority interpret --open-question`, and the reading fills in under the card with `stop_kind: question`. The \"What will be sent\" block of `question-card.svg` frames every draft in the pane. The mark stores the answers. Esc refuses with no `$` call, and a failed child opens the dialog. `claude plugin test plugins/cobuilder-priority` passes",
+        "score": "—",
+        "attempts": 0,
+        "state": "in_progress"
+      },
+      {
         "id": "priority-dev-spike/1",
         "feature": "priority-dev-spike",
         "n": 1,
@@ -5181,9 +5191,9 @@
         "n": 19,
         "title": "`structure_evidence.py` keeps to the size guide",
         "ends_with": "The entry script has 200 lines or fewer, and each test of the evidence script still passes.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "work-drawer/1",
@@ -8104,7 +8114,7 @@
       "structure-coaching/E6": "completed",
       "structure-coaching/E7": "completed",
       "structure-coaching/E8": "completed",
-      "structure-coaching/E9": "unstarted",
+      "structure-coaching/E9": "completed",
       "ubiquitous-language/E1": "unstarted",
       "ubiquitous-language/E2": "unstarted",
       "ubiquitous-language/E3": "unstarted",
@@ -9172,7 +9182,7 @@
       },
       "structure-coaching": {
         "stage_source": "tracker",
-        "next_ready": "structure-coaching/19",
+        "next_ready": null,
         "pull_requests": []
       },
       "tracker-slice-edit": {

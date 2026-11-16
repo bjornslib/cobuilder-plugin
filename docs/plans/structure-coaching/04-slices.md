@@ -31,6 +31,6 @@ The slice numbers are tracker ids, so they do not change after the seed. Slices 
 | 16 | `structure-coaching/E9` | One name for each review mode in the glossary and the prose. | The glossary holds a qualified entry for the architect audit and for the pull request narration, and no architect prose calls the audit by the narration name. | 1 (attempt 1) | done |
 | 17 | `structure-coaching/E9` | The scripted loop gives VALIDATE and the vocabulary agent a slice base and a packet path. | `slice-loop.js` takes the slice base from RED, GREEN commits each attempt, and VALIDATE gets the base and the out path. A packet of the second slice holds only that slice. | 1 (attempt 1) | done |
 | 18 | `structure-coaching/E9` | No duplicate vocabulary leads. | A file and a function of one name give one lead in each list of `evidence.vocabulary`. | 1 (attempt 1) | done |
-| 19 | `structure-coaching/E9` | `structure_evidence.py` keeps to the size guide. | The entry script has 200 lines or fewer, and each test of the evidence script still passes. | — | pending |
+| 19 | `structure-coaching/E9` | `structure_evidence.py` keeps to the size guide. | The entry script has 200 lines or fewer, and each test of the evidence script still passes. | 1 (attempt 1) | done |
 | | **`structure-coaching/E7` — Dependency diagram.** The import graph becomes a diagram and covers more languages. Backlog, after E5. | | | | |
 | | **`structure-coaching/E8` — Refactor skill.** `/architect:refactor` plans refactor slices from the E6 findings file. Backlog, after E6. | | | | |
