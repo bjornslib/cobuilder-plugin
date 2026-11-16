@@ -15,47 +15,41 @@ E3. The probe record decided the path: hold the call, with the wait inside
   multi-select answer is comma-joined.
 - At the catch, the transcript already holds the `tool_use`.
 
-## Gate 2b: the question card, on layout C
+## Gate 2b: the question card
 
-Layout C is the pane design of `priority-dev-cc-plugin`:
-`docs/architecture/designs/priority-dev-cc-plugin/pane-design/layout-c.png`.
-The pane keeps layout C: the fixed top (header, key row, note), then the
-body. While a question is held, the question card replaces the newest
-turn-end card at the top of the body.
+The layout is `question-card.svg` in this folder. It keeps only three
+parts: the two top rows (the header and the key row), the question and
+answer pairs, and the "What will be sent" block.
 
-```
-Priority reader  ● on  #5  ⠹ reading…
-s Send · e Edit · r Right · w Wrong · m Hide summary
-Note: Type an observation
-
-The agent asks you
-1. Which store keeps the marks?            [Store]
-   [•] $.store      Keeps marks per plugin
-   [ ] JSONL file   One file per session
-   Other: ____________
-
-2. Which checks run on save?               [Checks] (several)
-   [x] Unit
-   [x] E2E
-   [ ] Lint
-   Other: ____________
-
-Reading for this question
-   P1 High · Waits for your answer
-   1. You decide  Which store keeps the marks?  → $.store
-```
-
-- Each question shows its header chip, each option with its description,
-  and one Other input. A multi-select question shows "(several)".
+- Each question shows its number, its text, and its header chip. A
+  multi-select question shows "(several)".
+- Each option shows `[•]` or `[ ]` (one answer) or `[x]` or `[ ]`
+  (several), with its description dimmed beside it. One Other input
+  follows the options.
 - A press on an option selects it. Other text replaces the picks of its
   question.
-- `s` sends the answers. With a question that has no pick and no Other
-  text, `s` shows "Answer each question first" and sends nothing.
-- `Edit` is not used for a question card. The answer goes back as the
+- `s` sends the answers as the tool result. A question with no answer
+  blocks Send, and the block says "Answer each question first".
+- `e Edit` is dim on a question card, because the answer goes back as the
   tool result, not as a prompt.
-- The reading fills in under the questions when it arrives. It never
-  changes the person's picks.
+- The reading of the question fills in when it arrives. It never changes
+  the person's picks.
 - The pane opens and takes focus when the call is caught.
+
+### "What will be sent", in every case
+
+The block from layout C now frames every draft in the pane, not only a
+question (frames A, B, and C of the SVG):
+
+- A title row, `▸ WHAT WILL BE SENT`, with a `READY` tag when Send can
+  act.
+- The exact text that Send sends, in an inner box.
+- A footer with three fields: Source (the answers or the steps), Length
+  (in characters), and Target (`tool result` or `session prompt`).
+- With nothing chosen, the block is dim and says "Provide your response".
+
+This brings back the title row that slice E3.13 of `priority-dev-cc-plugin`
+removed, now with the footer.
 
 ## Program design addendum
 
@@ -66,6 +60,7 @@ Files, all in `plugins/cobuilder-priority/`:
 - `hooks/hold.ts` (new): the answer paths, the `$.process.spawn` argv,
   the stdout drain, and the outcome. This is the probe's `spawn.ts`.
 - `hooks/question.tsx` (new): the question card.
+- `hooks/card.tsx`: the "What will be sent" block, with its title, `READY` tag, and footer, for every draft.
 - `hooks/register.ts`: registers the hook.
 - `hooks/reader.ts`: a question job that runs `priority digest`, then
   `priority interpret --open-question <file>`.
