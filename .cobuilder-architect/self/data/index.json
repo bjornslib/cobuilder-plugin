@@ -1,13 +1,13 @@
 {
   "schema_version": "1.5",
   "sources": {
-    "git_head": "40237f4de96d171b2b1d23b2d55ed1dbe87b876b",
+    "git_head": "40b79e02213325be7178bd0c1633dacfbb23cee8",
     "trees": {
       "docs/architecture/adr": "sha256:20ca2f731683a3c296a2c76de4eeab9d4a6a07fcfeab163272cc78709195785d",
       "docs/architecture/designs": "sha256:36064aebf0a1a2af87ad4d9703cbe56dd3a2a7bc59f11b4f00a2252e6dcd20c9",
       "docs/architecture/contexts": "sha256:8ca7133e5a38a3c614862d9fb6550d40e2333ff772d6d7a4bd3a786914327670",
-      "docs/plans": "sha256:59d178578cc1d4369212d2fdb29ed5a25f5e6316e492ba886f8d770990dad9cb",
-      ".cobuilder/rubrics": "sha256:8fa6a742939328489ad8fe718b9be9f2fce3f129f98ff498c87b157376f5415e"
+      "docs/plans": "sha256:414df72f38a4a2f80ba1b2c040d6d00d39ec6e1ac528f61bee3ddede1bb107f8",
+      ".cobuilder/rubrics": "sha256:3d377a730300f81ee0c05e7181cc21be113a600b1065afdc1cd35d4d5875878b"
     }
   },
   "entities": {
@@ -4562,7 +4562,7 @@
         "title": "**Probe record**",
         "ends_with": "`probe-record.md` states, from a live run: if the call stayed open for two minutes, which answer shape the agent received, what a refused shape showed, and if the transcript held the `tool_use` at the catch. Each answer quotes its `probe.jsonl` line",
         "score": "1.00",
-        "attempts": 1,
+        "attempts": 3,
         "state": "completed"
       },
       {
@@ -5171,9 +5171,9 @@
         "n": 18,
         "title": "No duplicate vocabulary leads",
         "ends_with": "A file and a function of one name give one lead in each list of `evidence.vocabulary`.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "structure-coaching/19",
@@ -9172,7 +9172,7 @@
       },
       "structure-coaching": {
         "stage_source": "tracker",
-        "next_ready": "structure-coaching/18",
+        "next_ready": "structure-coaching/19",
         "pull_requests": []
       },
       "tracker-slice-edit": {

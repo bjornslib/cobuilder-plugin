@@ -46,14 +46,29 @@ def empty_leads() -> dict[str, list[dict[str, Any]]]:
 def vocabulary_leads(
     names: list[Name], index: list[dict[str, Any]], stems: list[str]
 ) -> dict[str, list[dict[str, Any]]]:
-    """Return the leads of the names. The stems are the file names that the diff does not add."""
+    """Return the leads of the names. The stems are the file names that the diff does not add.
+
+    Each list holds one lead for each name, path, and word. The first lead of each one stays.
+    """
     held = _held_tokens(index, stems)
     leads = empty_leads()
     for name in names:
         leads["avoid_candidates"] += _avoid_hits(name, index)
         leads["defined_terms_used"] += _term_hits(name, index)
         leads["new_tokens"] += _new_hits(name, held)
-    return leads
+    return {
+        "avoid_candidates": _unique_leads(leads["avoid_candidates"], "word"),
+        "defined_terms_used": _unique_leads(leads["defined_terms_used"], "term"),
+        "new_tokens": _unique_leads(leads["new_tokens"], "token"),
+    }
+
+
+def _unique_leads(found: list[dict[str, Any]], field: str) -> list[dict[str, Any]]:
+    """Return one lead for each name, path, and field value. The first lead of each one stays."""
+    kept: dict[tuple[str, str, str], dict[str, Any]] = {}
+    for lead in found:
+        kept.setdefault((lead["name"], lead["path"], lead[field]), lead)
+    return list(kept.values())
 
 
 def _avoid_items(text: str) -> list[dict[str, str]]:
