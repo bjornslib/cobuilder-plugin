@@ -1,7 +1,7 @@
 {
   "schema_version": "1.5",
   "sources": {
-    "git_head": "0b174f0d58af04ad66cbc3ca51b808c5fcf11205",
+    "git_head": "51e158f2ef72ed6674db6b474f4cc1ed9a059f5d",
     "trees": {
       "docs/architecture/adr": "sha256:20ca2f731683a3c296a2c76de4eeab9d4a6a07fcfeab163272cc78709195785d",
       "docs/architecture/designs": "sha256:36064aebf0a1a2af87ad4d9703cbe56dd3a2a7bc59f11b4f00a2252e6dcd20c9",
@@ -9183,7 +9183,22 @@
       "structure-coaching": {
         "stage_source": "tracker",
         "next_ready": null,
-        "pull_requests": []
+        "pull_requests": [
+          {
+            "ref": "pr-57",
+            "number": 57,
+            "state": "open",
+            "epics": [
+              "structure-coaching/E2",
+              "structure-coaching/E1",
+              "structure-coaching/E9",
+              "structure-coaching/E4",
+              "structure-coaching/E5",
+              "structure-coaching/E6",
+              "structure-coaching/E3"
+            ]
+          }
+        ]
       },
       "tracker-slice-edit": {
         "stage_source": "tracker",
