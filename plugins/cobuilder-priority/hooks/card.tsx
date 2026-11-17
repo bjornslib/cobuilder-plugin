@@ -3,7 +3,7 @@
 // A card is a list of blocks. The pane draws them under its fixed top (pane.tsx).
 import type { Act, Mark, Reading } from '../types'
 import { canSend, visibleNo } from './draft'
-import { answer, draftFor, pick, saveMark, toggleStep } from './act'
+import { answer, draftFor, pick, saveMark, send, toggleStep } from './act'
 import { isQuiet } from './reader'
 import { abstainName, priorityName, statusName, stepName } from './names'
 
@@ -98,6 +98,22 @@ export function draftBox(ui: any, o: { text: string; footer?: string; lit: boole
   )
 }
 
+// The Send link, a cyan Button with no hotkey. The s key of the key row stays the only hotkey.
+export function sendLink(ui: any, dim: boolean, onPress: () => void) {
+  const { Button, Text } = ui
+  return (
+    <Button key="send-link" plain label="Send" dimColor={dim} onPress={onPress}>
+      <Text color="cyan">Send</Text>
+    </Button>
+  )
+}
+
+// The Send link under a turn-end card. It sends like the s key on this card, and it is dim when the card is not live.
+function turnEndSend($: any, ui: any, r: Reading, a: Act, live: boolean) {
+  const dim = !live || a.steps.length === 0 || isQuiet()
+  return sendLink(ui, dim, () => { if (live && !isQuiet()) void send($, r, 'submit') })
+}
+
 // The footer names the picked steps: one step with its name, or the numbers of several.
 function sourceOf(r: Reading, picked: number[]): string | undefined {
   if (!picked.length) return undefined
@@ -146,6 +162,7 @@ export function card($: any, ui: any, r: Reading, a: Act, live: boolean): any[] 
     titleBlock(ui, r, live, steps.some((s) => s.kind !== 'notify')),
     ...rows,
     sendableNow(r, live) ? draftBlock(ui, r, a) : null,
+    r.stop_kind === 'question' ? null : turnEndSend($, ui, r, a, live),
   ].filter((b) => b !== null)
 }
 

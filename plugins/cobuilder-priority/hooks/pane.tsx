@@ -7,7 +7,7 @@ import { card, clock, keyed, noteInput, quiet } from './card'
 import { keyRow, questionKeyRow } from './keys'
 import { questionBlocks } from './question'
 import { PANE_ID, isBusy, isQuestionBusy, readingsKey } from './reader'
-import { abstainName, briefName, priorityName, statusName } from './names'
+import { abstainName, priorityName, statusName } from './names'
 
 const switchedOn = atom({ plugin: 'cobuilder-priority', key: 'on' } as const, false)
 const tick = atom({ plugin: 'cobuilder-priority', key: 'tick' } as const, 0)
@@ -67,12 +67,10 @@ function digestRows(ui: any, list: DigestList, items: string[] | undefined): any
 function summary(ui: any, r: Reading, closed: boolean) {
   const { Box, Text } = ui
   const body = r.digest ? `${r.digest.ran} ${r.digest.result}` : r.stop_kind === 'question' ? 'A question for you' : 'No digest for this stop'
-  const source = briefName(r.brief)
   const lists = closed ? [] : DIGEST_LISTS.flatMap((list) => digestRows(ui, list, r.digest?.[list.field]))
   return (
     <Box key="summary-box" flexDirection="column" borderStyle="single" paddingX={1} marginTop={1}>
       <Text {...quiet()}>{`${closed ? '▸' : '▾'} Agent completed`}</Text>
-      {closed || !source ? null : keyed(ui, 'brief', source, { dimColor: true })}
       {closed ? null : keyed(ui, 'summary-body', body, quiet({ dimColor: !r.digest, wrap: 'wrap' }))}
       {lists}
     </Box>

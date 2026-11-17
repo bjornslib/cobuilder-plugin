@@ -1,7 +1,7 @@
 // The question card of a held AskUserQuestion call (question-card.svg, frame A).
 import type { HeldQuestion, Question } from '../types'
-import { declineAnswers, pickOption, setOther } from './ask'
-import { draftBox, keyed } from './card'
+import { declineAnswers, pickOption, sendAnswers, setOther } from './ask'
+import { draftBox, keyed, sendLink } from './card'
 import { allAnswered, answeredCount, typedOr } from './hold'
 
 const option = (multi: boolean, on: boolean) => (on ? (multi ? '[x]' : '[•]') : '[ ]')
@@ -53,10 +53,13 @@ function sourceOf(held: HeldQuestion): string | undefined {
 
 // The card's blocks in draw order: each question, then the draft block that holds the answers.
 export function questionBlocks($: any, ui: any, held: HeldQuestion): any[] {
-  const { Button } = ui
+  const { Box, Button } = ui
   return [
     ...held.questions.map((q, i) => questionRow($, ui, held, q, i)),
     draftBox(ui, { text: answerLines(held), footer: sourceOf(held), lit: allAnswered(held), notice: held.notice }),
-    <Button key="decline" plain label="Decline to answer" onPress={() => void declineAnswers($)} />,
+    <Box key="answer-row" flexDirection="row" columnGap={2}>
+      {sendLink(ui, !allAnswered(held), () => void sendAnswers($))}
+      <Button key="decline" plain label="Decline to answer" onPress={() => void declineAnswers($)} />
+    </Box>,
   ]
 }
