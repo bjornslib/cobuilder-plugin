@@ -1,12 +1,12 @@
 {
   "schema_version": "1.4",
   "sources": {
-    "git_head": "11aeb6a2a8637762bda6d2b658531f7157b7df58",
+    "git_head": "4083f56213bb6bb68513515ef9eeb50aa3c0d768",
     "trees": {
-      "docs/architecture/adr": "sha256:90969144359d2333c3fcd11e4ceb71b64cdddf1ee06c36990087f7f2c99830a8",
-      "docs/architecture/designs": "sha256:77408c59737c44b8be3b80d643e8a098036e8da6f345e8ca61e7b30a39ba4f30",
+      "docs/architecture/adr": "sha256:c0025216245bfddaa19dbd3d7188772a748b4be8fc1c6cc8778ea8fac9d35206",
+      "docs/architecture/designs": "sha256:6a7e087537298c9ec8abc9706b42a4dbed9f1180f734ca14ffd727e1a876aa15",
       "docs/architecture/contexts": "sha256:e9537c5da21bf3f32eb547c8c422e8c3eb9acafefb5801143e53491b64ace073",
-      "docs/plans": "sha256:c4971e5fb95a9a5fed652cde314e126316ffe5bf8318faa13ef1bd5eeb2c3840",
+      "docs/plans": "sha256:70742b843fbe65bf9c4644933ff6f5e07ffaa41dbb1d9280cbfbbda84f0a6527",
       ".cobuilder/rubrics": "sha256:5692a7f5dfb80b64c26ad3a1bfb4a9ee04b301dc0a9b680240076ae34d002775"
     }
   },
@@ -1118,7 +1118,8 @@
         "branch": null,
         "pr": null,
         "state": null,
-        "note": null
+        "note": null,
+        "design_doc": "priority-ask-question/E3"
       },
       {
         "id": "priority-dev-cc-plugin/E1",
@@ -4657,7 +4658,7 @@
         "title": "**Probe record**",
         "ends_with": "`probe-record.md` states, from a live run: if the call stayed open for two minutes, which answer shape the agent received, what a refused shape showed, and if the transcript held the `tool_use` at the catch. Each answer quotes its `probe.jsonl` line",
         "score": "1.00",
-        "attempts": 1,
+        "attempts": 3,
         "state": "completed"
       },
       {
@@ -5236,9 +5237,9 @@
         "n": 15,
         "title": "Review mode proposes a backlog design from the confirmed debt findings",
         "ends_with": "A blind review agent with a fixture record groups the debt findings and writes a backlog `goal.json` with one planned epic for each group, and each epic cites its findings. It starts no build.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "structure-coaching/16",
@@ -5246,9 +5247,9 @@
         "n": 16,
         "title": "One name for each review mode in the glossary and the prose",
         "ends_with": "The glossary holds a qualified entry for the architect audit and for the pull request narration, and no architect prose calls the audit by the narration name.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "structure-coaching/17",
@@ -5256,9 +5257,9 @@
         "n": 17,
         "title": "The scripted loop gives VALIDATE and the vocabulary agent a slice base and a packet path",
         "ends_with": "`slice-loop.js` takes the slice base from RED, GREEN commits each attempt, and VALIDATE gets the base and the out path. A packet of the second slice holds only that slice.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "structure-coaching/18",
@@ -5266,9 +5267,9 @@
         "n": 18,
         "title": "No duplicate vocabulary leads",
         "ends_with": "A file and a function of one name give one lead in each list of `evidence.vocabulary`.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "structure-coaching/19",
@@ -6053,6 +6054,15 @@
         "body_md": "# Epic Technical Solution Design: E1 — Probe\n\nFeature: priority-ask-question\nEpic ID: E1\n\n## Scope and Intent\n\nE1 answers three engine questions before any product code holds a call.\nCan a `tool.call` hook hold an AskUserQuestion call open while a person\ndecides? Which answer shape does the engine accept? Is the `tool_use` in\nthe transcript when the hook fires? The probe mod is test equipment. It\nlives under `priority-dev/probes/`, and no marketplace entry names it.\n\n## Files Touched\n\n- `priority-dev/probes/ask-hold/.claude-plugin/plugin.json`\n- `priority-dev/probes/ask-hold/hooks/hooks.json`\n- `priority-dev/probes/ask-hold/hooks/register.tsx`\n- `priority-dev/probes/ask-hold/hooks/shapes.ts`\n- `priority-dev/probes/ask-hold/tests/` (mod tests)\n- `priority-dev/probes/ask-hold/README.md` (how to run the probe)\n- `docs/architecture/designs/priority-ask-question/probe-record.md`\n  (slice 2, filled from the live run)\n\n## Types & Signatures\n\n`03-program-design.md` holds the types. The probe contract:\n\n- **Mode.** An atom, `hold` by default after `/ask-probe hold`, and `off`\n  until a person runs a command. `/ask-probe pass` sets `pass`.\n  `/ask-probe off` stops the probe.\n- **The hook.** `on('tool.call', { tool: 'AskUserQuestion' }, ...)`. It\n  calls `next(e)` when the mode is not `hold`, or when `agentId` is set.\n  In hold mode it logs `caught`, opens the pane, and awaits a promise that\n  the pane's Send resolves. It returns `{ result: answerOf(shape, ...) }`.\n- **The pane.** Id `ask-hold`. It shows the elapsed seconds, each\n  question with its options as toggle Buttons, an Other input for each\n  question, a shape choice (`answers-by-question`, `answers-list`,\n  `text`), and Send. A redraw each second shows the elapsed time.\n- **The log.** One JSON line for each event, appended to\n  `<priority_dev_dir>/reports/logs/ask-hold/probe.jsonl`, or to the\n  plugin data folder when no folder is set. `inTranscript` is true when\n  the transcript text holds the `tool_use_id` at the catch.\n- **The cut-off.** A `.catch` handler on the hook logs `cut-off` with the\n  failure kind and the budget.\n\n## Slice Decomposition\n\n1. **Probe mod.** The mod, its commands, the hook, the pane, the shapes,\n   the log, and its tests. Ends with passing mod tests and a README.\n2. **Probe record.** The person runs the probe live. The record states\n   each answer and quotes its log line. Depends on slice 1.\n\n## Test Plan\n\n- `tests/shapes.test.ts`: each shape function gives its documented\n  value for one, multi-select, and Other answers.\n- `tests/hook.test.tsx`: with a stub beneath the plugin for `tool.call`,\n  a pass-mode call and a subagent call reach the stub; a hold-mode call\n  opens the pane, a press of Send returns `{ result }` with the chosen\n  shape, and the log gets `caught` then `answered`.\n- Slice 2 has no automated test. Its rubric scores the record.\n\n## Risks & Open Questions\n\n- The test kit may cut off a held hook after ten seconds. The tests\n  press Send before that.\n- A `.catch` handler may not fire for a cut-off in a live session. The\n  person then reports that the dialog opened.\n- The engine may refuse each candidate shape. The record then holds the\n  error text, which names the schema.\n",
         "approved_date": null,
         "source_path": "docs/plans/priority-ask-question/epic-E1-design.md"
+      },
+      {
+        "id": "priority-ask-question/E3",
+        "epic_id": "E3",
+        "feature_slug": "priority-ask-question",
+        "title": "Epic E3: The reader holds an AskUserQuestion call in its pane",
+        "body_md": "# Epic E3: The reader holds an AskUserQuestion call in its pane\n\nThis addendum covers Gate 2b, the program design, and the epic design for\nE3. The probe record decided the path: hold the call, with the wait inside\n`$.process.spawn`. See `docs/architecture/designs/priority-ask-question/probe-record.md`.\n\n## What the probe proved\n\n- A `tool.call` hook has a fixed budget of 10 seconds of its own time. A\n  wait on a plain promise counts, so the engine skips that hook.\n- A wait inside a `$` call does not count. A hold inside\n  `$.process.spawn` lasted 41 seconds with no cut-off.\n- The result must match the tool's output schema:\n  `{ questions, answers: { \"<question text>\": \"<answer>\" } }`. A\n  multi-select answer is comma-joined.\n- At the catch, the transcript already holds the `tool_use`.\n\n## Gate 2b: the question card, on layout C\n\nLayout C is the pane design of `priority-dev-cc-plugin`:\n`docs/architecture/designs/priority-dev-cc-plugin/pane-design/layout-c.png`.\nThe pane keeps layout C: the fixed top (header, key row, note), then the\nbody. While a question is held, the question card replaces the newest\nturn-end card at the top of the body.\n\n```\nPriority reader  ● on  #5  ⠹ reading…\ns Send · e Edit · r Right · w Wrong · m Hide summary\nNote: Type an observation\n\nThe agent asks you\n1. Which store keeps the marks?            [Store]\n   [•] $.store      Keeps marks per plugin\n   [ ] JSONL file   One file per session\n   Other: ____________\n\n2. Which checks run on save?               [Checks] (several)\n   [x] Unit\n   [x] E2E\n   [ ] Lint\n   Other: ____________\n\nReading for this question\n   P1 High · Waits for your answer\n   1. You decide  Which store keeps the marks?  → $.store\n```\n\n- Each question shows its header chip, each option with its description,\n  and one Other input. A multi-select question shows \"(several)\".\n- A press on an option selects it. Other text replaces the picks of its\n  question.\n- `s` sends the answers. With a question that has no pick and no Other\n  text, `s` shows \"Answer each question first\" and sends nothing.\n- `Edit` is not used for a question card. The answer goes back as the\n  tool result, not as a prompt.\n- The reading fills in under the questions when it arrives. It never\n  changes the person's picks.\n- The pane opens and takes focus when the call is caught.\n\n## Program design addendum\n\nFiles, all in `plugins/cobuilder-priority/`:\n\n- `hooks/ask.ts` (new): the `tool.call` hook body. It catches, opens the\n  pane, holds in the child, and returns the result.\n- `hooks/hold.ts` (new): the answer paths, the `$.process.spawn` argv,\n  the stdout drain, and the outcome. This is the probe's `spawn.ts`.\n- `hooks/question.tsx` (new): the question card.\n- `hooks/register.ts`: registers the hook.\n- `hooks/reader.ts`: a question job that runs `priority digest`, then\n  `priority interpret --open-question <file>`.\n- `types/index.d.ts`: `Reading.stop_kind`, `Reading.questions`,\n  `Mark.answers`, and the held-question atom.\n- `tests/ask.test.ts`, `tests/question.test.tsx` (new).\n\n```ts\ntype HeldQuestion = { toolUseId: string; questions: Question[]; picks: Record<number, string[]>; other: Record<number, string>; startedAt: number }\ntype AskResult = { questions: Question[]; answers: Record<string, string> }\nfunction answerOf(held: HeldQuestion): AskResult\nfunction holdPaths(dir: string, toolUseId: string): { answer: string; done: string }\n```\n\nCall stack: `tool.call (AskUserQuestion)` → reader on and main loop, else\n`next(e)` → write the questions file → enqueue a question job → open and\nfocus the pane with the card → await `$.process.spawn` (the wait loop) →\nSend writes the answer file, then the done file → parse stdout → return\n`{ result }`. On Esc, return a refusal and make no `$` call. On a failed\nchild, log and return `next(e)`, so the dialog opens.\n\n## Epic design\n\n- **Outcome:** the person answers an agent's question in the pane, with a\n  reading beside it, and the dialog never opens.\n- **Scope:** main-loop calls only, with the reader on. A subagent call, or\n  the reader off, passes the call on.\n- **The reading:** it runs in the background, so a slow reading never\n  holds the answer. The person may send before the reading arrives.\n- **The mark:** the stored reading has `stop_kind: question` and the\n  questions. The mark stores the person's answers beside right or wrong.\n- **Fallback:** if the child fails to start or ends with an error, the\n  hook returns `next(e)`, and the engine's dialog opens.\n\n## Risks\n\n- A hold of three minutes and Esc during a hold have no logged evidence.\n  The live check of slice 4 covers both.\n- The answer files need a folder. The probe used\n  `<session cwd>/.cobuilder/ask-hold/`. The decision for E3 is open.\n- The reader runs one job at a time. A question job waits behind a\n  running turn-end reading.\n",
+        "approved_date": null,
+        "source_path": "docs/plans/priority-ask-question/epic-E3-design.md"
       },
       {
         "id": "priority-dev-spike/E1",
@@ -8219,6 +8229,7 @@
       "priority-ask-question/1": "priority-ask-question/E1",
       "priority-ask-question/2": "priority-ask-question/E1",
       "priority-ask-question/3": "priority-ask-question/E2",
+      "priority-ask-question/4": "priority-ask-question/E3",
       "priority-dev-spike/1": "priority-dev-spike/E1",
       "priority-dev-spike/2": "priority-dev-spike/E1",
       "priority-dev-spike/3": "priority-dev-spike/E1",

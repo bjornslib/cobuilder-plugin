@@ -3397,6 +3397,11 @@
         "state": "decided",
         "date": "2026-11-15",
         "note": "Drafted by design mode for the priority-ask-question design. The engineer chose to hold the call open, the pane as the only place for the question, the dialog as the fallback, and agent-assisted authorship."
+      },
+      {
+        "state": "decided",
+        "date": "2026-11-16",
+        "note": "The live probe on Claude Code 2.1.325 showed that the engine skips a tool.call hook after 10 seconds of its own time, when it waits on a plain promise. A second probe tests a wait inside $.process.run, which the budget does not count. The choice between the hold and the fallback waits for that probe. See probe-record.md."
       }
     ],
     "related": [
