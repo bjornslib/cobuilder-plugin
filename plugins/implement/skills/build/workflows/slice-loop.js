@@ -73,6 +73,24 @@ looks helpful — those are separate iterations and their code does not exist ye
 Do not modify or delete work from earlier slices beyond the minimum needed to
 integrate this one.`
 
+// RED and GREEN may note what they learned. They never act on it. The
+// orchestrating session decides each one at the slice boundary.
+const SUGGESTIONS = {
+  type: 'array',
+  description: 'spec or test changes you propose, or questions for the orchestrator; empty if none',
+  items: {
+    type: 'object',
+    required: ['kind', 'target', 'issue', 'evidence'],
+    properties: {
+      kind: { type: 'string', enum: ['spec-change', 'test-change', 'question'] },
+      target: { type: 'string', description: 'file path, and section or test name' },
+      issue: { type: 'string' },
+      evidence: { type: 'string', description: 'what you saw that shows the issue' },
+      proposal: { type: 'string', description: 'the change you propose, if any' },
+    },
+  },
+}
+
 const RED_SCHEMA = {
   type: 'object',
   required: ['testFiles', 'newFailingTests', 'failuresAreAssertions', 'preexistingPassCount'],
@@ -82,6 +100,7 @@ const RED_SCHEMA = {
     failuresAreAssertions: { type: 'boolean', description: 'false if any new test fails on an import/collection/syntax error rather than an assertion' },
     preexistingPassCount: { type: 'integer' },
     notes: { type: 'string' },
+    suggestions: SUGGESTIONS,
   },
 }
 
@@ -95,6 +114,7 @@ const GREEN_SCHEMA = {
     touchedATestFile: { type: 'boolean', description: 'true if any test file appears in the diff — this voids the run' },
     feedbackAddressed: { type: 'string', description: 'on a retry, how each prior gap was addressed' },
     browserEvidencePath: { type: 'string', description: 'path to the browser-evidence file written for this slice, only when browserEvidence was required' },
+    suggestions: SUGGESTIONS,
   },
 }
 
@@ -217,6 +237,7 @@ ${BLIND}`,
   let attempt = 0
   let verdict = null
   let last = null
+  const suggestions = (red.suggestions || []).map(x => ({ ...x, from: 'red' }))
 
   while (attempt < MAX_ATTEMPTS) {
     attempt += 1
@@ -257,6 +278,7 @@ file's path as browserEvidencePath.` : ''}`,
       last = { verdict: 'ERROR', reason: 'GREEN agent returned nothing', attempt }
       break
     }
+    suggestions.push(...(green.suggestions || []).map(x => ({ ...x, from: `green:a${attempt}` })))
 
     phase('Validate')
     // VALIDATE scores this attempt against the blind rubric. VOCABULARY
@@ -320,7 +342,7 @@ ${evidence}/slice-${s.id}-attempt-${attempt}.md.`,
   }
 
   if (!verdict && last) verdict = last.verdict === 'ERROR' ? 'ERROR' : 'ESCALATION'
-  results.push({ slice: s, verdict, ...last })
+  results.push({ slice: s, verdict, ...last, suggestions })
 
   // A voided or errored slice stops the run — later slices build on this one.
   if (verdict === 'VOID' || verdict === 'ERROR') {
@@ -351,6 +373,8 @@ return {
   })),
   voidedOrErrored: broken.map(r => ({ id: r.slice.id, verdict: r.verdict, reason: r.voidReason || r.reason })),
   notRun: notRun.map(s => s.id),
+  suggestions: results.filter(r => r.suggestions && r.suggestions.length)
+    .map(r => ({ id: r.slice.id, items: r.suggestions })),
   // Deliberately not written to 00-status.md here — the orchestrating session
   // records scores and takes escalations to the user at a slice boundary.
   // The tracker calls and the slice note (see references/slice-loop.md) also run in the orchestrating session, not in
