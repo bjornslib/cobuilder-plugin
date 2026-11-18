@@ -143,6 +143,13 @@ async function heldView($: any, ui: any, held: HeldQuestion, columns: number) {
   }
 }
 
+// An inline pane sits above the prompt and has no scroll window. The terminal docks a pane only in fullscreen, from 110 columns.
+export const INLINE_WARNING = 'This pane cannot scroll here. Turn on fullscreen with /config, and use a terminal of 110 columns or more.'
+
+function inlineWarning(ui: any, placement: unknown) {
+  return placement === 'inline' ? keyed(ui, 'inline-warning', INLINE_WARNING, { color: 'yellow', wrap: 'wrap' }) : null
+}
+
 // The engine gives the window's offset in e.props.scroll. The fixed top sits at that row.
 export async function renderPane($: any, e: any) {
   const ui = $.ui.resolve(e)
@@ -152,14 +159,16 @@ export async function renderPane($: any, e: any) {
   const on = await read($, switchedOn)
   const held = await read($, heldAtom)
   const view = held ? await heldView($, ui, held, e.props.bodyColumns) : await paneView($, ui, e.props.bodyColumns)
+  const warning = inlineWarning(ui, e.props.placement)
   if (!view) {
     const hint = on ? 'No reading yet. The next stop starts one.' : 'The reader is off. Run /priority-on to read each stop.'
-    return <Box flexDirection="column">{header(ui, on, 0, frame)}<Text dimColor>{hint}</Text></Box>
+    return <Box flexDirection="column">{header(ui, on, 0, frame)}{warning}<Text dimColor>{hint}</Text></Box>
   }
   const { readings, blocks, keys, note } = view
   return (
     <Box flexDirection="column" rowGap={0}>
       <Box key="fixed-spacer" height={FIXED_TOP_ROWS} />
+      {warning}
       {blocks}
       {cover(ui, e.props.bodyColumns, e.props.scroll.offset)}
       <Box key="fixed-top" position="absolute" top={e.props.scroll.offset} left={0} right={0} height={FIXED_TOP_ROWS} overflow="hidden" flexDirection="column">
