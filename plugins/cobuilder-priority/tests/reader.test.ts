@@ -1,5 +1,5 @@
 import { expect, test } from 'claude-code/testing'
-import { DIGESTED, DONE, LABELLED, LABELLED_SUMMARY, NO_HUMAN, NO_REPLY, OPTIONS, PLAIN, stop, stubEngine, stubProcess, stubStore, waitFor } from './fakes'
+import { DIGESTED, DONE, LABELLED, LABELLED_SUMMARY, NO_HUMAN, NO_REPLY, OPTIONS, PLAIN, commandRun, stop, stubEngine, stubProcess, stubStore, waitFor } from './fakes'
 
 const KEY = 'readings:S1'
 const TRANSCRIPT = '/home/me/.claude/projects/x/S1.jsonl'
@@ -71,6 +71,7 @@ test('with the switch on, a stop runs digest then interpret, and stores the read
     ['uv', 'run', 'priority', 'interpret'],
   ])
   const interpret = calls[1]
+  if (!interpret) throw new Error('interpret did not run')
   expect(interpret.argv.includes('--program')).toBe(true)
   expect(interpret.argv[interpret.argv.indexOf('--program') + 1]).toBe(OPTIONS.program)
   expect(interpret.argv[interpret.argv.indexOf('--digest') + 1]).toBe('current')
@@ -94,7 +95,9 @@ test('a first digest abstain is stored as a brief with no digest', { options: OP
   await switchOn($)
   await stop($)
   await waitFor(() => Array.isArray(store.get(KEY)))
-  expect(calls[1].argv[calls[1].argv.indexOf('--digest') + 1]).toBe('previous')
+  const interpret = calls[1]
+  if (!interpret) throw new Error('interpret did not run')
+  expect(interpret.argv[interpret.argv.indexOf('--digest') + 1]).toBe('previous')
   expect((store.get(KEY) as any[])[0].brief).toBe('no-digest')
 })
 
@@ -107,7 +110,9 @@ test('a digest abstain after a stored digest makes interpret label it previous',
   await waitFor(() => ((store.get(KEY) as any[]) ?? []).length === 1)
   await stop($)
   await waitFor(() => ((store.get(KEY) as any[]) ?? []).length === 2)
-  expect(calls[3].argv[calls[3].argv.indexOf('--digest') + 1]).toBe('previous')
+  const again = calls[3]
+  if (!again) throw new Error('interpret did not run')
+  expect(again.argv[again.argv.indexOf('--digest') + 1]).toBe('previous')
   expect((store.get(KEY) as any[])[1].brief).toBe('digest-previous')
 })
 
@@ -131,7 +136,7 @@ test('the off command drops a stop that waits', { options: OPTIONS }, async ($, 
   await stop($)
   await stop($)
   await waitFor(() => calls.length > 0)
-  await $.command.run({ command: 'priority-off' })
+  await $.command.run(commandRun('priority-off'))
   open()
   await waitFor(() => ((store.get(KEY) as any[]) ?? []).length >= 1)
   await waitFor(() => false, 3)
@@ -188,7 +193,7 @@ test('the off command stops later readings', { options: OPTIONS }, async ($, on)
   stubStore(on)
   const calls = stubProcess(on, [DIGESTED, DONE])
   await switchOn($)
-  await $.command.run({ command: 'priority-off' })
+  await $.command.run(commandRun('priority-off'))
   await stop($)
   await waitFor(() => false, 3)
   expect(calls.length).toBe(0)

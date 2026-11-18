@@ -46,7 +46,7 @@ test('the card holds one Other input per question, and Edit is dim while the que
   const pending = askCall($)
   await settle(() => ctx.spawns.length > 0)
   const ui = await mountPane($)
-  const others = (await ui.findAll({ type: 'Input' })).filter((n) => n.props?.label === 'Other')
+  const others = (await ui.findAll({ type: 'Input' })).filter((n: Node) => n.props?.label === 'Other')
   expect(others, 'one Other input per question').toHaveLength(ASKED.length)
   expect((await ui.find({ key: 'edit' }))?.props.dimColor, 'Edit is dim on a question card').toBe(true)
   await pressText(ui, '$.store')

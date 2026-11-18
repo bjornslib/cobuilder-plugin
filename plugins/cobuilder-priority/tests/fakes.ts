@@ -1,6 +1,7 @@
 // Shared stubs for the cobuilder-priority tests. The runner reads *.test.ts only,
 // so this file holds no test cases.
 import { mock } from 'claude-code/testing'
+import type { CommandRunInput, PromptSubmitInput } from 'claude-code'
 
 export const OPTIONS = { priority_dev_dir: '/work/priority-dev', program: 'probes/programs/d1.json', timeout_seconds: 120 }
 
@@ -87,6 +88,20 @@ export const parentOfKey = (root: Node, key: string): Node | undefined =>
   walk(root).find((n) => childNodes(n).some((c) => keyOfNode(c) === key))
 
 // Records each prompt.submit and prompt.fill. `filled` false makes the box refuse the text.
+// The testing kit types a plugin's command and prompt with the full engine
+// input. These helpers fill the fields the engine stamps for a plugin's call.
+const PLUGIN_ORIGIN = { kind: 'plugin' as const, name: 'cobuilder-priority' }
+
+export function commandRun(command: string): CommandRunInput {
+  return { command, args: '', origin: PLUGIN_ORIGIN, presentation: { isFullscreen: false, columns: 80 } }
+}
+
+// The person's own words, submitted by the plugin. The kit type has no
+// asUser field, so the one cast sits here.
+export function promptAsUser(text: string): PromptSubmitInput {
+  return { text, asUser: true, origin: PLUGIN_ORIGIN, wait: false } as PromptSubmitInput
+}
+
 export function stubPrompt(on: any, filled = true) {
   const sent: { how: 'submit' | 'fill'; text: string; asUser?: boolean; mode?: string }[] = []
   on('prompt.submit', (_$: any, e: any) => { sent.push({ how: 'submit', text: e.text, asUser: e.origin?.asUser ?? e.asUser }); return { text: e.text } })

@@ -1,5 +1,5 @@
 import { expect, test } from 'claude-code/testing'
-import { ACTIONABLE, DIGESTED, LABELLED, LABELLED_SUMMARY, NO_REPLY, OPTIONS, PANE, PLAIN, WAITING, childNodes, keyOfNode, nodeByKey, parentOfKey, readings, stubEngine, stubStore, waitFor, walk } from './fakes'
+import { ACTIONABLE, DIGESTED, LABELLED, LABELLED_SUMMARY, NO_REPLY, OPTIONS, PANE, PLAIN, WAITING, childNodes, commandRun, keyOfNode, nodeByKey, parentOfKey, readings, stubEngine, stubStore, waitFor, walk } from './fakes'
 import type { Node } from './fakes'
 
 test('with no reading and the switch off, the pane says how to turn it on', async ($, on) => {
@@ -13,7 +13,7 @@ test('with no reading and the switch off, the pane says how to turn it on', asyn
 
 test('the header shows the switch state and the count of readings', { options: OPTIONS }, async ($, on) => {
   await readings($, on)
-  await $.command.run({ command: 'priority-off' })
+  await $.command.run(commandRun('priority-off'))
   const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
   expect((await ui.find({ key: 'state' }))?.text).toBe('○ off')
   expect((await ui.find({ key: 'count' }))?.text).toBe('1 readings')

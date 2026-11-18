@@ -1,6 +1,6 @@
 // The 0.3.4 polish: the fixed top, the clear on the next prompt, the gap between questions, and the digest lists.
 import { expect, test } from 'claude-code/testing'
-import { ACTIONABLE, DIGESTED, NOTIFYING, OPTIONS, PANE, childNodes, drain, keyOfNode, nodeByKey, readings, rowsUnder, stop, stubPanes, waitFor, walk } from './fakes'
+import { ACTIONABLE, DIGESTED, NOTIFYING, OPTIONS, PANE, childNodes, commandRun, drain, promptAsUser, keyOfNode, nodeByKey, readings, rowsUnder, stop, stubPanes, waitFor, walk } from './fakes'
 import type { Node } from './fakes'
 import { DIGEST_LISTS, TWO_QUESTIONS } from './fixtures'
 
@@ -96,7 +96,7 @@ test('a prompt clears the notify rows of the band, and dims the card until the n
   expect(await band.find({ key: 'notify-0' }), 'the notify row shows before the prompt').toBeDefined()
   expect(allDim((await pane.drawn()) as Node, 'title'), 'the card is not dim before the prompt').toBe(false)
 
-  await $.prompt.submit({ text: 'Go on.', asUser: true })
+  await $.prompt.submit(promptAsUser('Go on.'))
   expect(await band.find({ key: 'notify-0' }), 'no notify row after the prompt').toBeUndefined()
   let root = (await pane.drawn()) as Node
   expect(allDim(root, 'title'), 'the card title is dim after the prompt').toBe(true)
@@ -116,7 +116,7 @@ test('while the reader waits for the next reading, Send and Edit are dim and sub
   const store = await readings($, on, [DIGESTED, ACTIONABLE])
   const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
   await ui.press({ key: 'step-0' })
-  await $.prompt.submit({ text: 'Go on.', asUser: true })
+  await $.prompt.submit(promptAsUser('Go on.'))
   const before = store.sent.length
   for (const key of ['send', 'edit']) expect(await ui.find({ key })).toBeDefined()
   expect((await ui.find({ key: 'send' }))?.props.dimColor, 'Send is dim while waiting').toBe(true)
