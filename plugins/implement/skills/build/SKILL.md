@@ -590,6 +590,8 @@ A harness with no Workflow tool always uses Manual, regardless of scope.
 
 ### After each slice
 
+For each slice, the main agent spawns the three agents: `implement:red`, `implement:green`, and `implement:validate`. It writes no slice code. Before a slice closes, run the agent-use check: `uv run "${CLAUDE_PLUGIN_ROOT}/scripts/verify_gate.py" --plan docs/plans/<slug> --slice <N>`. See [references/slice-loop.md](references/slice-loop.md).
+
 1. **Demonstrate functionality.** Execute tests or run a demo. If the slice
    touches a frontend app, the demo must open the running app in a browser
    through the ChromeDevTools MCP tools and exercise the changed behavior

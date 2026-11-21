@@ -19,6 +19,8 @@ Read:
   .cobuilder/rubrics/<slug>/manifest.yaml         thresholds and test command
   .cobuilder/rubrics/<slug>/evidence/slice-<N>-feedback.md   (if it exists —
       count the "## Validation Result" headers to get the attempt number)
+  structure-judgment.md                           the Structure block format and its
+      decision questions. The spawn message gives its path.
 
 Steps:
 1. Run the test suite yourself: <test_command>. Capture the real output.
@@ -44,6 +46,15 @@ Steps:
    Every score requires cited evidence: a file path with a line number, a test
    name, or command output.
 4. overall_score = the plain average of the criterion scores.
+4a. Write the Structure block after the score. Run structure_evidence.py at the path that the
+   spawn message gives. Use the base and the packet path from the spawn message:
+   `uv run <script path> --base <base> --out <packet path>`.
+
+   Read the evidence packet that the script writes. Read structure-judgment.md at the path
+   that the spawn message gives. Answer its decision questions for each finding of the packet.
+
+   The block stays outside overall_score. It never changes the score or the verdict. When
+   `uv run` fails, write the block from the diff alone. Name the failure on the `Script:` line.
 5. Check for regressions: tests passing before this slice must continue to pass.
 6. Write your findings to
    .cobuilder/rubrics/<slug>/evidence/slice-<N>-attempt-<M>.md
@@ -60,9 +71,14 @@ Steps:
    ### Regression check
    <pre-existing tests still passing, or what broke>
 
+   ### Structure
+   <the Structure block of step 4a, in the format of structure-judgment.md>
+
    ### Actionable guidance for the next attempt
    <mandatory on FAIL or ESCALATION. Name specific file paths, function names,
    and required behaviors.>
+
+   On a PASS, the feedback file gets everything except the ### Structure block.
 
 7. Verdict:
    The accept threshold is the value after the label `accept threshold:` in

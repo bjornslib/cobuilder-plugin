@@ -2,12 +2,12 @@
 # Machine-diffable architecture baseline — ../../standard.md §5.2.
 # Authoring procedure: plugins/architect/skills/architecture/references/architecture-documentation.md.
 # Every edge below was checked against code (grep of imports, Skill calls, and path strings).
-# Grounded in code as of 2026-10-08.
+# Grounded in code as of 2026-11-14.
 
 id: artifact
 path: plugins/artifact
 name: "Artifact: the viewer, the local server, and the publish step"
-verified_at: d086be981401779ba4691faed31a6f64598df589
+verified_at: 51e300b0015c6197d59c4d349b64acff7b466273
 
 public_interface:
   - commands/view.md
@@ -24,7 +24,7 @@ allowed_dependencies:
 context_map:
   - with: shared
     pattern: shared-kernel
-    shared: [_bundle_meta.read_plugin_version, _bundle_meta.require_compatible, _bundle_meta.stamp_generator, ledger.LedgerPaths, ledger.append_comment, gate_status, slice_table]
+    shared: [_bundle_meta.read_plugin_version, _bundle_meta.require_compatible, _bundle_meta.stamp_generator, ledger.LedgerPaths, ledger.append_comment, gate_status, slice_table, tracker_port.reader]
     note: "Five scripts add the plugin's shared symlink to sys.path and import these modules. The skill also runs shared/build_index.py and migrate_bundle.py by shell."
   - with: bundle-directory
     pattern: open-host-service
@@ -57,7 +57,7 @@ modules:
     public_interface: [plugin.json]
     allowed_inbound: []
     allowed_outbound: []
-    rule: "Static JSON, no dependencies. Version 0.10.0 must match marketplace.json."
+    rule: "Static JSON, no dependencies. Version 0.12.2 must match marketplace.json."
 
   - id: commands
     path: plugins/artifact/commands
@@ -88,7 +88,7 @@ modules:
     public_interface: ["index.html (built, committed)"]
     allowed_inbound: [skill-cobuilder-artifacts]
     allowed_outbound: []
-    rule: "Leaf. Source is React, TypeScript, Vite, Tailwind, and Vitest in src (174 ts and tsx files). It reads the bundle over HTTP, root at .cobuilder-architect/. Build, then commit index.html."
+    rule: "Leaf. Source is React, TypeScript, Vite, Tailwind, and Vitest in src (334 ts and tsx files). It reads the bundle over HTTP, root at .cobuilder-architect/. Build, then commit index.html."
 
   - id: shared-scripts
     path: plugins/artifact/shared

@@ -62,7 +62,7 @@ Each rule is grep-checkable; report violations as architecture findings.
 - `corpus/principles/security/frontend_security.yaml`
 - `corpus/principles/security/xss_csrf_csp.yaml`
 
-Review mode already loads all of `corpus/principles/security/*`; the security entries
+Architect review mode already loads all of `corpus/principles/security/*`. The security entries
 here exist so design mode gets them too. The Airbnb style cards
 (`003_airbnb_style.yaml`, `006`–`031`) are style-level — load on demand via
 `corpus-index.md` symptom lookup, not as part of the stack chain.

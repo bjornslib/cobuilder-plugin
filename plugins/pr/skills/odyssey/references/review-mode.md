@@ -325,7 +325,7 @@ section of `SKILL.md`.
 
 - **No corpus.** See §5.
 
-- **No new ADR.** A pre-merge decision is a proposal. Review mode writes the
+- **No new ADR.** A pre-merge decision is a proposal. PR review mode writes the
   record after the PR merges. See `decision-records-lite.md` §3.2.
 
 ## 10. Workflow

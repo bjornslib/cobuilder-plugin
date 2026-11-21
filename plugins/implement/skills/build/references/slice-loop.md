@@ -10,6 +10,8 @@ One slice uses three roles and one gate. The roles must execute as separate
 agents with separate contexts. An agent that writes an implementation cannot
 judge it objectively.
 
+The main agent is the orchestrator. For each slice, it spawns the three agents by agent type, in this order: `implement:red`, `implement:green`, and `implement:validate`. It never writes the code or the tests of a slice, even for a small slice. An agent that writes the code cannot judge it. A skipped VALIDATE leaves no attempt file, so the slice cannot close.
+
 ```
 RED       write failing tests that define the slice contract
    ↓
@@ -42,11 +44,18 @@ survives context compactions, lost sessions, or changes in harness:
 .cobuilder/rubrics/<slug>/evidence/
     slice-N-attempt-M.md                              validator findings (output)
     slice-N-feedback.md                               guidance for the next GREEN
+    slice-N-packet.json                               evidence packet of the slice diff
 docs/plans/<slug>/00-status.md                        scores and checkmarks
 ```
 
 `slice-N-feedback.md` is append-only within a slice. Delete it when the slice is
 accepted. The header count in this file determines the attempt number.
+
+---
+
+## Slice base
+
+Before RED starts, record the slice base. Run `git rev-parse HEAD` in the repo. Keep the full sha for the VALIDATE spawn message. Without this base, the script uses the merge-base with the default branch, and that diff holds the earlier slices too.
 
 ---
 
@@ -106,13 +115,22 @@ scoring guide, the evidence file format, and the verdict rules. That step
 requires opening a frontend slice in a real browser: a component test that
 calls `.click()` is not that check.
 
+The VALIDATE spawn message also carries these structure values:
+
+- the script path, `${CLAUDE_PLUGIN_ROOT}/shared/structure_evidence.py`,
+- the slice base, as `--base <slice base>`,
+- the packet path, as `--out .cobuilder/rubrics/<slug>/evidence/slice-<N>-packet.json`,
+- the path of `${CLAUDE_PLUGIN_ROOT}/skills/build/references/structure-judgment.md`.
+
 Spawn VALIDATE and VOCABULARY in parallel, not one after the other. VALIDATE
-uses `subagent_type: "implement:validate"`. VOCABULARY uses `subagent_type:
-"implement:vocabulary"`, and its spawn message carries the slug, the slice
-number, and the exact diff command. Its own body
-(`plugins/implement/agents/vocabulary.md`) holds the finding tags and the
-evidence-file format. Running both agents in parallel costs no extra wall
-time, because neither reads the other's output.
+uses `subagent_type: "implement:validate"`, and VOCABULARY uses
+`subagent_type: "implement:vocabulary"`. The VOCABULARY spawn message carries
+the slug, the slice number, the exact diff command, and the packet path,
+`.cobuilder/rubrics/<slug>/evidence/slice-<N>-packet.json`. When the packet
+exists, VOCABULARY reads it, and it works from the diff alone when it does
+not. Its own body (`plugins/implement/agents/vocabulary.md`) holds the finding
+tags and the evidence-file format. Running both agents in parallel costs no
+extra wall time, because neither waits for the other's report.
 
 **The vocabulary verdict is a separate axis, not part of the score.** A
 `CLEAN` or `FINDINGS` verdict never enters `overall_score`, and it never
@@ -147,9 +165,11 @@ Branch on the exit code only, and never parse the message. [shared/tracker-usage
 
 | Verdict | Action |
 |---|---|
-| **PASS** | Delete `slice-<N>-feedback.md`. Run `set-slice-state <id> closed --score <score> --attempts <n>`, then `regenerate-status-files <program> --plans-dir <dir>`, then rebuild the index. These calls record the score and the epic status. **Store the slice note** (see "Slice note to project memory" below). Prove the slice works to the user with a test or demo. Ask whether to continue or adjust direction. |
+| **PASS** | Run the agent-use check: `uv run "${CLAUDE_PLUGIN_ROOT}/scripts/verify_gate.py" --plan docs/plans/<slug> --slice <N>`. When it prints a reason and exits 1, do not close the slice. Spawn the missing agent or fix the attempt file first, then run the check again. Delete `slice-<N>-feedback.md`. Run `set-slice-state <id> closed --score <score> --attempts <n>`, then `regenerate-status-files <program> --plans-dir <dir>`, then rebuild the index. These calls record the score and the epic status. **Store the slice note** (see "Slice note to project memory" below). Prove the slice works to the user with a test or demo. Ask whether to continue or adjust direction. |
 | **FAIL** | Run `record-attempt <id> <score> --note <text>`. Re-run GREEN with the feedback file. Do not re-run RED because the contract did not change. |
-| **ESCALATION** | Do not loop again. Run `escalate <id> <score> <reason>`. Then run `regenerate-status-files <program> --plans-dir <dir>` and rebuild the index. Discuss with the user. See the gap decision tree in `validation-scoring.md`. When the engineer decides to move on, run `tracker.py skip-slice <id> --reason <text> --outcome escalated`, then rebuild the index again. For a delayed slice, use `--outcome skipped`. Closing the slice unblocks the later slices. |
+| **ESCALATION** | Do not loop again. Run the agent-use check, as in the PASS row. Then run `escalate <id> <score> <reason>`. Then run `regenerate-status-files <program> --plans-dir <dir>` and rebuild the index. Discuss with the user. See the gap decision tree in `validation-scoring.md`. When the engineer decides to move on, run `tracker.py skip-slice <id> --reason <text> --outcome escalated`, then rebuild the index again. For a delayed slice, use `--outcome skipped`. Closing the slice unblocks the later slices. |
+
+The agent-use check reads the newest attempt file of VALIDATE for the slice. It cannot see a main agent that wrote the code and then spawned only VALIDATE. It also cannot see a skipped RED or GREEN while VALIDATE still runs. This known gap means the check does not replace the rule that the main agent spawns all three agents.
 
 ## Handling suggestions
 
@@ -237,7 +257,9 @@ to multi-agent orchestration before running the script. Invoke it with
 input only looks up built-in or `.claude/workflows/`-registered workflows,
 not plugin-shipped scripts. The script also has no filesystem access, so
 each slice's `epicDesignExists` must be computed and passed in by the
-orchestrating session (see the script's own args comment).
+orchestrating session (see the script's own args comment). The script does not run the agent-use check. Before the main session records a PASS from the script, it runs the check for that slice.
+
+RED reports `sliceBase`, the full sha from `git rev-parse HEAD`, and `branch`, the output of `git rev-parse --abbrev-ref HEAD`, before it writes a file. The loop stops before GREEN when RED reports `master`, `main`, or a detached `HEAD`, so no commit lands on a protected branch. GREEN commits each attempt with `git commit` on the feature branch, and VALIDATE and the vocabulary agent get `--base <sliceBase>` and `--out <packet path>`. A failed attempt leaves a commit that git can roll back, and the diff from `sliceBase` still covers every attempt.
 
 ---
 

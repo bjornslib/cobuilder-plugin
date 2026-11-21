@@ -1,0 +1,65 @@
+feature: structure-coaching
+test_command: uv run pytest tests -q
+thresholds:
+  accept: 0.9
+  investigate: 0.7
+max_attempts: 3
+slices:
+- id: 1
+  name: 'Tracer bullet: a crowded folder reaches GREEN'
+  weight: 0.0688
+- id: 2
+  name: The name-stem cluster, the generic name, the config, and the paths not analysed
+  weight: 0.0602
+- id: 3
+  name: The coaching language
+  weight: 0.0516
+- id: 4
+  name: The coach uses the wording, repeats nothing, and is silent about smells for
+    an unscanned extension
+  weight: 0.0688
+- id: 5
+  name: The install writes the default config
+  weight: 0.0344
+- id: 6
+  name: The agent-use check
+  weight: 0.0602
+- id: 7
+  name: The loop text makes the main agent use the three agents
+  weight: 0.0602
+- id: 8
+  name: 'Tracer: VALIDATE writes the Structure block from the evidence packet'
+  weight: 0.0774
+- id: 9
+  name: The replay evaluation
+  weight: 0.0688
+- id: 10
+  name: The import reader, the folder groups, and the boundary edge
+  weight: 0.0688
+- id: 11
+  name: Duplicated code and consumer locality in the packet
+  weight: 0.0602
+- id: 12
+  name: The vocabulary leads
+  weight: 0.0516
+- id: 13
+  name: The whole-repository findings file
+  weight: 0.0688
+- id: 14
+  name: Review mode and maintenance mode report the record
+  weight: 0.0602
+- id: 15
+  name: Review mode proposes a backlog design
+  weight: 0.04
+- id: 16
+  name: One name for each review mode
+  weight: 0.02
+- id: 17
+  name: The scripted loop gives VALIDATE a slice base
+  weight: 0.04
+- id: 18
+  name: No duplicate vocabulary leads
+  weight: 0.02
+- id: 19
+  name: structure_evidence.py keeps to the size guide
+  weight: 0.02

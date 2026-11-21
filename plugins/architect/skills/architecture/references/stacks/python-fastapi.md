@@ -62,7 +62,7 @@ Each rule is grep-checkable; report violations as architecture findings.
 - `corpus/principles/security/tenant_isolation.yaml`
 - `corpus/principles/security/layer_boundaries.yaml`
 
-Review mode already loads all of `corpus/principles/security/*`; the security entries
+Architect review mode already loads all of `corpus/principles/security/*`. The security entries
 here exist so design mode gets them too. Load further `corpus/principles/python/*`
 craft cards on demand via `corpus-index.md` symptom lookup.
 

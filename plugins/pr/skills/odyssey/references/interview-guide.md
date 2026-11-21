@@ -14,7 +14,7 @@ assesses the change, and before it opens the pull request.
 
 A diff shows what changed. It does not show which problem the author solved,
 which options the author rejected, or which parts the author does not
-understand. Review mode infers those three things from merged code, long
+understand. PR review mode infers those three things from merged code, long
 after the fact. The interview collects them while the author still knows them.
 
 ## 1. What the interview collects

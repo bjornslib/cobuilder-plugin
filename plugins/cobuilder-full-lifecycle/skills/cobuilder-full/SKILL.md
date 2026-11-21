@@ -80,7 +80,7 @@ Use to build features from design into verified code:
 
 Use once per repo to set up the family. The umbrella holds one command:
 
-- **install** (`/cobuilder-full-lifecycle:install`): Use to set up habit-hooks, check the glossary, and add the Hindsight allow rules. It asks before each change.
+- **install** (`/cobuilder-full-lifecycle:install`): Use to set up habit-hooks, write the structure config, check the glossary, and add the Hindsight allow rules. It asks before each change.
 
 ---
 
@@ -99,7 +99,7 @@ Use once per repo to set up the family. The umbrella holds one command:
 | View bundle locally in browser | `artifact` | `/artifact:view` |
 | Export story level as Claude Artifact | `artifact` | `/artifact:publish` |
 | Build feature in verified vertical slices | `implement` | `/implement:implement` |
-| Set up habit-hooks, the glossary check, and Hindsight allow rules | `cobuilder-full-lifecycle` | `/cobuilder-full-lifecycle:install` |
+| Set up habit-hooks, the structure config, the glossary check, and Hindsight allow rules | `cobuilder-full-lifecycle` | `/cobuilder-full-lifecycle:install` |
 
 Do not execute procedures from this skill. Direct the user to the matching
 plugin.
