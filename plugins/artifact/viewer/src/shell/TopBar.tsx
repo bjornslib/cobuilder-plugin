@@ -10,7 +10,7 @@
  * folds the prototype's `Diagram.tsx` into that file.
  */
 
-import { MobileTrigger, SkipLink, ThemeToggle, WorkBoardButton } from "./topBar/buttons";
+import { BoardButtons, MobileTrigger, SkipLink, ThemeToggle } from "./topBar/buttons";
 import type { TopBarProps } from "./topBar/props";
 import { StatusRow } from "./topBar/Status";
 import { Switcher } from "./topBar/Switcher";
@@ -24,7 +24,7 @@ export function TopBar(bar: TopBarProps) {
     <header className={BAR_CLASS} style={{ zIndex: "var(--layer-fixed)" }}>
       <SkipLink paneId={bar.paneId} />
       <MobileTrigger />
-      <WorkBoardButton onOpenWork={bar.onOpenWork} />
+      <BoardButtons onOpenWork={bar.onOpenWork} kanban={bar.kanban} />
       <Switcher bar={bar} />
       <StatusRow bar={bar} />
       <ThemeToggle theme={bar.theme} onToggleTheme={bar.onToggleTheme} />

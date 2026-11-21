@@ -1,9 +1,15 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 
+import { readBoardAddress, type BoardAddress } from "../board/address";
 import { readRoute, type Route, type SectionKey } from "../model";
 
 export interface RouteControl {
   route: Route;
+  /**
+   * The board address of the current hash, or null on every other address. The board
+   * wins `#/board` over a design that carries the id `board`, as ADR-0050 accepts.
+   */
+  kanban: BoardAddress | null;
   /** True while the shell itself rewrote the hash, so the redirect notice stands. */
   selfRewrite: RefObject<boolean>;
   /** A section this work cannot fill, when the route asked for one. */
@@ -13,26 +19,35 @@ export interface RouteControl {
   go: (href: string) => void;
 }
 
-type SetRedirect = (section: SectionKey | null) => void;
-type SetRoute = (route: Route) => void;
+interface HashRead {
+  route: Route;
+  kanban: BoardAddress | null;
+}
 
-function hashHandler(selfRewrite: RefObject<boolean>, setRedirectedFrom: SetRedirect, setRoute: SetRoute) {
+type SetRedirect = (section: SectionKey | null) => void;
+type SetHash = (read: HashRead) => void;
+
+function readHash(): HashRead {
+  return { route: readRoute(), kanban: readBoardAddress(window.location.hash) };
+}
+
+function hashHandler(selfRewrite: RefObject<boolean>, setRedirectedFrom: SetRedirect, setHash: SetHash) {
   return () => {
     if (selfRewrite.current) {
       selfRewrite.current = false;
     } else {
       setRedirectedFrom(null);
     }
-    setRoute(readRoute());
+    setHash(readHash());
   };
 }
 
-function useHashListener(selfRewrite: RefObject<boolean>, setRedirectedFrom: SetRedirect, setRoute: SetRoute): void {
+function useHashListener(selfRewrite: RefObject<boolean>, setRedirectedFrom: SetRedirect, setHash: SetHash): void {
   useEffect(() => {
-    const onHash = hashHandler(selfRewrite, setRedirectedFrom, setRoute);
+    const onHash = hashHandler(selfRewrite, setRedirectedFrom, setHash);
     window.addEventListener("hashchange", onHash);
     return () => window.removeEventListener("hashchange", onHash);
-  }, [selfRewrite, setRedirectedFrom, setRoute]);
+  }, [selfRewrite, setRedirectedFrom, setHash]);
 }
 
 function useGo(selfRewrite: RefObject<boolean>): (href: string) => void {
@@ -51,11 +66,11 @@ function useGo(selfRewrite: RefObject<boolean>): (href: string) => void {
  * reader chose that destination.
  */
 export function useHashRoute(): RouteControl {
-  const [route, setRoute] = useState<Route>(() => readRoute());
+  const [{ route, kanban }, setHash] = useState<HashRead>(readHash);
   const [redirectedFrom, setRedirectedFrom] = useState<SectionKey | null>(null);
   const selfRewrite = useRef(false);
 
-  useHashListener(selfRewrite, setRedirectedFrom, setRoute);
+  useHashListener(selfRewrite, setRedirectedFrom, setHash);
 
-  return { route, selfRewrite, redirectedFrom, setRedirectedFrom, go: useGo(selfRewrite) };
+  return { route, kanban, selfRewrite, redirectedFrom, setRedirectedFrom, go: useGo(selfRewrite) };
 }

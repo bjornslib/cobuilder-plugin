@@ -1,8 +1,9 @@
-import { LayoutGrid, Moon, Sun, type LucideIcon } from "lucide-react";
+import { LayoutGrid, Moon, SquareKanban, Sun, type LucideIcon } from "lucide-react";
 
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 
+import { BOARD_HREF } from "../board/address";
 import type { Theme } from "../DiagramTiles";
 
 export const FOCUS_RING = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
@@ -60,7 +61,7 @@ export function MobileTrigger() {
  * from any level. `aria-haspopup="dialog"` is what the drawer is, and the pressed
  * state carries the open state, so a screen reader reads it on the icon itself.
  */
-export function WorkBoardButton({ onOpenWork }: { onOpenWork: () => void }) {
+function WorkBoardButton({ onOpenWork }: { onOpenWork: () => void }) {
   return (
     <button type="button" onClick={onOpenWork} aria-label="Work board" aria-haspopup="dialog" title="Work board" className={ICON_BUTTON_CLASS}>
       <LayoutGrid className="size-[18px]" aria-hidden="true" />
@@ -75,5 +76,23 @@ export function ThemeToggle({ theme, onToggleTheme }: { theme: Theme; onToggleTh
     <div className="ml-auto flex shrink-0 items-center gap-2">
       <IconButton label={label} icon={light ? Moon : Sun} onClick={onToggleTheme} />
     </div>
+  );
+}
+
+function KanbanLink({ current }: { current: boolean }) {
+  const className = cn(ICON_BUTTON_CLASS, current && "bg-accent-wash text-accent-deep");
+  return (
+    <a href={BOARD_HREF} aria-label="Kanban board" aria-current={current ? "page" : undefined} title="Kanban board" className={className}>
+      <SquareKanban className="size-[18px]" aria-hidden="true" />
+    </a>
+  );
+}
+
+export function BoardButtons({ onOpenWork, kanban }: { onOpenWork: () => void; kanban: boolean }) {
+  return (
+    <>
+      <WorkBoardButton onOpenWork={onOpenWork} />
+      <KanbanLink current={kanban} />
+    </>
   );
 }

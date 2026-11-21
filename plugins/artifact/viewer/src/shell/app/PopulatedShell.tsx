@@ -14,6 +14,7 @@ import { viewOf, type ShellView } from "./view";
 const PANE_CLASS = "min-h-0 min-w-0 flex-1 overflow-auto overscroll-contain bg-ground outline-none";
 
 function paneLabel(v: ShellView): string {
+  if (v.kanban !== null) return "Kanban board";
   if (v.board) return "Work board";
   const name = v.work?.design.name ?? (v.worklessPr === null ? "No work item" : `Pull request ${v.worklessPr.id}`);
   return `${name}, ${v.section}`;
@@ -42,7 +43,7 @@ function ShellDrawer({ v }: { v: ShellView }) {
   const { load } = v;
   const index = load.state === "ready" ? load.index : null;
   const records = load.state === "ready" ? load.designs : null;
-  return <WorkDrawer open={v.workDrawerOpen} onOpenChange={v.setWorkDrawerOpen} rows={v.boardRows} index={index} records={records} />;
+  return <WorkDrawer open={v.workDrawerOpen} onOpenChange={v.setWorkDrawerOpen} rows={v.designRows} index={index} records={records} />;
 }
 
 export function PopulatedShell({ s }: { s: ShellState }) {

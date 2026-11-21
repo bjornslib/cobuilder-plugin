@@ -23,6 +23,7 @@ function barLists(): Omit<BarState, keyof ReturnType<typeof barIdentity>> {
     supersedes: [],
     ready: true,
     board: false,
+    kanban: false,
     designs: [],
     epics: [],
   };

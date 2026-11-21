@@ -1,8 +1,9 @@
 import { useMemo } from "react";
 
+import { boardRowsOf } from "@/data/board";
 import { designRowsOf, entitiesOf } from "@/data/bundle";
 import { resolvedJoinsOf } from "@/data/joins";
-import type { DesignRow } from "@/data/types";
+import type { BoardRows, DesignRow } from "@/data/types";
 
 import type { IndexLoad } from "../../hooks";
 import { buildWorkItems, switcherList, type WorkItem } from "../../model";
@@ -25,10 +26,11 @@ export function useCatalog(load: IndexLoad) {
   const ready = load.state === "ready";
   const works = useMemo(() => (load.state === "ready" ? buildWorkItems(load.index, load.designs) : new Map<string, WorkItem>()), [load]);
   const workList = useMemo(() => (load.state === "ready" ? switcherList(works) : { designs: [], epics: [] }), [load, works]);
-  const boardRows = useMemo((): DesignRow[] => (load.state === "ready" ? designRowsOf(load.index) : []), [load]);
+  const designRows = useMemo((): DesignRow[] => (load.state === "ready" ? designRowsOf(load.index) : []), [load]);
+  const boardRows = useMemo((): BoardRows | null => (load.state === "ready" ? boardRowsOf(load.index) : null), [load]);
   const resolvedJoins = useMemo(() => (load.state === "ready" ? resolvedJoinsOf(load.index) : null), [load]);
   const allPullRequests = load.state === "ready" ? entitiesOf(load.index).pull_request : [];
-  return { ready, works, workList, boardRows, resolvedJoins, allPullRequests };
+  return { ready, works, workList, designRows, boardRows, resolvedJoins, allPullRequests };
 }
 
 export type Catalog = ReturnType<typeof useCatalog>;

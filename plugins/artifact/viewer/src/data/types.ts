@@ -12,3 +12,4 @@
 export type * from "./types/core";
 export type * from "./types/entities";
 export type * from "./types/joins";
+export type * from "./types/board";

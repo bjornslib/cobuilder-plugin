@@ -295,6 +295,21 @@ _Avoid_: stage board (the name of a rejected prototype), overview
 The second level of the Kanban board, for one program. Its epics, or its slices, sit in the columns Planned, In progress, and Done.
 _Avoid_: focus board (the name of a rejected prototype), swim lane (the board has columns only)
 
+<a id="no-program-board"></a>
+**No program board** (`artifact`):
+The level of the Kanban board at `#/board?orphans=1`, which shows the slices whose plan names no design. The address key and the code call these slices orphan slices.
+_Avoid_: orphan board (the board name stays No program, as the reader sees it)
+
+<a id="column-rail"></a>
+**Column rail** (`artifact`):
+The narrow strip that stands in for a hidden column of the Kanban board. It keeps the column label and count, and a click shows the column again.
+_Avoid_: rail alone (the rail is the left navigation of the viewer shell)
+
+<a id="stage-lane"></a>
+**Stage lane** (`artifact`):
+One of the five stage groups of the Work drawer, defined once in `workDeck.ts`. The program board draws each stage lane as one column.
+_Avoid_: swim lane (the Kanban board has columns only)
+
 <a id="start-prompt"></a>
 **Start prompt** (`artifact`):
 The one line of text that the copy icon of a program card or an epic card puts on the clipboard. It starts the next workflow for that record.
