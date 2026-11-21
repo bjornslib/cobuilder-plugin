@@ -198,6 +198,13 @@ Continue from the first unapproved gate or unbuilt slice. Treat the `2b` line
 as a gate in this check, so a returned session reads its answer. Do not repeat
 approved gates unless requirements changed.
 
+**Pull request refresh.** At the start of a session, before you read the
+gate state, run the procedure in
+[shared/pull-request-refresh.md](../../../../shared/pull-request-refresh.md).
+It records each merge that GitHub shows, so the epics of the feature are true
+before you plan or build. Report its result in one line. Then run
+`tracker.py list-epics --program <program>`.
+
 Template for `00-status.md`:
 
 ```markdown

@@ -112,7 +112,7 @@ for each board.
 |---|---|
 | `columns[]` | One entry for each column, with its key, label, cards, count, and hidden flag. |
 | `columns[].emptyReason` | Why a column shows no card: no record has this state, or the search hides each record. |
-| `shown` and `total` | The count of records that the board shows, and the count that the index holds. |
+| `shown` and `total` | The count of records that the board shows, and the count of records of that board in the index. On the program board, the total is every program. On an epic board, it is the epics or slices of that program. On the No program board, it is the slices with no program. |
 | `orphans` | The count of slices that belong to no program. The No program card shows when the count is above zero. |
 
 An epic card carries its status, its lifecycle, and its pull request as three
