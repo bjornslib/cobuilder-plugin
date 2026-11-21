@@ -4,8 +4,9 @@ import { atom, read as readAtom, update } from 'claude-code'
 import type { PluginOptions } from 'claude-code'
 import type { Digest, DigestAbstain, Question, Reading, ReadingResult } from '../types'
 import { takeAnswers } from './answers'
-import { agentSummary, answerLabels } from './labels'
-import { clearPending, listPending, markPending } from './pending'
+import { cli } from './cli'
+import { answersOf } from './labels'
+import { clearPending, lostReadings, markPending } from './pending'
 
 // The pane reads the same tick, so a write here redraws it.
 const tick = atom({ plugin: 'cobuilder-priority', key: 'tick' } as const, 0)
@@ -20,9 +21,6 @@ export type QuestionJob = { toolUseId: string; questions: Question[]; file: stri
 export type StopJob = { sessionId: string; transcript: string; repo: string; at: string; lastMessage: string; question?: QuestionJob }
 
 const LOG_DIR = 'reports/logs/live'
-const MAX_SECONDS = 600
-// The priority digest command tries the digest up to three times, so its limit is three timeouts.
-const DIGEST_ATTEMPTS = 3
 // The running indicator moves once each 120 ms while a reading runs.
 const FRAME_MS = 120
 
@@ -147,12 +145,6 @@ function openQuestionArgs(job: StopJob): string[] {
   return job.question ? ['--open-question', job.question.file] : []
 }
 
-// The labels always; the Summary text only when the message has one.
-function answersOf(text: string): { labels: string[]; agentSummary?: string } {
-  const summary = agentSummary(text)
-  return { labels: answerLabels(text), ...(summary ? { agentSummary: summary } : {}) }
-}
-
 // A digest abstain stores nothing: the brief then holds the digest of an earlier stop, or none.
 async function briefShape($: any, sessionId: string, abstained: boolean): Promise<Reading['brief']> {
   const key = `digested:${sessionId}`
@@ -172,43 +164,10 @@ function isAbstain(digest: unknown): boolean {
   return typeof digest === 'object' && digest !== null && 'reason' in digest
 }
 
-// Runs one priority command in the priority-dev folder and parses its JSON output.
-async function cli($: any, args: string[], options: PluginOptions): Promise<unknown> {
-  const seconds = Math.min(MAX_SECONDS, Number(options.timeout_seconds ?? 180) || 180)
-  const attempts = args[0] === 'digest' ? DIGEST_ATTEMPTS : 1
-  const key = String(options.llm_api_key ?? '').trim()
-  const init = {
-    cwd: String(options.priority_dev_dir),
-    timeoutMs: Math.min(MAX_SECONDS, seconds * attempts) * 1000,
-    ...(key ? { env: { LLM_API_KEY: key } } : {}),
-  }
-  const run = await $.process.run(['uv', 'run', 'priority', ...args], init)
-  if (run.exitCode !== 0) {
-    const last = String(run.stderr || run.stdout).trim().split('\n').pop() ?? ''
-    throw new Error(`priority ${args[0]} exited with ${run.exitCode}: ${last}`)
-  }
-  try {
-    return JSON.parse(run.stdout)
-  } catch {
-    throw new Error(`priority ${args[0]} printed no JSON: ${String(run.stdout).slice(0, 200)}`)
-  }
-}
-
-// Called at a session.start, which runs again after a reload. A stop still pending lost its reading,
-// because the module values of the old run are gone. Each such stop gets a failed reading.
-// Only the stops of this session: the store is shared, and another live session may still read its own stop.
+// Called at a session.start. Each lost stop gets a failed reading, found in pending.ts.
 export async function failLostStops($: any, options: PluginOptions): Promise<void> {
-  const sessionId = await $.session.id()
   const on = await readAtom($, switchedOn)
-  for (const lost of (await listPending($)).filter((stop) => stop.sessionId === sessionId)) {
-    // A reader switched off skips its stops on purpose. Such a stop gets no reading.
-    if (!on) {
-      await clearPending($, lost.sessionId, lost.at)
-      continue
-    }
-    const error = 'Lost to a reload of the mod. The next stop reads again.'
-    await save($, { sessionId: lost.sessionId, at: lost.at, repo: lost.repo, program: String(options.program ?? ''), brief: 'no-digest', state: 'failed', error, ms: 0 })
-  }
+  for (const reading of await lostReadings($, options, on)) await save($, reading)
 }
 
 async function save($: any, reading: Omit<Reading, 'n'>): Promise<void> {

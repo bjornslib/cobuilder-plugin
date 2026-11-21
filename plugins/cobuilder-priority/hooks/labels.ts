@@ -29,3 +29,9 @@ export function agentSummary(text: string): string | undefined {
   const body = partsOf(text).find((part) => part.label === 'Summary')?.body.join('\n').trim()
   return body || undefined
 }
+
+// The labels always; the Summary text only when the message has one.
+export function answersOf(text: string): { labels: string[]; agentSummary?: string } {
+  const summary = agentSummary(text)
+  return { labels: answerLabels(text), ...(summary ? { agentSummary: summary } : {}) }
+}
