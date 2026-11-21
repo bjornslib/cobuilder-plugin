@@ -1,0 +1,82 @@
+{
+  "stage": "design",
+  "verdict": "concerns",
+  "risk_tier": "medium",
+  "regret_risk": "The team lives with a second board beside the Work drawer, and with a committed index that changes on each build. If the board grows a filter set of its own, the two surfaces drift apart. The start prompts tie the viewer to the command names of two other plugins as plain text.",
+  "summary": "The design adds a read-only Kanban board as a full page of the viewer. It shows programs by stage, then the epics and slices of one program by status. It reads the record index only, and the index gains an epic title and a build time. Two points stay open: the diff that the build time causes, and the slice mark on the epic page.",
+  "constraint_introduced": "The board computes no status of its own. Each column, count, and mark comes from the record index through the data layer. The board writes no workflow state.",
+  "findings": [
+    {
+      "kind": "prediction",
+      "id": "F1",
+      "severity": "info",
+      "title": "The problem belongs in the viewer",
+      "detail": "The viewer district already renders programs, epics, and slices from the index. A board is one more read of the same data, so no new layer is needed.",
+      "cites": ["district: viewer", "ADR-0047"]
+    },
+    {
+      "kind": "prediction",
+      "id": "F2",
+      "severity": "warning",
+      "title": "The design must amend ADR-0034",
+      "detail": "ADR-0034 says that no full-page board route remains. This design adds one. The amendment keeps the drawer rule for the drawer and states that the Kanban board is a different surface.",
+      "cites": ["ADR-0034"]
+    },
+    {
+      "kind": "prediction",
+      "id": "F3",
+      "severity": "warning",
+      "title": "The build time makes each index build a diff",
+      "detail": "The index is committed. A build time changes it on each run, even when no record changed. The field must sit outside the sources block, or the stale check reads every index as stale. It must also stay out of the projector, which two tests compare with a golden file.",
+      "cites": ["ADR-0047", "district: .cobuilder-architect"]
+    },
+    {
+      "kind": "prediction",
+      "id": "F4",
+      "severity": "info",
+      "title": "The epic title is a new projection, not a new source",
+      "detail": "The tracker record of an epic holds a title. The index build already reads each record once, so the title needs no further tracker call.",
+      "cites": ["ADR-0047", "ADR-0040"]
+    },
+    {
+      "kind": "prediction",
+      "id": "F5",
+      "severity": "warning",
+      "title": "Open epics with finished slices will fill the In progress column",
+      "detail": "22 epics are open while all of their slices are done. Merged pull requests were not recorded for them. The board marks such an epic and offers a prompt to record the merge, and it does not correct the status itself.",
+      "cites": ["ADR-0029", "ADR-0047"]
+    },
+    {
+      "kind": "prediction",
+      "id": "F6",
+      "severity": "info",
+      "title": "The board is a new pattern beside the drawer, not a duplicate",
+      "detail": "The drawer surveys programs by stage in one vertical read. The board adds the status of epics and slices, which the drawer never shows. The two share the five stage lanes, so the lane list must have one definition.",
+      "cites": ["ADR-0034", "district: viewer"]
+    },
+    {
+      "kind": "prediction",
+      "id": "F7",
+      "severity": "warning",
+      "title": "The start prompt names commands of other plugins",
+      "detail": "A plugin never names the path of another plugin. A command name in a prompt is a mode name, not a path, so the rule holds. A renamed command still leaves a stale prompt, and no test in the viewer can see it.",
+      "cites": ["artifact boundary rule: forbidden plugins/architect/**, plugins/pr/**, plugins/implement/**", "ADR-0016"]
+    },
+    {
+      "kind": "prediction",
+      "id": "F8",
+      "severity": "info",
+      "title": "A design named board would take the board address",
+      "detail": "The first segment of an address is a design name. The engineer accepted this risk, so the design adds no check.",
+      "cites": ["ADR-0029", "district: viewer"]
+    },
+    {
+      "kind": "prediction",
+      "id": "F9",
+      "severity": "info",
+      "title": "The board holds presentation logic only in pure rule modules",
+      "detail": "The stack card forbids a component that fetches data or reads a global store. The board components take rows as props, and the grouping, search, sort, and prompt rules sit in modules with no React.",
+      "cites": ["react-typescript boundary rule 1", "react-typescript boundary rule 4"]
+    }
+  ]
+}

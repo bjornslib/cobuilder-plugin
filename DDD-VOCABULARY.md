@@ -276,6 +276,30 @@ The fixed text at the top of a memory run's result that tells the main agent to 
 **Memory pane** (`cobuilder-memory`):
 The side pane, id `memory-run` and title `🧠 CoBuilder Memory: Hindsight Run`, that shows the newest memory run's steps while it runs and its result when it is done. It adds no fact that the result lacks.
 
+## artifact
+
+These terms come from the `kanban-board` design (ADR-0050). The viewer lives in `plugins/artifact/viewer/`.
+
+<a id="kanban-board"></a>
+**Kanban board** (`artifact`):
+The full page of the viewer at `#/board`. It shows the program board, and then the epic board of one program.
+_Avoid_: Work board (the drawer of ADR-0034, which lists programs by stage in one vertical read)
+
+<a id="program-board"></a>
+**Program board** (`artifact`):
+The first level of the Kanban board. Each program is a card in the column of its stage.
+_Avoid_: stage board (the name of a rejected prototype), overview
+
+<a id="epic-board"></a>
+**Epic board** (`artifact`):
+The second level of the Kanban board, for one program. Its epics, or its slices, sit in the columns Planned, In progress, and Done.
+_Avoid_: focus board (the name of a rejected prototype), swim lane (the board has columns only)
+
+<a id="start-prompt"></a>
+**Start prompt** (`artifact`):
+The one line of text that the copy icon of a program card or an epic card puts on the clipboard. It starts the next workflow for that record.
+_Avoid_: command (a Command is a dispatcher file of a plugin, and the prompt only names one)
+
 ## Cross-cutting
 
 <a id="self"></a>

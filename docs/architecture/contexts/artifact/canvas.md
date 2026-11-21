@@ -3,7 +3,7 @@ title: "Bounded Context Canvas — artifact"
 status: draft
 type: architecture
 id: BCC-ARTIFACT-001
-last_verified: 2026-10-08
+last_verified: 2026-11-14
 owner: bjoerns
 related:
   - ../../standard.md
@@ -12,7 +12,7 @@ related:
 
 # Bounded Context Canvas — artifact
 
-> Documents `plugins/artifact`, including the viewer under `plugins/artifact/viewer`, to the [Architecture Documentation Standard](../../standard.md). Grounded in code as of 2026-10-08 (commit `d086be9`). Full treatment. One skill, three commands, ten scripts, and a viewer of 174 TypeScript files.
+> Documents `plugins/artifact`, including the viewer under `plugins/artifact/viewer`, to the [Architecture Documentation Standard](../../standard.md). Grounded in code as of 2026-11-14 (commit `51e300b`). Full treatment. One skill, three commands, ten scripts, and a viewer of 334 TypeScript files.
 
 ## 1. Name & purpose
 

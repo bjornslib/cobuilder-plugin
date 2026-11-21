@@ -1,0 +1,38 @@
+{
+  "intent": {
+    "tagline": "See every program by stage. Open one, and see its epics by status.",
+    "narration": "The Work drawer shows where each program stands, and nothing below that. This design adds a Kanban board as a full page. Programs sit in stage columns, and a click opens the epics and slices of one program in status columns.",
+    "beats": []
+  },
+  "problem_solution": {
+    "problem": "The Work drawer lists each program by stage and stops there. A reader cannot see which epics and slices of a program are planned, in progress, or done. The index holds that status since ADR-0047, and no surface shows it.",
+    "solution": "A read-only Kanban board is a full page at its own address. The program board shows each program as a card in its stage column. A card opens the epic board of that program. The index gains the epic title and a build time, and a copy icon gives a start prompt.",
+    "narration": "The board has two levels, and each level has one shape. The drawer stays for the quick survey. The board adds no state of its own, so the tracker stays the one source.",
+    "beats": [
+      { "kind": "problem", "text": "A reader opens each program in turn to learn which of its epics are open. The 19 epics of one program read alike, because the index holds no epic title." },
+      { "kind": "constraint", "text": "ADR-0034 removed the full-page board and rejected status columns in the drawer. This design amends that rule for one new surface." },
+      { "kind": "decision", "text": "The program board uses the five stage lanes of the drawer as columns. Each card shows the epic counts by status, the slice count, and the next ready slice." },
+      { "kind": "decision", "text": "The epic board shows the epics of one program in Planned, In progress, and Done. A switch shows the slices in place of the epics." },
+      { "kind": "decision", "text": "The address holds the search, the sort, and the hidden columns. A reload or a shared link gives the same board." },
+      { "kind": "risk", "text": "The engineer removed the multi-selection of programs and the vertical swim lanes. A reader cannot compare two programs side by side on this board." }
+    ],
+    "alternatives": [
+      { "option": "A lane matrix with one row for each program", "rejected_because": "The stage showed only as a badge, and 26 rows made a long page." },
+      { "option": "A stage board with a dock for selected programs", "rejected_because": "Two regions share the width, and a fourth docked program needs a sideways scroll." },
+      { "option": "A roster and a board whose shape follows the selection", "rejected_because": "The reader must learn three board shapes." },
+      { "option": "Status columns inside the Work drawer", "rejected_because": "ADR-0034 built this and rejected it for lack of width." },
+      { "option": "A second HTML entry with its own data file", "rejected_because": "It breaks the one-shell model and the byte check of the built viewer." }
+    ]
+  },
+  "architecture": {
+    "narration": "The board is a new folder in the viewer shell. The data layer resolves the index once, as it does today. Pure rule modules turn those rows into columns, and the components only draw them.",
+    "beats": [
+      { "kind": "read", "text": "build_index.py reads each tracker record once. It now also projects the epic title, and it stamps the index with a build time outside the sources block." },
+      { "kind": "route", "text": "The route reader takes board as a reserved first segment. The second segment names the program, and the query holds the view state." },
+      { "kind": "rule", "text": "One rule module groups programs by stage lane and epics or slices by status. It returns each column with its count and the reason when it is empty." },
+      { "kind": "rule", "text": "A second rule module gives the start prompt for a record from its stage or state. A finished record gets none." },
+      { "kind": "render", "text": "The board components take the columns as props. They read no store and fetch no data." },
+      { "kind": "boundary", "text": "The board writes nothing. A status changes only when a person or an agent runs tracker.py and the index is built again." }
+    ]
+  }
+}

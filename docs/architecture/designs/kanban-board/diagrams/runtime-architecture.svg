@@ -1,0 +1,149 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1780 700" font-family="ui-monospace, Menlo, Monaco, monospace" font-size="12" aria-labelledby="doc-title">
+  <title id="doc-title">Runtime architecture of the kanban-board design (a prediction): the reader in a browser with the viewer shell, the new board beside the Work drawer, the data layer, the derived bundle index, the authored docs in their own district, the build script, tracker.py and the tracker port, the tracker store, and the browser clipboard API.</title>
+  <defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#3D3D3A"/></marker></defs>
+  <g id="bound-client">
+    <title>client boundary: the browser, the viewer shell, the board, and the data layer</title>
+    <rect x="20" y="100" width="440" height="560" fill="none" stroke="#3D3D3A" stroke-width="1.5" rx="8"/>
+    <text x="32" y="120" fill="#87867F">client: browser and viewer shell</text>
+  </g>
+  <g id="bound-infra">
+    <title>infra boundary: shared scripts that build the bundle and move workflow state</title>
+    <rect x="490" y="100" width="330" height="560" fill="none" stroke="#3D3D3A" stroke-width="1.5" rx="8"/>
+    <text x="502" y="120" fill="#87867F">infra: shared/ scripts</text>
+  </g>
+  <g id="bound-data">
+    <title>data boundary: the derived bundle index and the tracker store</title>
+    <rect x="850" y="100" width="270" height="560" fill="none" stroke="#3D3D3A" stroke-width="1.5" rx="8"/>
+    <text x="862" y="120" fill="#87867F">data: index and tracker store</text>
+  </g>
+  <g id="bound-docs">
+    <title>authored boundary: the docs district, a source separate from the derived bundle</title>
+    <rect x="1150" y="100" width="250" height="560" fill="none" stroke="#3D3D3A" stroke-width="1.5" rx="8"/>
+    <text x="1162" y="120" fill="#87867F">authored: docs/ district</text>
+  </g>
+  <g id="bound-external">
+    <title>external boundary: the browser clipboard API</title>
+    <rect x="1430" y="100" width="310" height="560" fill="none" stroke="#3D3D3A" stroke-width="1.5" rx="8" stroke-dasharray="6 4"/>
+    <text x="1442" y="120" fill="#87867F">external: host API</text>
+  </g>
+  <g id="n-reader">
+    <title>Reader: opens the board, searches, and copies a start prompt</title>
+    <rect x="38" y="135" width="388" height="56" rx="10" fill="#F0EEE6" stroke="#3D3D3A" stroke-width="1.5"/>
+    <text x="50" y="159" fill="#141413">Reader</text>
+    <text x="50" y="175" fill="#87867F" font-size="10">opens the board and copies a prompt</text>
+  </g>
+  <g id="n-shell">
+    <title>App.tsx, routes.ts, and useShellState: loads the index once and passes rows</title>
+    <rect x="38" y="215" width="388" height="64" rx="10" fill="#F0EEE6" stroke="#3D3D3A" stroke-width="1.5"/>
+    <text x="50" y="239" fill="#141413">App.tsx + routes.ts + useShellState</text>
+    <text x="50" y="255" fill="#87867F" font-size="10">loads the index once, passes the rows</text>
+  </g>
+  <g id="n-drawer">
+    <title>WorkDrawer.tsx: the Work drawer of ADR-0034, unchanged</title>
+    <rect x="38" y="300" width="150" height="64" fill="#F0EEE6" stroke="#3D3D3A" stroke-width="1.5"/>
+    <text x="46" y="323" fill="#141413">WorkDrawer.tsx</text>
+    <text x="46" y="339" fill="#87867F" font-size="10">unchanged</text>
+  </g>
+  <g id="n-board">
+    <title>shell/board/: the proposed program board and epic board, drawn from props</title>
+    <rect x="198" y="300" width="228" height="64" fill="#E3DACC" stroke="#3D3D3A" stroke-width="1.5"/>
+    <text x="206" y="323" fill="#141413">shell/board/</text>
+    <text x="206" y="339" fill="#87867F" font-size="10">program and epic board</text>
+    <rect x="352" y="344" width="46" height="14" fill="none" stroke="#B04A3F" stroke-width="1" rx="4"/>
+    <text x="357" y="354" fill="#B04A3F" font-size="9">pending</text>
+  </g>
+  <g id="n-rules">
+    <title>Board rules: the proposed query, model, and start prompt modules</title>
+    <rect x="198" y="382" width="228" height="64" fill="#E3DACC" stroke="#3D3D3A" stroke-width="1.5"/>
+    <text x="206" y="405" fill="#141413">board rules</text>
+    <text x="206" y="421" fill="#87867F" font-size="10">query, model, prompt</text>
+    <rect x="352" y="426" width="46" height="14" fill="none" stroke="#B04A3F" stroke-width="1" rx="4"/>
+    <text x="357" y="436" fill="#B04A3F" font-size="9">pending</text>
+  </g>
+  <g id="n-data">
+    <title>src/data/: loadIndex and the joins, the one reader of the record index</title>
+    <rect x="38" y="468" width="388" height="70" fill="#F0EEE6" stroke="#3D3D3A" stroke-width="1.5"/>
+    <text x="50" y="492" fill="#141413">src/data/</text>
+    <text x="50" y="508" fill="#87867F" font-size="10">loadIndex and the joins</text>
+    <text x="50" y="522" fill="#87867F" font-size="10">the one reader of the index</text>
+  </g>
+  <g id="n-build">
+    <title>build_index.py: reads the docs and the tracker, then writes the index</title>
+    <rect x="508" y="135" width="294" height="70" rx="10" fill="#E3DACC" stroke="#3D3D3A" stroke-width="1.5"/>
+    <text x="520" y="157" fill="#141413">build_index.py</text>
+    <text x="520" y="172" fill="#87867F" font-size="10">reads docs and tracker</text>
+    <text x="520" y="186" fill="#87867F" font-size="10">writes the index and built_at</text>
+    <rect x="748" y="188" width="46" height="13" fill="none" stroke="#B04A3F" stroke-width="1" rx="4"/>
+    <text x="753" y="198" fill="#B04A3F" font-size="9">pending</text>
+  </g>
+  <g id="n-cli">
+    <title>tracker.py: the one command for workflow state</title>
+    <rect x="508" y="250" width="294" height="60" rx="10" fill="#F0EEE6" stroke="#3D3D3A" stroke-width="1.5"/>
+    <text x="520" y="274" fill="#141413">tracker.py</text>
+    <text x="520" y="290" fill="#87867F" font-size="10">the one command for workflow state</text>
+  </g>
+  <g id="n-port">
+    <title>tracker_port/: the port and the beads adapter over bd, unchanged</title>
+    <rect x="508" y="350" width="294" height="60" fill="#F0EEE6" stroke="#3D3D3A" stroke-width="1.5"/>
+    <text x="520" y="374" fill="#141413">tracker_port/</text>
+    <text x="520" y="390" fill="#87867F" font-size="10">port and beads adapter, unchanged</text>
+  </g>
+  <g id="n-index">
+    <title>data/index.json: the derived record index, and the two fields this design adds</title>
+    <path d="M868 150 a117.0 8 0 0 1 234 0 v62 a117.0 8 0 0 1 -234 0 z" fill="#E3DACC" stroke="#3D3D3A" stroke-width="1.5"/>
+    <text x="880" y="168" fill="#141413">data/index.json</text>
+    <text x="880" y="184" fill="#87867F" font-size="10">adds built_at, epic title</text>
+    <rect x="1046" y="192" width="46" height="13" fill="none" stroke="#B04A3F" stroke-width="1" rx="4"/>
+    <text x="1051" y="202" fill="#B04A3F" font-size="9">pending</text>
+  </g>
+  <g id="n-store">
+    <title>Tracker store: the bd and Dolt store behind the beads adapter</title>
+    <path d="M868 450 a117.0 8 0 0 1 234 0 v62 a117.0 8 0 0 1 -234 0 z" fill="#F0EEE6" stroke="#3D3D3A" stroke-width="1.5"/>
+    <text x="880" y="468" fill="#141413">Tracker store</text>
+    <text x="880" y="484" fill="#87867F" font-size="10">bd and Dolt</text>
+  </g>
+  <g id="n-docs">
+    <title>docs/: the authored ADRs, designs, plans, and story that build_index reads</title>
+    <path d="M1168 250 a107.0 8 0 0 1 214 0 v62 a107.0 8 0 0 1 -214 0 z" fill="#F0EEE6" stroke="#3D3D3A" stroke-width="1.5"/>
+    <text x="1180" y="268" fill="#141413">docs/</text>
+    <text x="1180" y="284" fill="#87867F" font-size="10">ADRs, designs, plans, story</text>
+  </g>
+  <g id="n-clip">
+    <title>navigator.clipboard: the one browser API that the board calls, writeText</title>
+    <rect x="1448" y="150" width="274" height="70" rx="6" fill="#F0EEE6" stroke="#3D3D3A" stroke-width="1.5" stroke-dasharray="5 3"/>
+    <text x="1460" y="174" fill="#141413">navigator.clipboard</text>
+    <text x="1460" y="190" fill="#87867F" font-size="10">writeText only</text>
+  </g>
+  <path d="M232 191 L232 215" fill="none" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="238" y="207" fill="#87867F" font-size="10">opens a link</text>
+  <path d="M113 279 L113 300" fill="none" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="119" y="295" fill="#87867F" font-size="10">over each surface</text>
+  <path d="M312 279 L312 300" fill="none" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="318" y="295" fill="#87867F" font-size="10">#/board</text>
+  <path d="M312 364 L312 382" fill="none" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="318" y="377" fill="#87867F" font-size="10">columns</text>
+  <path d="M38 240 L30 240 L30 500 L38 500" fill="none" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="36" y="440" fill="#87867F" font-size="10">loadIndex()</text>
+  <path d="M113 364 L113 468" fill="none" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="119" y="430" fill="#87867F" font-size="10">its rows</text>
+  <path d="M300 538 L300 620 L1112 620 L1112 196 L1102 196" fill="none" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="600" y="614" fill="#87867F" font-size="10">fetch or inline global</text>
+  <path d="M802 195 L835 195 L835 90 L1275 90 L1275 250" fill="none" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="900" y="84" fill="#87867F" font-size="10">fs read</text>
+  <path d="M655 205 L655 250" fill="none" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="661" y="232" fill="#87867F" font-size="10">Python import</text>
+  <path d="M655 310 L655 350" fill="none" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="661" y="334" fill="#87867F" font-size="10">adapter call</text>
+  <path d="M802 382 L835 382 L835 480 L868 480" fill="none" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="856" y="430" fill="#87867F" font-size="10">bd read/write</text>
+  <path d="M802 170 L835 170 L835 60 L985 60 L985 150" fill="none" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="880" y="54" fill="#87867F" font-size="10">fs write</text>
+  <path d="M426 332 L470 332 L470 44 L1585 44 L1585 150" fill="none" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="700" y="38" fill="#87867F" font-size="10">clipboard write</text>
+  <g id="legend">
+    <title>Legend: border and badge meanings, and the read-only rule of the board</title>
+    <text x="20" y="664" fill="#87867F" font-size="10">solid: exists today. dashed: external system.</text>
+    <text x="20" y="678" fill="#87867F" font-size="10">pending badge: proposed, not built.</text>
+    <text x="20" y="692" fill="#87867F" font-size="10">The board draws no write edge and calls no tracker command.</text>
+  </g>
+</svg>

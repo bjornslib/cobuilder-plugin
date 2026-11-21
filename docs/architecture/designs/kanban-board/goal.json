@@ -1,0 +1,38 @@
+{
+  "name": "kanban-board",
+  "title": "A Kanban board shows each program, and then the epics and slices of one program",
+  "adr": "ADR-0050",
+  "adrs": ["ADR-0050", "ADR-0034", "ADR-0047", "ADR-0029", "ADR-0023"],
+  "created": "2026-11-14",
+  "outcome": "A reader opens one Kanban board in the viewer and sees every program as a card in its stage column. A click on a program card opens the board of that program, which shows each epic and slice in its status column.",
+  "done_when": [
+    "the program board shows every program of the record index as a card in the column of its stage, with its epic counts by status and its slice count",
+    "a click on a program card opens the epic board of that program, and one control leads back to the program board",
+    "the epic board shows each epic of the program in the column of its status, and a switch shows the slices in place of the epics",
+    "a text search narrows both boards, a sort changes the order of the program cards, and the reader can hide a column",
+    "the board is a full page of its own, and the Work drawer still opens over each surface",
+    "the board changes no workflow state, and a card of a program opens the program, epic, or slice level of the viewer",
+    "slices that belong to no program show in one group named No program, and the group is absent when no such slice exists",
+    "the board reads the record index only, and it holds no second source of workflow state",
+    "the board header shows the build time of the record index",
+    "the address holds the search, the sort, the hidden columns, and the open program, and a reload restores the board",
+    "a copy icon on a card that has a next workflow copies a start prompt for that record, and the board then shows the notice Prompt copied"
+  ],
+  "abort_if": [
+    "the program board cannot show the five stage columns at 1280 by 800 without a sideways scroll of the page"
+  ],
+  "min_work": {
+    "derived_from": "2 districts (viewer, shared), 1 colliding ADR (ADR-0034), 4 related ADRs, 2 stack-card boundary rules, 4 clickable prototypes on the real index",
+    "alternatives_explored": 9,
+    "boundary_rules_checked": true,
+    "challenge_stage_run": true,
+    "draft_review_run": true
+  },
+  "out_of_scope_note": "The engineer removed the multi-selection of programs and the vertical swim lanes on 2026-11-14. A later design may add them.",
+  "limits": { "warn_after_rounds": 3, "cutoff_rounds": 6 },
+  "epics": [],
+  "supersedes": null,
+  "rounds": [
+    { "n": 1, "changed": true, "feedback_class": "material", "note": "Draft review scored 0.64. Three blockers: the status map is not exhaustive, a slice with no program has no epic page, and the slice address needs a route field." }
+  ]
+}

@@ -10,11 +10,11 @@ Tracks the documentation status of each bounded context under
 | `cobuilder-packaging` | documented | yes | yes | ADR-0016 (approved), ADR-0017 (approved), ADR-0024 (approved) | 2026-10-08 |
 | `architect` | documented | yes | yes | none anchored (see findings) | 2026-10-08 |
 | `pr` | documented | yes | yes | none anchored (see findings) | 2026-10-08 |
-| `artifact` | documented | yes | yes | none anchored (see findings) | 2026-10-08 |
+| `artifact` | documented | yes | yes | none anchored (see findings) | 2026-11-14 |
 | `implement` | documented | yes | yes | none anchored (see findings) | 2026-10-08 |
 | `shared` | documented | yes | yes | ADR-0040 (decided) | 2026-11-02 |
 
-Five records carry `verified_at: d086be981401779ba4691faed31a6f64598df589`. The `shared` record carries `verified_at: 36b8d802dc41dcbd1d300966249770d89c447e48` (2026-11-02), after describe mode re-ran it to add the tracker port.
+Four records carry `verified_at: d086be981401779ba4691faed31a6f64598df589`. The `shared` record carries `verified_at: 36b8d802dc41dcbd1d300966249770d89c447e48` (2026-11-02), after describe mode re-ran it to add the tracker port. The `artifact` record carries `verified_at: 51e300b0015c6197d59c4d349b64acff7b466273` (2026-11-14), after a re-check for the `kanban-board` design.
 
 ## Findings of 2026-10-08
 
