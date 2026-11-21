@@ -64,9 +64,12 @@ function digestRows(ui: any, list: DigestList, items: string[] | undefined): any
   return [keyed(ui, list.key, list.title, { dimColor: true }), ...items.map((text, i) => keyed(ui, `${list.item}-${i}`, `· ${text}`, { dimColor: true }))]
 }
 
+// The summary body of a stop with no digest. It names the reason when the digest command gave one.
+const noDigest = (r: Reading) => (r.digestAbstain ? `No digest: ${r.digestAbstain.reason}` : 'No digest for this stop')
+
 function summary(ui: any, r: Reading, closed: boolean) {
   const { Box, Text } = ui
-  const body = r.digest ? `${r.digest.ran} ${r.digest.result}` : r.stop_kind === 'question' ? 'A question for you' : 'No digest for this stop'
+  const body = r.digest ? `${r.digest.ran} ${r.digest.result}` : r.stop_kind === 'question' ? 'A question for you' : noDigest(r)
   const lists = closed ? [] : DIGEST_LISTS.flatMap((list) => digestRows(ui, list, r.digest?.[list.field]))
   return (
     <Box key="summary-box" flexDirection="column" borderStyle="single" paddingX={1} marginTop={1}>

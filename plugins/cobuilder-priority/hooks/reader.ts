@@ -2,9 +2,10 @@
 // It starts the priority-dev CLI as a process and never imports priority-dev (ADR-0045, ADR-0049).
 import { atom, read as readAtom, update } from 'claude-code'
 import type { PluginOptions } from 'claude-code'
-import type { Digest, Question, Reading, ReadingResult } from '../types'
+import type { Digest, DigestAbstain, Question, Reading, ReadingResult } from '../types'
 import { takeAnswers } from './answers'
 import { agentSummary, answerLabels } from './labels'
+import { clearPending, listPending, markPending } from './pending'
 
 // The pane reads the same tick, so a write here redraws it.
 const tick = atom({ plugin: 'cobuilder-priority', key: 'tick' } as const, 0)
@@ -20,6 +21,8 @@ export type StopJob = { sessionId: string; transcript: string; repo: string; at:
 
 const LOG_DIR = 'reports/logs/live'
 const MAX_SECONDS = 600
+// The priority digest command tries the digest up to three times, so its limit is three timeouts.
+const DIGEST_ATTEMPTS = 3
 // The running indicator moves once each 120 ms while a reading runs.
 const FRAME_MS = 120
 
@@ -57,8 +60,14 @@ export async function stopWaiting($: any): Promise<void> {
 }
 
 // Puts the stop in the queue and starts a reading when none runs. Only the newest waiting stop is kept.
-export function enqueue($: any, job: StopJob, options: PluginOptions): void {
+export async function enqueue($: any, job: StopJob, options: PluginOptions): Promise<void> {
+  // The record must exist before the job can run or wait, so a reload cannot lose the job in silence.
+  await markPending($, job)
+  // A newer stop replaces a waiting one. The replaced stop gets no reading, so it is no longer pending.
+  // The swap comes before the await, so a drain in that await takes the new job, not the replaced one.
+  const replaced = waiting
   waiting = job
+  if (replaced) await clearPending($, replaced.sessionId, replaced.at)
   // A reading may outlive its session or a module reload. Its $ calls then reject, and the reading is lost.
   if (!busy) drain($, options).catch(() => {})
 }
@@ -71,6 +80,8 @@ async function drain($: any, options: PluginOptions): Promise<void> {
       waiting = null
       onQuestion = Boolean(job.question)
       if (!(await readAtom($, switchedOn))) {
+        // The person switched the reader off, so the skipped stop is not lost.
+        await clearPending($, job.sessionId, job.at)
         await stopWaiting($)
         continue
       }
@@ -120,7 +131,7 @@ async function read($: any, job: StopJob, options: PluginOptions): Promise<Omit<
     const label = brief === 'digest-current' ? 'current' : 'previous'
     const args = ['interpret', job.transcript, '--log-dir', LOG_DIR, '--program', base.program, '--digest', label, ...openQuestionArgs(job)]
     const result = (await cli($, args, options)) as ReadingResult
-    const kept = isAbstain(digest) ? {} : { digest: digest as Digest }
+    const kept = isAbstain(digest) ? { digestAbstain: abstainOf(digest as DigestAbstain) } : { digest: digest as Digest }
     return { ...base, brief, state: 'done', result, ...kept, ms: Date.now() - started }
   } catch (err) {
     return failed(String((err as Error)?.message ?? err))
@@ -152,6 +163,11 @@ async function briefShape($: any, sessionId: string, abstained: boolean): Promis
   return (await $.store.get(key)) ? 'digest-previous' : 'no-digest'
 }
 
+// The reason always, and the detail when the CLI gave one.
+function abstainOf({ reason, detail }: DigestAbstain): DigestAbstain {
+  return detail === undefined ? { reason } : { reason, detail }
+}
+
 function isAbstain(digest: unknown): boolean {
   return typeof digest === 'object' && digest !== null && 'reason' in digest
 }
@@ -159,10 +175,11 @@ function isAbstain(digest: unknown): boolean {
 // Runs one priority command in the priority-dev folder and parses its JSON output.
 async function cli($: any, args: string[], options: PluginOptions): Promise<unknown> {
   const seconds = Math.min(MAX_SECONDS, Number(options.timeout_seconds ?? 180) || 180)
+  const attempts = args[0] === 'digest' ? DIGEST_ATTEMPTS : 1
   const key = String(options.llm_api_key ?? '').trim()
   const init = {
     cwd: String(options.priority_dev_dir),
-    timeoutMs: seconds * 1000,
+    timeoutMs: Math.min(MAX_SECONDS, seconds * attempts) * 1000,
     ...(key ? { env: { LLM_API_KEY: key } } : {}),
   }
   const run = await $.process.run(['uv', 'run', 'priority', ...args], init)
@@ -177,11 +194,30 @@ async function cli($: any, args: string[], options: PluginOptions): Promise<unkn
   }
 }
 
+// Called at a session.start, which runs again after a reload. A stop still pending lost its reading,
+// because the module values of the old run are gone. Each such stop gets a failed reading.
+// Only the stops of this session: the store is shared, and another live session may still read its own stop.
+export async function failLostStops($: any, options: PluginOptions): Promise<void> {
+  const sessionId = await $.session.id()
+  const on = await readAtom($, switchedOn)
+  for (const lost of (await listPending($)).filter((stop) => stop.sessionId === sessionId)) {
+    // A reader switched off skips its stops on purpose. Such a stop gets no reading.
+    if (!on) {
+      await clearPending($, lost.sessionId, lost.at)
+      continue
+    }
+    const error = 'Lost to a reload of the mod. The next stop reads again.'
+    await save($, { sessionId: lost.sessionId, at: lost.at, repo: lost.repo, program: String(options.program ?? ''), brief: 'no-digest', state: 'failed', error, ms: 0 })
+  }
+}
+
 async function save($: any, reading: Omit<Reading, 'n'>): Promise<void> {
   const key = readingsKey(reading.sessionId)
   const list = ((await $.store.get(key)) as Reading[] | undefined) ?? []
   const n = list.length + 1
   await $.store.set(key, [...list, { ...reading, n }])
+  // Cleared only once the reading is stored: a failed write leaves the stop pending for the next start.
+  await clearPending($, reading.sessionId, reading.at)
   if (reading.stop_kind === 'question') await takeAnswers($, { ...reading, n })
   // At a stop the session waits for the next prompt. The status line says a reading is ready.
   const what = reading.state === 'failed' ? 'failed' : `ready${reading.result?.needs_human ? ' · needs you' : ''}`

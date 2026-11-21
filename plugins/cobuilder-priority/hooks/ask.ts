@@ -50,7 +50,7 @@ async function waitForAnswer($: EngineInterface, options: PluginOptions, e: AskE
   const dir = `${String(options.priority_dev_dir).trim().replace(/\/+$/, '')}/reports/logs/live/ask`
   const questionFile = `${dir}/${e.tool_use_id}.questions.json`
   await $.fs.write(questionFile, JSON.stringify(e.questions))
-  enqueue($, questionJob(e, questionFile, await $.session.id()), options)
+  await enqueue($, questionJob(e, questionFile, await $.session.id()), options)
   await update($, heldAtom, () => ({ toolUseId: e.tool_use_id, questions: e.questions, picks: {}, other: {}, notice: '' }))
   await $.ui.open({ id: PANE_ID, title: 'Priority reader', focus: true, columns: 60 })
   const sent = new Promise<AskResult>((resolve) => { release = resolve })

@@ -4,7 +4,7 @@ import { renderBand } from './band'
 import { dropHeld, holdAsk, isHolding, notePrompt } from './ask'
 import type { AskEvent, Next } from './ask'
 import { openPane, renderPane } from './pane'
-import { PANE_ID, enqueue, startWaiting, stopWaiting } from './reader'
+import { PANE_ID, enqueue, failLostStops, startWaiting, stopWaiting } from './reader'
 
 // The reader switch: off in each new session, kept through a hot reload.
 const switchedOn = atom({ plugin: 'cobuilder-priority', key: 'on' } as const, false)
@@ -18,6 +18,7 @@ const COMMANDS = [
 export const register: Register = (on, options) => {
   on('session.start', async ($, e, next) => {
     for (const command of COMMANDS) await $.command.register(command)
+    await failLostStops($, options)
     return next(e)
   })
 
@@ -42,7 +43,7 @@ export const register: Register = (on, options) => {
   on('classic.Stop', async ($, e, next) => {
     if (await read($, switchedOn)) {
       const job = { sessionId: e.session_id, transcript: e.transcript_path, repo: e.cwd, at: new Date().toISOString(), lastMessage: e.last_assistant_message ?? '' }
-      enqueue($, job, options)
+      await enqueue($, job, options)
     }
     return next(e)
   })

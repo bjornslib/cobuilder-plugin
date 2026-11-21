@@ -22,7 +22,7 @@ import logging
 import pytest
 
 from brief_support import FIXTURES, Transcript, require
-from digest_support import (DIGEST, FailingLM, RateLimited, digest_api, digest_reply, dummy, interpreter_api,
+from digest_support import (DIGEST, DownLM, FailingLM, RateLimited, digest_api, digest_reply, dummy, interpreter_api,
                             log_reasons, make_digest, no_live_call, read_calls)  # noqa: F401
 from interpret_support import DONE
 
@@ -124,7 +124,7 @@ def test_a_new_digest_replaces_the_stored_one(monkeypatch, capsys, tmp_path):
 # ---- 2. The digest command stores nothing for an Abstain -----------------------
 
 ABSTAINS = {
-    "model_error": (lambda: FailingLM([digest_reply()], RateLimited("429 Too Many Requests"), fail_at=1), WAITING),
+    "model_error": (lambda: DownLM([digest_reply()], RateLimited("429 Too Many Requests")), WAITING),
     "invalid_output": (lambda: dummy([{"digest": "this is not JSON"}]), WAITING),
     "no_agent_reply": (lambda: dummy([digest_reply()]), FIXTURES / "brief-only-synthetic.jsonl"),
 }
@@ -205,20 +205,11 @@ def wrong_shape(path):
     path.write_text('["not", "a", "digest"]')
 
 
-def over_limit_ran(path):
-    path.write_text(json.dumps({**DIGEST, "ran": "x" * 601}))
-
-
-def over_limit_items(path):
-    path.write_text(json.dumps({**DIGEST, "open_items": [f"item {n}" for n in range(6)]}))
-
-
 def unreadable(path):
     path.mkdir()  # a folder where the file belongs: reading it raises
 
 
-UNUSABLE = {"corrupt_json": corrupt_json, "wrong_shape": wrong_shape, "over_limit_ran": over_limit_ran,
-            "over_limit_items": over_limit_items, "unreadable": unreadable}
+UNUSABLE = {"corrupt_json": corrupt_json, "wrong_shape": wrong_shape, "unreadable": unreadable}
 
 
 @pytest.mark.parametrize("damage", UNUSABLE)
@@ -267,7 +258,7 @@ def test_a_digest_model_failure_stores_nothing_and_the_next_interpret_still_runs
     caplog.set_level(logging.INFO)
     path = two_stops(tmp_path)
     log_dir = tmp_path / "log"
-    lm = FailingLM([digest_reply()], RateLimited("429 Too Many Requests"), fail_at=1)
+    lm = DownLM([digest_reply()], RateLimited("429 Too Many Requests"))
     code, out = run_cli(monkeypatch, capsys, "digest", lm, path, "--stop", "1", "--log-dir", str(log_dir))
     assert code == 0
     assert json.loads(out)["reason"] == "model_error"

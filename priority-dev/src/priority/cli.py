@@ -5,6 +5,7 @@ import argparse
 import json
 import logging
 import sys
+import time
 from pathlib import Path
 
 from priority.brief import StopBrief, build_brief
@@ -15,6 +16,10 @@ from priority.valset import METHODS, ValsetSize
 
 PREDICTION_FIELDS = ("status", "needs_human", "priority", "steps", "abstain")
 
+
+DIGEST_ATTEMPTS = 3  # the most runs of the Digest call for one stop
+RETRY_REASONS = ("invalid_output", "model_error")
+RETRY_PAUSE_SECONDS = 2  # the pause before the second attempt, doubled before the third, so a rate limit can clear
 
 DIGEST_LABELS = {"previous": "PREVIOUS RUN", "current": "CURRENT RUN"}
 
@@ -65,7 +70,12 @@ def digest(transcript: Path, stop: int | None, log_dir: Path | None) -> int:
     brief = build_brief(transcript, stop=stop, shrink_lm=lm, log_dir=log_dir,
                         previous=load_digest(log_dir, transcript.stem))
     if isinstance(brief, StopBrief):
-        result = interpreter.DigestRun(lm, log_dir=log_dir)(brief)
+        for attempt in range(DIGEST_ATTEMPTS):
+            if attempt:
+                time.sleep(RETRY_PAUSE_SECONDS * 2 ** (attempt - 1))
+            result = interpreter.DigestRun(lm, log_dir=log_dir)(brief)
+            if getattr(result, "reason", None) not in RETRY_REASONS:
+                break
         if log_dir is not None and isinstance(result, interpreter.RunDigest):
             save_digest(log_dir, transcript.stem, result)
     else:

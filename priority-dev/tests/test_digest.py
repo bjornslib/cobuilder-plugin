@@ -20,7 +20,7 @@ import pytest
 from pydantic import ValidationError
 
 from brief_support import FIXTURES, BUDGET, Transcript, filler, require
-from digest_support import (DIGEST, DIGEST_MODEL, FailingLM, ONE_SHRINK, THREE_SHRINKS, RateLimited, build_with,
+from digest_support import (DIGEST, DIGEST_MODEL, DownLM, FailingLM, ONE_SHRINK, THREE_SHRINKS, RateLimited, build_with,
                             digest_api, digest_reply, dspy, dummy, expect_brief, interpreter_api, log_reasons,
                             make_brief, make_digest, no_live_call, over_budget, read_calls, recent,  # noqa: F401
                             rendered_inputs, run_digest, short_reply, shrunk_entries, simple, stages)
@@ -53,19 +53,20 @@ def test_a_valid_run_digest_holds_its_four_fields():
 
 
 @pytest.mark.parametrize("changes", [
-    {"ran": "x" * 601},
-    {"result": "x" * 301},
-    {"open_items": ["a"] * 6},
-    {"decisions": ["a"] * 6},
-], ids=["ran over 600", "result over 300", "six open items", "six decisions"])
-def test_a_run_digest_over_a_limit_does_not_validate(changes):
-    with pytest.raises(ValidationError):
-        make_digest(**changes)
+    {"ran": "x " * 1300},
+    {"result": "x " * 700},
+    {"open_items": ["a"] * 11},
+    {"decisions": ["a"] * 11},
+], ids=["ran over 2400", "result over 1200", "eleven open items", "eleven decisions"])
+def test_a_run_digest_over_a_limit_is_clipped(changes):
+    value = make_digest(**changes)
+    assert len(value.ran) <= 2400 and len(value.result) <= 1200
+    assert len(value.open_items) <= 10 and len(value.decisions) <= 10
 
 
 def test_a_run_digest_at_each_limit_validates():
-    value = make_digest(ran="x" * 600, result="y" * 300, open_items=["a"] * 5, decisions=["b"] * 5)
-    assert len(value.ran) == 600 and len(value.open_items) == 5
+    value = make_digest(ran="x" * 2400, result="y" * 1200, open_items=["a"] * 10, decisions=["b"] * 10)
+    assert len(value.ran) == 2400 and len(value.open_items) == 10
 
 
 # ---- 2. DigestRun: the valid path and the failure paths -----------------------
@@ -113,8 +114,6 @@ def test_a_model_failure_gives_an_abstain_and_a_log(caplog, error):
 MALFORMED = {
     "broken JSON": {"digest": "this is not JSON"},
     "a field is missing": {"digest": json.dumps({"ran": "Built it."})},
-    "ran over 600": digest_reply(ran="x" * 601),
-    "six decisions": digest_reply(decisions=["a"] * 6),
     "the digest field is missing": {"summary": json.dumps(DIGEST)},
 }
 
@@ -458,7 +457,7 @@ def test_the_cli_digests_the_stop_that_the_option_names(monkeypatch, capsys, tmp
 
 
 def test_the_cli_prints_an_abstain_for_a_model_failure(monkeypatch, capsys):
-    lm = FailingLM([digest_reply()], RateLimited("429 Too Many Requests"), fail_at=1)
+    lm = DownLM([digest_reply()], RateLimited("429 Too Many Requests"))
     code, out = run_cli(monkeypatch, capsys, lm, WAITING)
     assert code == 0
     assert json.loads(out)["reason"] == "model_error"

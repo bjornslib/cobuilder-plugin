@@ -135,16 +135,18 @@ def guarded(recorder: CallRecorder, stage: str, predictor: Any, **inputs: Any) -
     A reply that does not parse or validate gives invalid_output, and any other error gives model_error.
     """
     recorder.stage = stage
-    valid = False
+    valid, detail = False, ""
     try:
         reply = predictor(**inputs)
         valid = True
         return reply
     except (AdapterParseError, ValidationError) as error:
-        abstain = Abstain(reason="invalid_output", detail=f"{stage}: {type(error).__name__}: {error}")
+        detail = f"{stage}: {type(error).__name__}: {error}"
+        abstain = Abstain(reason="invalid_output", detail=detail)
     except Exception as error:  # noqa: BLE001  (a model call may raise anything, and none may escape)
-        abstain = Abstain(reason="model_error", detail=f"{stage}: {type(error).__name__}: {error}")
+        detail = f"{stage}: {type(error).__name__}: {error}"
+        abstain = Abstain(reason="model_error", detail=detail)
     finally:
-        recorder.commit(valid)
+        recorder.commit(valid, error=detail)
     log.warning("abstain %s: %s", abstain.reason, abstain.detail)
     return abstain

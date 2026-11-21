@@ -3,8 +3,9 @@
 The contract that these tests pin. Slice 4 holds the brief, and slice 5 holds the call store.
 
 - `priority.interpreter` exports `RunDigest`, `DigestRun`, and `digest_lm`.
-  `RunDigest` follows `schemas.md` section 2.3: `ran` (up to 600 characters), `result` (up to 300),
-  `open_items` (up to 5 texts), and `decisions` (up to 5 texts). A value over a limit does not validate.
+  `RunDigest` follows `schemas.md` section 2.3: `ran` (up to 2400 characters), `result` (up to 1200),
+  `open_items` (up to 10 texts), and `decisions` (up to 10 texts). A value over a limit is clipped, not
+  rejected (test_digest_clip.py pins the clip).
   `digest_lm()` builds the digest model `openrouter/thinkingmachines/inkling-small` from
   `priority.config.load_key()`. Only the CLI calls it.
 - `DigestRun(lm=None, *, log_dir=None)` is a `dspy.Module`. `forward(brief)` takes the `StopBrief` and
@@ -48,6 +49,16 @@ from brief_support import BUDGET, Transcript, brief_api, filler, simple  # noqa:
 from interpret_support import (FailingLM, RateLimited, dspy, dummy, interpreter_api, log_reasons,  # noqa: F401
                                make_brief, no_live_call, read_calls, stages)
 from probe_support import DIGEST_MODEL  # noqa: F401
+
+
+class DownLM(FailingLM):
+    """A model that raises on every call, so the retry of the digest command cannot get past it."""
+
+    def __init__(self, replies, error):
+        super().__init__(replies, error, fail_at=0)
+
+    def forward(self, prompt=None, messages=None, **kwargs):
+        raise self.error
 
 DIGEST = {"ran": "Built the export model and its 9 tests.", "result": "Stop brief 1 done, tests pass.",
           "open_items": ["Should money fields use cents?"], "decisions": ["Money fields use integer cents"]}

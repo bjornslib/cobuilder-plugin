@@ -31,6 +31,9 @@ export type ReadingResult = {
 // The RunDigest that priority digest prints when it does not abstain.
 export type Digest = { ran: string; result: string; open_items: string[]; decisions: string[] }
 
+// What the digest command prints when it gives no digest.
+export type DigestAbstain = { reason: string; detail?: string }
+
 export type Reading = {
   n: number
   sessionId: string
@@ -41,6 +44,8 @@ export type Reading = {
   state: 'done' | 'failed'
   result?: ReadingResult
   digest?: Digest
+  // Why the stop has no digest, when the digest command abstained.
+  digestAbstain?: DigestAbstain
   error?: string
   ms: number
   // The answer labels of the last agent message, in order. Readings from before E3.11 have none.
