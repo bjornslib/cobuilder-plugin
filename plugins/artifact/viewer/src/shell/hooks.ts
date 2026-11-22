@@ -16,6 +16,6 @@ export {
   useMediaQuery,
   useVisibleWidthCap,
 } from "./hooks/viewport";
-export { useFocusOnMount, useScrollResetOnRoute } from "./hooks/focus";
+export { useFocusOnMount, useScrollResetOnRoute, useSliceRowInView } from "./hooks/focus";
 export type { SectionAvailability } from "./hooks/sections";
 export { sectionHref, useSectionAvailability } from "./hooks/sections";

@@ -1,13 +1,13 @@
 {
   "schema_version": "1.5",
   "sources": {
-    "git_head": "992f1f8f92cc4aad8f30ed9ba88a779b6d3d01c9",
+    "git_head": "206b15c18aeef2b04c363ba6483eae2770420fa4",
     "trees": {
       "docs/architecture/adr": "sha256:aaaa901242a8020aeb9cdf9d20c4bd36df1d3b6103ce418073ba78866839fa5c",
       "docs/architecture/designs": "sha256:49b60eaa674d147f9f877bb87acdef039fb721eccfc0b13cd9fa1ae00801b6ed",
       "docs/architecture/contexts": "sha256:965f965519589dd58b5c4cb126352c27a2e51a34af56752c3893a9b0f953e9f1",
-      "docs/plans": "sha256:e99fb501971f9ee608eef4494aebc24cf05a3d4fa741806fadc77814fddffc7e",
-      ".cobuilder/rubrics": "sha256:77f40011d427a736a226092e7173309fba22ddaf0f3557ef99fb447ad88c5f76"
+      "docs/plans": "sha256:be529fb8cfb9e7ece5fb31196b4b308389d37fbd1877f9f3b8d96bf7d5b245e5",
+      ".cobuilder/rubrics": "sha256:e9a93e307e961356b25d407988d9bc7dd1cedacf10ed17828e7d1cf783018fea"
     }
   },
   "entities": {
@@ -4314,9 +4314,9 @@
         "n": 3,
         "title": "A slice card opens its epic page with the slice row marked",
         "ends_with": "A click on a slice card opens `#/<program>/build/epics/<epic>/<n>`. The epic page shows the section of that epic, brings the slice row into view, and marks it. A reload of that address gives the same view. Every older address reads as before.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "kanban-board/4",
@@ -9283,7 +9283,7 @@
       },
       "kanban-board": {
         "stage_source": "tracker",
-        "next_ready": "kanban-board/3",
+        "next_ready": "kanban-board/4",
         "pull_requests": []
       },
       "lean-bundle-diffs": {

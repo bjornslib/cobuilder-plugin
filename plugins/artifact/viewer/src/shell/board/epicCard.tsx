@@ -6,8 +6,9 @@ import { cn } from "@/lib/utils";
 
 import { routeHref } from "../model";
 import { epicLabel } from "./epicBoard";
-import { OrphanSliceCard, SliceLine, STATE_RULE } from "./orphanCard";
+import { OrphanSliceCard, STATE_RULE } from "./orphanCard";
 import type { EpicCardModel, SliceGroupModel } from "./shape";
+import { PIP, SliceCard, SliceList } from "./sliceRow";
 import { epicColumnOf, isDoneSlice, SHAPE_GLYPH, sliceColumnOf, STATUS_COLUMNS, type StatusColumnKey } from "./status";
 
 const CARD_CLASS = "overflow-clip rounded-lg border border-l-[3px] border-line-soft bg-surface shadow-card";
@@ -29,11 +30,6 @@ const STATUS_PILL: Record<StatusColumnKey, string> = {
   planned: "bg-surface-3 text-ink-dim",
   in_progress: "bg-warn-wash text-warn",
   done: "bg-good-wash text-good",
-};
-const PIP: Record<StatusColumnKey, string> = {
-  planned: "size-2 rounded-sm border border-dashed border-ink-faint",
-  in_progress: "size-2 rounded-sm border border-warn bg-warn",
-  done: "size-2 rounded-sm border border-good bg-good",
 };
 
 export function epicHref(programId: string, epicId: string): string {
@@ -91,19 +87,6 @@ function PipsFace({ slices, open }: { slices: SliceEntity[]; open: boolean }) {
   );
 }
 
-function SliceList({ id, slices }: { id: string; slices: SliceEntity[] }) {
-  return (
-    <ul id={id} className="m-0 flex list-none flex-col gap-0.5 border-t border-line-soft p-1">
-      {slices.map((slice) => (
-        <li key={slice.id} className="flex items-center gap-2 rounded px-1.5 py-1">
-          <span aria-hidden="true" className={cn("shrink-0", PIP[sliceColumnOf(slice.state)])} />
-          <SliceLine slice={slice} />
-        </li>
-      ))}
-    </ul>
-  );
-}
-
 function toggleName(open: boolean, card: EpicCardModel): string {
   const count = card.slices.length;
   return `${open ? "Hide" : "Show"} the ${count} ${count === 1 ? "slice" : "slices"} of ${epicLabel(card.epic)}`;
@@ -117,7 +100,7 @@ function SlicePipsToggle({ card }: { card: EpicCardModel }) {
       <button type="button" aria-label={toggleName(open, card)} aria-expanded={open} aria-controls={listId} onClick={() => setOpen(!open)} className={PIPS_CLASS}>
         <PipsFace slices={card.slices} open={open} />
       </button>
-      {open && <SliceList id={listId} slices={card.slices} />}
+      {open && <SliceList id={listId} slices={card.slices} target={{ programId: card.epic.design, epicId: card.epic.epicId }} />}
     </>
   );
 }
@@ -128,16 +111,6 @@ export function EpicCard({ card }: { card: EpicCardModel }) {
     <li className={cn(CARD_CLASS, STATE_RULE[column])}>
       <EpicHead card={card} column={column} />
       {card.slices.length > 0 && <SlicePipsToggle card={card} />}
-    </li>
-  );
-}
-
-function SliceCard({ slice }: { slice: SliceEntity }) {
-  const compact = sliceColumnOf(slice.state) === "done";
-  return (
-    <li className={cn("rounded-lg border border-line-soft bg-surface", compact ? "px-2 py-1" : "p-2")}>
-      <SliceLine slice={slice} />
-      {!compact && slice.state && <p className="m-0 mt-1 font-mono text-[10.5px] text-ink-dim">{slice.state}</p>}
     </li>
   );
 }
@@ -153,8 +126,9 @@ function GroupHead({ group, programId }: { group: SliceGroupModel; programId: st
 }
 
 export function SliceGroup({ group, programId }: { group: SliceGroupModel; programId: string | null }) {
+  const target = group.epicId !== null && programId !== null ? { programId, epicId: group.epicId } : null;
   const cardOf = (slice: SliceEntity) =>
-    group.epicId === null ? <OrphanSliceCard key={slice.id} slice={slice} /> : <SliceCard key={slice.id} slice={slice} />;
+    group.epicId === null ? <OrphanSliceCard key={slice.id} slice={slice} /> : <SliceCard key={slice.id} slice={slice} target={target} />;
   return (
     <li className="flex flex-col gap-1">
       <GroupHead group={group} programId={programId} />

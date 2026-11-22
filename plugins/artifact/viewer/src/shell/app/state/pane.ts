@@ -1,8 +1,9 @@
 import { useCallback, useRef } from "react";
 
-import { sectionHref, useDocumentNoScroll, useScrollResetOnRoute } from "../../hooks";
+import { sectionHref, useDocumentNoScroll, useScrollResetOnRoute, useSliceRowInView } from "../../hooks";
 import { useJumpTargets } from "../../jump";
 import { routeHref, type SectionKey } from "../../model";
+import { markedRowId } from "../../sections/sliceAnchor";
 import { PANE_ID } from "../ids";
 import { useRedirectNotice } from "../railKeys";
 import type { Address } from "./address";
@@ -42,8 +43,9 @@ function redirectInput(core: ShellCore, address: Address) {
 export function usePaneEffects(core: ShellCore, address: Address) {
   const pane = usePaneElement(core);
   useRedirectNotice(redirectInput(core, address));
-  const { workId, section, sub, subId } = core.route;
-  useScrollResetOnRoute(PANE_ID, [workId, section, sub, subId]);
+  const { workId, section, sub, subId, sliceN } = core.route;
+  useScrollResetOnRoute(PANE_ID, [workId, section, sub, subId, sliceN]);
+  useSliceRowInView(markedRowId(address.work, subId, sliceN));
   return pane;
 }
 

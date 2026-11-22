@@ -10,30 +10,40 @@ export interface Route {
    * The sub-view inside a section: `epics` with an optional epic id, `rubrics`,
    * `flightdeck`, or a pull request number.
    *
-   * There is no `slices` sub-view. A slice belongs to one epic and carries no meaning
-   * outside it, so it never becomes a destination. Section 2.1 states the general rule:
+   * There is no `slices` sub-view. A slice belongs to one epic, so its address is the
+   * fifth segment of its epic's address. Section 2.1 states the general rule:
    * a record that only exists inside another one never gets a rail item.
    */
   sub: string | null;
   subId: string | null;
+  sliceN: string | null;
 }
 
 /** The route prefix. The shell is the shipped surface, so it owns the root address. */
 const ROUTE_PREFIX = "#/";
 
+function sliceNOf(section: string | undefined, sub: string | undefined, n: string | undefined): string | null {
+  return section === "build" && sub === "epics" && n !== undefined ? n : null;
+}
+
 export function readRoute(): Route {
   const raw = window.location.hash.replace(/^#\/?/, "");
-  const [workId, section, sub, subId] = raw.split("/").filter(Boolean);
+  const [workId, section, sub, subId, n] = raw.split("/").filter(Boolean);
   return {
     workId: workId ?? null,
     section: section && isSectionKey(section) ? section : "intent",
     sub: sub ?? null,
     subId: subId ?? null,
+    sliceN: sliceNOf(section, sub, n),
   };
 }
 
 export function routeHref(workId: string, section: SectionKey, tail?: string): string {
   return `${ROUTE_PREFIX}${workId}/${section}${tail ? `/${tail}` : ""}`;
+}
+
+export function sliceHref(workId: string, epicId: string, n: number | string): string {
+  return routeHref(workId, "build", `epics/${epicId}/${n}`);
 }
 
 /**

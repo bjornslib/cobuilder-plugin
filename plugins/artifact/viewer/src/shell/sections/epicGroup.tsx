@@ -35,20 +35,26 @@ function EpicRowMeta({ count }: { count: number }) {
   );
 }
 
-function epicRow(work: WorkItem, epic: EpicEntity, openSheet: OpenSheet): AccordionItem {
+interface RowContext {
+  work: WorkItem;
+  openSheet: OpenSheet;
+  held: string | null;
+  focusSlice: string | null;
+}
+
+function epicRow({ work, openSheet, held, focusSlice }: RowContext, epic: EpicEntity): AccordionItem {
   const count = work.slicesByEpic.get(epic.id)?.length ?? 0;
+  const markedN = epic.epic_id === held ? focusSlice : null;
   return {
     id: epic.id,
     title: <EpicRowTitle work={work} epic={epic} />,
     meta: <EpicRowMeta count={count} />,
-    content: (
-      <EpicDisclosure work={work} epicId={epic.epic_id} index={work.epics.indexOf(epic)} openSheet={openSheet} />
-    ),
+    content: <EpicDisclosure work={work} epicId={epic.epic_id} index={work.epics.indexOf(epic)} openSheet={openSheet} markedN={markedN} />,
   };
 }
 
-function epicRows(work: WorkItem, epics: EpicEntity[], openSheet: OpenSheet): AccordionItem[] {
-  return epics.map((epic) => epicRow(work, epic, openSheet));
+function epicRows(rows: RowContext, epics: EpicEntity[]): AccordionItem[] {
+  return epics.map((epic) => epicRow(rows, epic));
 }
 
 function heldEpic(group: EpicEntity[], focusEpic: string | null): string | null {
@@ -79,6 +85,7 @@ interface EpicGroupSectionProps {
   work: WorkItem;
   group: EpicEntity[];
   focusEpic: string | null;
+  focusSlice: string | null;
   openSheet: OpenSheet;
 }
 
@@ -88,14 +95,15 @@ interface EpicGroupSectionProps {
  * The title names the range the section holds, so the strip says which epics are in the
  * box. The route's epic opens here when it falls in this run.
  */
-export function EpicGroupSection({ work, group, focusEpic, openSheet }: EpicGroupSectionProps) {
-  const items = useMemo(() => epicRows(work, group, openSheet), [work, group, openSheet]);
+export function EpicGroupSection({ work, group, focusEpic, focusSlice, openSheet }: EpicGroupSectionProps) {
+  const held = heldEpic(group, focusEpic);
+  const items = useMemo(() => epicRows({ work, openSheet, held, focusSlice }, group), [work, group, openSheet, held, focusSlice]);
   const first = group[0]?.epic_id ?? "";
   const last = group[group.length - 1]?.epic_id ?? "";
   return (
     <Panel title={`Epics ${first}–${last}`} icon={ListTree} absent={group.length === 0}
       lead={`${group.length} epics in delivery order.`} count={group.length}>
-      <EpicAccordion workId={work.id} items={items} held={heldEpic(group, focusEpic)} />
+      <EpicAccordion workId={work.id} items={items} held={held} />
     </Panel>
   );
 }

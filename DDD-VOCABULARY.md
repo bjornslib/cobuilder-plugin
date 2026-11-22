@@ -321,8 +321,13 @@ _Avoid_: orphan slice (an orphan slice belongs to no program, see No program boa
 
 <a id="in-place-slice-card"></a>
 **In-place slice card** (`artifact`):
-A slice card that opens in place, because no epic page exists for its slice. Unjoined slices and orphan slices both use it.
+A slice card that opens in place, because no epic page exists for its slice. Every other slice card links to its marked slice row.
 _Avoid_: orphan card (the card also serves unjoined slices)
+
+<a id="marked-slice-row"></a>
+**Marked slice row** (`artifact`):
+The slice row on an epic page that the address `#/<program>/build/epics/<epic>/<n>` names. The page opens the epic, shows a Marked chip on the row, and scrolls the row into view.
+_Avoid_: selected slice (the shell uses selected for rail items), highlighted slice
 
 <a id="start-prompt"></a>
 **Start prompt** (`artifact`):
