@@ -1,13 +1,14 @@
 {
   "schema_version": "1.5",
+  "built_at": "2026-11-22T04:04:01Z",
   "sources": {
-    "git_head": "7836ae1ffe0813b94ee29ecf81a88f561ebbd038",
+    "git_head": "95bfefbf19724dc25b3db40dfb452e3f6c6e56db",
     "trees": {
       "docs/architecture/adr": "sha256:aaaa901242a8020aeb9cdf9d20c4bd36df1d3b6103ce418073ba78866839fa5c",
       "docs/architecture/designs": "sha256:49b60eaa674d147f9f877bb87acdef039fb721eccfc0b13cd9fa1ae00801b6ed",
       "docs/architecture/contexts": "sha256:965f965519589dd58b5c4cb126352c27a2e51a34af56752c3893a9b0f953e9f1",
-      "docs/plans": "sha256:a528539bb3dfc170241dbaa0ec2a3b3ed5476dfd80ad06324324318121c5fd82",
-      ".cobuilder/rubrics": "sha256:fec56865e213d8bb1213c9bee520b56902c1b2a2eff02ea7d02aad0e0139b7c1"
+      "docs/plans": "sha256:cfb2b2897eb67aa7a25fcc845bc45d21a2bae471d8d3c7376762b01541e05fd4",
+      ".cobuilder/rubrics": "sha256:0ee52675f5c16aa67f129a66a9604b6b45c5916c6dda2e0f0aebde267919284f"
     }
   },
   "entities": {
@@ -4344,9 +4345,9 @@
         "n": 6,
         "title": "The board header shows the build time of the index",
         "ends_with": "`build_index.py` writes a top-level `built_at` that the stale check and the projector ignore. The board header shows that time. An index without `built_at` or epic titles still loads, and the board then shows no time and the epic id.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "kanban-board/7",
@@ -9283,7 +9284,7 @@
       },
       "kanban-board": {
         "stage_source": "tracker",
-        "next_ready": "kanban-board/6",
+        "next_ready": "kanban-board/7",
         "pull_requests": []
       },
       "lean-bundle-diffs": {

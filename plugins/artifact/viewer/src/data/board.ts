@@ -54,6 +54,6 @@ export function boardRowsOf(index: RecordIndex): BoardRows {
     epics: epic.map((one) => boardEpicOf(one, resolved)),
     slices: slice,
     ...sliceJoinsOf(design, slice, resolved),
-    builtAt: null,
+    builtAt: index.built_at ?? null,
   };
 }

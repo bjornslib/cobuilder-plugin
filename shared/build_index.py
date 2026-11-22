@@ -1580,6 +1580,11 @@ def is_stale(index: dict, repo: Path) -> bool:
     return compute_sources(repo) != recorded
 
 
+def build_time() -> str:
+    """The index build time, ISO 8601 in UTC. It sits outside `sources`."""
+    return dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
 # --------------------------------------------------------------------------
 # assembly
 # --------------------------------------------------------------------------
@@ -1683,6 +1688,7 @@ def build_index(repo: Path, bundle_dir: Path) -> tuple[dict, dict, dict, list[st
 
     index = {
         "schema_version": INDEX_SCHEMA_VERSION,
+        "built_at": build_time(),
         "sources": compute_sources(repo),
         "entities": entities,
         "joins": joins,

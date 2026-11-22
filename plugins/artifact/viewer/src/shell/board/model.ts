@@ -5,7 +5,11 @@ import { epicColumns, matchedEpics, matchedSlices, sliceColumns } from "./epicBo
 import { matchedOrphans, noProgramOf, orphanColumns } from "./orphanBoard";
 import { programCardOf, programCardsInOrder, programColumns, programRowsOf, type ProgramRows } from "./programBoard";
 import { programMatches } from "./search";
-import type { BoardColumn, BoardCount, BoardCounts, BoardModel, ProgramCardModel } from "./shape";
+import type { BoardBuildTime, BoardColumn, BoardCount, BoardCounts, BoardModel, ProgramCardModel } from "./shape";
+
+type BoardDraft = Omit<BoardModel, "builtAt">;
+
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 function visibleOf(columns: BoardColumn[]): BoardColumn[] {
   return columns.filter((column) => !column.hidden);
@@ -23,7 +27,7 @@ function countsOf(rows: BoardRows, total: number, shown: ProgramCardModel[]): Re
   };
 }
 
-function programBoardOf(rows: BoardRows, address: BoardAddress): BoardModel {
+function programBoardOf(rows: BoardRows, address: BoardAddress): BoardDraft {
   const programs = programRowsOf(rows);
   const cards = programCardsInOrder(programs.map(programCardOf), address.order);
   const matched = programs.filter((program) => programMatches(program, address.q));
@@ -44,7 +48,7 @@ function unjoinedNoteOf(count: number): string | null {
   return `${subject} no epic. Switch to Slices to see them.`;
 }
 
-function epicBoardOf(address: BoardAddress, program: ProgramRows): BoardModel {
+function epicBoardOf(address: BoardAddress, program: ProgramRows): BoardDraft {
   const epics = epicColumns(program, matchedEpics(program, address.q), address);
   const slices = sliceColumns(program, matchedSlices(program, address.q), address);
   const counts = { epics: pairOf(epics, program.epics.length), slices: pairOf(slices, program.slices.length) };
@@ -55,18 +59,30 @@ function epicBoardOf(address: BoardAddress, program: ProgramRows): BoardModel {
   return { address, level: "epics", subject: program.design.name, cards: address.cards, columns, counts, shown, total, unjoinedNote, noProgram: null };
 }
 
-function orphanBoardOf(rows: BoardRows, address: BoardAddress): BoardModel {
+function orphanBoardOf(rows: BoardRows, address: BoardAddress): BoardDraft {
   const columns = orphanColumns(rows, matchedOrphans(rows, address.q), address);
   const slices = pairOf(columns, rows.orphanSlices.length);
   const { shown, total } = slices;
   return { address, level: "orphans", subject: "No program", cards: address.cards, columns, counts: { slices }, shown, total, unjoinedNote: null, noProgram: null };
 }
 
-export function boardModelOf(rows: BoardRows, address: BoardAddress): BoardModel {
+function boardDraftOf(rows: BoardRows, address: BoardAddress): BoardDraft {
   if (address.level === "orphans") return orphanBoardOf(rows, address);
   const program = address.level === "epics" ? programRowsOf(rows).find((one) => one.design.id === address.program) : undefined;
   if (program !== undefined) return epicBoardOf(address, program);
   return programBoardOf(rows, address.level === "programs" ? address : { ...address, level: "programs", program: null });
+}
+
+function buildTimeOf(iso: string | null): BoardBuildTime | null {
+  const date = new Date(iso ?? Number.NaN);
+  if (iso === null || Number.isNaN(date.getTime())) return null;
+  const day = `${date.getDate()} ${MONTHS[date.getMonth()]} ${date.getFullYear()}`;
+  const clock = [date.getHours(), date.getMinutes()].map((part) => String(part).padStart(2, "0")).join(":");
+  return { iso, label: `${day}, ${clock}` };
+}
+
+export function boardModelOf(rows: BoardRows, address: BoardAddress): BoardModel {
+  return { ...boardDraftOf(rows, address), builtAt: buildTimeOf(rows.builtAt) };
 }
 
 function noMatchOf(model: BoardModel, q: string): string {

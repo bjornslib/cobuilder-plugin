@@ -77,4 +77,11 @@ export interface BoardModel {
   /** The line under the columns on the epics grain, when slices join no epic. */
   unjoinedNote: string | null;
   noProgram: NoProgramModel | null;
+  /** The index build time with its label in the reader's time zone. Null when the index holds none. */
+  builtAt: BoardBuildTime | null;
+}
+
+export interface BoardBuildTime {
+  iso: string;
+  label: string;
 }
