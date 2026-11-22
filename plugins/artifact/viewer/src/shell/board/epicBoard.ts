@@ -69,13 +69,22 @@ function groupsOf(program: ProgramRows, slices: SliceEntity[]): SliceGroupModel[
   return [...epics, unjoined].filter((group) => group.slices.length > 0);
 }
 
+interface SliceSource {
+  all: SliceEntity[];
+  groupsOf: (held: SliceEntity[]) => SliceGroupModel[];
+}
+
+export function groupedSliceColumns(source: SliceSource, matched: Set<string>, address: BoardAddress): BoardColumn[] {
+  return STATUS_COLUMNS.map((column) => {
+    const before = source.all.filter((slice) => sliceColumnOf(slice.state) === column.key);
+    const held = before.filter((slice) => matched.has(slice.id));
+    const cards = source.groupsOf(held).map((group): BoardCard => ({ kind: "slice-group", group }));
+    return statusColumnOf(column, { cards, count: held.length, before: before.length, cause: SLICE_CAUSE }, address);
+  });
+}
+
 /** One group head for each epic with a matching slice, then the group "No epic". */
 export function sliceColumns(program: ProgramRows, matched: Set<string>, address: BoardAddress): BoardColumn[] {
   const all = [...program.slices].sort((a, b) => a.n - b.n);
-  return STATUS_COLUMNS.map((column) => {
-    const before = all.filter((slice) => sliceColumnOf(slice.state) === column.key);
-    const held = before.filter((slice) => matched.has(slice.id));
-    const cards = groupsOf(program, held).map((group): BoardCard => ({ kind: "slice-group", group }));
-    return statusColumnOf(column, { cards, count: held.length, before: before.length, cause: SLICE_CAUSE }, address);
-  });
+  return groupedSliceColumns({ all, groupsOf: (held) => groupsOf(program, held) }, matched, address);
 }

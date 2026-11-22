@@ -21,6 +21,12 @@ export interface ProgramCardModel {
   slices: { total: number; done: number; nextReadyN: number | null };
 }
 
+export interface NoProgramModel {
+  count: number;
+  plans: number;
+  href: string;
+}
+
 export interface EpicCardModel {
   epic: BoardEpic;
   /** The epic's slices, ordered by slice number. */
@@ -70,4 +76,5 @@ export interface BoardModel {
   total: number;
   /** The line under the columns on the epics grain, when slices join no epic. */
   unjoinedNote: string | null;
+  noProgram: NoProgramModel | null;
 }

@@ -1,4 +1,4 @@
-import { useId, useState } from "react";
+import { createContext, useContext, useId, useMemo, useState, type ReactNode } from "react";
 
 import type { SliceEntity } from "@/data/types";
 import { cn } from "@/lib/utils";
@@ -47,12 +47,32 @@ function SliceFacts({ id, slice, open }: { id: string; slice: SliceEntity; open:
   );
 }
 
-export function OrphanSliceCard({ slice }: { slice: SliceEntity }) {
-  const [open, setOpen] = useState(false);
+interface OpenSlice {
+  openId: string | null;
+  toggle: (id: string) => void;
+}
+
+const OpenSliceContext = createContext<OpenSlice | null>(null);
+
+export function InPlaceCardScope({ q, children }: { q: string; children: ReactNode }) {
+  const [open, setOpen] = useState<{ id: string | null; q: string }>({ id: null, q });
+  const openId = open.q === q ? open.id : null;
+  const value = useMemo(() => ({ openId, toggle: (id: string) => setOpen({ id: openId === id ? null : id, q }) }), [openId, q]);
+  return <OpenSliceContext.Provider value={value}>{children}</OpenSliceContext.Provider>;
+}
+
+function useOpenSlice(id: string): { open: boolean; toggle: () => void } {
+  const scope = useContext(OpenSliceContext);
+  if (scope === null) throw new Error("InPlaceSliceCard needs an InPlaceCardScope above it.");
+  return { open: scope.openId === id, toggle: () => scope.toggle(id) };
+}
+
+export function InPlaceSliceCard({ slice }: { slice: SliceEntity }) {
+  const { open, toggle } = useOpenSlice(slice.id);
   const panelId = useId();
   return (
     <li className={cn(CARD_CLASS, STATE_RULE[sliceColumnOf(slice.state)], open && "bg-accent-wash")}>
-      <button type="button" aria-label={`Show the end state, score, and attempts of ${slice.title}`} aria-expanded={open} aria-controls={panelId} onClick={() => setOpen(!open)} className={BUTTON_CLASS}>
+      <button type="button" aria-label={`Show the end state, score, and attempts of ${slice.title}`} aria-expanded={open} aria-controls={panelId} onClick={toggle} className={BUTTON_CLASS}>
         <SliceLine slice={slice} />
       </button>
       <SliceFacts id={panelId} slice={slice} open={open} />

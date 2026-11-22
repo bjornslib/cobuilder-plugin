@@ -1,17 +1,19 @@
 import type { ReactElement } from "react";
 
-import { LANES } from "../workDeck";
-import { hideToggled } from "./address";
+import { columnKeysOf, hideToggled, type BoardLevel } from "./address";
 import { ColumnRow } from "./columns";
 import { CommandRow, LoadingCommandRow } from "./commandRow";
 import { BoardHeadingBand } from "./headingBand";
+import { InPlaceCardScope } from "./inPlaceCard";
 import { noMatchSentenceOf } from "./model";
+import { NoProgramCard } from "./noProgramCard";
 import type { BoardModel } from "./shape";
 import { useBoardAddress, type BoardAddressWrites } from "./useBoardAddress";
 
 export interface KanbanPageProps {
   /** Null while the index loads. */
   model: BoardModel | null;
+  level: BoardLevel;
   go: (href: string) => void;
 }
 
@@ -30,12 +32,12 @@ function SkeletonColumn() {
   );
 }
 
-function LoadingColumns() {
+function LoadingColumns({ level }: { level: BoardLevel }) {
   return (
     <div aria-busy="true" className="relative flex min-h-0 min-w-0 flex-1 flex-col">
       <p role="status" className="sr-only">Loading the record index</p>
       <div className="flex min-h-0 min-w-0 flex-1 gap-3 overflow-x-auto px-4 py-3">
-        {LANES.map((lane) => <SkeletonColumn key={lane.key} />)}
+        {columnKeysOf(level).map((key) => <SkeletonColumn key={key} />)}
       </div>
     </div>
   );
@@ -53,9 +55,20 @@ function BoardNoMatch({ sentence, onClear }: { sentence: string; onClear: () => 
 function BoardColumns({ model, writes }: { model: BoardModel; writes: BoardAddressWrites }) {
   const sentence = noMatchSentenceOf(model);
   return (
+    <InPlaceCardScope q={model.address.q}>
+      <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
+        <ColumnRow columns={model.columns} address={model.address} onToggle={(key) => writes.write(hideToggled(model.address, key))} bare={sentence !== null} />
+        {sentence !== null && <BoardNoMatch sentence={sentence} onClear={() => writes.replace({ ...model.address, q: "" })} />}
+      </div>
+    </InPlaceCardScope>
+  );
+}
+
+function BoardBody({ model, writes }: { model: BoardModel; writes: BoardAddressWrites }) {
+  return (
     <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
-      <ColumnRow columns={model.columns} address={model.address} onToggle={(key) => writes.write(hideToggled(model.address, key))} bare={sentence !== null} />
-      {sentence !== null && <BoardNoMatch sentence={sentence} onClear={() => writes.replace({ ...model.address, q: "" })} />}
+      <BoardColumns model={model} writes={writes} />
+      {model.unjoinedNote !== null && <p className="m-0 shrink-0 px-4 pb-3 font-serif text-[12px] text-ink-dim">{model.unjoinedNote}</p>}
     </div>
   );
 }
@@ -65,20 +78,18 @@ function BoardRegion({ model, go }: { model: BoardModel; go: (href: string) => v
   return (
     <>
       <CommandRow address={model.address} write={writes.write} replace={writes.replace} />
-      <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
-        <BoardColumns model={model} writes={writes} />
-        {model.unjoinedNote !== null && <p className="m-0 shrink-0 px-4 pb-3 font-serif text-[12px] text-ink-dim">{model.unjoinedNote}</p>}
-      </div>
+      {model.noProgram !== null && <NoProgramCard card={model.noProgram} />}
+      <BoardBody model={model} writes={writes} />
     </>
   );
 }
 
-export function KanbanPage({ model, go }: KanbanPageProps): ReactElement {
+export function KanbanPage({ model, level, go }: KanbanPageProps): ReactElement {
   return (
     <div className="flex h-full min-h-0 min-w-0 flex-col bg-ground">
       <BoardHeadingBand key={model?.level ?? "programs"} model={model} />
       {model === null && <LoadingCommandRow />}
-      {model === null ? <LoadingColumns /> : <BoardRegion model={model} go={go} />}
+      {model === null ? <LoadingColumns level={level} /> : <BoardRegion model={model} go={go} />}
     </div>
   );
 }

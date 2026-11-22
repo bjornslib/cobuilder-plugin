@@ -1,13 +1,13 @@
 {
   "schema_version": "1.5",
   "sources": {
-    "git_head": "a9de888bacb9232e7acad30594d9ba15baa3af5a",
+    "git_head": "7836ae1ffe0813b94ee29ecf81a88f561ebbd038",
     "trees": {
       "docs/architecture/adr": "sha256:aaaa901242a8020aeb9cdf9d20c4bd36df1d3b6103ce418073ba78866839fa5c",
       "docs/architecture/designs": "sha256:49b60eaa674d147f9f877bb87acdef039fb721eccfc0b13cd9fa1ae00801b6ed",
       "docs/architecture/contexts": "sha256:965f965519589dd58b5c4cb126352c27a2e51a34af56752c3893a9b0f953e9f1",
-      "docs/plans": "sha256:943b75bb7b2ab56268e86b8194b53a4c31e972bb35b1b12cd7dc205ffe734796",
-      ".cobuilder/rubrics": "sha256:cc288d236847c2f92a5c17dca7e7dcbd8a10d263ba1917fe47cd12bc7bbba9dd"
+      "docs/plans": "sha256:a528539bb3dfc170241dbaa0ec2a3b3ed5476dfd80ad06324324318121c5fd82",
+      ".cobuilder/rubrics": "sha256:fec56865e213d8bb1213c9bee520b56902c1b2a2eff02ea7d02aad0e0139b7c1"
     }
   },
   "entities": {
@@ -4334,9 +4334,9 @@
         "n": 5,
         "title": "The No program card opens the slices that belong to no program",
         "ends_with": "The program board shows one No program card while such slices exist. It opens `#/board?orphans=1` with those slices by status, and a slice card there opens in place. The card is absent when no such slice exists, and it never counts as a program.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "kanban-board/6",
@@ -9283,7 +9283,7 @@
       },
       "kanban-board": {
         "stage_source": "tracker",
-        "next_ready": "kanban-board/5",
+        "next_ready": "kanban-board/6",
         "pull_requests": []
       },
       "lean-bundle-diffs": {

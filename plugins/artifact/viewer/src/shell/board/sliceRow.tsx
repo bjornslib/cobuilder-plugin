@@ -2,7 +2,7 @@ import type { SliceEntity } from "@/data/types";
 import { cn } from "@/lib/utils";
 
 import { sliceHref } from "../model/routes";
-import { SliceLine } from "./orphanCard";
+import { SliceLine } from "./inPlaceCard";
 import { sliceColumnOf, type StatusColumnKey } from "./status";
 
 const ROW_CLASS = cn(

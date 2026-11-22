@@ -300,6 +300,11 @@ _Avoid_: focus board (the name of a rejected prototype), swim lane (the board ha
 The level of the Kanban board at `#/board?orphans=1`, which shows the slices whose plan names no design. The address key and the code call these slices orphan slices.
 _Avoid_: orphan board (the board name stays No program, as the reader sees it)
 
+<a id="no-program-card"></a>
+**No program card** (`artifact`):
+The one card above the columns of the program board that counts the orphan slices and their plans. It opens the No program board, it never counts as a program, and it is absent when no orphan slice matches.
+_Avoid_: program card (the card of one program)
+
 <a id="column-rail"></a>
 **Column rail** (`artifact`):
 The narrow strip that stands in for a hidden column of the Kanban board. The Hide button of a column head makes it, and a click shows the column again.

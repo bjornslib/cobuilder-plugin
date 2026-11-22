@@ -78,7 +78,7 @@ function WorklessContent({ v }: { v: ShellView }) {
  * way back in that the shell keeps.
  */
 export function PaneContent({ v }: { v: ShellView }) {
-  if (v.kanban !== null) return <KanbanPage model={v.boardModel} go={v.go} />;
+  if (v.kanban !== null) return <KanbanPage model={v.boardModel} level={v.kanban.level} go={v.go} />;
   if (v.board) return null;
   if (v.work === null) return <WorklessContent v={v} />;
   return <WorkContent v={v} work={v.work} />;

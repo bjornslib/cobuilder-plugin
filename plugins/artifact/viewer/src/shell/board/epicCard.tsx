@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 
 import { routeHref } from "../model";
 import { epicLabel } from "./epicBoard";
-import { OrphanSliceCard, STATE_RULE } from "./orphanCard";
+import { InPlaceSliceCard, STATE_RULE } from "./inPlaceCard";
 import type { EpicCardModel, SliceGroupModel } from "./shape";
 import { PIP, SliceCard, SliceList } from "./sliceRow";
 import { epicColumnOf, isDoneSlice, SHAPE_GLYPH, sliceColumnOf, STATUS_COLUMNS, type StatusColumnKey } from "./status";
@@ -128,7 +128,7 @@ function GroupHead({ group, programId }: { group: SliceGroupModel; programId: st
 export function SliceGroup({ group, programId }: { group: SliceGroupModel; programId: string | null }) {
   const target = group.epicId !== null && programId !== null ? { programId, epicId: group.epicId } : null;
   const cardOf = (slice: SliceEntity) =>
-    group.epicId === null ? <OrphanSliceCard key={slice.id} slice={slice} /> : <SliceCard key={slice.id} slice={slice} target={target} />;
+    group.epicId === null ? <InPlaceSliceCard key={slice.id} slice={slice} /> : <SliceCard key={slice.id} slice={slice} target={target} />;
   return (
     <li className="flex flex-col gap-1">
       <GroupHead group={group} programId={programId} />

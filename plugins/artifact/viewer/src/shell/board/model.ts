@@ -2,6 +2,7 @@ import type { BoardRows } from "@/data/types/board";
 
 import type { BoardAddress } from "./address";
 import { epicColumns, matchedEpics, matchedSlices, sliceColumns } from "./epicBoard";
+import { matchedOrphans, noProgramOf, orphanColumns } from "./orphanBoard";
 import { programCardOf, programCardsInOrder, programColumns, programRowsOf, type ProgramRows } from "./programBoard";
 import { programMatches } from "./search";
 import type { BoardColumn, BoardCount, BoardCounts, BoardModel, ProgramCardModel } from "./shape";
@@ -29,7 +30,8 @@ function programBoardOf(rows: BoardRows, address: BoardAddress): BoardModel {
   const columns = programColumns(cards, new Set(matched.map((program) => program.design.id)), address);
   const counts = countsOf(rows, programs.length, shownCards(columns));
   const { shown, total } = counts.programs;
-  return { address, level: "programs", subject: null, cards: address.cards, columns, counts, shown, total, unjoinedNote: null };
+  const noProgram = noProgramOf(rows, address.q);
+  return { address, level: "programs", subject: null, cards: address.cards, columns, counts, shown, total, unjoinedNote: null, noProgram };
 }
 
 function pairOf(columns: BoardColumn[], total: number): BoardCount {
@@ -50,17 +52,30 @@ function epicBoardOf(address: BoardAddress, program: ProgramRows): BoardModel {
   const { shown, total } = onSlices ? counts.slices : counts.epics;
   const unjoinedNote = onSlices ? null : unjoinedNoteOf(program.unjoined.length);
   const columns = onSlices ? slices : epics;
-  return { address, level: "epics", subject: program.design.name, cards: address.cards, columns, counts, shown, total, unjoinedNote };
+  return { address, level: "epics", subject: program.design.name, cards: address.cards, columns, counts, shown, total, unjoinedNote, noProgram: null };
+}
+
+function orphanBoardOf(rows: BoardRows, address: BoardAddress): BoardModel {
+  const columns = orphanColumns(rows, matchedOrphans(rows, address.q), address);
+  const slices = pairOf(columns, rows.orphanSlices.length);
+  const { shown, total } = slices;
+  return { address, level: "orphans", subject: "No program", cards: address.cards, columns, counts: { slices }, shown, total, unjoinedNote: null, noProgram: null };
 }
 
 export function boardModelOf(rows: BoardRows, address: BoardAddress): BoardModel {
+  if (address.level === "orphans") return orphanBoardOf(rows, address);
   const program = address.level === "epics" ? programRowsOf(rows).find((one) => one.design.id === address.program) : undefined;
   if (program !== undefined) return epicBoardOf(address, program);
   return programBoardOf(rows, address.level === "programs" ? address : { ...address, level: "programs", program: null });
 }
 
+function noMatchOf(model: BoardModel, q: string): string {
+  if (model.level === "orphans") return `No slice that belongs to no program matches “${q}”.`;
+  return model.subject === null ? `No program, epic, or slice matches “${q}”.` : `No epic or slice of ${model.subject} matches “${q}”.`;
+}
+
 export function noMatchSentenceOf(model: BoardModel): string | null {
   const { q } = model.address;
-  if (q === "" || model.total === 0 || model.columns.some((column) => column.count > 0)) return null;
-  return model.subject === null ? `No program, epic, or slice matches “${q}”.` : `No epic or slice of ${model.subject} matches “${q}”.`;
+  if (q === "" || model.total === 0 || model.noProgram !== null || model.columns.some((column) => column.count > 0)) return null;
+  return noMatchOf(model, q);
 }
