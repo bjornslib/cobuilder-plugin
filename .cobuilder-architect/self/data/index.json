@@ -1,14 +1,14 @@
 {
   "schema_version": "1.5",
-  "built_at": "2026-11-22T07:17:23Z",
+  "built_at": "2026-11-22T21:00:33Z",
   "sources": {
-    "git_head": "be2a2ea7a11f992d54c40531ee44766ace0eb771",
+    "git_head": "96e9eb846fa15c40bc93bb366fbcdfb22058ea5d",
     "trees": {
       "docs/architecture/adr": "sha256:aaaa901242a8020aeb9cdf9d20c4bd36df1d3b6103ce418073ba78866839fa5c",
       "docs/architecture/designs": "sha256:49b60eaa674d147f9f877bb87acdef039fb721eccfc0b13cd9fa1ae00801b6ed",
       "docs/architecture/contexts": "sha256:965f965519589dd58b5c4cb126352c27a2e51a34af56752c3893a9b0f953e9f1",
       "docs/plans": "sha256:ba484738af7db7b7d486f6dc5745c911dbaab858c5db3a692761bc60a367a315",
-      ".cobuilder/rubrics": "sha256:e6a854012b5a9a1bb568ce694dd4b1378e8e492e06df0ccd79676edd25cab162"
+      ".cobuilder/rubrics": "sha256:70ae1dd2fd0849c2e0c74692b6abc44128c86fa4aa9949ce8305c350ce3cbc1f"
     }
   },
   "entities": {
@@ -3246,6 +3246,13 @@
         "state": "open",
         "commit": "2f1985fdb3831f62288269d818a90948c5d9d191",
         "date": "2026-09-23"
+      },
+      {
+        "id": 58,
+        "title": "Kanban board: programs, epics, and slices by status in the viewer",
+        "state": "open",
+        "commit": "96e9eb846fa15c40bc93bb366fbcdfb22058ea5d",
+        "date": "2026-11-22"
       }
     ],
     "slice": [
@@ -9285,7 +9292,16 @@
       "kanban-board": {
         "stage_source": "tracker",
         "next_ready": null,
-        "pull_requests": []
+        "pull_requests": [
+          {
+            "ref": "pr-58",
+            "number": 58,
+            "state": "open",
+            "epics": [
+              "kanban-board/E1"
+            ]
+          }
+        ]
       },
       "lean-bundle-diffs": {
         "stage_source": "tracker",
