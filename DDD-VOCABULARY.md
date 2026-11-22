@@ -302,8 +302,18 @@ _Avoid_: orphan board (the board name stays No program, as the reader sees it)
 
 <a id="column-rail"></a>
 **Column rail** (`artifact`):
-The narrow strip that stands in for a hidden column of the Kanban board. It keeps the column label and count, and a click shows the column again.
+The narrow strip that stands in for a hidden column of the Kanban board. The Hide button of a column head makes it, and a click shows the column again.
 _Avoid_: rail alone (the rail is the left navigation of the viewer shell)
+
+<a id="find"></a>
+**Find** (`artifact`):
+The text field of the board's command row. It narrows the board to the records whose name, title, or label holds the text, and the `q` key of the board address holds it.
+_Avoid_: search box, filter
+
+<a id="program-order"></a>
+**Program order** (`artifact`):
+The order of the cards inside each column of the program board: by name, by most open work, or by progress. The Order select sets it, and the `sort` key of the board address holds it.
+_Avoid_: sort alone (the address key only)
 
 <a id="stage-lane"></a>
 **Stage lane** (`artifact`):

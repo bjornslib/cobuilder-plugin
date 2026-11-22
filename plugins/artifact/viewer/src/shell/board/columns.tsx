@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 import { cn } from "@/lib/utils";
 
 import type { BoardAddress } from "./address";
@@ -30,10 +32,23 @@ const BADGE: Record<string, string> = {
   done: "text-good",
 };
 const RAIL_UNIT: Record<BoardAddress["level"], string> = { programs: "program", epics: "epic", orphans: "slice" };
+const HIDE_CLASS = cn(
+  "ml-auto inline-flex h-7 shrink-0 cursor-pointer items-center rounded border border-line bg-surface px-2 font-mono text-[10.5px] text-ink-mid",
+  "hover:bg-surface-2 hover:text-foreground active:translate-y-px disabled:cursor-not-allowed disabled:opacity-45",
+  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+);
 
 interface ColumnProps {
   column: BoardColumn;
   address: BoardAddress;
+  onToggle: (key: string) => void;
+}
+
+interface ColumnRowProps {
+  columns: BoardColumn[];
+  address: BoardAddress;
+  onToggle: (key: string) => void;
+  bare: boolean;
 }
 
 function railNoun(address: BoardAddress, count: number): string {
@@ -41,11 +56,19 @@ function railNoun(address: BoardAddress, count: number): string {
   return count === 1 ? unit : `${unit}s`;
 }
 
-function HiddenColumnRail({ column, address, onShow }: ColumnProps & { onShow: (key: string) => void }) {
+function HiddenColumnRail({ column, address, onToggle }: ColumnProps) {
   return (
-    <button type="button" onClick={() => onShow(column.key)} aria-label={`Show ${column.label}, ${column.count} ${railNoun(address, column.count)}`} className={RAIL_CLASS}>
+    <button type="button" onClick={() => onToggle(column.key)} aria-label={`Show ${column.label}, ${column.count} ${railNoun(address, column.count)}`} className={RAIL_CLASS}>
       <span className={RAIL_LABEL_CLASS}>{column.label}</span>
       <span className="font-mono text-[13px] font-bold tabular-nums">{column.count}</span>
+    </button>
+  );
+}
+
+function HideButton({ label, disabled, onHide }: { label: string; disabled: boolean; onHide: () => void }) {
+  return (
+    <button type="button" onClick={onHide} disabled={disabled} aria-label={`Hide ${label}`} title={disabled ? "One column stays visible" : undefined} className={HIDE_CLASS}>
+      Hide
     </button>
   );
 }
@@ -56,7 +79,7 @@ function cardOf(card: BoardCard, address: BoardAddress) {
   return <SliceGroup key={card.group.key} group={card.group} programId={address.program} />;
 }
 
-function ColumnBody({ column, address }: ColumnProps) {
+function ColumnBody({ column, address }: Omit<ColumnProps, "onToggle">) {
   const empty = <p className="m-0 font-serif text-[12px] leading-[1.4] text-ink-dim">{column.emptyReason}</p>;
   const cards = <ul className="m-0 flex list-none flex-col gap-2 p-0">{column.cards.map((card) => cardOf(card, address))}</ul>;
   return (
@@ -66,7 +89,7 @@ function ColumnBody({ column, address }: ColumnProps) {
   );
 }
 
-function ColumnHead({ column, id }: { column: BoardColumn; id: string }) {
+function ColumnHead({ column, id, children }: { column: BoardColumn; id: string; children: ReactNode }) {
   return (
     <div className={HEAD_CLASS}>
       <div className={cn(BADGE_CLASS, BADGE[column.key])}>
@@ -74,26 +97,30 @@ function ColumnHead({ column, id }: { column: BoardColumn; id: string }) {
         <h3 id={`${id}-label`}>{column.label}</h3>
       </div>
       <span id={`${id}-count`} className="font-mono text-[12px] font-bold text-ink tabular-nums">{column.count}</span>
+      {children}
     </div>
   );
 }
 
-function VisibleColumn({ column, address }: ColumnProps) {
+function VisibleColumn({ column, address, onToggle, lastVisible, bare }: ColumnProps & { lastVisible: boolean; bare: boolean }) {
   const id = `board-column-${column.key}`;
   return (
     <section aria-labelledby={`${id}-label ${id}-count`} className={COLUMN_CLASS}>
-      <ColumnHead column={column} id={id} />
-      <ColumnBody column={column} address={address} />
+      <ColumnHead column={column} id={id}>
+        <HideButton label={column.label} disabled={lastVisible} onHide={() => onToggle(column.key)} />
+      </ColumnHead>
+      {!bare && <ColumnBody column={column} address={address} />}
     </section>
   );
 }
 
-export function ColumnRow({ columns, address, onShow }: { columns: BoardColumn[]; address: BoardAddress; onShow: (key: string) => void }) {
+export function ColumnRow({ columns, bare, ...shared }: ColumnRowProps) {
+  const lastVisible = columns.filter((column) => !column.hidden).length === 1;
   const columnOf = (column: BoardColumn) =>
     column.hidden ? (
-      <HiddenColumnRail key={column.key} column={column} address={address} onShow={onShow} />
+      <HiddenColumnRail key={column.key} column={column} {...shared} />
     ) : (
-      <VisibleColumn key={column.key} column={column} address={address} />
+      <VisibleColumn key={column.key} column={column} {...shared} lastVisible={lastVisible} bare={bare} />
     );
   return <div className="flex min-h-0 min-w-0 flex-1 gap-3 overflow-x-auto overflow-y-clip px-4 py-3">{columns.map(columnOf)}</div>;
 }

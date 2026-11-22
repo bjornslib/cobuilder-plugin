@@ -2,9 +2,17 @@ import type { BoardEpic, BoardRows } from "@/data/types/board";
 import type { DesignEntity, SliceEntity } from "@/data/types";
 
 import { LANES, laneOf, type Lane } from "../workDeck";
-import type { BoardAddress } from "./address";
+import type { BoardAddress, ProgramOrder } from "./address";
+import { emptyReasonOf } from "./search";
 import type { BoardColumn, ProgramCardModel } from "./shape";
 import { epicColumnOf, isDoneSlice, type StatusColumnKey } from "./status";
+
+const PROGRAM_CAUSE = { unit: "program", none: "No program is in this stage." };
+const RANK: Record<ProgramOrder, (card: ProgramCardModel) => number> = {
+  name: () => 0,
+  open: ({ counts }) => counts.planned + counts.inProgress,
+  progress: ({ counts, program }) => (program.epics.length === 0 ? 0 : counts.done / program.epics.length),
+};
 
 export interface ProgramRows {
   design: DesignEntity;
@@ -60,22 +68,26 @@ function laneKeyOf(card: ProgramCardModel): string {
   return laneOf(card.program.design.stage)?.key ?? LANES[0].key;
 }
 
-function stageColumnOf(lane: Lane, held: ProgramCardModel[], hidden: boolean): BoardColumn {
+export function programCardsInOrder(cards: ProgramCardModel[], order: ProgramOrder): ProgramCardModel[] {
+  const rank = RANK[order];
+  return [...cards].sort((a, b) => rank(b) - rank(a) || a.program.design.name.localeCompare(b.program.design.name));
+}
+
+function stageColumnOf(lane: Lane, { held, before }: { held: ProgramCardModel[]; before: number }, address: BoardAddress): BoardColumn {
+  const hidden = address.hide.includes(lane.key);
   return {
-    key: lane.key,
-    label: lane.label,
-    kind: "stage",
-    shape: null,
+    key: lane.key, label: lane.label, kind: "stage", shape: null,
     count: held.length,
     hidden,
-    emptyReason: hidden || held.length > 0 ? null : "No program is in this stage.",
+    emptyReason: emptyReasonOf({ shown: held.length, before, hidden }, PROGRAM_CAUSE, address.q),
     cards: held.map((card) => ({ kind: "program", card })),
   };
 }
 
 export function programColumns(cards: ProgramCardModel[], matched: Set<string>, address: BoardAddress): BoardColumn[] {
   return LANES.map((lane) => {
-    const held = cards.filter((card) => laneKeyOf(card) === lane.key && matched.has(card.program.design.id));
-    return stageColumnOf(lane, held, address.hide.includes(lane.key));
+    const before = cards.filter((card) => laneKeyOf(card) === lane.key);
+    const held = before.filter((card) => matched.has(card.program.design.id));
+    return stageColumnOf(lane, { held, before: before.length }, address);
   });
 }

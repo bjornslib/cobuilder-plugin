@@ -1,13 +1,13 @@
 {
   "schema_version": "1.5",
   "sources": {
-    "git_head": "206b15c18aeef2b04c363ba6483eae2770420fa4",
+    "git_head": "a9de888bacb9232e7acad30594d9ba15baa3af5a",
     "trees": {
       "docs/architecture/adr": "sha256:aaaa901242a8020aeb9cdf9d20c4bd36df1d3b6103ce418073ba78866839fa5c",
       "docs/architecture/designs": "sha256:49b60eaa674d147f9f877bb87acdef039fb721eccfc0b13cd9fa1ae00801b6ed",
       "docs/architecture/contexts": "sha256:965f965519589dd58b5c4cb126352c27a2e51a34af56752c3893a9b0f953e9f1",
-      "docs/plans": "sha256:be529fb8cfb9e7ece5fb31196b4b308389d37fbd1877f9f3b8d96bf7d5b245e5",
-      ".cobuilder/rubrics": "sha256:e9a93e307e961356b25d407988d9bc7dd1cedacf10ed17828e7d1cf783018fea"
+      "docs/plans": "sha256:943b75bb7b2ab56268e86b8194b53a4c31e972bb35b1b12cd7dc205ffe734796",
+      ".cobuilder/rubrics": "sha256:cc288d236847c2f92a5c17dca7e7dcbd8a10d263ba1917fe47cd12bc7bbba9dd"
     }
   },
   "entities": {
@@ -4324,9 +4324,9 @@
         "n": 4,
         "title": "Find, Order, and Hide shape the board, and the address keeps them",
         "ends_with": "The search narrows both boards, Order sorts the program cards by name, open work, and progress, and Hide turns a column into a rail with its count. The header shows the true total, an empty column states its reason, and a reload restores the board from the address.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "kanban-board/5",
@@ -9283,7 +9283,7 @@
       },
       "kanban-board": {
         "stage_source": "tracker",
-        "next_ready": "kanban-board/4",
+        "next_ready": "kanban-board/5",
         "pull_requests": []
       },
       "lean-bundle-diffs": {
