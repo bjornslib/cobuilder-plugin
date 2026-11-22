@@ -6,13 +6,13 @@ import { SliceLine } from "./inPlaceCard";
 import { sliceColumnOf, type StatusColumnKey } from "./status";
 
 const ROW_CLASS = cn(
-  "flex items-center gap-2 rounded px-1.5 py-1 text-left hover:bg-surface-3 active:bg-surface-3",
+  "flex items-center gap-2 transition-colors duration-[var(--motion-hover)] ease-[var(--ease)] rounded px-1.5 py-1 text-left hover:bg-surface-3 active:bg-surface-3",
   "focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring",
 );
 const CARD_FRAME = "block rounded-lg border border-line-soft bg-surface text-left";
 const CARD_LINK_CLASS = cn(
   CARD_FRAME,
-  "hover:bg-surface-2 active:bg-surface-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+  "transition-colors duration-[var(--motion-hover)] ease-[var(--ease)] hover:bg-surface-2 active:bg-surface-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
 );
 
 export const PIP: Record<StatusColumnKey, string> = {
@@ -37,7 +37,7 @@ function SliceRowLink({ slice, target }: { slice: SliceEntity; target: SliceTarg
 
 export function SliceList({ id, slices, target }: { id: string; slices: SliceEntity[]; target: SliceTarget }) {
   return (
-    <ul id={id} className="m-0 flex list-none flex-col gap-0.5 border-t border-line-soft p-1">
+    <ul id={id} className="m-0 flex animate-[board-panel-in_var(--motion-panel)_var(--ease)] list-none flex-col gap-0.5 border-t border-line-soft p-1">
       {slices.map((slice) => <li key={slice.id}><SliceRowLink slice={slice} target={target} /></li>)}
     </ul>
   );

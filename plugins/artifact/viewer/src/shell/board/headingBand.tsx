@@ -8,7 +8,7 @@ const BAND_CLASS = "flex min-h-14 min-w-0 shrink-0 items-center gap-3 bg-band px
 const TITLE_CLASS = "m-0 shrink-0 font-mono text-[13px] font-bold tracking-[0.02em] uppercase outline-none";
 const SUBJECT_CLASS = "m-0 min-w-0 truncate font-serif text-[15px] leading-tight text-band-ink outline-none";
 const BACK_CLASS =
-  "inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md px-1.5 font-mono text-[12.5px] font-bold text-band-ink hover:underline active:translate-y-px focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
+  "transition-colors duration-[var(--motion-hover)] ease-[var(--ease)] inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md px-1.5 font-mono text-[12.5px] font-bold text-band-ink hover:underline active:translate-y-px focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
 const BUILD_TIME_CLASS = "m-0 font-mono text-[11px] text-band-ink";
 
 const PAIRS = [

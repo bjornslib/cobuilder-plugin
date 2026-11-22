@@ -4,7 +4,7 @@ import type { NoProgramModel } from "./shape";
 
 const LINK_CLASS = cn(
   "flex h-11 items-center gap-2.5 rounded-lg border border-l-2 border-dashed border-line border-l-ink-faint bg-surface px-3",
-  "hover:border-primary hover:bg-surface-2 active:bg-surface-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+  "transition-colors duration-[var(--motion-hover)] ease-[var(--ease)] hover:border-primary hover:bg-surface-2 active:bg-surface-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
 );
 
 function countOf(count: number, unit: string): string {

@@ -8,7 +8,7 @@ import { ProgramCard } from "./programCard";
 import type { BoardCard, BoardColumn } from "./shape";
 import { SHAPE_GLYPH } from "./status";
 
-const COLUMN_CLASS = "flex min-h-0 min-w-[176px] flex-1 basis-0 flex-col rounded-lg border border-line bg-surface-2";
+const COLUMN_CLASS = "animate-[board-column-in_var(--motion-panel)_var(--ease)] flex min-h-0 min-w-[176px] flex-1 basis-0 flex-col rounded-lg border border-line bg-surface-2";
 const HEAD_CLASS = "flex h-10 shrink-0 items-center gap-1.5 overflow-clip rounded-t-lg border-b border-line bg-surface px-2.5";
 const BADGE_CLASS = cn(
   "m-0 inline-flex shrink-0 items-center gap-1 rounded border border-line bg-surface-2 px-1.5 py-px",
@@ -16,7 +16,7 @@ const BADGE_CLASS = cn(
 );
 const RAIL_CLASS = cn(
   "flex w-11 shrink-0 cursor-pointer flex-col items-center gap-2 overflow-clip rounded-lg border border-line bg-surface-2 py-3 text-ink-dim",
-  "transition-colors duration-150 ease-house hover:bg-accent-wash hover:text-accent-deep active:bg-tint",
+  "transition-colors duration-[var(--motion-hover)] ease-[var(--ease)] hover:bg-accent-wash hover:text-accent-deep active:bg-tint",
   "focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring",
 );
 const RAIL_LABEL_CLASS = "rotate-180 font-mono text-[10.5px] tracking-[0.1em] whitespace-nowrap uppercase [writing-mode:vertical-rl]";
@@ -33,7 +33,7 @@ const BADGE: Record<string, string> = {
 };
 const RAIL_UNIT: Record<BoardAddress["level"], string> = { programs: "program", epics: "epic", orphans: "slice" };
 const HIDE_CLASS = cn(
-  "ml-auto inline-flex h-7 shrink-0 cursor-pointer items-center rounded border border-line bg-surface px-2 font-mono text-[10.5px] text-ink-mid",
+  "ml-auto inline-flex h-7 transition-colors duration-[var(--motion-hover)] ease-[var(--ease)] shrink-0 cursor-pointer items-center rounded border border-line bg-surface px-2 font-mono text-[10.5px] text-ink-mid",
   "hover:bg-surface-2 hover:text-foreground active:translate-y-px disabled:cursor-not-allowed disabled:opacity-45",
   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
 );

@@ -8,18 +8,18 @@ import { useFindFocus } from "./useFindFocus";
 const LABEL_CLASS = "font-mono text-[10px] tracking-[0.12em] text-ink-dim uppercase";
 const GROUP_CLASS = "flex shrink-0 items-center gap-2 border-l border-line pl-4";
 const BUTTON_CLASS = cn(
-  "h-8 cursor-pointer px-3 font-mono text-[12px] text-ink-mid hover:bg-surface-2 hover:text-foreground active:translate-y-px",
+  "transition-colors duration-[var(--motion-hover)] ease-[var(--ease)] h-8 cursor-pointer px-3 font-mono text-[12px] text-ink-mid hover:bg-surface-2 hover:text-foreground active:translate-y-px",
   "focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring",
 );
 const SELECTED_CLASS = "bg-accent-wash font-bold text-accent-deep hover:bg-accent-wash hover:text-accent-deep";
 const ROW_CLASS = "flex h-12 min-w-0 shrink-0 items-center border-b border-line bg-surface px-4";
 const INPUT_CLASS = cn(
   "h-8 w-full max-w-[340px] min-w-0 rounded-md border border-line bg-surface px-2.5 font-mono text-[12.5px] text-ink outline-none",
-  "placeholder:text-ink-faint hover:border-ink-faint focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+  "transition-colors duration-[var(--motion-hover)] ease-[var(--ease)] placeholder:text-ink-faint hover:border-ink-faint focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
   "disabled:cursor-not-allowed disabled:opacity-45",
 );
 const SELECT_CLASS = cn(
-  "h-8 rounded-md border border-line bg-surface px-2 font-mono text-[12px] text-ink hover:bg-surface-2",
+  "transition-colors duration-[var(--motion-hover)] ease-[var(--ease)] h-8 rounded-md border border-line bg-surface px-2 font-mono text-[12px] text-ink hover:bg-surface-2",
   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
 );
 

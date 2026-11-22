@@ -199,6 +199,8 @@ If the author ran `/pr:generate` first, `/pr:review` reads the stated intent and
 
 The viewer shows each design, decision, build, and PR on one surface. A Work drawer lists every design by state, with search. A comment ledger anchors review notes to the page. Each level opens with an In Short strip, the level's one-paragraph summary, with a Listen control when audio exists. A link in each section heading, "Read in PR 12 ›", moves between a work item and its PR on the section of the same name.
 
+The Kanban board at `#/board` shows each program in a column for its stage. A program card opens the epics of that program by status, and a slice card opens its epic page with the slice row marked. Find, Order, and Hide shape the board, and the address keeps them. The copy icon of a card puts the start prompt of its next workflow on the clipboard. ADR-0050 records the decisions.
+
 `/artifact:publish --prs 73` flattens one PR into a single HTML file under the 16 MiB Artifact limit. The command lowers compression, and drops audio if it must. It also publishes an index page that links every PR you published. An unchanged PR reports "already up to date". Use `--force` to publish anyway.
 
 `/artifact:canvas --design <name>` draws one design as a tldraw canvas. It writes `<name>.tldraw` into the design folder. The canvas has five zones: Why (with a before/after picture), Landscape, Flow, Structure, and Contract. The rendered level-2 and level-3 diagrams sit beside them. A language review then shortens the card text. Use `--redraw` to replace an existing canvas, `--no-images` to skip the diagrams, and `--no-review` to skip the language review. Git ignores `.tldraw` files, so a canvas stays on your machine.

@@ -7,10 +7,10 @@ import { sliceColumnOf, type StatusColumnKey } from "./status";
 
 const CARD_CLASS = "rounded-lg border border-l-[3px] border-line-soft bg-surface";
 const BUTTON_CLASS = cn(
-  "flex w-full flex-col gap-1 p-2 text-left hover:bg-surface-2 active:bg-surface-3",
+  "flex w-full flex-col gap-1 p-2 text-left transition-colors duration-[var(--motion-hover)] ease-[var(--ease)] hover:bg-surface-2 active:bg-surface-3",
   "focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring",
 );
-const FACTS_CLASS = "m-0 grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1 border-t border-line-soft px-2 py-2 font-mono text-[11.5px]";
+const FACTS_CLASS = "m-0 animate-[board-panel-in_var(--motion-panel)_var(--ease)] grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1 border-t border-line-soft px-2 py-2 font-mono text-[11.5px]";
 
 export const STATE_RULE: Record<StatusColumnKey, string> = {
   planned: "border-l-ink-faint",

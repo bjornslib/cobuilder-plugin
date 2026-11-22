@@ -8,11 +8,11 @@ import { SHAPE_GLYPH, STATUS_COLUMNS, type StatusColumnKey } from "./status";
 
 const CARD_CLASS = cn(
   "group relative flex flex-col gap-1.5 overflow-clip rounded-lg border border-line bg-surface p-2.5 pr-10 shadow-card",
-  "transition-colors duration-150 ease-house hover:border-primary hover:shadow-raise focus-within:border-primary",
+  "transition-colors duration-[var(--motion-hover)] ease-[var(--ease)] hover:border-primary hover:shadow-raise focus-within:border-primary",
 );
 const NAME_CLASS = cn(
   "relative z-10 self-start font-mono text-[13px] font-bold break-words text-ink underline decoration-line decoration-1 underline-offset-[3px]",
-  "hover:decoration-primary hover:text-accent-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+  "transition-colors duration-[var(--motion-hover)] ease-[var(--ease)] hover:decoration-primary hover:text-accent-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
 );
 const TARGET_CLASS = cn(
   "absolute inset-0 rounded-lg after:absolute after:inset-0 after:content-['']",

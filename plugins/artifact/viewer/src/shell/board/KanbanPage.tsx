@@ -90,7 +90,7 @@ function BoardRegion({ model, go }: { model: BoardModel; go: (href: string) => v
 
 export function KanbanPage({ model, level, go }: KanbanPageProps): ReactElement {
   return (
-    <div className="relative flex h-full min-h-0 min-w-0 flex-col bg-ground">
+    <div className="relative flex h-full min-h-0 min-w-0 animate-[board-fade-in_var(--motion-notice)_var(--ease)] flex-col bg-ground">
       <BoardHeadingBand key={model?.level ?? "programs"} model={model} />
       {model === null && <LoadingCommandRow />}
       {model === null ? <LoadingColumns level={level} /> : <BoardRegion model={model} go={go} />}

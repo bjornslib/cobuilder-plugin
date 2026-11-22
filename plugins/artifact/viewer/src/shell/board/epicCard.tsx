@@ -19,11 +19,11 @@ const TARGET_CLASS = cn(
 );
 const PIPS_CLASS = cn(
   "m-0 flex w-full cursor-pointer items-center gap-2 border-t border-dashed border-line px-2 py-1.5 text-left font-mono text-[10.5px] text-ink-dim",
-  "hover:bg-surface-2 active:bg-surface-3 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring",
+  "transition-colors duration-[var(--motion-hover)] ease-[var(--ease)] hover:bg-surface-2 active:bg-surface-3 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring",
 );
 const GROUP_HEAD_CLASS = "m-0 flex items-baseline gap-1.5 px-0.5 font-mono text-[10.5px] font-bold tracking-[0.04em] text-ink-dim";
 const GROUP_LINK_CLASS = cn(
-  "min-w-0 truncate text-ink underline decoration-line underline-offset-[3px] hover:text-accent-deep hover:decoration-primary",
+  "transition-colors duration-[var(--motion-hover)] ease-[var(--ease)] min-w-0 truncate text-ink underline decoration-line underline-offset-[3px] hover:text-accent-deep hover:decoration-primary",
   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
 );
 
@@ -89,7 +89,7 @@ function PipsFace({ slices, open }: { slices: SliceEntity[]; open: boolean }) {
         {slices.map((slice) => <span key={slice.id} className={PIP[sliceColumnOf(slice.state)]} />)}
       </span>
       <span className="ml-auto whitespace-nowrap tabular-nums">{done}/{slices.length} done</span>
-      <span aria-hidden="true" className={cn("text-[10px] transition-transform duration-150 ease-house", open && "rotate-180")}>▾</span>
+      <span aria-hidden="true" className={cn("text-[10px] transition-transform duration-[var(--motion-panel)] ease-[var(--ease)]", open && "rotate-180")}>▾</span>
     </>
   );
 }

@@ -7,12 +7,12 @@ import { CopyPromptContext, type CopyPrompt } from "./useCopyPrompt";
 import type { AddressNotice } from "./shape";
 
 const BUTTON_CLASS = cn(
-  "relative z-10 inline-flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-md text-ink-faint pointer-coarse:size-11",
+  "relative z-10 inline-flex transition-colors duration-[var(--motion-hover)] ease-[var(--ease)] size-8 shrink-0 cursor-pointer items-center justify-center rounded-md text-ink-faint pointer-coarse:size-11",
   "hover:bg-surface-2 hover:text-ink active:bg-surface-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
 );
-const NOTICE_CLASS = "pointer-events-auto m-0 flex max-w-[60ch] flex-col gap-1.5 rounded-md px-3 py-1.5 font-mono text-[12.5px] shadow-raise";
+const NOTICE_CLASS = "pointer-events-auto m-0 flex animate-[board-fade-in_var(--motion-notice)_var(--ease)] max-w-[60ch] flex-col gap-1.5 rounded-md px-3 py-1.5 font-mono text-[12.5px] shadow-raise";
 const CLOSE_CLASS = cn(
-  "inline-flex h-7 cursor-pointer items-center self-start rounded-md border border-current px-2 font-bold active:translate-y-px",
+  "inline-flex h-7 transition-colors duration-[var(--motion-hover)] ease-[var(--ease)] cursor-pointer items-center self-start rounded-md border border-current px-2 font-bold active:translate-y-px",
   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
 );
 

@@ -1,8 +1,8 @@
 {
   "schema_version": "1.5",
-  "built_at": "2026-11-22T07:14:32Z",
+  "built_at": "2026-11-22T07:17:23Z",
   "sources": {
-    "git_head": "eca33da1551a717194802d2776ba4680b5b1cfca",
+    "git_head": "be2a2ea7a11f992d54c40531ee44766ace0eb771",
     "trees": {
       "docs/architecture/adr": "sha256:aaaa901242a8020aeb9cdf9d20c4bd36df1d3b6103ce418073ba78866839fa5c",
       "docs/architecture/designs": "sha256:49b60eaa674d147f9f877bb87acdef039fb721eccfc0b13cd9fa1ae00801b6ed",
