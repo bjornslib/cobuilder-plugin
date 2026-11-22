@@ -19,6 +19,7 @@ export interface ProgramCardModel {
   program: ProgramRows;
   counts: { planned: number; inProgress: number; done: number };
   slices: { total: number; done: number; nextReadyN: number | null };
+  prompt: string | null;
 }
 
 export interface NoProgramModel {
@@ -32,6 +33,8 @@ export interface EpicCardModel {
   /** The epic's slices, ordered by slice number. */
   slices: SliceEntity[];
   statusWord: string;
+  slicesDone: boolean;
+  prompt: string | null;
 }
 
 export interface SliceGroupModel {
@@ -61,6 +64,9 @@ export interface BoardColumn {
   cards: BoardCard[];
 }
 
+export type AddressNotice = { kind: "unknown-program"; value: string };
+export type CopyNotice = { kind: "copied" } | { kind: "failed"; prompt: string };
+
 export interface BoardModel {
   /** The address the model drew. */
   address: BoardAddress;
@@ -77,6 +83,8 @@ export interface BoardModel {
   /** The line under the columns on the epics grain, when slices join no epic. */
   unjoinedNote: string | null;
   noProgram: NoProgramModel | null;
+  /** The notice that the address earned, or null. */
+  addressNotice: AddressNotice | null;
   /** The index build time with its label in the reader's time zone. Null when the index holds none. */
   builtAt: BoardBuildTime | null;
 }

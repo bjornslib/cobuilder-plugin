@@ -3,6 +3,7 @@ import type { BoardEpic } from "@/data/types/board";
 
 import type { BoardAddress } from "./address";
 import type { ProgramRows } from "./programBoard";
+import { epicPrompt, slicesDoneOf } from "./prompt";
 import { emptyReasonOf, epicMatches, sliceMatches, textMatches, type EmptyCause } from "./search";
 import type { BoardCard, BoardColumn, EpicCardModel, SliceGroupModel } from "./shape";
 import { epicColumnOf, epicStatusWord, sliceColumnOf, STATUS_COLUMNS, type StatusColumn } from "./status";
@@ -26,9 +27,14 @@ function slicesOfEpic(program: ProgramRows, slices: SliceEntity[], epicId: strin
   return slices.filter((slice) => program.epicOfSlice.get(slice.id) === epicId);
 }
 
+function epicCardOf(epic: BoardEpic, slices: SliceEntity[]): EpicCardModel {
+  const statusWord = epicStatusWord(epic.status);
+  return { epic, slices, statusWord, slicesDone: slicesDoneOf(epic, slices), prompt: epicPrompt(epic, slices) };
+}
+
 export function epicCardsOf(program: ProgramRows): EpicCardModel[] {
   const slices = [...program.slices].sort((a, b) => a.n - b.n);
-  return program.epics.map((epic) => ({ epic, slices: slicesOfEpic(program, slices, epic.id), statusWord: epicStatusWord(epic.status) }));
+  return program.epics.map((epic) => epicCardOf(epic, slicesOfEpic(program, slices, epic.id)));
 }
 
 export function matchedEpics(program: ProgramRows, q: string): Set<string> {

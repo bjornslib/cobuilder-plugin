@@ -27,7 +27,7 @@ export function columnKeysOf(level: BoardLevel): readonly string[] {
   return level === "programs" ? STAGE_KEYS : STATUS_KEYS;
 }
 
-function defaultHide(level: BoardLevel): readonly string[] {
+export function defaultHide(level: BoardLevel): readonly string[] {
   return level === "programs" ? ["superseded"] : [];
 }
 

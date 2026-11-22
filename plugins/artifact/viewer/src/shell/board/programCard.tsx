@@ -2,11 +2,12 @@ import { cn } from "@/lib/utils";
 
 import { routeHref } from "../model";
 import { boardChangeHref } from "./address";
+import { CopyButton } from "./notice";
 import type { ProgramCardModel } from "./shape";
 import { SHAPE_GLYPH, STATUS_COLUMNS, type StatusColumnKey } from "./status";
 
 const CARD_CLASS = cn(
-  "group relative flex flex-col gap-1.5 overflow-clip rounded-lg border border-line bg-surface p-2.5 shadow-card",
+  "group relative flex flex-col gap-1.5 overflow-clip rounded-lg border border-line bg-surface p-2.5 pr-10 shadow-card",
   "transition-colors duration-150 ease-house hover:border-primary hover:shadow-raise focus-within:border-primary",
 );
 const NAME_CLASS = cn(
@@ -62,12 +63,22 @@ function EpicSummary({ card }: { card: ProgramCardModel }) {
   );
 }
 
+function CardName({ card }: { card: ProgramCardModel }) {
+  const { design } = card.program;
+  return (
+    <>
+      <a href={routeHref(design.id, "intent")} className={NAME_CLASS}>{design.name}</a>
+      <span className="absolute top-1 right-1"><CopyButton name={design.name} prompt={card.prompt} /></span>
+    </>
+  );
+}
+
 export function ProgramCard({ card, q }: { card: ProgramCardModel; q: string }) {
   const { design } = card.program;
   return (
     <li className={CARD_CLASS}>
       <a href={boardChangeHref("epics", design.id, q)} aria-label={`Open the epic board of ${design.name}`} className={TARGET_CLASS} />
-      <a href={routeHref(design.id, "intent")} className={NAME_CLASS}>{design.name}</a>
+      <CardName card={card} />
       <p className="m-0 line-clamp-2 font-serif text-[12px] leading-[1.4] text-ink-mid">{design.outcome}</p>
       <EpicSummary card={card} />
       <p className="m-0 font-mono text-[10.5px] text-ink-dim">{footerOf(card)}</p>

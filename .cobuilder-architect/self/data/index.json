@@ -1,14 +1,14 @@
 {
   "schema_version": "1.5",
-  "built_at": "2026-11-22T04:04:01Z",
+  "built_at": "2026-11-22T07:14:32Z",
   "sources": {
-    "git_head": "95bfefbf19724dc25b3db40dfb452e3f6c6e56db",
+    "git_head": "eca33da1551a717194802d2776ba4680b5b1cfca",
     "trees": {
       "docs/architecture/adr": "sha256:aaaa901242a8020aeb9cdf9d20c4bd36df1d3b6103ce418073ba78866839fa5c",
       "docs/architecture/designs": "sha256:49b60eaa674d147f9f877bb87acdef039fb721eccfc0b13cd9fa1ae00801b6ed",
       "docs/architecture/contexts": "sha256:965f965519589dd58b5c4cb126352c27a2e51a34af56752c3893a9b0f953e9f1",
-      "docs/plans": "sha256:cfb2b2897eb67aa7a25fcc845bc45d21a2bae471d8d3c7376762b01541e05fd4",
-      ".cobuilder/rubrics": "sha256:0ee52675f5c16aa67f129a66a9604b6b45c5916c6dda2e0f0aebde267919284f"
+      "docs/plans": "sha256:ba484738af7db7b7d486f6dc5745c911dbaab858c5db3a692761bc60a367a315",
+      ".cobuilder/rubrics": "sha256:e6a854012b5a9a1bb568ce694dd4b1378e8e492e06df0ccd79676edd25cab162"
     }
   },
   "entities": {
@@ -4355,9 +4355,9 @@
         "n": 7,
         "title": "A copy icon gives the start prompt of a program or an epic",
         "ends_with": "A click on the copy icon of a card with a next workflow puts the exact prompt from `contracts.md` on the clipboard and shows \"Prompt copied\". A refused write shows \"Copy failed\" with the prompt text. An open epic with all slices done shows \"Slices done\", and a finished record has no icon.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "level-page-restructure/1",
@@ -9284,7 +9284,7 @@
       },
       "kanban-board": {
         "stage_source": "tracker",
-        "next_ready": "kanban-board/7",
+        "next_ready": null,
         "pull_requests": []
       },
       "lean-bundle-diffs": {

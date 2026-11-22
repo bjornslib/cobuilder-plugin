@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 
 import { routeHref } from "../model";
 import { epicLabel } from "./epicBoard";
+import { CopyButton } from "./notice";
 import { InPlaceSliceCard, STATE_RULE } from "./inPlaceCard";
 import type { EpicCardModel, SliceGroupModel } from "./shape";
 import { PIP, SliceCard, SliceList } from "./sliceRow";
@@ -54,11 +55,16 @@ function EpicIdentity({ epic }: { epic: BoardEpic }) {
   );
 }
 
+export function SlicesDoneMark() {
+  return <span className="rounded bg-good-wash px-1.5 py-px font-mono text-[10.5px] text-good">Slices done</span>;
+}
+
 function EpicMeta({ card, column }: { card: EpicCardModel; column: StatusColumnKey }) {
   return (
     <p className="m-0 mt-1.5 flex flex-wrap items-center gap-1.5">
       <StatusPill column={column} word={card.statusWord} />
       {card.epic.pr !== null && <span className="rounded bg-tint px-1.5 py-px font-mono text-[10.5px] text-tint-ink">#{card.epic.pr}</span>}
+      {card.slicesDone && <SlicesDoneMark />}
     </p>
   );
 }
@@ -68,6 +74,7 @@ function EpicHead({ card, column }: { card: EpicCardModel; column: StatusColumnK
   return (
     <div className="relative p-2 hover:bg-surface-2 active:bg-surface-2">
       <a href={epicHref(epic.design, epic.epicId)} aria-label={`Open epic ${epicLabel(epic)}`} className={TARGET_CLASS} />
+      <span className="absolute top-1 right-1"><CopyButton name={epicLabel(epic)} prompt={card.prompt} /></span>
       <EpicIdentity epic={epic} />
       <EpicMeta card={card} column={column} />
     </div>

@@ -344,6 +344,11 @@ _Avoid_: orphan card (the card also serves unjoined slices)
 The slice row on an epic page that the address `#/<program>/build/epics/<epic>/<n>` names. The page opens the epic, shows a Marked chip on the row, and scrolls the row into view.
 _Avoid_: selected slice (the shell uses selected for rail items), highlighted slice
 
+<a id="board-notice"></a>
+**Board notice** (`artifact`):
+A short message in the status region at the top right of the Kanban board. It reports the copy result of a start prompt, or an address that names no program.
+_Avoid_: toast, banner
+
 <a id="start-prompt"></a>
 **Start prompt** (`artifact`):
 The one line of text that the copy icon of a program card or an epic card puts on the clipboard. It starts the next workflow for that record.

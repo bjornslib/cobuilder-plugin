@@ -1,13 +1,15 @@
 import type { ReactElement } from "react";
 
-import { columnKeysOf, hideToggled, type BoardLevel } from "./address";
+import { BOARD_HREF, columnKeysOf, hideToggled, type BoardLevel } from "./address";
 import { ColumnRow } from "./columns";
 import { CommandRow, LoadingCommandRow } from "./commandRow";
+import { BoardNotices } from "./notice";
 import { BoardHeadingBand } from "./headingBand";
 import { InPlaceCardScope } from "./inPlaceCard";
 import { noMatchSentenceOf } from "./model";
 import { NoProgramCard } from "./noProgramCard";
 import type { BoardModel } from "./shape";
+import { CopyPromptContext, useCopyPrompt } from "./useCopyPrompt";
 import { useBoardAddress, type BoardAddressWrites } from "./useBoardAddress";
 
 export interface KanbanPageProps {
@@ -75,18 +77,20 @@ function BoardBody({ model, writes }: { model: BoardModel; writes: BoardAddressW
 
 function BoardRegion({ model, go }: { model: BoardModel; go: (href: string) => void }) {
   const writes = useBoardAddress(go);
+  const copy = useCopyPrompt();
   return (
-    <>
+    <CopyPromptContext.Provider value={copy.copy}>
+      <BoardNotices copy={copy} address={model.addressNotice} onCloseAddress={() => go(BOARD_HREF)} />
       <CommandRow address={model.address} write={writes.write} replace={writes.replace} />
       {model.noProgram !== null && <NoProgramCard card={model.noProgram} />}
       <BoardBody model={model} writes={writes} />
-    </>
+    </CopyPromptContext.Provider>
   );
 }
 
 export function KanbanPage({ model, level, go }: KanbanPageProps): ReactElement {
   return (
-    <div className="flex h-full min-h-0 min-w-0 flex-col bg-ground">
+    <div className="relative flex h-full min-h-0 min-w-0 flex-col bg-ground">
       <BoardHeadingBand key={model?.level ?? "programs"} model={model} />
       {model === null && <LoadingCommandRow />}
       {model === null ? <LoadingColumns level={level} /> : <BoardRegion model={model} go={go} />}

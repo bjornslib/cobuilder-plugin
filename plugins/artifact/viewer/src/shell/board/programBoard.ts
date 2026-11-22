@@ -3,6 +3,7 @@ import type { DesignEntity, SliceEntity } from "@/data/types";
 
 import { LANES, laneOf, type Lane } from "../workDeck";
 import type { BoardAddress, ProgramOrder } from "./address";
+import { programPrompt } from "./prompt";
 import { emptyReasonOf } from "./search";
 import type { BoardColumn, ProgramCardModel } from "./shape";
 import { epicColumnOf, isDoneSlice, type StatusColumnKey } from "./status";
@@ -61,6 +62,7 @@ export function programCardOf(program: ProgramRows): ProgramCardModel {
     program,
     counts: { planned: count("planned"), inProgress: count("in_progress"), done: count("done") },
     slices: sliceFooterOf(program),
+    prompt: programPrompt(program.design),
   };
 }
 

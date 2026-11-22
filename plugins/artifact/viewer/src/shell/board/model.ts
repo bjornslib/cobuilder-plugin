@@ -1,13 +1,13 @@
 import type { BoardRows } from "@/data/types/board";
 
-import type { BoardAddress } from "./address";
+import { defaultHide, type BoardAddress } from "./address";
 import { epicColumns, matchedEpics, matchedSlices, sliceColumns } from "./epicBoard";
 import { matchedOrphans, noProgramOf, orphanColumns } from "./orphanBoard";
 import { programCardOf, programCardsInOrder, programColumns, programRowsOf, type ProgramRows } from "./programBoard";
 import { programMatches } from "./search";
-import type { BoardBuildTime, BoardColumn, BoardCount, BoardCounts, BoardModel, ProgramCardModel } from "./shape";
+import type { AddressNotice, BoardBuildTime, BoardColumn, BoardCount, BoardCounts, BoardModel, ProgramCardModel } from "./shape";
 
-type BoardDraft = Omit<BoardModel, "builtAt">;
+type BoardDraft = Omit<BoardModel, "builtAt" | "addressNotice">;
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -70,7 +70,7 @@ function boardDraftOf(rows: BoardRows, address: BoardAddress): BoardDraft {
   if (address.level === "orphans") return orphanBoardOf(rows, address);
   const program = address.level === "epics" ? programRowsOf(rows).find((one) => one.design.id === address.program) : undefined;
   if (program !== undefined) return epicBoardOf(address, program);
-  return programBoardOf(rows, address.level === "programs" ? address : { ...address, level: "programs", program: null });
+  return programBoardOf(rows, address.level === "programs" ? address : { ...address, level: "programs", program: null, hide: defaultHide("programs") });
 }
 
 function buildTimeOf(iso: string | null): BoardBuildTime | null {
@@ -81,8 +81,14 @@ function buildTimeOf(iso: string | null): BoardBuildTime | null {
   return { iso, label: `${day}, ${clock}` };
 }
 
+function addressNoticeOf(rows: BoardRows, address: BoardAddress): AddressNotice | null {
+  const { program } = address;
+  if (address.level !== "epics" || !program || rows.programs.some((design) => design.id === program)) return null;
+  return { kind: "unknown-program", value: program };
+}
+
 export function boardModelOf(rows: BoardRows, address: BoardAddress): BoardModel {
-  return { ...boardDraftOf(rows, address), builtAt: buildTimeOf(rows.builtAt) };
+  return { ...boardDraftOf(rows, address), addressNotice: addressNoticeOf(rows, address), builtAt: buildTimeOf(rows.builtAt) };
 }
 
 function noMatchOf(model: BoardModel, q: string): string {
