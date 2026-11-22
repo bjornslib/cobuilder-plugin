@@ -128,3 +128,35 @@ export const PROGRAM_BOARD: BoardAddress = {
 };
 
 export const STAGE_KEYS = ["decision", "build", "review", "shipped", "superseded"] as const;
+
+export const EPIC_TITLES: Record<string, string> = {
+  "beta/E1": "Ship the first cut",
+  "beta/E2": "Wire the drawer",
+  "beta/E3": "Polish the board",
+  "beta/E4": "Close the gaps",
+};
+
+const unjoined = (id: string, state: string): SliceEntity => ({ ...slice(id, state), ends_with: `The end state of ${id}.` });
+
+export const UNJOINED_SLICES: SliceEntity[] = [unjoined("beta/7", "planned"), unjoined("beta/8", "completed")];
+
+export const EPIC_BOARD_INDEX: RecordIndex = {
+  ...BOARD_INDEX,
+  entities: {
+    ...BOARD_INDEX.entities,
+    epic: EPICS.map((entity) => ({ ...entity, title: EPIC_TITLES[entity.id] ?? null })),
+    slice: [...SLICES, ...UNJOINED_SLICES],
+  },
+  joins: {
+    ...BOARD_INDEX.joins,
+    slice_to_epic_unresolved: { ...BOARD_INDEX.joins.slice_to_epic_unresolved, "beta/7": "no epic in the plan", "beta/8": "no epic in the plan" },
+  },
+};
+
+export const EPIC_BOARD_ROWS: BoardRows = {
+  ...BOARD_ROWS,
+  epics: BOARD_EPICS.map((one) => ({ ...one, title: EPIC_TITLES[one.id] ?? null })),
+  slices: [...SLICES, ...UNJOINED_SLICES],
+};
+
+export const EPIC_BOARD: BoardAddress = { ...PROGRAM_BOARD, level: "epics", program: "beta", hide: [] };

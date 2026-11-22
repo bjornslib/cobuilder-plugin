@@ -1,7 +1,10 @@
 import { cn } from "@/lib/utils";
 
+import type { BoardAddress } from "./address";
+import { EpicCard, SliceGroup } from "./epicCard";
 import { ProgramCard } from "./programCard";
-import type { BoardColumn } from "./shape";
+import type { BoardCard, BoardColumn } from "./shape";
+import { SHAPE_GLYPH } from "./status";
 
 const COLUMN_CLASS = "flex min-h-0 min-w-[176px] flex-1 basis-0 flex-col rounded-lg border border-line bg-surface-2";
 const HEAD_CLASS = "flex h-10 shrink-0 items-center gap-1.5 overflow-clip rounded-t-lg border-b border-line bg-surface px-2.5";
@@ -16,37 +19,49 @@ const RAIL_CLASS = cn(
 );
 const RAIL_LABEL_CLASS = "rotate-180 font-mono text-[10.5px] tracking-[0.1em] whitespace-nowrap uppercase [writing-mode:vertical-rl]";
 
-const STAGE_BADGE: Record<string, string> = {
+const BADGE: Record<string, string> = {
   decision: "border-warn text-warn",
   build: "border-primary text-accent-deep",
   review: "border-tint bg-tint text-tint-ink",
   shipped: "border-good text-good",
   superseded: "border-dashed border-line text-ink-dim",
+  planned: "text-ink-dim",
+  in_progress: "text-warn",
+  done: "text-good",
 };
+const RAIL_UNIT: Record<BoardAddress["level"], string> = { programs: "program", epics: "epic", orphans: "slice" };
 
-function HiddenColumnRail({ column, onShow }: { column: BoardColumn; onShow: (key: string) => void }) {
-  const noun = column.count === 1 ? "program" : "programs";
+interface ColumnProps {
+  column: BoardColumn;
+  address: BoardAddress;
+}
+
+function railNoun(address: BoardAddress, count: number): string {
+  const unit = address.level === "epics" && address.cards === "slices" ? "slice" : RAIL_UNIT[address.level];
+  return count === 1 ? unit : `${unit}s`;
+}
+
+function HiddenColumnRail({ column, address, onShow }: ColumnProps & { onShow: (key: string) => void }) {
   return (
-    <button type="button" onClick={() => onShow(column.key)} aria-label={`Show ${column.label}, ${column.count} ${noun}`} className={RAIL_CLASS}>
+    <button type="button" onClick={() => onShow(column.key)} aria-label={`Show ${column.label}, ${column.count} ${railNoun(address, column.count)}`} className={RAIL_CLASS}>
       <span className={RAIL_LABEL_CLASS}>{column.label}</span>
       <span className="font-mono text-[13px] font-bold tabular-nums">{column.count}</span>
     </button>
   );
 }
 
-function CardList({ column }: { column: BoardColumn }) {
-  return (
-    <ul className="m-0 flex list-none flex-col gap-2 p-0">
-      {column.cards.map(({ card }) => <ProgramCard key={card.program.design.id} card={card} />)}
-    </ul>
-  );
+function cardOf(card: BoardCard, address: BoardAddress) {
+  if (card.kind === "program") return <ProgramCard key={card.card.program.design.id} card={card.card} q={address.q} />;
+  if (card.kind === "epic") return <EpicCard key={card.card.epic.id} card={card.card} />;
+  return <SliceGroup key={card.group.key} group={card.group} programId={address.program} />;
 }
 
-function ColumnBody({ column }: { column: BoardColumn }) {
+function ColumnBody({ column, address }: ColumnProps) {
   const empty = <p className="m-0 font-serif text-[12px] leading-[1.4] text-ink-dim">{column.emptyReason}</p>;
+  const cards = <ul className="m-0 flex list-none flex-col gap-2 p-0">{column.cards.map((card) => cardOf(card, address))}</ul>;
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain p-2">
-      {column.emptyReason === null ? <CardList column={column} /> : empty}
+      {column.emptyReason === null ? cards : empty}
     </div>
   );
 }
@@ -54,24 +69,31 @@ function ColumnBody({ column }: { column: BoardColumn }) {
 function ColumnHead({ column, id }: { column: BoardColumn; id: string }) {
   return (
     <div className={HEAD_CLASS}>
-      <h3 id={`${id}-label`} className={cn(BADGE_CLASS, STAGE_BADGE[column.key])}>{column.label}</h3>
+      <div className={cn(BADGE_CLASS, BADGE[column.key])}>
+        {column.shape !== null && <span aria-hidden="true">{SHAPE_GLYPH[column.shape]}</span>}
+        <h3 id={`${id}-label`}>{column.label}</h3>
+      </div>
       <span id={`${id}-count`} className="font-mono text-[12px] font-bold text-ink tabular-nums">{column.count}</span>
     </div>
   );
 }
 
-function VisibleColumn({ column }: { column: BoardColumn }) {
+function VisibleColumn({ column, address }: ColumnProps) {
   const id = `board-column-${column.key}`;
   return (
     <section aria-labelledby={`${id}-label ${id}-count`} className={COLUMN_CLASS}>
       <ColumnHead column={column} id={id} />
-      <ColumnBody column={column} />
+      <ColumnBody column={column} address={address} />
     </section>
   );
 }
 
-export function ColumnRow({ columns, onShow }: { columns: BoardColumn[]; onShow: (key: string) => void }) {
+export function ColumnRow({ columns, address, onShow }: { columns: BoardColumn[]; address: BoardAddress; onShow: (key: string) => void }) {
   const columnOf = (column: BoardColumn) =>
-    column.hidden ? <HiddenColumnRail key={column.key} column={column} onShow={onShow} /> : <VisibleColumn key={column.key} column={column} />;
+    column.hidden ? (
+      <HiddenColumnRail key={column.key} column={column} address={address} onShow={onShow} />
+    ) : (
+      <VisibleColumn key={column.key} column={column} address={address} />
+    );
   return <div className="flex min-h-0 min-w-0 flex-1 gap-3 overflow-x-auto overflow-y-clip px-4 py-3">{columns.map(columnOf)}</div>;
 }

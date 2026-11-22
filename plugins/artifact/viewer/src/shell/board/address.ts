@@ -84,6 +84,10 @@ export function boardHash(address: BoardAddress): string {
   return keys.length === 0 ? BOARD_HREF : `${BOARD_HREF}?${keys.join("&")}`;
 }
 
+export function boardChangeHref(level: BoardLevel, program: string | null, q: string): string {
+  return boardHash({ level, program, q, order: "name", cards: "epics", hide: defaultHide(level) });
+}
+
 /** Add a key to the hide set, or remove it. The last visible column refuses. */
 export function hideToggled(address: BoardAddress, key: string): BoardAddress {
   const columns = columnKeysOf(address.level);

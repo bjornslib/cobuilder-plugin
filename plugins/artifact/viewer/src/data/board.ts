@@ -8,7 +8,7 @@ function boardEpicOf(epic: EpicEntity, resolved: ResolvedJoins): BoardEpic {
     id: epic.id,
     epicId: epic.epic_id,
     design: epic.design,
-    title: null,
+    title: epic.title ?? null,
     branch: epic.branch,
     pr: resolved.epicPullRequest(epic),
     status: resolved.epicState(epic).state,

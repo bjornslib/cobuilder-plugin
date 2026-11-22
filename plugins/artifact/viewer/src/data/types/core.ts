@@ -30,6 +30,8 @@ export interface EpicEntity {
   state: string;
   note: string | null;
   design_doc?: string | null;
+  /** The tracker record's title. Null when the tracker holds none. Absent in an older index. */
+  title?: string | null;
 }
 
 export interface SliceEntity {

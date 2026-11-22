@@ -14,7 +14,7 @@ import { viewOf, type ShellView } from "./view";
 const PANE_CLASS = "min-h-0 min-w-0 flex-1 overflow-auto overscroll-contain bg-ground outline-none";
 
 function paneLabel(v: ShellView): string {
-  if (v.kanban !== null) return "Kanban board";
+  if (v.kanban !== null) return v.boardModel?.subject ? `Kanban board, ${v.boardModel.subject}` : "Kanban board";
   if (v.board) return "Work board";
   const name = v.work?.design.name ?? (v.worklessPr === null ? "No work item" : `Pull request ${v.worklessPr.id}`);
   return `${name}, ${v.section}`;

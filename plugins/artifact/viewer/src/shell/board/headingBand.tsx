@@ -1,8 +1,14 @@
+import { ArrowLeft } from "lucide-react";
+
 import { useFocusOnMount } from "../hooks";
-import type { BoardCount, BoardCounts } from "./shape";
+import { boardChangeHref } from "./address";
+import type { BoardCount, BoardCounts, BoardModel } from "./shape";
 
 const BAND_CLASS = "flex min-h-14 min-w-0 shrink-0 items-center gap-3 bg-band px-4 py-1.5 text-band-ink";
 const TITLE_CLASS = "m-0 shrink-0 font-mono text-[13px] font-bold tracking-[0.02em] uppercase outline-none";
+const SUBJECT_CLASS = "m-0 min-w-0 truncate font-serif text-[15px] leading-tight text-band-ink outline-none";
+const BACK_CLASS =
+  "inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md px-1.5 font-mono text-[12.5px] font-bold text-band-ink hover:underline active:translate-y-px focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
 
 const PAIRS = [
   { key: "programs", label: "Programs" },
@@ -28,14 +34,33 @@ function CountsBlock({ counts }: { counts: BoardCounts | null }) {
   );
 }
 
-export function BoardHeadingBand({ counts }: { counts: BoardCounts | null }) {
-  const titleRef = useFocusOnMount<HTMLHeadingElement>();
+function BackLink({ q }: { q: string }) {
+  return (
+    <a href={boardChangeHref("programs", null, q)} className={BACK_CLASS}>
+      <ArrowLeft aria-hidden="true" className="size-3.5" />
+      All programs
+    </a>
+  );
+}
+
+function BandHeadings({ subject }: { subject: string | null }) {
+  const focusRef = useFocusOnMount<HTMLHeadingElement>();
+  return (
+    <>
+      <h1 ref={subject === null ? focusRef : undefined} tabIndex={-1} className={TITLE_CLASS}>Kanban board</h1>
+      {subject !== null && <span aria-hidden="true" className="h-4 w-px shrink-0 bg-band-ink/40" />}
+      {subject !== null && <h2 ref={focusRef} tabIndex={-1} className={SUBJECT_CLASS}>{subject}</h2>}
+    </>
+  );
+}
+
+export function BoardHeadingBand({ model }: { model: BoardModel | null }) {
+  const subject = model?.subject ?? null;
   return (
     <div className={BAND_CLASS}>
-      <h1 ref={titleRef} tabIndex={-1} className={TITLE_CLASS}>
-        Kanban board
-      </h1>
-      <CountsBlock counts={counts} />
+      {model !== null && subject !== null && <BackLink q={model.address.q} />}
+      <BandHeadings subject={subject} />
+      <CountsBlock counts={model?.counts ?? null} />
     </div>
   );
 }

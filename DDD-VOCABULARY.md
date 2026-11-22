@@ -310,6 +310,20 @@ _Avoid_: rail alone (the rail is the left navigation of the viewer shell)
 One of the five stage groups of the Work drawer, defined once in `workDeck.ts`. The program board draws each stage lane as one column.
 _Avoid_: swim lane (the Kanban board has columns only)
 
+<a id="cards-grain"></a>
+**Cards grain** (`artifact`):
+The choice between epics and slices as the cards of the epic board. The Cards switch sets it, and the `cards` key of the board address holds it.
+
+<a id="unjoined-slice"></a>
+**Unjoined slice** (`artifact`):
+A slice of a program that no epic of the program holds. The epic board shows it in the group headed No epic, and a note counts it on the epics grain.
+_Avoid_: orphan slice (an orphan slice belongs to no program, see No program board)
+
+<a id="in-place-slice-card"></a>
+**In-place slice card** (`artifact`):
+A slice card that opens in place, because no epic page exists for its slice. Unjoined slices and orphan slices both use it.
+_Avoid_: orphan card (the card also serves unjoined slices)
+
 <a id="start-prompt"></a>
 **Start prompt** (`artifact`):
 The one line of text that the copy icon of a program card or an epic card puts on the clipboard. It starts the next workflow for that record.

@@ -3,6 +3,7 @@ import type { ReactElement } from "react";
 import { LANES } from "../workDeck";
 import { hideToggled } from "./address";
 import { ColumnRow } from "./columns";
+import { CommandRow } from "./commandRow";
 import { BoardHeadingBand } from "./headingBand";
 import type { BoardModel } from "./shape";
 import { useBoardAddress } from "./useBoardAddress";
@@ -39,16 +40,20 @@ function LoadingColumns() {
 function BoardRegion({ model, go }: { model: BoardModel; go: (href: string) => void }) {
   const { write } = useBoardAddress(go);
   return (
-    <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
-      <ColumnRow columns={model.columns} onShow={(key) => write(hideToggled(model.address, key))} />
-    </div>
+    <>
+      <CommandRow address={model.address} write={write} />
+      <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
+        <ColumnRow columns={model.columns} address={model.address} onShow={(key) => write(hideToggled(model.address, key))} />
+        {model.unjoinedNote !== null && <p className="m-0 shrink-0 px-4 pb-3 font-serif text-[12px] text-ink-dim">{model.unjoinedNote}</p>}
+      </div>
+    </>
   );
 }
 
 export function KanbanPage({ model, go }: KanbanPageProps): ReactElement {
   return (
     <div className="flex h-full min-h-0 min-w-0 flex-col bg-ground">
-      <BoardHeadingBand counts={model?.counts ?? null} />
+      <BoardHeadingBand key={model?.level ?? "programs"} model={model} />
       {model === null ? <LoadingColumns /> : <BoardRegion model={model} go={go} />}
     </div>
   );

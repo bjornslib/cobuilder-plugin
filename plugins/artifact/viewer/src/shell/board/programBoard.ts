@@ -9,8 +9,10 @@ import { epicColumnOf, isDoneSlice, type StatusColumnKey } from "./status";
 export interface ProgramRows {
   design: DesignEntity;
   epics: BoardEpic[];
-  /** Every slice of the program. */
+  /** Every slice of the program, including the slices that join no epic. */
   slices: SliceEntity[];
+  /** The slices of this program that join no epic. Their cards open in place. */
+  unjoined: SliceEntity[];
   /** The epic of each slice that joins one, from the index's own join. */
   epicOfSlice: Map<string, string>;
   nextReady: SliceEntity | null;
@@ -21,16 +23,22 @@ function ownerOf(slice: SliceEntity, rows: BoardRows, designOfEpic: Map<string, 
   return epicId === undefined ? slice.feature : designOfEpic.get(epicId);
 }
 
+function programRowOf(design: DesignEntity, rows: BoardRows, designOfEpic: Map<string, string>): ProgramRows {
+  const slices = rows.slices.filter((slice) => ownerOf(slice, rows, designOfEpic) === design.id);
+  return {
+    design,
+    epics: rows.epics.filter((epic) => epic.design === design.id),
+    slices,
+    unjoined: slices.filter((slice) => !rows.epicOfSlice.has(slice.id)),
+    epicOfSlice: rows.epicOfSlice,
+    nextReady: rows.nextReady.get(design.id) ?? null,
+  };
+}
+
 /** Assigns each slice by its epic, then by its plan slug, so no slice joins two programs. */
 export function programRowsOf(rows: BoardRows): ProgramRows[] {
   const designOfEpic = new Map(rows.epics.map((epic) => [epic.id, epic.design]));
-  return rows.programs.map((design) => ({
-    design,
-    epics: rows.epics.filter((epic) => epic.design === design.id),
-    slices: rows.slices.filter((slice) => ownerOf(slice, rows, designOfEpic) === design.id),
-    epicOfSlice: rows.epicOfSlice,
-    nextReady: rows.nextReady.get(design.id) ?? null,
-  }));
+  return rows.programs.map((design) => programRowOf(design, rows, designOfEpic));
 }
 
 function sliceFooterOf({ slices, nextReady }: ProgramRows): ProgramCardModel["slices"] {

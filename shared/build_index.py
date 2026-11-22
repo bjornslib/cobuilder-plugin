@@ -490,6 +490,7 @@ def design_epic_entities(design_id: str, goal: dict, tracker_epics: dict) -> lis
                 "pr": held_env.get("pr"),
                 "state": held.lifecycle if held is not None else None,
                 "note": epic.get("note"),
+                "title": held.title if held is not None else None,
             }
         )
     return entities

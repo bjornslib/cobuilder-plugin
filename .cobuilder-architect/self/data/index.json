@@ -1,13 +1,13 @@
 {
   "schema_version": "1.5",
   "sources": {
-    "git_head": "8a0aff5233408158d68878891edf7708de7ed6d3",
+    "git_head": "992f1f8f92cc4aad8f30ed9ba88a779b6d3d01c9",
     "trees": {
       "docs/architecture/adr": "sha256:aaaa901242a8020aeb9cdf9d20c4bd36df1d3b6103ce418073ba78866839fa5c",
       "docs/architecture/designs": "sha256:49b60eaa674d147f9f877bb87acdef039fb721eccfc0b13cd9fa1ae00801b6ed",
       "docs/architecture/contexts": "sha256:965f965519589dd58b5c4cb126352c27a2e51a34af56752c3893a9b0f953e9f1",
-      "docs/plans": "sha256:a6497104442ca9ae35d5861bc88810cfd25bf89301efa5fae1e3f82f0ea79f24",
-      ".cobuilder/rubrics": "sha256:ebcd24afca23c55eae325154824c6a35c50ca5807186cdef134851ad68fac5f2"
+      "docs/plans": "sha256:e99fb501971f9ee608eef4494aebc24cf05a3d4fa741806fadc77814fddffc7e",
+      ".cobuilder/rubrics": "sha256:77f40011d427a736a226092e7173309fba22ddaf0f3557ef99fb447ad88c5f76"
     }
   },
   "entities": {
@@ -453,6 +453,7 @@
         "pr": null,
         "state": "closed",
         "note": null,
+        "title": "The tracker port",
         "design_doc": "beads-storage/E1"
       },
       {
@@ -463,6 +464,7 @@
         "pr": null,
         "state": "closed",
         "note": null,
+        "title": "The beads adapter",
         "design_doc": "beads-storage/E2"
       },
       {
@@ -473,6 +475,7 @@
         "pr": null,
         "state": "closed",
         "note": null,
+        "title": "The read model",
         "design_doc": "beads-storage/E3"
       },
       {
@@ -483,6 +486,7 @@
         "pr": null,
         "state": "closed",
         "note": null,
+        "title": "The write model",
         "design_doc": "beads-storage/E4"
       },
       {
@@ -493,6 +497,7 @@
         "pr": null,
         "state": "closed",
         "note": null,
+        "title": "Beads-native features",
         "design_doc": "beads-storage/E5"
       },
       {
@@ -503,6 +508,7 @@
         "pr": null,
         "state": null,
         "note": null,
+        "title": null,
         "design_doc": "beads-storage/E6"
       },
       {
@@ -513,6 +519,7 @@
         "pr": null,
         "state": "closed",
         "note": null,
+        "title": "Native beads mapping and bd ready",
         "design_doc": "beads-storage/E7"
       },
       {
@@ -523,6 +530,7 @@
         "pr": null,
         "state": "closed",
         "note": null,
+        "title": "The tracker is the source of stage and status, and the Work board shows it",
         "design_doc": "beads-storage/E8"
       },
       {
@@ -532,7 +540,8 @@
         "branch": "design/book-index-tiering",
         "pr": 16,
         "state": "open",
-        "note": null
+        "note": null,
+        "title": "book-index-tiering/E1"
       },
       {
         "id": "build-workflow-polish/E1",
@@ -541,7 +550,8 @@
         "branch": null,
         "pr": null,
         "state": "closed",
-        "note": "Stage 7 in architect's references/design-mode.md ends design mode after creating the first branch, with no pointer to what runs next. Add one line after the branch is created: 'Design mode's work ends here. To build this design's epics, run /implement:start.' Do not have design mode invoke implement:start itself — architecture modes are self-only in scope, and implement already owns Gate 1's design-record lookup (build/SKILL.md's 'Optional: design mode record' section). This is a one-line prose addition to a mode-governing reference file, so it still needs the Gate-selection exception's behavioral rubric, not a skip."
+        "note": "Stage 7 in architect's references/design-mode.md ends design mode after creating the first branch, with no pointer to what runs next. Add one line after the branch is created: 'Design mode's work ends here. To build this design's epics, run /implement:start.' Do not have design mode invoke implement:start itself — architecture modes are self-only in scope, and implement already owns Gate 1's design-record lookup (build/SKILL.md's 'Optional: design mode record' section). This is a one-line prose addition to a mode-governing reference file, so it still needs the Gate-selection exception's behavioral rubric, not a skip.",
+        "title": "build-workflow-polish/E1"
       },
       {
         "id": "build-workflow-polish/E2",
@@ -550,7 +560,8 @@
         "branch": null,
         "pr": null,
         "state": "closed",
-        "note": "04-slices.md's Gate 4a instructions in build/SKILL.md describe the table only through the worked example, and never say the table must match shared/slice_table.py's exact column shape (six columns: #, Epic, Slice, Ends with, Score, State, with the epic-header row's precise empty-cell pattern) or point to that module as the source of truth. Add an explicit sentence and a link, so an authoring session does not freehand a table shape verify_gate.py silently fails to parse. Consider also having verify_gate.py surface parse_table()'s `unparsed` list by name when it is non-empty, instead of only reporting downstream symptoms like a missing epic."
+        "note": "04-slices.md's Gate 4a instructions in build/SKILL.md describe the table only through the worked example, and never say the table must match shared/slice_table.py's exact column shape (six columns: #, Epic, Slice, Ends with, Score, State, with the epic-header row's precise empty-cell pattern) or point to that module as the source of truth. Add an explicit sentence and a link, so an authoring session does not freehand a table shape verify_gate.py silently fails to parse. Consider also having verify_gate.py surface parse_table()'s `unparsed` list by name when it is non-empty, instead of only reporting downstream symptoms like a missing epic.",
+        "title": "build-workflow-polish/E2"
       },
       {
         "id": "build-workflow-polish/E3",
@@ -559,7 +570,8 @@
         "branch": null,
         "pr": null,
         "state": "closed",
-        "note": "build/SKILL.md's 'After each slice' section (the four numbered steps following the red-green-validate loop) records the score and asks 'Proceed to the next slice, or adjust direction?' but never commits. In practice this produces a spurious 'want to commit this checkpoint first?' prompt after every slice instead of an automatic commit. Change step 2 (or add a step) so that once VALIDATE scores a slice at or above 0.90, the orchestrator commits the slice's changes to git immediately, before asking whether to proceed — no confirmation question for the commit itself, only for what comes after. A score below threshold still routes through the existing gap decision tree in references/validation-scoring.md, and does not commit. Below-threshold slices accepted with reservations after three attempts should also commit, since that path already represents a final accepted state, not a pending one."
+        "note": "build/SKILL.md's 'After each slice' section (the four numbered steps following the red-green-validate loop) records the score and asks 'Proceed to the next slice, or adjust direction?' but never commits. In practice this produces a spurious 'want to commit this checkpoint first?' prompt after every slice instead of an automatic commit. Change step 2 (or add a step) so that once VALIDATE scores a slice at or above 0.90, the orchestrator commits the slice's changes to git immediately, before asking whether to proceed — no confirmation question for the commit itself, only for what comes after. A score below threshold still routes through the existing gap decision tree in references/validation-scoring.md, and does not commit. Below-threshold slices accepted with reservations after three attempts should also commit, since that path already represents a final accepted state, not a pending one.",
+        "title": "build-workflow-polish/E3"
       },
       {
         "id": "build-workflow-polish/E4",
@@ -568,7 +580,8 @@
         "branch": null,
         "pr": null,
         "state": "closed",
-        "note": "A colleague's scratch artifact (/private/tmp/.../diagram-viewer.html, session-local, not part of this repo) uses a top-of-panel tab switcher across three views — Diagram, Data flow, Data types — instead of stacking them, plus a right-hand info rail. Evaluate adopting the same top-tab pattern for viewer/index.html's per-PR diagram levels (currently level 1/2/3 switching, per ADR-0020's viewer/src/ plan), and separately evaluate narrowing the left-hand navigation rail so it takes less width once tabs handle top-level switching. This touches only the viewer, so it can run through architect:design on its own without waiting on E1-E3."
+        "note": "A colleague's scratch artifact (/private/tmp/.../diagram-viewer.html, session-local, not part of this repo) uses a top-of-panel tab switcher across three views — Diagram, Data flow, Data types — instead of stacking them, plus a right-hand info rail. Evaluate adopting the same top-tab pattern for viewer/index.html's per-PR diagram levels (currently level 1/2/3 switching, per ADR-0020's viewer/src/ plan), and separately evaluate narrowing the left-hand navigation rail so it takes less width once tabs handle top-level switching. This touches only the viewer, so it can run through architect:design on its own without waiting on E1-E3.",
+        "title": "build-workflow-polish/E4"
       },
       {
         "id": "cobuilder-implement/E1",
@@ -577,7 +590,8 @@
         "branch": "design/design-mode",
         "pr": 11,
         "state": "open",
-        "note": "Shares a branch and a pull request with the design-mode design. See ADR-0013: a branch may carry more than one design."
+        "note": "Shares a branch and a pull request with the design-mode design. See ADR-0013: a branch may carry more than one design.",
+        "title": "cobuilder-implement/E1"
       },
       {
         "id": "cobuilder-implement/E2",
@@ -586,7 +600,8 @@
         "branch": "docs/post-pr11-cleanup",
         "pr": 12,
         "state": "open",
-        "note": "Gate 4b is enforced instead of merely specified. The per-epic technical solution design already exists in SKILL.md section 4b, with a six-section template, and five downstream files reference the artifact. Nothing checks that it was written. Checked on 2026-08-24: zero epic-<id>-design.md files exist, and six epics shipped without one. Four failures allow that. Gate 4's only exit check counts rubrics, so a Gate 4 that skips 4b still passes. slice-loop.js builds the epic-design path and never checks the file exists, so the red and green agents are told to read a file that is absent and quietly fall back to 03-program-design.md. rubric-authoring.md tells the author to update the technical design first, and nobody checks that either. No test asserts the artifact. The root cause is that 4b is the only Gate 4 sub-step whose output nothing downstream mechanically requires: the loop cannot score without rubrics or iterate without a slice plan, but it can read an absent design. This epic adds the exit check, the existence guard in the workflow, a test, and sub-step tracking in 00-status.md so an approved Gate 4 cannot hide a missing 4b. Raised 2026-08-22, re-scoped 2026-08-24 from 'write the process' to 'enforce the process' after reading the skill."
+        "note": "Gate 4b is enforced instead of merely specified. The per-epic technical solution design already exists in SKILL.md section 4b, with a six-section template, and five downstream files reference the artifact. Nothing checks that it was written. Checked on 2026-08-24: zero epic-<id>-design.md files exist, and six epics shipped without one. Four failures allow that. Gate 4's only exit check counts rubrics, so a Gate 4 that skips 4b still passes. slice-loop.js builds the epic-design path and never checks the file exists, so the red and green agents are told to read a file that is absent and quietly fall back to 03-program-design.md. rubric-authoring.md tells the author to update the technical design first, and nobody checks that either. No test asserts the artifact. The root cause is that 4b is the only Gate 4 sub-step whose output nothing downstream mechanically requires: the loop cannot score without rubrics or iterate without a slice plan, but it can read an absent design. This epic adds the exit check, the existence guard in the workflow, a test, and sub-step tracking in 00-status.md so an approved Gate 4 cannot hide a missing 4b. Raised 2026-08-22, re-scoped 2026-08-24 from 'write the process' to 'enforce the process' after reading the skill.",
+        "title": "cobuilder-implement/E2"
       },
       {
         "id": "cobuilder-memory/E1",
@@ -596,6 +611,7 @@
         "pr": 40,
         "state": "closed",
         "note": null,
+        "title": "The memory plugin ships for CoBuilder",
         "design_doc": "cobuilder-memory/E1"
       },
       {
@@ -605,7 +621,8 @@
         "branch": null,
         "pr": null,
         "state": "closed",
-        "note": null
+        "note": null,
+        "title": "A Jev gate"
       },
       {
         "id": "cobuilder-memory/E3",
@@ -614,7 +631,8 @@
         "branch": null,
         "pr": null,
         "state": "closed",
-        "note": null
+        "note": null,
+        "title": "Every Hindsight call in view"
       },
       {
         "id": "cobuilder-viewer/E1",
@@ -623,7 +641,8 @@
         "branch": "design/cobuilder-viewer/work-prototype",
         "pr": null,
         "state": "open",
-        "note": "Carried from react-viewer E1 unchanged. Must land before any bundled build, or publishing breaks silently. It stays in the narrowed scope because the markers live inside the committed index.html, and E2 changes how that file is produced. This epic is the regression guard on a shipped mode: publishing must keep working while the build underneath it changes."
+        "note": "Carried from react-viewer E1 unchanged. Must land before any bundled build, or publishing breaks silently. It stays in the narrowed scope because the markers live inside the committed index.html, and E2 changes how that file is produced. This epic is the regression guard on a shipped mode: publishing must keep working while the build underneath it changes.",
+        "title": "The exporter seam"
       },
       {
         "id": "cobuilder-viewer/E2",
@@ -633,6 +652,7 @@
         "pr": null,
         "state": "open",
         "note": "Carried from react-viewer E2 unchanged. Vite plus vite-plugin-singlefile, a lockfile, and a pinned Node version. Starts with a spike: byte-equal rebuild across two machines, size with React inlined, and whether a Claude Artifact renders a Mermaid block React injects after page load.",
+        "title": "The build pipeline",
         "design_doc": "cobuilder-viewer/E2"
       },
       {
@@ -642,7 +662,8 @@
         "branch": "design/cobuilder-viewer/work-prototype",
         "pr": null,
         "state": "open",
-        "note": "Carried from react-viewer E3, extended per ADR-0027's answer to Q13. Define the placeholder type and a trivial compile-time exhaustiveness check now, in this epic, not retrofitted when E7 starts."
+        "note": "Carried from react-viewer E3, extended per ADR-0027's answer to Q13. Define the placeholder type and a trivial compile-time exhaustiveness check now, in this epic, not retrofitted when E7 starts.",
+        "title": "The typed data layer"
       },
       {
         "id": "cobuilder-viewer/E4",
@@ -651,7 +672,8 @@
         "branch": "design/cobuilder-viewer/work-prototype",
         "pr": 21,
         "state": "open",
-        "note": "New in round 2, at the engineer's direction. Prototype each surface in detail before committing to the build. review-flight-deck already used that discipline twice for FlightDeck: flightdeck-prototype.html, then flightdeck-hindsight-fork.html against real multi-author data. react-viewer's own 2026-09-07 prototype proved the Work board's shape, and it was never committed. This epic repeats that work and keeps the artifact, at docs/architecture/designs/cobuilder-viewer/prototypes/work-prototype.html. The engineer chose one pull request for the design, so all eighteen epics share one branch, design/cobuilder-viewer/work-prototype. Work starts here, because the three prototypes come before any React build."
+        "note": "New in round 2, at the engineer's direction. Prototype each surface in detail before committing to the build. review-flight-deck already used that discipline twice for FlightDeck: flightdeck-prototype.html, then flightdeck-hindsight-fork.html against real multi-author data. react-viewer's own 2026-09-07 prototype proved the Work board's shape, and it was never committed. This epic repeats that work and keeps the artifact, at docs/architecture/designs/cobuilder-viewer/prototypes/work-prototype.html. The engineer chose one pull request for the design, so all eighteen epics share one branch, design/cobuilder-viewer/work-prototype. Work starts here, because the three prototypes come before any React build.",
+        "title": "The Work prototype"
       },
       {
         "id": "cobuilder-viewer/E5",
@@ -661,6 +683,7 @@
         "pr": null,
         "state": "open",
         "note": "Carried from react-viewer E4, with one vocabulary change. The level-and-section model replaced the lens model, per ADR-0028: a level is a sequence of sections, one section on screen at a time on a horizontal track, and the box owns the scroll rather than the pane. react-viewer's lens list described navigation rather than content, and it contradicted itself: every place that named the lenses listed six (intent, problem and solution, architecture, risks and verdict, build, pull requests), while three places said seven, including this epic's outcome. No seventh lens was ever named, and nothing renders a lens now. This design's five rows are Intent, Problem & Solution, Architecture, Epics, and Rubrics, and each one states its own sections. The engineer approved the rail's two groups on 2026-09-25. They land with the change's account, and not ahead of it. The criterion that survives from that outcome is the sparse record: a design whose records are goal.json only must render. Seven designs in this repository carry one, and they are the fixture for it. E4's prototype is the reference and the approval gate for this epic, not the uncommitted 2026-09-07 prototype. E4 shipped as a React application under plugins/artifact/viewer/src/variations/sections-e/, not as the static HTML file round 2's note asked for. The engineer decided where the content of the two removed rows goes, on 2026-09-25. The envisioned pull request lives on the program's Intent row, beside the change that opened. It is this design's own draft of the pull request it will open. This work's own pull-request list stays unbuilt, because the Epics row already carries each epic, its state, and its pull request. A second enumeration would state the same facts twice, so that is the reason and not an omission. The open set stays deferred with the multi-pull-request epics, E11 to E13, where it already lives. The release status stays out of the build, and the prototype alone keeps it. The engineer said the build should not carry it yet, no slice owns it, and nothing schedules it.",
+        "title": "The Work surface",
         "design_doc": "cobuilder-viewer/E5"
       },
       {
@@ -670,7 +693,8 @@
         "branch": "design/cobuilder-viewer/work-prototype",
         "pr": null,
         "state": "open",
-        "note": "New in round 2, at the engineer's direction. review-flight-deck's own flightdeck-prototype.html and flightdeck-hindsight-fork.html prototyped multi-pull-request mode in detail against real data, and this epic reuses both rather than rebuilding either half. The engineer read the prototype again on 2026-09-25, as one work item read through two accounts. That reading fixed the shape this epic exists for. The rail groups its rows under Build and Review, and a press crosses between the accounts on a section of the same name. The account mark is a word and a glyph with no fill. The engineer removed the third group, Deploy, and the mode switch with it. The prototype is a React variation under plugins/artifact/viewer/src/variations/flightdeck/, served at its own dev entry, and not the static HTML file round 2's note named. E5's note records the four content decisions that removal raised. One of the four falls here: the release status stays out of the build and in this epic's prototype alone. No slice owns it, and nothing schedules it."
+        "note": "New in round 2, at the engineer's direction. review-flight-deck's own flightdeck-prototype.html and flightdeck-hindsight-fork.html prototyped multi-pull-request mode in detail against real data, and this epic reuses both rather than rebuilding either half. The engineer read the prototype again on 2026-09-25, as one work item read through two accounts. That reading fixed the shape this epic exists for. The rail groups its rows under Build and Review, and a press crosses between the accounts on a section of the same name. The account mark is a word and a glyph with no fill. The engineer removed the third group, Deploy, and the mode switch with it. The prototype is a React variation under plugins/artifact/viewer/src/variations/flightdeck/, served at its own dev entry, and not the static HTML file round 2's note named. E5's note records the four content decisions that removal raised. One of the four falls here: the release status stays out of the build and in this epic's prototype alone. No slice owns it, and nothing schedules it.",
+        "title": "The FlightDeck prototype"
       },
       {
         "id": "cobuilder-viewer/E7",
@@ -680,6 +704,7 @@
         "pr": null,
         "state": "open",
         "note": "Carried from react-viewer E5, renamed from 'Flight deck' to FlightDeck's single-pull-request mode, and re-cut on 2026-09-25 into the change's account. A work item and the pull request its own epics carry are two accounts of one surface: E5 renders the program's account, and this epic renders the change's, which the rail reaches under its Review group. Parity covers the four narration levels, diagrams, scene art, narration audio, the diff, and the intent and assessment sheet. The joins rail is gone with the re-cut. The decisions a change landed read in its own Architecture row. The epics that carry it read in the Build group's Epics and Rubrics rows. Ships before E10, because E10 depends on the typed PullRequest shape this epic exercises first.",
+        "title": "FlightDeck, one pull request",
         "design_doc": "cobuilder-viewer/E7"
       },
       {
@@ -689,7 +714,8 @@
         "branch": "design/cobuilder-viewer/work-prototype",
         "pr": null,
         "state": "open",
-        "note": "New in round 2, at the engineer's direction. Unlike Work and FlightDeck, this surface has no prior prototype. Commits to docs/architecture/designs/cobuilder-viewer/prototypes/reference-prototype.html. Deferred on 2026-09-22, when the engineer narrowed the scope to the Work surface and FlightDeck at parity. Left the build; not deleted and not renumbered."
+        "note": "New in round 2, at the engineer's direction. Unlike Work and FlightDeck, this surface has no prior prototype. Commits to docs/architecture/designs/cobuilder-viewer/prototypes/reference-prototype.html. Deferred on 2026-09-22, when the engineer narrowed the scope to the Work surface and FlightDeck at parity. Left the build; not deleted and not renumbered.",
+        "title": "The Reference prototype"
       },
       {
         "id": "cobuilder-viewer/E9",
@@ -698,7 +724,8 @@
         "branch": "design/cobuilder-viewer/work-prototype",
         "pr": null,
         "state": "open",
-        "note": "Carried from react-viewer E6 unchanged. tests/test_viewer_modes.py asserts the five data-mode buttons. That test changes with this epic, and the change is the point, not a regression. Deferred on 2026-09-22, when the engineer narrowed the scope to the Work surface and FlightDeck at parity. Left the build; not deleted and not renumbered."
+        "note": "Carried from react-viewer E6 unchanged. tests/test_viewer_modes.py asserts the five data-mode buttons. That test changes with this epic, and the change is the point, not a regression. Deferred on 2026-09-22, when the engineer narrowed the scope to the Work surface and FlightDeck at parity. Left the build; not deleted and not renumbered.",
+        "title": "The Reference surface"
       },
       {
         "id": "cobuilder-viewer/E10",
@@ -707,7 +734,8 @@
         "branch": "design/cobuilder-viewer/work-prototype",
         "pr": null,
         "state": "open",
-        "note": "Carried from review-flight-deck F0 unchanged. When this design measured it, 8 of 12 pull requests in this repository carried no intent block. Deferred on 2026-09-22, when the engineer narrowed the scope to the Work surface and FlightDeck at parity. Left the build; not deleted and not renumbered."
+        "note": "Carried from review-flight-deck F0 unchanged. When this design measured it, 8 of 12 pull requests in this repository carried no intent block. Deferred on 2026-09-22, when the engineer narrowed the scope to the Work surface and FlightDeck at parity. Left the build; not deleted and not renumbered.",
+        "title": "Describe on arrival"
       },
       {
         "id": "cobuilder-viewer/E11",
@@ -716,7 +744,8 @@
         "branch": "design/cobuilder-viewer/work-prototype",
         "pr": null,
         "state": "open",
-        "note": "Carried from review-flight-deck F1. This epic also settles the open-pull-request entity question (Q13) for the record index, so no separate inflight-record-store epic duplicates it. The mode reads the auto-merge split from the team's own rules, and this design does not define them. Deferred on 2026-09-22, when the engineer narrowed the scope to the Work surface and FlightDeck at parity. Left the build; not deleted and not renumbered."
+        "note": "Carried from review-flight-deck F1. This epic also settles the open-pull-request entity question (Q13) for the record index, so no separate inflight-record-store epic duplicates it. The mode reads the auto-merge split from the team's own rules, and this design does not define them. Deferred on 2026-09-22, when the engineer narrowed the scope to the Work surface and FlightDeck at parity. Left the build; not deleted and not renumbered.",
+        "title": "Read the open set"
       },
       {
         "id": "cobuilder-viewer/E12",
@@ -725,7 +754,8 @@
         "branch": "design/cobuilder-viewer/work-prototype",
         "pr": null,
         "state": "open",
-        "note": "Merges review-flight-deck F2 and F3 into one epic, per ADR-0027's rejection of a live-in-browser or GitHub-Action mechanism. It must classify the three non-authored conflict shapes: a shared generated file, a hot file, and identical content added on both sides. A route that fails the replay stays, and the failure becomes its reason for losing. Deferred on 2026-09-22, when the engineer narrowed the scope to the Work surface and FlightDeck at parity. Left the build; not deleted and not renumbered."
+        "note": "Merges review-flight-deck F2 and F3 into one epic, per ADR-0027's rejection of a live-in-browser or GitHub-Action mechanism. It must classify the three non-authored conflict shapes: a shared generated file, a hot file, and identical content added on both sides. A route that fails the replay stays, and the failure becomes its reason for losing. Deferred on 2026-09-22, when the engineer narrowed the scope to the Work surface and FlightDeck at parity. Left the build; not deleted and not renumbered.",
+        "title": "Simulate and replay the routes"
       },
       {
         "id": "cobuilder-viewer/E13",
@@ -734,7 +764,8 @@
         "branch": "design/cobuilder-viewer/work-prototype",
         "pr": null,
         "state": "open",
-        "note": "Merges review-flight-deck F4 and F5. flightdeck-hindsight-fork.html, and E6's composed prototype, are the reference layout. Deferred on 2026-09-22, when the engineer narrowed the scope to the Work surface and FlightDeck at parity. Left the build; not deleted and not renumbered."
+        "note": "Merges review-flight-deck F4 and F5. flightdeck-hindsight-fork.html, and E6's composed prototype, are the reference layout. Deferred on 2026-09-22, when the engineer narrowed the scope to the Work surface and FlightDeck at parity. Left the build; not deleted and not renumbered.",
+        "title": "Narrate and render the route"
       },
       {
         "id": "cobuilder-viewer/E14",
@@ -743,7 +774,8 @@
         "branch": "design/cobuilder-viewer/work-prototype",
         "pr": null,
         "state": "open",
-        "note": "New in this merge, from the challenge gate's adoption of the auditor and 3am-on-call diverge candidates. The proposal line must record the exact ancestor SHA and per-step simulation inputs a later replay needs, which is new schema work neither source design carried. Deferred on 2026-09-22, when the engineer narrowed the scope to the Work surface and FlightDeck at parity. Left the build; not deleted and not renumbered."
+        "note": "New in this merge, from the challenge gate's adoption of the auditor and 3am-on-call diverge candidates. The proposal line must record the exact ancestor SHA and per-step simulation inputs a later replay needs, which is new schema work neither source design carried. Deferred on 2026-09-22, when the engineer narrowed the scope to the Work surface and FlightDeck at parity. Left the build; not deleted and not renumbered.",
+        "title": "The ledger and the audit"
       },
       {
         "id": "cobuilder-viewer/E15",
@@ -752,7 +784,8 @@
         "branch": "design/cobuilder-viewer/work-prototype",
         "pr": null,
         "state": "open",
-        "note": "Carried from review-flight-deck F6 unchanged. ADR-0027 records the decision, folding ADR-0026 forward. The first epic in this design that writes to a remote. Deferred on 2026-09-22, when the engineer narrowed the scope to the Work surface and FlightDeck at parity. Left the build; not deleted and not renumbered."
+        "note": "Carried from review-flight-deck F6 unchanged. ADR-0027 records the decision, folding ADR-0026 forward. The first epic in this design that writes to a remote. Deferred on 2026-09-22, when the engineer narrowed the scope to the Work surface and FlightDeck at parity. Left the build; not deleted and not renumbered.",
+        "title": "Execute the path"
       },
       {
         "id": "cobuilder-viewer/E16",
@@ -761,7 +794,8 @@
         "branch": "design/cobuilder-viewer/work-prototype",
         "pr": null,
         "state": "open",
-        "note": "Carried from react-viewer E7 unchanged. Closes the loop on E1. Measures the real budget with React inlined, and settles the Mermaid question the abort condition names. Deferred on 2026-09-22, when the engineer narrowed the scope to the Work surface and FlightDeck at parity. Left the build; not deleted and not renumbered."
+        "note": "Carried from react-viewer E7 unchanged. Closes the loop on E1. Measures the real budget with React inlined, and settles the Mermaid question the abort condition names. Deferred on 2026-09-22, when the engineer narrowed the scope to the Work surface and FlightDeck at parity. Left the build; not deleted and not renumbered.",
+        "title": "Publish parity"
       },
       {
         "id": "cobuilder-viewer/E17",
@@ -770,7 +804,8 @@
         "branch": "design/cobuilder-viewer/work-prototype",
         "pr": null,
         "state": "open",
-        "note": "Carried from react-viewer E8 unchanged. build-workflow-polish stays superseded through this design now, not directly through react-viewer. Deferred on 2026-09-22, when the engineer narrowed the scope to the Work surface and FlightDeck at parity. Left the build; not deleted and not renumbered."
+        "note": "Carried from react-viewer E8 unchanged. build-workflow-polish stays superseded through this design now, not directly through react-viewer. Deferred on 2026-09-22, when the engineer narrowed the scope to the Work surface and FlightDeck at parity. Left the build; not deleted and not renumbered.",
+        "title": "The workflow-polish carryover"
       },
       {
         "id": "cobuilder-viewer/E18",
@@ -779,7 +814,8 @@
         "branch": "design/cobuilder-viewer/work-prototype",
         "pr": null,
         "state": "open",
-        "note": "Carried from react-viewer E9 unchanged. Settles ADR-0019's anchoring under React, which owns the DOM the anchor walk uses. Deferred on 2026-09-22, when the engineer narrowed the scope to the Work surface and FlightDeck at parity. Left the build; not deleted and not renumbered."
+        "note": "Carried from react-viewer E9 unchanged. Settles ADR-0019's anchoring under React, which owns the DOM the anchor walk uses. Deferred on 2026-09-22, when the engineer narrowed the scope to the Work surface and FlightDeck at parity. Left the build; not deleted and not renumbered.",
+        "title": "The feedback path"
       },
       {
         "id": "cobuilder-viewer/E19",
@@ -789,6 +825,7 @@
         "pr": null,
         "state": "open",
         "note": "New in round 3, when the engineer narrowed the scope to the Work surface and FlightDeck at parity. The shell had no landing surface before it: a reader arrived on a route that named a work item, and nothing listed the bundle's designs. The board lists them, says what each one holds, and opens one.",
+        "title": "The Work board",
         "design_doc": "cobuilder-viewer/E19"
       },
       {
@@ -798,7 +835,8 @@
         "branch": "design/design-mode",
         "pr": 11,
         "state": "closed",
-        "note": "Design mode as a pre-code interview and challenge gate. Shares a branch and a pull request with the cobuilder-implement design. See ADR-0013: a branch may carry more than one design."
+        "note": "Design mode as a pre-code interview and challenge gate. Shares a branch and a pull request with the cobuilder-implement design. See ADR-0013: a branch may carry more than one design.",
+        "title": "design-mode/E1"
       },
       {
         "id": "gate-doc-surfacing/E1",
@@ -808,6 +846,7 @@
         "pr": 19,
         "state": "open",
         "note": "shared/build_index.py: add PROGRAM_DESIGN_FIELDS and EPIC_DESIGN_FIELDS projection tuples plus project_program_design/project_epic_design, following the project_fields(source, fields) pattern used by project_goal/project_intent/project_assessment. Parse docs/plans/<slug>/03-program-design.md and epic-<id>-design.md; emit program_design and epic_design entities into data/index.json. Extend feature_gates join entries with a doc reference where one exists.",
+        "title": "Index gate docs into data/index.json",
         "design_doc": "gate-doc-surfacing/E1"
       },
       {
@@ -818,6 +857,7 @@
         "pr": 19,
         "state": "open",
         "note": "plugins/artifact/viewer/index.html: make gate-rail-grid cards (renderBuildsMainContent, ~line 3249) clickable, opening a gate-doc sheet modeled on openAdrSheet. Add a design-doc chip to renderEpicCard (~line 3282) for epics with an epic_design entity.",
+        "title": "Surface gate docs in the Builds view",
         "design_doc": "gate-doc-surfacing/E2"
       },
       {
@@ -828,6 +868,7 @@
         "pr": null,
         "state": "open",
         "note": "Teach both Builds views the three meanings of a gate state. `is_resolved(state)` in `plugins/artifact/scripts/build_builds_view.py` holds the test, and `current_doc()` receives the document map filtered to the files the plan holds, so a returned document always exists. The static page gains the `na` treatment and stops printing the text `undefined` for a Gate 2b document. The viewer rail gains the `is-na` card class, the `na` pill class, the words \"Not applicable\", and a header count of approved gates. Slices 1 and 2.",
+        "title": "Two renderers read one gate state",
         "design_doc": "gate-state-resolution/E1"
       },
       {
@@ -837,7 +878,8 @@
         "branch": null,
         "pr": null,
         "state": "open",
-        "note": null
+        "note": null,
+        "title": "The scan"
       },
       {
         "id": "habit-smells/E2",
@@ -846,7 +888,8 @@
         "branch": null,
         "pr": null,
         "state": "open",
-        "note": null
+        "note": null,
+        "title": "Review reads the smells"
       },
       {
         "id": "habit-smells/E3",
@@ -855,7 +898,8 @@
         "branch": null,
         "pr": null,
         "state": "open",
-        "note": null
+        "note": null,
+        "title": "Maintenance trends the smells"
       },
       {
         "id": "implementation-conformance/E1",
@@ -864,7 +908,8 @@
         "branch": null,
         "pr": null,
         "state": "open",
-        "note": "The join resolves from a change to the program that produced it, and the resolved path is recorded once. Two paths disagree today. epic_to_pull_request in the record index resolves 32 epics across 6 designs. intent.design is set on 4 of the 17 timeline entries and names 3 designs. plugin-split, design-mode, and cobuilder-implement resolve through an epic, and no timeline entry names them. A check that trusts intent.design alone therefore skips them silently. This epic decides the authoritative path, or the precedence between both, and writes the resolution where the check reads it. It is the tracer bullet: it is useful alone, it needs no change to the program's records, and the rest of the work cannot attach until it exists."
+        "note": "The join resolves from a change to the program that produced it, and the resolved path is recorded once. Two paths disagree today. epic_to_pull_request in the record index resolves 32 epics across 6 designs. intent.design is set on 4 of the 17 timeline entries and names 3 designs. plugin-split, design-mode, and cobuilder-implement resolve through an epic, and no timeline entry names them. A check that trusts intent.design alone therefore skips them silently. This epic decides the authoritative path, or the precedence between both, and writes the resolution where the check reads it. It is the tracer bullet: it is useful alone, it needs no change to the program's records, and the rest of the work cannot attach until it exists.",
+        "title": "implementation-conformance/E1"
       },
       {
         "id": "implementation-conformance/E2",
@@ -873,7 +918,8 @@
         "branch": null,
         "pr": null,
         "state": "open",
-        "note": "A program's target becomes a record a check can cite. Today an epic's promise is prose, because 73 epic entities carry 0 outcome values and 72 note values. The rubrics are worse: 47 rubric files under 6 plan directories are reachable by no entity, and the plan slug is not the design name. The nearest projection is the slice, where 45 of 45 carry an ends_with and a score, and that is the rubric's result rather than its criteria. ADR-0030 leaves three shapes open and gives the choice to this epic. A design can fill epics[].outcome and hold itself to a testable criterion. The index can project each rubric as its own entity. Or the check can adopt the slice's ends_with and score as the target and say so. The last shape is the cheapest and the least faithful, so this epic must record which shape it chose and why."
+        "note": "A program's target becomes a record a check can cite. Today an epic's promise is prose, because 73 epic entities carry 0 outcome values and 72 note values. The rubrics are worse: 47 rubric files under 6 plan directories are reachable by no entity, and the plan slug is not the design name. The nearest projection is the slice, where 45 of 45 carry an ends_with and a score, and that is the rubric's result rather than its criteria. ADR-0030 leaves three shapes open and gives the choice to this epic. A design can fill epics[].outcome and hold itself to a testable criterion. The index can project each rubric as its own entity. Or the check can adopt the slice's ends_with and score as the target and say so. The last shape is the cheapest and the least faithful, so this epic must record which shape it chose and why.",
+        "title": "implementation-conformance/E2"
       },
       {
         "id": "implementation-conformance/E3",
@@ -882,7 +928,8 @@
         "branch": null,
         "pr": null,
         "state": "open",
-        "note": "Both agents read the program's records, and the read is recorded. interview-guide.md section 2 already says that a set intent.design makes the design's intent block the hypothesis, and that the five design topics need no re-interview. review-mode.md section 7 already says to measure per epic against that epic's slice of the design. Neither instruction has a consumer, and nothing records that either read happened. This epic attaches the read to both stages: generate mode's pre stage, beside the interview it already runs, and review mode's post stage, beside the drift array it already writes. Each agent reads the design's intent, its problem and its solution, its architecture level, its epic list, and its slice rubrics. It reaches them through E1's resolved join and measures against the epic from E2. The read must survive a sparse program, because 7 of the 15 designs carry a goal.json only, and it must record which of the program's records it found and which it did not."
+        "note": "Both agents read the program's records, and the read is recorded. interview-guide.md section 2 already says that a set intent.design makes the design's intent block the hypothesis, and that the five design topics need no re-interview. review-mode.md section 7 already says to measure per epic against that epic's slice of the design. Neither instruction has a consumer, and nothing records that either read happened. This epic attaches the read to both stages: generate mode's pre stage, beside the interview it already runs, and review mode's post stage, beside the drift array it already writes. Each agent reads the design's intent, its problem and its solution, its architecture level, its epic list, and its slice rubrics. It reaches them through E1's resolved join and measures against the epic from E2. The read must survive a sparse program, because 7 of the 15 designs carry a goal.json only, and it must record which of the program's records it found and which it did not.",
+        "title": "implementation-conformance/E3"
       },
       {
         "id": "implementation-conformance/E4",
@@ -891,7 +938,8 @@
         "branch": null,
         "pr": null,
         "state": "open",
-        "note": "The difference is stated where a reader finds it. The check must reach the output and not only a computed field, and story-mode.md already says the author's account and the code's account can disagree. This epic owns the words and the placement: one entry per difference in the assessment the pull request carries, and the same difference stated in the narrative a reader reads, at the altitude each level already uses. It also owns the single sentence a pull request that belongs to no program writes, because a statement that says nothing must not read as a clean result. review-mode.md section 7 keeps the four existing drift kinds drawn from the pull request's own intent, so this epic adds a separate record rather than a fifth kind, or it says why the array is the right home after all. It also owns the rendered review, so the difference survives into render_review.py's output."
+        "note": "The difference is stated where a reader finds it. The check must reach the output and not only a computed field, and story-mode.md already says the author's account and the code's account can disagree. This epic owns the words and the placement: one entry per difference in the assessment the pull request carries, and the same difference stated in the narrative a reader reads, at the altitude each level already uses. It also owns the single sentence a pull request that belongs to no program writes, because a statement that says nothing must not read as a clean result. review-mode.md section 7 keeps the four existing drift kinds drawn from the pull request's own intent, so this epic adds a separate record rather than a fifth kind, or it says why the array is the right home after all. It also owns the rendered review, so the difference survives into render_review.py's output.",
+        "title": "implementation-conformance/E4"
       },
       {
         "id": "inflight-record-store/E1",
@@ -900,7 +948,8 @@
         "branch": null,
         "pr": null,
         "state": "open",
-        "note": "Open pull requests become entities. collect_pull_requests() merges gh pr list --state all metadata over the narrated story.json entities. An open pull request gets an entity with state: \"open\" and a narrated: false flag. This removes the placeholder in refine_epic_status(). It reads metadata only, checks out no branch, and creates no conflict. This is the tracer bullet, and it is useful on its own. It does not depend on E2, E3, or E4, and can ship alone."
+        "note": "Open pull requests become entities. collect_pull_requests() merges gh pr list --state all metadata over the narrated story.json entities. An open pull request gets an entity with state: \"open\" and a narrated: false flag. This removes the placeholder in refine_epic_status(). It reads metadata only, checks out no branch, and creates no conflict. This is the tracer bullet, and it is useful on its own. It does not depend on E2, E3, or E4, and can ship alone.",
+        "title": "inflight-record-store/E1"
       },
       {
         "id": "inflight-record-store/E2",
@@ -909,7 +958,8 @@
         "branch": null,
         "pr": null,
         "state": "open",
-        "note": "A record store with a merge strategy. One file per record, append-only, with a defined resolution rule for a concurrent write. Modelled on beads. This epic decides the storage shape and nothing else."
+        "note": "A record store with a merge strategy. One file per record, append-only, with a defined resolution rule for a concurrent write. Modelled on beads. This epic decides the storage shape and nothing else.",
+        "title": "inflight-record-store/E2"
       },
       {
         "id": "inflight-record-store/E3",
@@ -918,7 +968,8 @@
         "branch": null,
         "pr": null,
         "state": "open",
-        "note": "Cross-branch collection without a conflict. Records written by a session on a branch reach the shared view without any branch writing a shared generated file."
+        "note": "Cross-branch collection without a conflict. Records written by a session on a branch reach the shared view without any branch writing a shared generated file.",
+        "title": "inflight-record-store/E3"
       },
       {
         "id": "inflight-record-store/E4",
@@ -927,7 +978,8 @@
         "branch": null,
         "pr": null,
         "state": "open",
-        "note": "The active-work view. The viewer renders in-flight work beside merged history, so a reader sees one timeline rather than two."
+        "note": "The active-work view. The viewer renders in-flight work beside merged history, so a reader sees one timeline rather than two.",
+        "title": "inflight-record-store/E4"
       },
       {
         "id": "interaction-design-gate/E1",
@@ -937,6 +989,7 @@
         "pr": null,
         "state": "open",
         "note": "Vendor the skill into `plugins/implement/skills/design-to-code/` and trim it from five steps to three. Step 1 goes because Gate 1 `01-product.md` already holds the product intent, and Step 4 goes because the slice loop owns code. The four concepts the gate depends on, initial state plus timer arming, transitions on state change, visibility gating, and declared defaults, reach the specification through the rewritten template, the JSONC schema, and the implementation rules. Slices 1 and 2.",
+        "title": "The vendored skill",
         "design_doc": "interaction-design-gate/E1"
       },
       {
@@ -947,6 +1000,7 @@
         "pr": null,
         "state": "open",
         "note": "Add Gate 2b to the build workflow. A tracked line in `00-status.md` between Gate 2 and Gate 3, a `## Gate 2b` section in `build/SKILL.md`, the `2b` line in the status template, the resume rule that keeps Gate 3 from starting early, and the two consumption rules that let `rubric-authoring.md` and `slice-loop.md` read the artifacts. Slices 3 and 4.",
+        "title": "Gate 2b in the build flow",
         "design_doc": "interaction-design-gate/E2"
       },
       {
@@ -957,6 +1011,7 @@
         "pr": null,
         "state": "open",
         "note": "Make the gate mechanical rather than remembered. A `2b` group in `verify_gate.py`, a `2b` label in both gate-line regexes, `GATE_DOCS[\"2b\"]`, an `interaction_design` entity in the index, and the Builds view rail. Three call sites assume the last gate is number 4, so this epic is larger than it looks. It is the epic to cut. Slices 5 to 7.",
+        "title": "The mechanical consumer and the projection",
         "design_doc": "interaction-design-gate/E3"
       },
       {
@@ -966,7 +1021,8 @@
         "branch": null,
         "pr": null,
         "state": "open",
-        "note": "Decide the replacement shape: the viewer reads a diff by running git diff against the PR's recorded commit SHAs at serve time (view mode already runs from inside the repo), versus keeping diffs-pr{N}.js exactly as it is today but gitignoring it, regenerating it from git on demand the way exports/branch-*/diff.json already works for generate mode. Either removes the committed weight; they differ in whether a served bundle still needs a live git checkout next to it. Update 2026-10-13: the user directed the gitignore half of the second shape as a packaging fix for the Claude Plugin directory's 5 MiB per-file cap. The committed diffs-pr{N}.js files are gone, and .gitignore holds the pattern. The serve-time question stays open: extract_diffs.py still rewrites data/manifest.js together with its files, so a future pr:baseline can name a new PR in diff_prs while git does not carry its file. Settle this epic before the next pr:baseline lands a diff_prs entry."
+        "note": "Decide the replacement shape: the viewer reads a diff by running git diff against the PR's recorded commit SHAs at serve time (view mode already runs from inside the repo), versus keeping diffs-pr{N}.js exactly as it is today but gitignoring it, regenerating it from git on demand the way exports/branch-*/diff.json already works for generate mode. Either removes the committed weight; they differ in whether a served bundle still needs a live git checkout next to it. Update 2026-10-13: the user directed the gitignore half of the second shape as a packaging fix for the Claude Plugin directory's 5 MiB per-file cap. The committed diffs-pr{N}.js files are gone, and .gitignore holds the pattern. The serve-time question stays open: extract_diffs.py still rewrites data/manifest.js together with its files, so a future pr:baseline can name a new PR in diff_prs while git does not carry its file. Settle this epic before the next pr:baseline lands a diff_prs entry.",
+        "title": "lean-bundle-diffs/E1"
       },
       {
         "id": "lean-bundle-diffs/E2",
@@ -975,7 +1031,8 @@
         "branch": null,
         "pr": null,
         "state": "open",
-        "note": "Whichever shape E1 picks, implement it in extract_diffs.py and, if the viewer starts requesting diffs at view time instead of reading a static file, in artifact's serve_bundle.py. Update verify_bundle.py's expectations accordingly. Update 2026-10-13: verify_bundle.py now reports the diffs key and does not gate on it, so a clone without the files passes. extract_diffs.py itself is unchanged."
+        "note": "Whichever shape E1 picks, implement it in extract_diffs.py and, if the viewer starts requesting diffs at view time instead of reading a static file, in artifact's serve_bundle.py. Update verify_bundle.py's expectations accordingly. Update 2026-10-13: verify_bundle.py now reports the diffs key and does not gate on it, so a clone without the files passes. extract_diffs.py itself is unchanged.",
+        "title": "lean-bundle-diffs/E2"
       },
       {
         "id": "lean-bundle-diffs/E3",
@@ -984,7 +1041,8 @@
         "branch": null,
         "pr": null,
         "state": "closed",
-        "note": "Migrate the existing committed bundles (self, and the two fixture bundles) so history stops growing: remove the checked-in diffs-pr{N}.js files, or move them under .gitignore, per E1's decision. This does not touch story.json's authored fields, so it is a bundle-file change, not a schema migration. Update 2026-10-13: done for the self bundle, under the user's direction, to pass the plugin directory's 5 MiB cap. The ten diffs-pr{N}.js files are removed and .gitignore carries .cobuilder-architect/self/data/diffs-pr*.js. The two fixture bundles keep their diff files (0.4 MB and 1.3 MB, under the cap), because fixtures are committed test data. Story.json holds no diff fields, so no migration ran."
+        "note": "Migrate the existing committed bundles (self, and the two fixture bundles) so history stops growing: remove the checked-in diffs-pr{N}.js files, or move them under .gitignore, per E1's decision. This does not touch story.json's authored fields, so it is a bundle-file change, not a schema migration. Update 2026-10-13: done for the self bundle, under the user's direction, to pass the plugin directory's 5 MiB cap. The ten diffs-pr{N}.js files are removed and .gitignore carries .cobuilder-architect/self/data/diffs-pr*.js. The two fixture bundles keep their diff files (0.4 MB and 1.3 MB, under the cap), because fixtures are committed test data. Story.json holds no diff fields, so no migration ran.",
+        "title": "lean-bundle-diffs/E3"
       },
       {
         "id": "linear-tracker-adapter/E1",
@@ -994,6 +1052,7 @@
         "pr": null,
         "state": null,
         "note": null,
+        "title": null,
         "design_doc": "linear-tracker-adapter/E1"
       },
       {
@@ -1004,6 +1063,7 @@
         "pr": null,
         "state": null,
         "note": null,
+        "title": null,
         "design_doc": "linear-tracker-adapter/E2"
       },
       {
@@ -1014,6 +1074,7 @@
         "pr": null,
         "state": null,
         "note": null,
+        "title": null,
         "design_doc": "linear-tracker-adapter/E3"
       },
       {
@@ -1024,6 +1085,7 @@
         "pr": null,
         "state": null,
         "note": null,
+        "title": null,
         "design_doc": "linear-tracker-adapter/E4"
       },
       {
@@ -1034,6 +1096,7 @@
         "pr": null,
         "state": null,
         "note": null,
+        "title": null,
         "design_doc": "linear-tracker-adapter/E5"
       },
       {
@@ -1043,7 +1106,8 @@
         "branch": null,
         "pr": null,
         "state": null,
-        "note": null
+        "note": null,
+        "title": null
       },
       {
         "id": "linear-tracker-adapter/E7",
@@ -1052,7 +1116,8 @@
         "branch": null,
         "pr": null,
         "state": null,
-        "note": null
+        "note": null,
+        "title": null
       },
       {
         "id": "maintainable-viewer/E1",
@@ -1061,7 +1126,8 @@
         "branch": null,
         "pr": null,
         "state": "closed",
-        "note": "The build exists and is guarded. build_viewer.py concatenates ordered parts under viewer/src/ into the committed viewer/index.html, and a test rebuilds from the parts and fails on any difference. The first split is mechanical only, cut at the file's own 35 banner comments, with no line rewritten. This epic is the tracer bullet: it proves or disproves that the single IIFE separates by concatenation alone, which is the abort condition the whole design rests on."
+        "note": "The build exists and is guarded. build_viewer.py concatenates ordered parts under viewer/src/ into the committed viewer/index.html, and a test rebuilds from the parts and fails on any difference. The first split is mechanical only, cut at the file's own 35 banner comments, with no line rewritten. This epic is the tracer bullet: it proves or disproves that the single IIFE separates by concatenation alone, which is the abort condition the whole design rests on.",
+        "title": "maintainable-viewer/E1"
       },
       {
         "id": "maintainable-viewer/E2",
@@ -1070,7 +1136,8 @@
         "branch": null,
         "pr": null,
         "state": "closed",
-        "note": "The exporter seam becomes declared. export_artifact.py stops matching incidental literals and matches named markers the parts emit deliberately. Today it hard-errors with not-found-verbatim when a literal moves, so the publish pipeline breaks silently under any refactor until somebody publishes. This must land before the parts are rewritten, not after, or every later epic risks breaking publishing without a test noticing."
+        "note": "The exporter seam becomes declared. export_artifact.py stops matching incidental literals and matches named markers the parts emit deliberately. Today it hard-errors with not-found-verbatim when a literal moves, so the publish pipeline breaks silently under any refactor until somebody publishes. This must land before the parts are rewritten, not after, or every later epic risks breaking publishing without a test noticing.",
+        "title": "maintainable-viewer/E2"
       },
       {
         "id": "maintainable-viewer/E3",
@@ -1079,7 +1146,8 @@
         "branch": null,
         "pr": null,
         "state": "closed",
-        "note": "One definition per fragment. A template layer replaces the 45 innerHTML string blocks, and the rail-item, empty-card, and empty-detail fragments collapse from 4, 16, and 18 copies to one each. The viewer uses no template element today, so the mechanism is a design choice this epic makes and does not inherit."
+        "note": "One definition per fragment. A template layer replaces the 45 innerHTML string blocks, and the rail-item, empty-card, and empty-detail fragments collapse from 4, 16, and 18 copies to one each. The viewer uses no template element today, so the mechanism is a design choice this epic makes and does not inherit.",
+        "title": "maintainable-viewer/E3"
       },
       {
         "id": "maintainable-viewer/E4",
@@ -1088,7 +1156,8 @@
         "branch": null,
         "pr": null,
         "state": "closed",
-        "note": "Each mode owns its own part. The five view modes stop interleaving: the 50 scattered mode-predicate calls collapse into one registry, and renderContextsMainContent, renderBuildsMainContent, and renderMainContent stop being three functions of over 200 lines that live beside each other. Adding a sixth mode becomes one new part plus one registry entry."
+        "note": "Each mode owns its own part. The five view modes stop interleaving: the 50 scattered mode-predicate calls collapse into one registry, and renderContextsMainContent, renderBuildsMainContent, and renderMainContent stop being three functions of over 200 lines that live beside each other. Adding a sixth mode becomes one new part plus one registry entry.",
+        "title": "maintainable-viewer/E4"
       },
       {
         "id": "mechanical-smells/E1",
@@ -1098,6 +1167,7 @@
         "pr": null,
         "state": "open",
         "note": null,
+        "title": "The viewer",
         "design_doc": "mechanical-smells/E1"
       },
       {
@@ -1107,7 +1177,8 @@
         "branch": null,
         "pr": null,
         "state": "open",
-        "note": null
+        "note": null,
+        "title": "The rest of the repo"
       },
       {
         "id": "nexus-borrowings/E1",
@@ -1117,6 +1188,7 @@
         "pr": null,
         "state": "closed",
         "note": "All eight slices built in one pass on design/nexus-borrowings/runtime-arch-diagram (2026-10-01): contract, validator, build_index projections, viewer tile + contracts section, stage-6 spawn, contracts artifact, vocabulary bootstrap + mode surfaces, implement guards + bumps. Behavioral rubrics score on the first real design runs.",
+        "title": "The runtime SVG diagram",
         "design_doc": "nexus-borrowings/E1"
       },
       {
@@ -1127,6 +1199,7 @@
         "pr": null,
         "state": "closed",
         "note": "All eight slices built in one pass on design/nexus-borrowings/runtime-arch-diagram (2026-10-01): contract, validator, build_index projections, viewer tile + contracts section, stage-6 spawn, contracts artifact, vocabulary bootstrap + mode surfaces, implement guards + bumps. Behavioral rubrics score on the first real design runs.",
+        "title": "The draft reviewer",
         "design_doc": "nexus-borrowings/E2"
       },
       {
@@ -1137,6 +1210,7 @@
         "pr": null,
         "state": "closed",
         "note": "All eight slices built in one pass on design/nexus-borrowings/runtime-arch-diagram (2026-10-01): contract, validator, build_index projections, viewer tile + contracts section, stage-6 spawn, contracts artifact, vocabulary bootstrap + mode surfaces, implement guards + bumps. Behavioral rubrics score on the first real design runs.",
+        "title": "The contracts doc",
         "design_doc": "nexus-borrowings/E3"
       },
       {
@@ -1147,6 +1221,7 @@
         "pr": null,
         "state": "closed",
         "note": "All eight slices built in one pass on design/nexus-borrowings/runtime-arch-diagram (2026-10-01): contract, validator, build_index projections, viewer tile + contracts section, stage-6 spawn, contracts artifact, vocabulary bootstrap + mode surfaces, implement guards + bumps. Behavioral rubrics score on the first real design runs.",
+        "title": "The vocabulary bootstrap",
         "design_doc": "nexus-borrowings/E4"
       },
       {
@@ -1157,6 +1232,7 @@
         "pr": null,
         "state": "closed",
         "note": "One epic. Four slices: the mode and its command, the report template and validator, the manifests and glossary and counts, and one real run of the mode.",
+        "title": "The /architect:options mode",
         "design_doc": "options-mode/E1"
       },
       {
@@ -1167,6 +1243,7 @@
         "pr": 11,
         "state": "closed",
         "note": "One plugin becomes five. The whole packaging split: the mode renames inside today's single plugin, the deleted duplicate explore-design command, the 33 cross-pillar references, the five manifests, and the two ports. The rename is a rotation, not a split: odyssey submit becomes cobuilder-pr:generate, and the old odyssey generate, which narrates merged history, becomes cobuilder-pr:review. Four slices.",
+        "title": "One plugin becomes five",
         "design_doc": "cobuilder-family/E1"
       },
       {
@@ -1176,7 +1253,8 @@
         "branch": "design/design-mode",
         "pr": 11,
         "state": "closed",
-        "note": "Shared code survives an install. Prove the marketplace symlink dereference, then vendor the four bundle modules and the two shared skills. One slice, because it is a spike whose result decides whether the rest of the design stands. goal.json.abort_if names its failure."
+        "note": "Shared code survives an install. Prove the marketplace symlink dereference, then vendor the four bundle modules and the two shared skills. One slice, because it is a spike whose result decides whether the rest of the design stands. goal.json.abort_if names its failure.",
+        "title": "Shared code survives an install"
       },
       {
         "id": "plugin-split/E3",
@@ -1186,6 +1264,7 @@
         "pr": 11,
         "state": "closed",
         "note": "The seam is version-safe. require_compatible(), min_reader_schema, the generators map, bundle format 3, and schema 1.3, so two plugins at different versions cannot corrupt one bundle. Two slices.",
+        "title": "The seam is version-safe",
         "design_doc": "cobuilder-family/E3"
       },
       {
@@ -1196,6 +1275,7 @@
         "pr": 11,
         "state": "closed",
         "note": "The record index. build_index.py replaces the two projection scripts, emits every entity with a stable id, and resolves every join including an ADR to its pull request. Two slices.",
+        "title": "The record index",
         "design_doc": "cobuilder-family/E4"
       },
       {
@@ -1206,6 +1286,7 @@
         "pr": 11,
         "state": "closed",
         "note": "One lifecycle surface. The Decisions, Contexts, and Builds modes, the Backlog lane, and moving generated pages out of the foreign directory into the bundle. Two slices (10, 11).",
+        "title": "One lifecycle surface",
         "design_doc": "cobuilder-family/E5"
       },
       {
@@ -1216,6 +1297,7 @@
         "pr": 11,
         "state": "closed",
         "note": "The reply channel. The append-only ledger and its projection, the anchor computed from the live DOM, the write endpoint, and the background wake command. Three slices (12, 13, 14).",
+        "title": "The reply channel",
         "design_doc": "cobuilder-family/E6"
       },
       {
@@ -1225,7 +1307,8 @@
         "branch": null,
         "pr": null,
         "state": "closed",
-        "note": "Threads read as conversations. The drawer renders a reply under the comment it answers. Deferred past E6 on purpose: E6 ships the record shape, so this epic adds no migration and carries no slice yet."
+        "note": "Threads read as conversations. The drawer renders a reply under the comment it answers. Deferred past E6 on purpose: E6 ships the record shape, so this epic adds no migration and carries no slice yet.",
+        "title": "Threads read as conversations"
       },
       {
         "id": "plugin-split/E8",
@@ -1234,7 +1317,8 @@
         "branch": "rename-plugins-drop-cobuilder-prefix",
         "pr": 17,
         "state": "closed",
-        "note": "The cobuilder- prefix drops from the four non-umbrella plugins named in E1's table (cobuilder-architect, cobuilder-pr, cobuilder-artifact, cobuilder-implement become architect, pr, artifact, implement), since it duplicates the marketplace repo's own name. cobuilder-full-lifecycle keeps its prefix, being the umbrella the repo's own name already carries. Merged as PR #17, then a same-epic follow-up (uncommitted at the time this entry was written) fixes a second-order bug the rename introduced: two of the four renamed plugins (implement, artifact) already shipped a skill folder named after themselves, and once the plugin took that same name too, Skill() resolution inside Claude Code broke -- reproduced directly, not environment-specific. Fixed by renaming the colliding skill folders (implement's skill to build, its command to start; artifact's skill to cobuilder-artifacts) and, for consistency, cobuilder-full-lifecycle's orientation skill to cobuilder-full. See ADR-0016's addendum."
+        "note": "The cobuilder- prefix drops from the four non-umbrella plugins named in E1's table (cobuilder-architect, cobuilder-pr, cobuilder-artifact, cobuilder-implement become architect, pr, artifact, implement), since it duplicates the marketplace repo's own name. cobuilder-full-lifecycle keeps its prefix, being the umbrella the repo's own name already carries. Merged as PR #17, then a same-epic follow-up (uncommitted at the time this entry was written) fixes a second-order bug the rename introduced: two of the four renamed plugins (implement, artifact) already shipped a skill folder named after themselves, and once the plugin took that same name too, Skill() resolution inside Claude Code broke -- reproduced directly, not environment-specific. Fixed by renaming the colliding skill folders (implement's skill to build, its command to start; artifact's skill to cobuilder-artifacts) and, for consistency, cobuilder-full-lifecycle's orientation skill to cobuilder-full. See ADR-0016's addendum.",
+        "title": "plugin-split/E8"
       },
       {
         "id": "react-viewer/E1",
@@ -1243,7 +1327,8 @@
         "branch": null,
         "pr": null,
         "state": "closed",
-        "note": "The exporter rewrites the viewer by verbatim string replacement today and hard-errors when a literal moves. A bundled build moves every literal, so this seam must become explicit before any build lands."
+        "note": "The exporter rewrites the viewer by verbatim string replacement today and hard-errors when a literal moves. A bundled build moves every literal, so this seam must become explicit before any build lands.",
+        "title": "react-viewer/E1"
       },
       {
         "id": "react-viewer/E2",
@@ -1252,7 +1337,8 @@
         "branch": null,
         "pr": null,
         "state": "closed",
-        "note": "Vite plus vite-plugin-singlefile, a lockfile, and a pinned Node version. This epic starts with a spike, at the engineer's direction: publish one throwaway bundled page and measure the byte-equal rebuild across two machines, the size with React inlined, and whether a Claude Artifact renders a Mermaid block that React injects after page load. Two of the three abort conditions are settled by that spike, before five epics of work depend on the answer."
+        "note": "Vite plus vite-plugin-singlefile, a lockfile, and a pinned Node version. This epic starts with a spike, at the engineer's direction: publish one throwaway bundled page and measure the byte-equal rebuild across two machines, the size with React inlined, and whether a Claude Artifact renders a Mermaid block that React injects after page load. Two of the three abort conditions are settled by that spike, before five epics of work depend on the answer.",
+        "title": "react-viewer/E2"
       },
       {
         "id": "react-viewer/E3",
@@ -1261,7 +1347,8 @@
         "branch": null,
         "pr": null,
         "state": "closed",
-        "note": "The viewer resolves joins by hand in each render path today. index.json already computed them. This epic makes the index the source and the types the contract."
+        "note": "The viewer resolves joins by hand in each render path today. index.json already computed them. This epic makes the index the source and the types the contract.",
+        "title": "react-viewer/E3"
       },
       {
         "id": "react-viewer/E4",
@@ -1270,7 +1357,8 @@
         "branch": null,
         "pr": null,
         "state": "closed",
-        "note": "The prototype of 2026-09-07 is the reference for this surface."
+        "note": "The prototype of 2026-09-07 is the reference for this surface.",
+        "title": "react-viewer/E4"
       },
       {
         "id": "react-viewer/E5",
@@ -1279,7 +1367,8 @@
         "branch": null,
         "pr": null,
         "state": "closed",
-        "note": "Parity covers the four levels, diagrams, scene art, narration audio, the diff, and the intent and assessment sheet."
+        "note": "Parity covers the four levels, diagrams, scene art, narration audio, the diff, and the intent and assessment sheet.",
+        "title": "react-viewer/E5"
       },
       {
         "id": "react-viewer/E6",
@@ -1288,7 +1377,8 @@
         "branch": null,
         "pr": null,
         "state": "closed",
-        "note": "tests/test_viewer_modes.py asserts the five data-mode buttons. That test changes with this epic, and the change is the point, not a regression."
+        "note": "tests/test_viewer_modes.py asserts the five data-mode buttons. That test changes with this epic, and the change is the point, not a regression.",
+        "title": "react-viewer/E6"
       },
       {
         "id": "react-viewer/E7",
@@ -1297,7 +1387,8 @@
         "branch": null,
         "pr": null,
         "state": "closed",
-        "note": "Closes the loop on E1. Measures the real budget with React inlined, and settles the Mermaid question the third abort condition names."
+        "note": "Closes the loop on E1. Measures the real budget with React inlined, and settles the Mermaid question the third abort condition names.",
+        "title": "react-viewer/E7"
       },
       {
         "id": "react-viewer/E8",
@@ -1306,7 +1397,8 @@
         "branch": null,
         "pr": null,
         "state": "closed",
-        "note": "build-workflow-polish is superseded by this design at the engineer's direction. Its E4, the tab-based viewer layout, is absorbed by E4 and E5 here. Its other three epics are not viewer work and would be lost silently: E1 adds the pointer from design mode stage 7 to /implement:start, E2 states the six-column slice-table shape that shared/slice_table.py parses, and E3 commits an accepted slice without a second prompt. They are carried here so the supersede is safe."
+        "note": "build-workflow-polish is superseded by this design at the engineer's direction. Its E4, the tab-based viewer layout, is absorbed by E4 and E5 here. Its other three epics are not viewer work and would be lost silently: E1 adds the pointer from design mode stage 7 to /implement:start, E2 states the six-column slice-table shape that shared/slice_table.py parses, and E3 commits an accepted slice without a second prompt. They are carried here so the supersede is safe.",
+        "title": "react-viewer/E8"
       },
       {
         "id": "react-viewer/E9",
@@ -1315,7 +1407,8 @@
         "branch": null,
         "pr": null,
         "state": "closed",
-        "note": "The comment mechanism does not work today, and the engineer confirmed it on 2026-09-07. Three causes, all verified in the tree. First, LEDGER_AVAILABLE at viewer/index.html line 1399 tests only whether fetch exists in the browser, which is always true, so it never tells a reviewer that no ledger server is listening. Second, a failed POST falls back to localStorage and shows 'Will sync when server is reachable', although nothing syncs: no code reads that key back. Third, a published Artifact cannot reach any server, because the Artifact CSP blocks fetch, so every comment left where review actually happens is written to one browser's localStorage and lost. This epic also settles ADR-0019's anchoring under React, which owns the DOM the anchor walk uses. The transport is decided: the served viewer keeps POST /feedback under --allow-write, and the published Artifact marks comments read-only and exports them for paste-back through the copy-as-markdown path that already exists. The Artifact platform's own storage is rejected, because it would make the published page behave differently from the served one, which is the split ADR-0001 exists to prevent."
+        "note": "The comment mechanism does not work today, and the engineer confirmed it on 2026-09-07. Three causes, all verified in the tree. First, LEDGER_AVAILABLE at viewer/index.html line 1399 tests only whether fetch exists in the browser, which is always true, so it never tells a reviewer that no ledger server is listening. Second, a failed POST falls back to localStorage and shows 'Will sync when server is reachable', although nothing syncs: no code reads that key back. Third, a published Artifact cannot reach any server, because the Artifact CSP blocks fetch, so every comment left where review actually happens is written to one browser's localStorage and lost. This epic also settles ADR-0019's anchoring under React, which owns the DOM the anchor walk uses. The transport is decided: the served viewer keeps POST /feedback under --allow-write, and the published Artifact marks comments read-only and exports them for paste-back through the copy-as-markdown path that already exists. The Artifact platform's own storage is rejected, because it would make the published page behave differently from the served one, which is the split ADR-0001 exists to prevent.",
+        "title": "react-viewer/E9"
       },
       {
         "id": "review-flight-deck/F0",
@@ -1324,7 +1417,8 @@
         "branch": "design/review-flight-deck",
         "pr": null,
         "state": "closed",
-        "note": "New in round 4. It closes the gap the prototype had to show as a warning: 8 of 12 pull requests in this repository carry no intent block. Reuses generate mode whole, and adds only the check for an existing description."
+        "note": "New in round 4. It closes the gap the prototype had to show as a warning: 8 of 12 pull requests in this repository carry no intent block. Reuses generate mode whole, and adds only the check for an existing description.",
+        "title": "review-flight-deck/F0"
       },
       {
         "id": "review-flight-deck/F1",
@@ -1333,7 +1427,8 @@
         "branch": "design/review-flight-deck",
         "pr": null,
         "state": "closed",
-        "note": "The same work as the first epic of the inflight-record-store design. Build it once, in shared code. The auto-merge split is read from the team's own rules, and this design does not define them."
+        "note": "The same work as the first epic of the inflight-record-store design. Build it once, in shared code. The auto-merge split is read from the team's own rules, and this design does not define them.",
+        "title": "review-flight-deck/F1"
       },
       {
         "id": "review-flight-deck/F2",
@@ -1342,7 +1437,8 @@
         "branch": "design/review-flight-deck",
         "pr": null,
         "state": "closed",
-        "note": "divergent-exploration.md already generates competing options in isolation and criticises them in a separate pass. The baseline is load-bearing: simulating against the default branch inverts the order whenever an open pull request restructures the tree."
+        "note": "divergent-exploration.md already generates competing options in isolation and criticises them in a separate pass. The baseline is load-bearing: simulating against the default branch inverts the order whenever an open pull request restructures the tree.",
+        "title": "review-flight-deck/F2"
       },
       {
         "id": "review-flight-deck/F3",
@@ -1351,7 +1447,8 @@
         "branch": "design/review-flight-deck",
         "pr": null,
         "state": "closed",
-        "note": "New in round 4, and the step that makes the recommendation something to stand behind. Read-only against a scratch worktree. A route that fails the replay is kept, with the failure as its reason for losing. Systems that precompute mergeable slices may already do this part, so keep the interface narrow enough to swap one in. It must also classify what it cannot merge. A superseded branch and an unresolvable conflict are different findings and get different treatments in the layout."
+        "note": "New in round 4, and the step that makes the recommendation something to stand behind. Read-only against a scratch worktree. A route that fails the replay is kept, with the failure as its reason for losing. Systems that precompute mergeable slices may already do this part, so keep the interface narrow enough to swap one in. It must also classify what it cannot merge. A superseded branch and an unresolvable conflict are different findings and get different treatments in the layout.",
+        "title": "review-flight-deck/F3"
       },
       {
         "id": "review-flight-deck/F4",
@@ -1360,7 +1457,8 @@
         "branch": "design/review-flight-deck",
         "pr": null,
         "state": "closed",
-        "note": "Round 5 fixed the register. State the outcome first, then the contributions, and never lead with the mechanics. The engineer's worked example: perform the renames and restructuring across the repository, which merges without conflict, then incorporate the new viewer into the resulting structure and naming conventions."
+        "note": "Round 5 fixed the register. State the outcome first, then the contributions, and never lead with the mechanics. The engineer's worked example: perform the renames and restructuring across the repository, which merges without conflict, then incorporate the new viewer into the resulting structure and naming conventions.",
+        "title": "review-flight-deck/F4"
       },
       {
         "id": "review-flight-deck/F5",
@@ -1369,7 +1467,8 @@
         "branch": "design/review-flight-deck",
         "pr": null,
         "state": "closed",
-        "note": "Reuses the existing view modes, the level rail, and the ledger from ADR-0019. flightdeck-prototype.html is the reference layout."
+        "note": "Reuses the existing view modes, the level rail, and the ledger from ADR-0019. flightdeck-prototype.html is the reference layout.",
+        "title": "review-flight-deck/F5"
       },
       {
         "id": "review-flight-deck/F6",
@@ -1378,7 +1477,8 @@
         "branch": "design/review-flight-deck",
         "pr": null,
         "state": "closed",
-        "note": "New in round 6, and the first epic in this design that writes to a remote. ADR-0026 records the decision. The integration branch per bundle is what makes a path abandonable: delete N branches and the default branch never saw any of it. The default branch receives one pull request, from the last bundle's branch."
+        "note": "New in round 6, and the first epic in this design that writes to a remote. ADR-0026 records the decision. The integration branch per bundle is what makes a path abandonable: delete N branches and the default branch never saw any of it. The default branch receives one pull request, from the last bundle's branch.",
+        "title": "review-flight-deck/F6"
       },
       {
         "id": "review-link/E1",
@@ -1388,6 +1488,7 @@
         "pr": null,
         "state": "open",
         "note": "A viewer link for each document under review. Slice 1 adds review_link.py and a --route argument to View mode. Slice 2 projects the Gate 1 and Gate 2 documents and adds the plan page under the Build level. Slice 3 adds the Present for review procedure to every presentation point, and the link check to verify_gate.py.",
+        "title": "A viewer link for each document under review",
         "design_doc": "review-link/E1"
       },
       {
@@ -1397,7 +1498,8 @@
         "branch": null,
         "pr": null,
         "state": "open",
-        "note": "ADR-0025 narrows the install-surface rule so implement may ship agents and hooks. Slice 1."
+        "note": "ADR-0025 narrows the install-surface rule so implement may ship agents and hooks. Slice 1.",
+        "title": "The narrowed install-surface rule"
       },
       {
         "id": "slice-agents-and-vocabulary/E2",
@@ -1407,6 +1509,7 @@
         "pr": null,
         "state": "open",
         "note": "RED, GREEN, and VALIDATE as plugin agents, spawned by name. Slices 2 and 3.",
+        "title": "The three slice roles as agents",
         "design_doc": "slice-agents-and-vocabulary/E2"
       },
       {
@@ -1417,6 +1520,7 @@
         "pr": null,
         "state": "open",
         "note": "A required PostToolUse hook runs habit-hooks for GREEN only, with credit to habit-hooks. Slices 4 and 5.",
+        "title": "habit-hooks coaches GREEN",
         "design_doc": "slice-agents-and-vocabulary/E3"
       },
       {
@@ -1427,6 +1531,7 @@
         "pr": null,
         "state": "open",
         "note": "DDD-VOCABULARY.md, the vocabulary agent, design mode read and write, and the CLAUDE.md table move. Slices 6 to 8.",
+        "title": "One DDD vocabulary",
         "design_doc": "slice-agents-and-vocabulary/E4"
       },
       {
@@ -1436,7 +1541,8 @@
         "branch": null,
         "pr": null,
         "state": "open",
-        "note": "One language record, and it is the tracer bullet. docs/architecture/language.md becomes the single source of truth for a term, its owning context, its meaning, and what it must not be confused with. It is seeded from CLAUDE.md's existing Vocabulary table and from cobuilder-packaging's canvas section 3. shared/build_index.py projects it into the record index, so the viewer can render it. This epic is independently shippable and does not depend on E2 through E5."
+        "note": "One language record, and it is the tracer bullet. docs/architecture/language.md becomes the single source of truth for a term, its owning context, its meaning, and what it must not be confused with. It is seeded from CLAUDE.md's existing Vocabulary table and from cobuilder-packaging's canvas section 3. shared/build_index.py projects it into the record index, so the viewer can render it. This epic is independently shippable and does not depend on E2 through E5.",
+        "title": "ubiquitous-language/E1"
       },
       {
         "id": "ubiquitous-language/E2",
@@ -1445,7 +1551,8 @@
         "branch": null,
         "pr": null,
         "state": "open",
-        "note": "Design mode gains a language stage. A design that introduces a new term must declare it or reuse an existing entry from the language record. A collision with an existing term becomes a challenge-stage finding. This fits design mode's existing no-citation-no-challenge rule, because the language record gives the challenge stage something concrete to cite."
+        "note": "Design mode gains a language stage. A design that introduces a new term must declare it or reuse an existing entry from the language record. A collision with an existing term becomes a challenge-stage finding. This fits design mode's existing no-citation-no-challenge rule, because the language record gives the challenge stage something concrete to cite.",
+        "title": "ubiquitous-language/E2"
       },
       {
         "id": "ubiquitous-language/E3",
@@ -1454,7 +1561,8 @@
         "branch": null,
         "pr": null,
         "state": "open",
-        "note": "The mechanical consumer, in cobuilder-implement. A Gate 4b technical solution design that names a concept absent from the language record fails the gate. This epic is what stops the whole program from rotting the way canvas section 3 did. E1 and E2 without E3 are documentation waiting to go stale."
+        "note": "The mechanical consumer, in cobuilder-implement. A Gate 4b technical solution design that names a concept absent from the language record fails the gate. This epic is what stops the whole program from rotting the way canvas section 3 did. E1 and E2 without E3 are documentation waiting to go stale.",
+        "title": "ubiquitous-language/E3"
       },
       {
         "id": "ubiquitous-language/E4",
@@ -1463,7 +1571,8 @@
         "branch": null,
         "pr": null,
         "state": "open",
-        "note": "A verifier that exits non-zero. A script finds a term used in a design or an ADR and absent from the language record, and fails the check. It is modeled on plugins/cobuilder-implement/scripts/verify_gate.py, which exits non-zero on any failed Gate 4 sub-step. The honest open question is that deciding what counts as a term mechanically, rather than by judgement, is the hard part of this epic and may need its own exploration."
+        "note": "A verifier that exits non-zero. A script finds a term used in a design or an ADR and absent from the language record, and fails the check. It is modeled on plugins/cobuilder-implement/scripts/verify_gate.py, which exits non-zero on any failed Gate 4 sub-step. The honest open question is that deciding what counts as a term mechanically, rather than by judgement, is the hard part of this epic and may need its own exploration.",
+        "title": "ubiquitous-language/E4"
       },
       {
         "id": "ubiquitous-language/E5",
@@ -1472,7 +1581,8 @@
         "branch": null,
         "pr": null,
         "state": "open",
-        "note": "Repair the existing drift. Refresh cobuilder-packaging's canvas section 3 and its boundary.yaml public_interface against the shipped five-plugin tree, delete the now-false homonym comment, and reconcile the two glossaries into E1's record."
+        "note": "Repair the existing drift. Refresh cobuilder-packaging's canvas section 3 and its boundary.yaml public_interface against the shipped five-plugin tree, delete the now-false homonym comment, and reconcile the two glossaries into E1's record.",
+        "title": "ubiquitous-language/E5"
       },
       {
         "id": "work-drawer/E1",
@@ -1481,7 +1591,8 @@
         "branch": "design/work-drawer",
         "pr": null,
         "state": "open",
-        "note": "One pull request. The engineer chose one pull request for the design, so the epic carries the branch alone. The prototypes stay under src/variations/ as the reference arrangement while the drawer is the prototype surface; the port that replaces shell/Board.tsx's full-page board is this design's next epic and is deliberately not in this one, so the shipped board never regresses while the drawer is under review."
+        "note": "One pull request. The engineer chose one pull request for the design, so the epic carries the branch alone. The prototypes stay under src/variations/ as the reference arrangement while the drawer is the prototype surface; the port that replaces shell/Board.tsx's full-page board is this design's next epic and is deliberately not in this one, so the shipped board never regresses while the drawer is under review.",
+        "title": "The search owns the result set"
       },
       {
         "id": "work-drawer/E2",
@@ -1490,7 +1601,8 @@
         "branch": "design/work-drawer",
         "pr": null,
         "state": "open",
-        "note": "The second epic of the same pull request: the renames, the header's counts, and the chip walk."
+        "note": "The second epic of the same pull request: the renames, the header's counts, and the chip walk.",
+        "title": "Labels and the filter walk"
       }
     ],
     "context": [
@@ -4192,9 +4304,9 @@
         "n": 2,
         "title": "A program card opens the epic board of that program",
         "ends_with": "A click on a program card opens `#/board?program=<id>`. Each epic sits in its status column by the map in `contracts.md`, with its tracker title. The Cards switch shows the slices, an epic card opens its epic page, and the back control returns to the program board.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 2,
+        "state": "completed"
       },
       {
         "id": "kanban-board/3",
@@ -9171,7 +9283,7 @@
       },
       "kanban-board": {
         "stage_source": "tracker",
-        "next_ready": "kanban-board/2",
+        "next_ready": "kanban-board/3",
         "pull_requests": []
       },
       "lean-bundle-diffs": {
