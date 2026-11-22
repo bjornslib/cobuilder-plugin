@@ -20,7 +20,7 @@ Accept a mode argument if the user supplies one at invocation. Prompt for one if
 
 **Argument-based invocation:**
 - `/architect:design` -- Design mode
-- `/architect:review` -- Review mode
+- `/architect:review` -- Architect review mode
 - `/architect:maintenance` -- Maintenance mode
 
 - `/architect:decisions` -- Decision Records mode. Internal: `pr:generate` and `pr:review` call it. It has no command file.
@@ -30,7 +30,7 @@ Accept a mode argument if the user supplies one at invocation. Prompt for one if
 
 These modes are self-only. They analyse only the repo of the current session. Odyssey can target another checkout. Architecture cannot. If the user asks to analyse a different local checkout, or to override where output lands, refuse.
 
-**Interactive fallback:** If invoked without an argument, prompt: "Which mode? (design / review / maintenance / decisions / describe / debug / options)". Do not assume review mode by default.
+**Interactive fallback:** If invoked without an argument, prompt: "Which mode? (design / review / maintenance / decisions / describe / debug / options)". Do not assume architect review mode by default.
 
 **Content-inferred fallback:** If the user says "help me design this" without a mode argument, infer `design`. If the user says "audit my codebase", infer `review`. If the user says "record this decision", "create an ADR", or "extract decisions from this PR", infer `decisions`. If the user says "document this module or context" or "write the boundary record", infer `describe`. If the user asks "why is X failing", asks to "find the root cause", or says "debug this", infer `debug`. If the user asks "is this flow right", "are these the right technology choices", or "what are the alternatives", infer `options`.
 
@@ -166,7 +166,7 @@ that join here.
    frame set. This is the pre-flight gate in
    `references/divergent-exploration.md` §1, run using the design frame
    set (§3). Use the same dual-path guard as mermaid authoring
-   (odyssey Review mode step 4):
+   (odyssey PR review mode step 4):
 
    1. Run divergent exploration per `references/divergent-exploration.md`
       with the design frame set. Return survivors and risks. Do not
@@ -270,7 +270,7 @@ It holds three inline SVG figures and the inquiries `F1`, `T1`, `G1`. It
 is the only output. Run `scripts/check_options_report.py` on it before the
 hand-off.
 
-### Review Mode
+### Architect Review Mode
 
 **Scope:** An audit of security, architecture, code quality, scaling, maintainability, dependency health, and testing. Produces two linked self-contained HTML reports.
 
@@ -279,7 +279,7 @@ hand-off.
 2. Load design corpus (`references/corpus/principles/architecture/*`, `references/corpus/principles/ddd/*`, `references/corpus/principles/design_patterns/*`).
 3. Detect the stack through `references/stacks/` (precedence and fallback rules live in `references/stacks/README.md`), then load the Corpus Load list of the matched card. Apply its Boundary Rules and Review Checks. Report deviations from its Reference Structure as architecture findings.
 
-4. **Read security corpus (applicability read, ADR-0021 addendum):** For all 14 files under `references/corpus/principles/security/*`, this is mandatory for review mode and has two passes:
+4. **Read security corpus (applicability read, ADR-0021 addendum):** For all 14 files under `references/corpus/principles/security/*`, this is mandatory for architect review mode and has two passes:
    1. Read the first ~30 lines of every file (this covers `id`/`name`/`category`/`canonical_tags`/`sources`/`summary` for all 14, with margin — never fewer than 30 lines, never fewer than all 14 files). Never skip a category's summary.
    2. For each file, read the remainder in full unless the summary clearly shows the category has no applicable surface area in the codebase under review. **When applicability is ambiguous, read the file in full** — this is the opposite default from book-index.md's Tier 2 escalation (§ below), because a missed security finding in this skill's compliance-weighted report is worse than a wasted read.
 5. Load `references/corpus/principles/testing/*`, `references/corpus/principles/resilience/*`, and `references/corpus/principles/data_systems/*` (as design choices).
@@ -297,13 +297,21 @@ hand-off.
     - **Propose a vocabulary** in both cases, as a "Proposed vocabulary" section of the Technical Report. Work from your understanding of the codebase's components (real directories, classes, events, and routes) and of its business outcomes and context (README, `CLAUDE.md`, ADRs, and design docs). For each component, list the candidate terms with their DDD kind and the evidence for each. Then check whether each current name is sensible: does it say what the thing does for the business, and would a domain expert recognise it? Take terms from the code and the project's own documents, never from the corpus. When the glossary is present, propose only terms it lacks, or terms it holds in a form that the evidence contradicts.
 
 11. Habit-hooks scan, after the vocabulary check (step 10) and before the
-    reports. Run `uv run "${CLAUDE_PLUGIN_ROOT}/shared/habit_smells.py" --repo . --branch <base>`, where `<base>` is the default branch. The script writes `habit-smells.json` beside the reports in `docs/architecture/review/<run>/`. Name the tool habit-hooks and the branch base in a one-line report to the engineer. Read the record, then write a `## Mechanical smells` section into both HTML reports:
+    reports. Run `uv run "${CLAUDE_PLUGIN_ROOT}/shared/habit_smells.py" --repo . --branch <base>`, where `<base>` is the default branch. The script writes `habit-smells.json` beside the reports in `docs/architecture/review/`. Name the tool habit-hooks and the branch base in a one-line report to the engineer. Read the record, then write a `## Mechanical smells` section into both HTML reports:
     - A group with more than 100 findings is one count plus the top 10 files. A group with 100 or fewer findings lists its files. Never list a large group in full.
     - Classification: a swallowed-exception group starts at P1 (cite `references/harness-security.md`). A group over 100 findings starts at P1. Every other group starts at P2. Change a group's class only with evidence, and state the evidence.
     - When the record says `run_complete: false`, add a P1 finding for the incomplete-run state. Name the tool habit-sensors and say the run is incomplete. Write the section on a complete run. When the run is incomplete, rest no pair on an incomplete result.
     - When the record says `available: false`, the section states the reason the scan is unavailable and claims no clean scan.
     - The count for a smell group is issue locations, which the record names in count_basis.
     - The `habit.smells` key in `shared/verify_bundle.py` reads the same record file.
+
+12. **Structure findings record, after the habit-hooks scan.** Run `uv run "${CLAUDE_PLUGIN_ROOT}/shared/structure_evidence.py" --repo --out docs/architecture/review/structure-findings.json` from the repo toplevel. The engineer commits the record with the reports. The record sits beside `habit-smells.json`. After the script ends, read the record and `references/structure-review.md`.
+    - Write a `## Structure` section into both HTML reports.
+    - The section lists the top findings by change count, each with a judgment: `debt`, `accepted`, or `false`.
+    - The section also lists the folder table rows that the reference names.
+    - When the script fails, the section says so and claims no clean result.
+    - The section never changes the review score.
+    - When a finding holds the judgment `debt`, follow "Propose a backlog design" in `references/structure-review.md`. When the engineer does not decline, that section writes `docs/architecture/designs/<name>/goal.json`.
 
 Survivors enter the normal P0/P1/P2 severity flow below. The scoring rubric, impact taxonomy, size categorisation, and both report templates need no changes.
 
@@ -335,10 +343,10 @@ If a prior scan exists:
 
 If no prior report exists, state: "This is the first scan. Future audits will compare against this baseline."
 
-**Corpus chain:** Same as Review mode.
+**Corpus chain:** Same as architect review mode.
 
 **Habit-hooks trend, after the corpus re-audit and before the trend
-report.** Run the same scan review mode runs:
+report.** Run the same scan that architect review mode runs:
 `uv run "${CLAUDE_PLUGIN_ROOT}/shared/habit_smells.py" --repo . --branch <base>`. The
 script writes `habit-smells.json` beside the reports. Read the record, then
 diff each (smell, file) pair against the previous report's
@@ -348,9 +356,16 @@ corpus findings, in the same NEW/ESCALATED/STABLE/RESOLVED language the
 corpus findings already use.
 When the previous report holds no `## Mechanical smells` section, every pair is NEW. This scan sets the baseline for later trends.
 When the record says `run_complete: false`, diff no pair and tag nothing. The trend waits for a complete run.
-Carry the degraded rules of review mode: when the record says `run_complete: false`, that is a P1 finding naming the tool habit-sensors. When the record says `available: false`, the section states
+Carry the degraded rules of architect review mode: when the record says `run_complete: false`, that is a P1 finding naming the tool habit-sensors. When the record says `available: false`, the section states
 the reason and claims no clean scan. Name the tool habit-hooks and the
 branch base in the report.
+
+**Structure trend, after the habit-hooks trend.** Use the committed record as the previous record:
+    - Run `git show HEAD:docs/architecture/review/structure-findings.json > <temporary path>` from the repo toplevel.
+    - When git reports that the path does not exist, the trend says so. Run the script with only `--repo` and `--out`, and label every finding `new`.
+    - When `git show` succeeds, read the commit of the previous record. Run `uv run "${CLAUDE_PLUGIN_ROOT}/shared/structure_evidence.py" --repo --out docs/architecture/review/structure-findings.json --since <commit> --compare <temporary path>` from the repo toplevel. When that commit is `null`, leave out `--since`.
+    - Report the trend of each finding, and the fixed list, from the new record. Follow `references/structure-review.md` for the trend rules. The script compares the keys. The agent compares nothing by hand.
+    - When the script fails, or its output says that it cannot read the previous record, say so. Do not claim a clean trend.
 
 **Vocabulary check:** When `DDD-VOCABULARY.md` exists at the repo root,
 load it where the mode names districts or terms. When it is absent,
@@ -530,7 +545,7 @@ Four findings go to another category than their row:
 - A `business_risk` finding about a single point of failure counts under Architecture.
 - A vocabulary finding from step 10 counts under Maintainability.
 
-The checklist's Phase 4 scorer belongs to its 5-phase pipeline (Section 10), which review mode does not run. It uses 14 categories and its own weights. If a run uses the pipeline anyway, do not report its score. The reported score comes only from the P0/P1/P2 counts and `compute_scores.py`, below.
+The checklist's Phase 4 scorer belongs to its 5-phase pipeline (Section 10), which architect review mode does not run. It uses 14 categories and its own weights. If a run uses the pipeline anyway, do not report its score. The reported score comes only from the P0/P1/P2 counts and `compute_scores.py`, below.
 
 ### Category Score Formula
 

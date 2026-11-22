@@ -57,7 +57,7 @@ related:
 
 | Depends on | Integration pattern |
 |------------|--------------------|
-| shared | Shared kernel. Five scripts import `_bundle_meta`, `ledger`, `gate_status`, and `slice_table`. |
+| shared | Shared kernel. Five scripts import `_bundle_meta`, `ledger`, `gate_status`, `slice_table`, and `tracker_port.reader`. |
 | The bundle directory | Open host service. Over HTTP, read only, except the ledger append. |
 | pr | Conformist. Error text names `/pr:baseline`, `/pr:review`, and `/pr:generate` as the remedy. |
 | The session's `docs/` | Data-only reads of `designs/` and `plans/`. |

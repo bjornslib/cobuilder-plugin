@@ -111,7 +111,7 @@ The critic does, in order:
 2. **Flag traps**, with stated reasoning per flag. A trap is mode-specific:
    - *Design mode*: an option that scores high on `fit` but rests on an unexamined load-bearing assumption. It looks right because it quietly assumes away the hard part.
 
-   - *Review mode*: a finding whose recommended fix would make things worse, or a finding a compensating control already neutralises. Before reporting a review finding as real, challenge it explicitly. Does a compensating control, such as a WAF, upstream input sanitisation, or an existing rate limiter, already neutralise the issue? A finding that does not survive this challenge is a trap, not a real finding.
+   - *Architect review mode*: a finding whose recommended fix would make things worse, or a finding a compensating control already neutralises. Before reporting a review finding as real, challenge it explicitly. Does a compensating control, such as a WAF, upstream input sanitisation, or an existing rate limiter, already neutralise the issue? A finding that does not survive this challenge is a trap, not a real finding.
 
 3. **Cluster** candidates by underlying angle, not by frame. Two frames can converge on the same underlying idea. Record `agreement` as the count of independently-run frames that reached that cluster.
 
@@ -137,7 +137,7 @@ Run the test for H3 first. It has the lowest cost, and its outcome also informs 
 
 ## 5. Output schema
 
-One JSON object per candidate, whether it came from design, review, or debug mode. In review mode, deliberately shape each candidate with `id`, `severity`, `file`, `line`, `evidence`, and `recommendation` fields. This lets a standard findings array fold in blind-spot output from a review-mode divergence mechanically, without an LLM retyping it into a different shape.
+One JSON object per candidate, whether it came from design, review, or debug mode. In architect review mode, deliberately shape each candidate with `id`, `severity`, `file`, `line`, `evidence`, and `recommendation` fields. This lets a standard findings array fold in blind-spot output from a divergence of architect review mode mechanically, without an LLM retyping it into a different shape.
 
 ```json
 {

@@ -17,7 +17,7 @@ This skill sets up the CoBuilder family for the target repo. It asks before it i
 
 ## Install mode
 
-This mode runs the five parts below in order: habit-hooks setup, glossary check, Hindsight allow rules, tracker backfill, and report. Run it once per repo, and again when the repo gains a language.
+This mode runs the six parts below in order: habit-hooks setup, structure config, glossary check, Hindsight allow rules, tracker backfill, and report. Run it once per repo, and again when the repo gains a language.
 
 ## Habit-hooks setup
 
@@ -99,6 +99,23 @@ This part installs habit-hooks and its per-project detectors, then proves the co
 `ste-writing` needs no install step. It ships in every plugin through
 `shared/`, so it is already present once the plugin is installed.
 
+## Structure config
+
+This part writes the config file, `.cobuilder/structure-signals.json`. The coach reads that file on each GREEN write.
+
+When `.cobuilder/structure-signals.json` exists, leave it. Tell the engineer that the install keeps the file. Then go on to the Glossary check.
+
+Otherwise, follow these steps:
+
+1. Run `uv run "${CLAUDE_PLUGIN_ROOT}/shared/structure_signals.py" --defaults`. The output is the default config, in JSON.
+2. Run `uv run "${CLAUDE_PLUGIN_ROOT}/shared/structure_signals.py" --survey`. The output holds the folder limit and each folder over it.
+3. Show the engineer the default config and each folder over the limit.
+4. Ask the engineer to approve the config. Say that the engineer can add an excluded path for a folder flat by design, such as a reference collection.
+5. When the engineer names such a folder, add a glob for it to `excluded_paths`. Use the form `<folder>/**`, with the path from the repo root. Keep every entry from the default config, so the default globs still apply.
+6. When the engineer approves and the `.cobuilder` folder does not exist, create that folder.
+7. When the engineer approves, write the JSON from step 1 to the config file. Include any glob that the engineer added.
+8. Without approval, do not write any file. The structure signals script then uses its defaults.
+
 ## Glossary check
 
 During the setup-and-verify pass, check whether `DDD-VOCABULARY.md` exists
@@ -163,5 +180,6 @@ Report one list with one item for each part:
 
 - **Languages and detectors:** the languages that habit-hooks setup detected, and the detectors that it installed or still lacks.
 - **Coach check:** the line that the coach-check mode printed.
+- **Structure config:** whether the install kept or wrote the config file. With no config file, the structure signals script uses its defaults.
 - **Glossary:** whether `DDD-VOCABULARY.md` exists at the repository root.
 - **Allow rules:** each rule that the user file received, already held, or left for the user.

@@ -24,7 +24,7 @@ allowed_dependencies:
 context_map:
   - with: shared
     pattern: shared-kernel
-    shared: [_bundle_meta.SCHEMA_VERSION, _bundle_meta.read_plugin_version, _bundle_meta.require_compatible, _bundle_meta.stamp_generator, ledger.LedgerPaths, ledger.append_comment, gate_status, slice_table]
+    shared: [_bundle_meta.SCHEMA_VERSION, _bundle_meta.read_plugin_version, _bundle_meta.require_compatible, _bundle_meta.stamp_generator, ledger.LedgerPaths, ledger.append_comment, gate_status, slice_table, tracker_port.reader]
     note: "Five scripts add the plugin's shared symlink to sys.path and import these modules. The skill also runs shared/build_index.py and migrate_bundle.py by shell."
   - with: bundle-directory
     pattern: open-host-service

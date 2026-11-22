@@ -61,7 +61,7 @@ POINTS = [
     ("scoring: ESCALATE", SCORING, "| **ESCALATE** |", "\n", "request re-approval"),
     ("architect: design stage 5 step 6", ARCH_SKILL, "6. **Start the viewer.**",
      "9. **Stage 6", None),
-    ("architect: design stage 6", ARCH_SKILL, "9. **Stage 6", "### Review Mode",
+    ("architect: design stage 6", ARCH_SKILL, "9. **Stage 6", "### Architect Review Mode",
      "ask the engineer to decide"),
     ("design-mode: stage 6", DESIGN_MODE, "## 10. Stage 6", "## 11.",
      "ask the engineer to decide"),
