@@ -3,7 +3,7 @@
 import { atom, read } from 'claude-code'
 import type { Act, HeldQuestion, Mark, Reading } from '../types'
 import { EMPTY, actFor, marksKey, openCard } from './act'
-import { card, clock, keyed, noteInput, quiet } from './card'
+import { card, clock, firstDecide, keyed, noteInput, quiet } from './card'
 import { keyRow, questionKeyRow } from './keys'
 import { questionBlocks } from './question'
 import { PANE_ID, isBusy, isQuestionBusy, readingsKey } from './reader'
@@ -70,7 +70,9 @@ const noDigest = (r: Reading) => (r.digestAbstain ? `No digest: ${r.digestAbstai
 function summary(ui: any, r: Reading, closed: boolean) {
   const { Box, Text } = ui
   const body = r.digest ? `${r.digest.ran} ${r.digest.result}` : r.stop_kind === 'question' ? 'A question for you' : noDigest(r)
-  const lists = closed ? [] : DIGEST_LISTS.flatMap((list) => digestRows(ui, list, r.digest?.[list.field]))
+  // With a decide step, the card shows the open items above its questions (card.tsx).
+  const shown = firstDecide(r) < 0 ? DIGEST_LISTS : DIGEST_LISTS.filter((list) => list.field !== 'open_items')
+  const lists = closed ? [] : shown.flatMap((list) => digestRows(ui, list, r.digest?.[list.field]))
   return (
     <Box key="summary-box" flexDirection="column" borderStyle="single" paddingX={1} marginTop={1}>
       <Text {...quiet()}>{`${closed ? '▸' : '▾'} Agent completed`}</Text>

@@ -153,11 +153,32 @@ function titleBlock(ui: any, r: Reading, live: boolean, hasSteps: boolean) {
   )
 }
 
+// The index of the first decide step of a reading, or -1. The open items of the digest sit above it.
+export const firstDecide = (r: Reading): number =>
+  (r.result?.steps ?? []).findIndex((s: Step) => s.kind === 'ask_human' && s.detail?.role === 'decide')
+
+// The open items of the digest as one dim block: a label, then one row per item. Null with no item.
+function openItems(ui: any, r: Reading) {
+  const { Box } = ui
+  const items = r.digest?.open_items
+  if (!Array.isArray(items) || !items.length) return null
+  return (
+    <Box key="open-items-box" flexDirection="column">
+      {keyed(ui, 'open-items', 'Open items', { dimColor: true })}
+      {items.map((text, i) => keyed(ui, `open-item-${i}`, `· ${text}`, { dimColor: true }))}
+    </Box>
+  )
+}
+
 // The blocks of one card, in draw order: the title row, each step row, and the draft block.
-// A notify step draws no row, so it adds no block.
+// The open items of the digest sit above the first decide step. A notify step draws no row, so it adds no block.
 export function card($: any, ui: any, r: Reading, a: Act, live: boolean): any[] {
   const steps = r.result?.steps ?? []
-  const rows = steps.map((s, i) => (s.kind === 'notify' ? null : stepRow($, ui, r, s, i, a, live)))
+  const decide = firstDecide(r)
+  const rows = steps.flatMap((s, i) => [
+    i === decide ? openItems(ui, r) : null,
+    s.kind === 'notify' ? null : stepRow($, ui, r, s, i, a, live),
+  ])
   return [
     titleBlock(ui, r, live, steps.some((s) => s.kind !== 'notify')),
     ...rows,

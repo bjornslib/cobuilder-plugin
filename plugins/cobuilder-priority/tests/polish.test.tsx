@@ -142,7 +142,7 @@ test('the second question of a decide step has one empty row above it, and the f
 // E3.13, item 6: the digest lists under an open summary.
 
 test('an open summary lists the open items and the decisions of the digest, as dim rows', { options: OPTIONS }, async ($, on) => {
-  await readings($, on, [DIGEST_LISTS, ACTIONABLE])
+  await readings($, on, [DIGEST_LISTS, NOTIFYING])
   const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
   const root = (await ui.drawn()) as Node
   expect((await ui.find({ key: 'open-items' }))?.text).toBe('Open items')
