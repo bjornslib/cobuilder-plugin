@@ -23,7 +23,7 @@ export function TopBar(bar: TopBarProps) {
   return (
     <header className={BAR_CLASS} style={{ zIndex: "var(--layer-fixed)" }}>
       <SkipLink paneId={bar.paneId} />
-      <MobileTrigger />
+      {!bar.kanban && <MobileTrigger />}
       <BoardButtons onOpenWork={bar.onOpenWork} kanban={bar.kanban} />
       <Switcher bar={bar} />
       <StatusRow bar={bar} />

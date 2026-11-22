@@ -354,6 +354,13 @@ _Avoid_: toast, banner
 The one line of text that the copy icon of a program card or an epic card puts on the clipboard. It starts the next workflow for that record.
 _Avoid_: command (a Command is a dispatcher file of a plugin, and the prompt only names one)
 
+<a id="travel"></a>
+**Travel** (`artifact`):
+The direction of a move between the depths of the viewer: forward, back, or none. The program board is depth 0, an epic board or the No program board is depth 1, and a work-item page is depth 2.
+_Avoid_: transition (the word for any route change)
+
+The pane slides and fades in the direction of travel. Reduced motion turns the motion off.
+
 ## Cross-cutting
 
 <a id="self"></a>

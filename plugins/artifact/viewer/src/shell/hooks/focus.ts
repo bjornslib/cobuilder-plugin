@@ -59,8 +59,10 @@ export function useScrollResetOnRoute(elementId: string, keys: readonly unknown[
   useEffect(() => resetPane(elementId, reduce), [elementId, signature, reduce]);
 }
 
+export function sliceRowIntoView(elementId: string | null): void {
+  if (elementId !== null) document.getElementById(elementId)?.scrollIntoView?.({ block: "center" });
+}
+
 export function useSliceRowInView(elementId: string | null): void {
-  useEffect(() => {
-    if (elementId !== null) document.getElementById(elementId)?.scrollIntoView?.({ block: "center" });
-  }, [elementId]);
+  useEffect(() => sliceRowIntoView(elementId), [elementId]);
 }

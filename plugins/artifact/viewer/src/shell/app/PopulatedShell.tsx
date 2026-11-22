@@ -8,6 +8,7 @@ import { ProvidedFrame } from "./frame";
 import { PANE_ID } from "./ids";
 import { PaneContent } from "./PaneContent";
 import { populatedBarProps } from "./topBarProps";
+import { TravelMotion } from "./travelMotion";
 import type { ShellState } from "./useShellState";
 import { viewOf, type ShellView } from "./view";
 
@@ -24,7 +25,9 @@ function paneLabel(v: ShellView): string {
 function PaneInset({ v }: { v: ShellView }) {
   return (
     <SidebarInset id={PANE_ID} ref={v.paneRef} tabIndex={-1} aria-label={paneLabel(v)} className={PANE_CLASS}>
-      <PaneContent v={v} />
+      <TravelMotion v={v}>
+        <PaneContent v={v} />
+      </TravelMotion>
     </SidebarInset>
   );
 }
@@ -33,7 +36,7 @@ function PaneInset({ v }: { v: ShellView }) {
 function ShellBody({ v }: { v: ShellView }) {
   return (
     <div className="relative flex min-h-0 min-w-0 flex-1 overflow-hidden">
-      <Rail {...v.railSource} open={v.openGroups} onToggleGroup={v.onToggleGroup} />
+      {v.kanban === null && <Rail {...v.railSource} open={v.openGroups} onToggleGroup={v.onToggleGroup} />}
       <PaneInset v={v} />
     </div>
   );

@@ -45,8 +45,9 @@ export function usePaneEffects(core: ShellCore, address: Address) {
   useRedirectNotice(redirectInput(core, address));
   const { workId, section, sub, subId, sliceN } = core.route;
   useScrollResetOnRoute(PANE_ID, [workId, section, sub, subId, sliceN]);
-  useSliceRowInView(markedRowId(address.work, subId, sliceN));
-  return pane;
+  const markedRow = markedRowId(address.work, subId, sliceN);
+  useSliceRowInView(markedRow);
+  return { ...pane, markedRow };
 }
 
 export function useNavigation({ go, route }: ShellCore, section: SectionKey) {
