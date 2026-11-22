@@ -30,7 +30,9 @@
   },
   "out_of_scope_note": "The engineer removed the multi-selection of programs and the vertical swim lanes on 2026-11-14. A later design may add them.",
   "limits": { "warn_after_rounds": 3, "cutoff_rounds": 6 },
-  "epics": [],
+  "epics": [
+    { "id": "E1", "slug": "kanban-board", "outcome": "A read-only full page shows programs by stage, and a click opens the epics and slices of one program by status (ADR-0050)." }
+  ],
   "supersedes": null,
   "rounds": [
     { "n": 1, "changed": true, "feedback_class": "material", "note": "Draft review scored 0.64. Three blockers: the status map is not exhaustive, a slice with no program has no epic page, and the slice address needs a route field." }

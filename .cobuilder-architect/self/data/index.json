@@ -1,11 +1,11 @@
 {
   "schema_version": "1.5",
-  "built_at": "2026-11-22T21:00:33Z",
+  "built_at": "2026-11-22T21:03:55Z",
   "sources": {
-    "git_head": "96e9eb846fa15c40bc93bb366fbcdfb22058ea5d",
+    "git_head": "1b4674eb83052876a87ad49cfae7f3976671d6ef",
     "trees": {
       "docs/architecture/adr": "sha256:aaaa901242a8020aeb9cdf9d20c4bd36df1d3b6103ce418073ba78866839fa5c",
-      "docs/architecture/designs": "sha256:49b60eaa674d147f9f877bb87acdef039fb721eccfc0b13cd9fa1ae00801b6ed",
+      "docs/architecture/designs": "sha256:31a69961eba4900d5804a27829eb82492d9e8a0bf90b1457960ed2052df4cece",
       "docs/architecture/contexts": "sha256:965f965519589dd58b5c4cb126352c27a2e51a34af56752c3893a9b0f953e9f1",
       "docs/plans": "sha256:ba484738af7db7b7d486f6dc5745c911dbaab858c5db3a692761bc60a367a315",
       ".cobuilder/rubrics": "sha256:70ae1dd2fd0849c2e0c74692b6abc44128c86fa4aa9949ce8305c350ce3cbc1f"
@@ -1014,6 +1014,17 @@
         "note": "Make the gate mechanical rather than remembered. A `2b` group in `verify_gate.py`, a `2b` label in both gate-line regexes, `GATE_DOCS[\"2b\"]`, an `interaction_design` entity in the index, and the Builds view rail. Three call sites assume the last gate is number 4, so this epic is larger than it looks. It is the epic to cut. Slices 5 to 7.",
         "title": "The mechanical consumer and the projection",
         "design_doc": "interaction-design-gate/E3"
+      },
+      {
+        "id": "kanban-board/E1",
+        "design": "kanban-board",
+        "epic_id": "E1",
+        "branch": "design/kanban-board",
+        "pr": null,
+        "state": "in_progress",
+        "note": null,
+        "title": "The Kanban board",
+        "design_doc": "kanban-board/E1"
       },
       {
         "id": "lean-bundle-diffs/E1",
@@ -7726,6 +7737,7 @@
           "cobuilder-viewer/E17",
           "cobuilder-viewer/E18",
           "cobuilder-viewer/E19",
+          "kanban-board/E1",
           "mechanical-smells/E1",
           "mechanical-smells/E2",
           "react-viewer/E1",
@@ -7863,7 +7875,8 @@
           "implementation-conformance/E1",
           "implementation-conformance/E2",
           "implementation-conformance/E3",
-          "implementation-conformance/E4"
+          "implementation-conformance/E4",
+          "kanban-board/E1"
         ]
       },
       "ADR-0030": {
@@ -7913,9 +7926,10 @@
         ]
       },
       "ADR-0034": {
-        "pr": 25,
+        "pr": 58,
         "via": "epic",
         "path": [
+          "kanban-board/E1",
           "work-drawer/E1",
           "work-drawer/E2"
         ]
@@ -8055,6 +8069,7 @@
           "beads-storage/E6",
           "beads-storage/E7",
           "beads-storage/E8",
+          "kanban-board/E1",
           "linear-tracker-adapter/E1",
           "linear-tracker-adapter/E2",
           "linear-tracker-adapter/E3",
@@ -8086,9 +8101,11 @@
         ]
       },
       "ADR-0050": {
-        "pr": null,
-        "via": "none",
-        "path": []
+        "pr": 58,
+        "via": "epic",
+        "path": [
+          "kanban-board/E1"
+        ]
       }
     },
     "epic_to_pull_request": {
@@ -8125,6 +8142,7 @@
       "design-mode/E1": 11,
       "gate-doc-surfacing/E1": 19,
       "gate-doc-surfacing/E2": 19,
+      "kanban-board/E1": 58,
       "nexus-borrowings/E1": 29,
       "nexus-borrowings/E2": 29,
       "nexus-borrowings/E3": 29,
@@ -8196,6 +8214,7 @@
       "interaction-design-gate/E1": "unstarted",
       "interaction-design-gate/E2": "unstarted",
       "interaction-design-gate/E3": "unstarted",
+      "kanban-board/E1": "in_progress",
       "lean-bundle-diffs/E1": "unstarted",
       "lean-bundle-diffs/E2": "unstarted",
       "lean-bundle-diffs/E3": "completed",
@@ -8353,6 +8372,13 @@
       "interaction-design-gate/5": "interaction-design-gate/E3",
       "interaction-design-gate/6": "interaction-design-gate/E3",
       "interaction-design-gate/7": "interaction-design-gate/E3",
+      "kanban-board/1": "kanban-board/E1",
+      "kanban-board/2": "kanban-board/E1",
+      "kanban-board/3": "kanban-board/E1",
+      "kanban-board/4": "kanban-board/E1",
+      "kanban-board/5": "kanban-board/E1",
+      "kanban-board/6": "kanban-board/E1",
+      "kanban-board/7": "kanban-board/E1",
       "linear-tracker-adapter/1": "linear-tracker-adapter/E1",
       "linear-tracker-adapter/2": "linear-tracker-adapter/E1",
       "linear-tracker-adapter/3": "linear-tracker-adapter/E1",
@@ -8406,13 +8432,6 @@
       "describe-boundaries/1": "epic header names 'describe-boundaries/E1', which no design declares.",
       "describe-boundaries/2": "epic header names 'describe-boundaries/E2', which no design declares.",
       "describe-boundaries/3": "epic header names 'describe-boundaries/E3', which no design declares.",
-      "kanban-board/1": "epic header names 'kanban-board/E1', which no design declares.",
-      "kanban-board/2": "epic header names 'kanban-board/E1', which no design declares.",
-      "kanban-board/3": "epic header names 'kanban-board/E1', which no design declares.",
-      "kanban-board/4": "epic header names 'kanban-board/E1', which no design declares.",
-      "kanban-board/5": "epic header names 'kanban-board/E1', which no design declares.",
-      "kanban-board/6": "epic header names 'kanban-board/E1', which no design declares.",
-      "kanban-board/7": "epic header names 'kanban-board/E1', which no design declares.",
       "level-page-restructure/1": "epic header names 'level-page-restructure/E1', which no design declares.",
       "level-page-restructure/2": "epic header names 'level-page-restructure/E1', which no design declares.",
       "level-page-restructure/3": "epic header names 'level-page-restructure/E1', which no design declares.",
