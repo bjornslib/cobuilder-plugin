@@ -517,6 +517,91 @@ The side pane with id `memory-run` and title `🧠 CoBuilder Memory: Hindsight R
 
 It adds no fact that the result lacks.
 
+## artifact
+
+These terms come from the `kanban-board` design (ADR-0050). The viewer lives in `plugins/artifact/viewer/`.
+
+<a id="kanban-board"></a>
+**Kanban board** (`artifact`):
+The full page of the viewer at `#/board`. It shows the program board, and then the epic board of one program.
+_Avoid_: Work board (the drawer of ADR-0034, which lists programs by stage in one vertical read)
+
+<a id="program-board"></a>
+**Program board** (`artifact`):
+The first level of the Kanban board. Each program is a card in the column of its stage.
+_Avoid_: stage board (the name of a rejected prototype), overview
+
+<a id="epic-board"></a>
+**Epic board** (`artifact`):
+The second level of the Kanban board, for one program. Its epics, or its slices, sit in the columns Planned, In progress, and Done.
+_Avoid_: focus board (the name of a rejected prototype), swim lane (the board has columns only)
+
+<a id="no-program-board"></a>
+**No program board** (`artifact`):
+The level of the Kanban board at `#/board?orphans=1`, which shows the slices whose plan names no design. The address key and the code call these slices orphan slices.
+_Avoid_: orphan board (the board name stays No program, as the reader sees it)
+
+<a id="no-program-card"></a>
+**No program card** (`artifact`):
+The one card above the columns of the program board that counts the orphan slices and their plans. It opens the No program board, it never counts as a program, and it is absent when no orphan slice matches.
+_Avoid_: program card (the card of one program)
+
+<a id="column-rail"></a>
+**Column rail** (`artifact`):
+The narrow strip that stands in for a hidden column of the Kanban board. The Hide button of a column head makes it, and a click shows the column again.
+_Avoid_: rail alone (the rail is the left navigation of the viewer shell)
+
+<a id="find"></a>
+**Find** (`artifact`):
+The text field of the board's command row. It narrows the board to the records whose name, title, or label holds the text, and the `q` key of the board address holds it.
+_Avoid_: search box, filter
+
+<a id="program-order"></a>
+**Program order** (`artifact`):
+The order of the cards inside each column of the program board: by name, by most open work, or by progress. The Order select sets it, and the `sort` key of the board address holds it.
+_Avoid_: sort alone (the address key only)
+
+<a id="stage-lane"></a>
+**Stage lane** (`artifact`):
+One of the five stage groups of the Work drawer, defined once in `workDeck.ts`. The program board draws each stage lane as one column.
+_Avoid_: swim lane (the Kanban board has columns only)
+
+<a id="cards-grain"></a>
+**Cards grain** (`artifact`):
+The choice between epics and slices as the cards of the epic board. The Cards switch sets it, and the `cards` key of the board address holds it.
+
+<a id="unjoined-slice"></a>
+**Unjoined slice** (`artifact`):
+A slice of a program that no epic of the program holds. The epic board shows it in the group headed No epic, and a note counts it on the epics grain.
+_Avoid_: orphan slice (an orphan slice belongs to no program, see No program board)
+
+<a id="in-place-slice-card"></a>
+**In-place slice card** (`artifact`):
+A slice card that opens in place, because no epic page exists for its slice. Every other slice card links to its marked slice row.
+_Avoid_: orphan card (the card also serves unjoined slices)
+
+<a id="marked-slice-row"></a>
+**Marked slice row** (`artifact`):
+The slice row on an epic page that the address `#/<program>/build/epics/<epic>/<n>` names. The page opens the epic, shows a Marked chip on the row, and scrolls the row into view.
+_Avoid_: selected slice (the shell uses selected for rail items), highlighted slice
+
+<a id="board-notice"></a>
+**Board notice** (`artifact`):
+A short message in the status region at the top right of the Kanban board. It reports the copy result of a start prompt, or an address that names no program.
+_Avoid_: toast, banner
+
+<a id="start-prompt"></a>
+**Start prompt** (`artifact`):
+The one line of text that the copy icon of a program card or an epic card puts on the clipboard. It starts the next workflow for that record.
+_Avoid_: command (a Command is a dispatcher file of a plugin, and the prompt only names one)
+
+<a id="travel"></a>
+**Travel** (`artifact`):
+The direction of a move between the depths of the viewer: forward, back, or none. The program board is depth 0, an epic board or the No program board is depth 1, and a work-item page is depth 2.
+_Avoid_: transition (the word for any route change)
+
+The pane slides and fades in the direction of travel. Reduced motion turns the motion off.
+
 ## Cross-cutting
 
 <a id="self"></a>

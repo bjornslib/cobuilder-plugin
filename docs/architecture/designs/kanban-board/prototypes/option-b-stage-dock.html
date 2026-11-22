@@ -1,0 +1,680 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kanban board · B · Stage board and lane dock</title>
+<link rel="stylesheet" href="./house.css">
+<style>
+[hidden] { display: none !important; }
+html, body { overflow: hidden; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+#app { height: 100vh; display: flex; flex-direction: column; min-width: 0; }
+
+/* top bar */
+.topbar { flex: 0 0 auto; display: flex; align-items: center; gap: 14px; height: 46px; padding: 0 16px; background: var(--surface); border-bottom: 1px solid var(--line); }
+.title { margin: 0; font-size: 14px; font-weight: 700; letter-spacing: 0.01em; white-space: nowrap; }
+.tag { font-size: 11px; color: var(--tint-ink); background: var(--tint); padding: 3px 9px; border-radius: 999px; white-space: nowrap; }
+.counts { display: flex; gap: 14px; font-size: 11px; color: var(--ink-mid); white-space: nowrap; }
+.counts b { color: var(--ink); font-weight: 600; }
+.spacer { flex: 1 1 auto; }
+
+/* buttons and chips */
+.btn { height: 28px; padding: 0 11px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink); font-size: 11px; cursor: pointer; white-space: nowrap; }
+.btn:hover:not(:disabled) { background: var(--surface-3); }
+.btn:disabled { opacity: 0.45; cursor: default; }
+.ico { flex: 0 0 auto; width: 22px; height: 22px; display: grid; place-items: center; padding: 0; border: 1px solid var(--line); border-radius: 50%; background: var(--surface); color: var(--ink-mid); font-family: var(--font-serif); font-style: italic; font-size: 12px; line-height: 1; cursor: pointer; }
+.ico:hover { background: var(--surface-3); }
+
+/* toolbar */
+.toolbar { flex: 0 0 auto; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 9px 16px; background: var(--surface-2); border-bottom: 1px solid var(--line-soft); }
+.search input { width: 250px; height: 28px; padding: 0 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink); }
+.search input::placeholder { color: var(--ink-faint); }
+.group { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.glabel { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-dim); margin-right: 2px; }
+.chip { height: 26px; padding: 0 9px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--ink-mid); font-size: 11px; cursor: pointer; white-space: nowrap; }
+.chip:hover { background: var(--surface-3); }
+.chip[aria-pressed="true"] { background: var(--accent-wash); color: var(--accent-deep); border-color: var(--teal); }
+.chip .n { color: var(--ink-faint); margin-left: 3px; }
+.chip[aria-pressed="true"] .n { color: var(--accent-deep); }
+.switch { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--ink-mid); cursor: pointer; white-space: nowrap; }
+.sortsel { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--ink-mid); }
+.sortsel select { height: 28px; padding: 0 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink); }
+.selcount { font-size: 11px; color: var(--ink-mid); white-space: nowrap; }
+
+/* main split */
+#main { flex: 1 1 auto; min-height: 0; display: flex; gap: 12px; padding: 12px 16px; }
+
+/* stage board */
+#board { flex: 1 1 0; min-width: 0; min-height: 0; overflow: auto; display: flex; align-items: flex-start; gap: 10px; padding-bottom: 12px; }
+.col { flex: 1 1 0; min-width: 118px; display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow-1); }
+.col-head { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: 6px; padding: 9px 8px 9px 11px; background: var(--surface); border-bottom: 1px solid var(--line-soft); border-radius: var(--radius) var(--radius) 0 0; }
+.col-title { flex: 1 1 auto; min-width: 0; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-mid); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.count { font-size: 10.5px; color: var(--ink-dim); background: var(--surface-3); padding: 1px 6px; border-radius: 999px; white-space: nowrap; }
+.col-body { display: flex; flex-direction: column; gap: 8px; padding: 8px; }
+.col.folded { flex: 0 0 64px; min-width: 64px; }
+.col-fold { width: 100%; min-height: 140px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 12px 0; background: var(--surface); border: 0; border-radius: var(--radius); color: var(--ink-mid); cursor: pointer; }
+.col-fold:hover { background: var(--surface-2); }
+.col-vlabel { writing-mode: vertical-rl; transform: rotate(180deg); font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; }
+
+.prog { display: flex; flex-direction: column; gap: 7px; padding: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow-1); cursor: pointer; transition: background 0.15s var(--ease), border-color 0.15s var(--ease), opacity 0.2s var(--ease); }
+.prog:hover { background: var(--surface-2); border-color: var(--ink-faint); }
+.prog.sel { background: var(--accent-wash); border-color: var(--teal); box-shadow: inset 3px 0 0 var(--teal), var(--shadow-1); }
+.prog.dim { opacity: 0.4; }
+.prog-top { display: flex; align-items: flex-start; gap: 6px; }
+.prog-name { flex: 1 1 auto; min-width: 0; padding: 0; background: none; border: 0; text-align: left; font-size: 12px; font-weight: 700; color: var(--ink); overflow-wrap: anywhere; cursor: pointer; }
+.prog-sub { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.badge { font-size: 10px; letter-spacing: 0.03em; padding: 2px 6px; border-radius: 4px; background: var(--tint); color: var(--tint-ink); white-space: nowrap; }
+.pin { height: 20px; padding: 0 8px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--ink-mid); font-size: 10px; cursor: pointer; white-space: nowrap; }
+.pin:hover { background: var(--surface-3); }
+.pin.on { background: var(--accent-wash); color: var(--accent-deep); border-color: var(--teal); }
+.seg { display: flex; gap: 2px; height: 8px; border-radius: 4px; overflow: hidden; box-shadow: inset 0 0 0 1px var(--line); }
+.seg i { display: block; min-width: 3px; }
+.sg-planned { background: var(--surface-3); }
+.sg-prog { background: var(--warn); }
+.sg-done { background: var(--good); }
+.legend { display: flex; flex-wrap: wrap; gap: 2px 9px; font-size: 10.5px; }
+.lg { white-space: nowrap; }
+.lg-planned { color: var(--ink-dim); }
+.lg-prog { color: var(--warn); }
+.lg-done { color: var(--good); }
+.meta { font-size: 10.5px; color: var(--ink-dim); }
+.next { font-size: 10.5px; color: var(--ink-mid); overflow-wrap: anywhere; }
+.next b { color: var(--accent-deep); font-weight: 600; }
+.prs { display: flex; flex-wrap: wrap; gap: 4px; }
+.pr { font-size: 10px; padding: 1px 6px; border-radius: 999px; white-space: nowrap; }
+.pr-merged { color: var(--good); background: var(--good-wash); }
+.pr-open { color: var(--warn); background: var(--warn-wash); }
+.pr-plain { color: var(--ink-mid); background: var(--surface-3); }
+.st { font-size: 10.5px; padding: 1px 6px; border-radius: 4px; white-space: nowrap; }
+.st-planned { color: var(--ink-dim); background: var(--surface-3); }
+.st-prog { color: var(--warn); background: var(--warn-wash); }
+.st-done { color: var(--good); background: var(--good-wash); }
+.empty { margin: 4px 0; font-size: 11px; color: var(--ink-dim); }
+
+/* narrow board in strip mode: chips */
+.pchip { display: flex; flex-direction: column; align-items: flex-start; width: 100%; padding: 6px 7px; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; text-align: left; color: var(--ink); cursor: pointer; }
+.pchip:hover { background: var(--surface-2); }
+.pchip.sel { background: var(--accent-wash); border-color: var(--teal); }
+.pchip.dim { opacity: 0.4; }
+.pchip-name { max-width: 100%; font-size: 11px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pchip-n { font-size: 10px; color: var(--ink-dim); }
+
+/* lane dock */
+#dock { flex: 0 0 auto; display: flex; flex-direction: column; min-width: 0; min-height: 0; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.dock-bar { flex: 0 0 auto; display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 8px 0 10px; background: var(--surface); border-bottom: 1px solid var(--line); }
+.dock-title { flex: 1 1 auto; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-mid); white-space: nowrap; }
+.dock-title b { color: var(--ink); }
+.dock-scroll { flex: 1 1 auto; min-height: 0; overflow: auto; }
+#dock.collapsed { width: 40px !important; flex: 0 0 40px !important; }
+#dock.collapsed .dock-bar { flex: 1 1 auto; flex-direction: column; height: auto; padding: 8px 0; border-bottom: 0; }
+#dock.collapsed .dock-title { writing-mode: vertical-rl; flex: 1 1 auto; }
+#dock.collapsed .dock-scroll { display: none; }
+.dock-inner { width: max-content; padding-bottom: 12px; }
+.lane-heads, .lane-bands { display: grid; grid-template-columns: repeat(var(--n), 320px); column-gap: 10px; padding: 0 10px; }
+.lane-heads { position: sticky; top: 0; z-index: 3; padding-top: 10px; padding-bottom: 8px; background: var(--surface-2); }
+.lane-head { display: flex; flex-direction: column; gap: 6px; min-width: 0; padding: 9px 10px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius) var(--radius) 0 0; box-shadow: var(--shadow-1); }
+.lane-head.enter { animation: lane-up 0.26s var(--ease) both; }
+@keyframes lane-up { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+.lh-top { display: flex; align-items: flex-start; gap: 8px; }
+.lh-name { flex: 1 1 auto; min-width: 0; padding: 0; background: none; border: 0; text-align: left; font-size: 12.5px; font-weight: 700; color: var(--ink); overflow-wrap: anywhere; cursor: pointer; }
+.unpin { flex: 0 0 auto; height: 22px; padding: 0 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink-mid); font-size: 10.5px; cursor: pointer; white-space: nowrap; }
+.unpin:hover { background: var(--surface-3); }
+.lh-sub { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.lane-bands { align-items: stretch; }
+.band { display: flex; flex-direction: column; min-width: 0; background: var(--surface); border-left: 1px solid var(--line); border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.band-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; padding: 6px 10px; border: 0; background: var(--band); color: var(--band-ink); font: inherit; font-size: 10.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; text-align: left; }
+button.band-head { cursor: pointer; }
+.band-head .bn { letter-spacing: 0; text-transform: none; font-weight: 400; }
+.band-body { display: flex; flex-direction: column; gap: 7px; padding: 8px; }
+.epic { display: flex; flex-direction: column; gap: 6px; padding: 8px 9px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; }
+.epic.open { border-color: var(--teal); }
+.epic-top { display: flex; align-items: flex-start; gap: 6px; }
+.epic-toggle { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 1px; padding: 0; background: none; border: 0; text-align: left; color: var(--ink); cursor: pointer; }
+.epic-toggle:hover .epic-label { text-decoration: underline; }
+.epic-label { font-size: 11.5px; font-weight: 600; overflow-wrap: anywhere; }
+.epic-id { font-size: 10px; color: var(--ink-dim); }
+.epic-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; }
+.slices { display: flex; flex-direction: column; margin-top: 2px; border-top: 1px dashed var(--line); }
+.slice { display: grid; grid-template-columns: 14px 34px minmax(0, 1fr) auto; align-items: start; gap: 6px; padding: 6px 3px; background: none; border: 0; border-bottom: 1px solid var(--line-soft); text-align: left; color: var(--ink); cursor: pointer; }
+.slice:last-child { border-bottom: 0; }
+.slice:hover { background: var(--surface-2); }
+.mark { font-size: 11px; line-height: 1.5; }
+.mk-planned { color: var(--ink-dim); }
+.mk-prog { color: var(--warn); }
+.mk-done { color: var(--good); }
+.sn { font-size: 10.5px; color: var(--ink-dim); padding-top: 1px; }
+.stitle { font-size: 11px; line-height: 1.4; overflow-wrap: anywhere; }
+.sright { display: flex; flex-direction: column; align-items: flex-end; font-size: 10px; color: var(--ink-dim); white-space: nowrap; }
+.score { font-weight: 600; color: var(--ink-mid); }
+
+/* board and dock widths */
+#app.mode-narrow #dock { flex: 0 0 auto; width: min(calc(var(--n) * 330px + 44px), 52%); }
+#app.mode-strip #board { flex: 0 0 560px; }
+#app.mode-strip #dock { flex: 1 1 0; }
+#app.mode-strip .col { min-width: 0; }
+#app.mode-strip .col-title { white-space: normal; overflow-wrap: anywhere; line-height: 1.25; }
+#app.mode-strip .col-head { flex-wrap: wrap; row-gap: 4px; }
+#app.mode-strip .col-title { flex: 1 1 100%; }
+#app.mode-strip .col.folded { flex: 0 0 52px; min-width: 52px; }
+
+/* detail popover */
+.pop-back { position: fixed; inset: 0; z-index: 30; display: flex; align-items: center; justify-content: center; padding: 20px; background: rgba(18, 29, 28, 0.32); }
+.pop { position: relative; width: min(540px, 100%); max-height: 100%; overflow: auto; padding: 20px 22px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow-3); }
+.pop-x { position: absolute; top: 12px; right: 12px; }
+.eyebrow { margin: 0 0 4px; font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-dim); }
+.pop h2 { margin: 0 0 10px; padding-right: 30px; font-size: 15px; line-height: 1.3; overflow-wrap: anywhere; }
+.pop h3 { margin: 16px 0 6px; font-size: 10.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-mid); }
+.serif { margin: 0; font-family: var(--font-serif); font-size: 14px; line-height: 1.55; color: var(--ink); }
+.facts { display: grid; grid-template-columns: 124px minmax(0, 1fr); gap: 6px 12px; margin: 0; font-size: 11.5px; }
+.facts dt { color: var(--ink-dim); }
+.facts dd { margin: 0; overflow-wrap: anywhere; }
+.facts ul { margin: 0; padding-left: 16px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+</head>
+<body>
+<div id="app" class="mode-full">
+  <header class="topbar">
+    <h1 class="title">Kanban board</h1>
+    <span class="tag">B · Stage board and lane dock</span>
+    <div class="counts" aria-live="polite">
+      <span>Programs <b id="c-prog">0</b></span>
+      <span>Epics <b id="c-epic">0</b></span>
+      <span>Slices <b id="c-slice">0</b></span>
+    </div>
+    <span class="spacer"></span>
+    <button class="btn" id="theme" type="button" data-act="theme" aria-pressed="false">Dark theme</button>
+  </header>
+
+  <div class="toolbar">
+    <label class="search"><span class="sr">Search programs, epics, and slices</span>
+      <input id="q" type="search" placeholder="Search programs, epics, slices   ( / )" autocomplete="off">
+    </label>
+    <div class="group" role="group" aria-label="Stage">
+      <span class="glabel">Stage</span>
+      <div id="stage-chips" class="group"></div>
+    </div>
+    <div class="group" role="group" aria-label="Status">
+      <span class="glabel">Status</span>
+      <div id="status-chips" class="group"></div>
+    </div>
+    <label class="switch"><input id="hide" type="checkbox"> Hide finished</label>
+    <label class="sortsel">Sort
+      <select id="sort">
+        <option value="stage">Stage order</option>
+        <option value="name">Name</option>
+        <option value="open">Most open work</option>
+        <option value="progress">Progress</option>
+      </select>
+    </label>
+    <span class="spacer"></span>
+    <span id="sel-count" class="selcount">No program docked</span>
+    <button class="btn" id="clear" type="button" data-act="clear">Clear</button>
+  </div>
+
+  <main id="main">
+    <section id="board" aria-label="Stage board"></section>
+    <aside id="dock" aria-label="Docked lanes" hidden>
+      <div class="dock-bar">
+        <button class="ico" id="collapse" type="button" data-act="collapse" aria-label="Collapse lanes">›</button>
+        <span class="dock-title">Docked lanes <b id="dock-n">0</b></span>
+      </div>
+      <div class="dock-scroll" id="dock-scroll"></div>
+    </aside>
+  </main>
+</div>
+
+<div class="pop-back" id="pop" hidden>
+  <div class="pop" role="dialog" aria-modal="true" aria-labelledby="pop-title">
+    <button class="ico pop-x" type="button" data-act="close" aria-label="Close details">×</button>
+    <div id="pop-body"></div>
+  </div>
+</div>
+
+<script src="./board-data.js"></script>
+<script>
+(function () {
+  "use strict";
+  var B = window.BOARD;
+  var $ = function (sel) { return document.querySelector(sel); };
+  var esc = function (v) {
+    return String(v == null ? "" : v).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" }[c];
+    });
+  };
+
+  var STATUS = {
+    planned: { word: "Planned", glyph: "○", st: "st-planned", mk: "mk-planned" },
+    in_progress: { word: "In progress", glyph: "◐", st: "st-prog", mk: "mk-prog" },
+    done: { word: "Done", glyph: "●", st: "st-done", mk: "mk-done" }
+  };
+  var BANDS = ["in_progress", "planned", "done"];
+  var EMPTY_BAND = { in_progress: "No epic in progress.", planned: "No planned epics.", done: "No done epics." };
+
+  var laneOfStage = {}, stageRank = {}, laneLabel = {};
+  B.stageLanes.forEach(function (l) {
+    laneLabel[l.key] = l.label;
+    l.stages.forEach(function (s) { laneOfStage[s] = l.key; });
+  });
+  B.stages.forEach(function (s, i) { stageRank[s] = i; });
+
+  function epicLabel(e) {
+    if (e.branch) { var parts = e.branch.split("/"); return parts[parts.length - 1]; }
+    return e.epicId;
+  }
+
+  // Derived model. Built once from the snapshot; the views only read it.
+  var PROGS = [], PROG = {}, EPIC = {}, SLICE = {};
+  var EPIC_COUNT = { planned: 0, in_progress: 0, done: 0 };
+  var EPIC_TOTAL = 0, SLICE_TOTAL = 0;
+  B.programs.forEach(function (p) {
+    var count = { planned: 0, in_progress: 0, done: 0 };
+    var prog = {
+      id: p.id, name: p.name, stage: p.stage, lane: laneOfStage[p.stage], outcome: p.outcome,
+      nextReady: p.nextReady, prs: p.pullRequests, epics: [], count: count, nS: 0, sDone: 0
+    };
+    p.epics.forEach(function (e) {
+      var epic = {
+        id: e.id, epicId: e.epicId, status: e.status, col: e.col, branch: e.branch, pr: e.pr,
+        note: e.note, label: epicLabel(e), slices: e.slices, prog: prog
+      };
+      count[e.col]++;
+      EPIC_COUNT[e.col]++;
+      EPIC_TOTAL++;
+      e.slices.forEach(function (s) {
+        prog.nS++;
+        if (s.col === "done") prog.sDone++;
+        SLICE[s.id] = { s: s, e: epic, p: prog };
+        SLICE_TOTAL++;
+      });
+      EPIC[e.id] = epic;
+      prog.epics.push(epic);
+    });
+    PROGS.push(prog);
+    PROG[p.id] = prog;
+  });
+
+  // View state.
+  var S = {
+    q: "", lanes: new Set(), statuses: new Set(), hide: false, sort: "stage",
+    docked: [], open: new Set(), doneOpen: false, fold: {}, collapsed: false,
+    dark: false, pop: null, popFrom: null, enter: new Set()
+  };
+
+  // Filters.
+  function textHit(str) { return !!S.q && String(str).toLowerCase().indexOf(S.q) >= 0; }
+  function statusOk(col) { return S.statuses.size === 0 || S.statuses.has(col); }
+  function epicShown(e) {
+    if (!statusOk(e.col)) return false;
+    if (!S.q) return true;
+    return textHit(e.prog.name) || textHit(e.label) || e.slices.some(function (s) { return textHit(s.title); });
+  }
+  function sliceShown(e, s) {
+    if (!statusOk(s.col)) return false;
+    if (!S.q) return true;
+    return textHit(e.prog.name) || textHit(e.label) || textHit(s.title);
+  }
+  function programHit(p) {
+    return textHit(p.name) || p.epics.some(function (e) {
+      return textHit(e.label) || e.slices.some(function (s) { return textHit(s.title); });
+    });
+  }
+  function programHidden(p) {
+    if (S.lanes.size && !S.lanes.has(p.lane)) return true;
+    return !!S.q && !programHit(p);
+  }
+  function programDim(p) {
+    return S.statuses.size > 0 && !p.epics.some(function (e) { return S.statuses.has(e.col); });
+  }
+  function folded(key) {
+    if (S.q && PROGS.some(function (p) { return p.lane === key && !programHidden(p); })) return false;
+    if (key in S.fold) return S.fold[key];
+    return key === "superseded" || (key === "shipped" && S.hide);
+  }
+
+  function openN(p) { return p.count.planned + p.count.in_progress; }
+  function progRatio(p) { return p.nS ? p.sDone / p.nS : 0; }
+  function sortProgs(list) {
+    var byName = function (a, b) { return a.name.localeCompare(b.name); };
+    var c = list.slice();
+    if (S.sort === "name") c.sort(byName);
+    else if (S.sort === "open") c.sort(function (a, b) { return openN(b) - openN(a) || byName(a, b); });
+    else if (S.sort === "progress") c.sort(function (a, b) { return progRatio(b) - progRatio(a) || byName(a, b); });
+    else c.sort(function (a, b) { return stageRank[a.stage] - stageRank[b.stage] || byName(a, b); });
+    return c;
+  }
+
+  function attempts(n) { return n + " attempt" + (n === 1 ? "" : "s"); }
+  function plural(n, word) { return n + " " + word + (n === 1 ? "" : "s"); }
+
+  // Stage board.
+  function segPart(v, cls) { return v ? '<i class="' + cls + '" style="flex:' + v + ' 1 0"></i>' : ""; }
+
+  function progCard(p) {
+    var sel = S.docked.indexOf(p.id) >= 0;
+    var dim = programDim(p);
+    var c = p.count, n = p.epics.length;
+    var id = esc(p.id);
+    var seg = n
+      ? '<div class="seg" role="img" aria-label="' + c.planned + ' planned, ' + c.in_progress + ' in progress, ' + c.done + ' done">' +
+        segPart(c.planned, "sg-planned") + segPart(c.in_progress, "sg-prog") + segPart(c.done, "sg-done") + "</div>"
+      : "";
+    var legend = n
+      ? '<div class="legend"><span class="lg lg-planned">○ ' + c.planned + ' planned</span>' +
+        '<span class="lg lg-prog">◐ ' + c.in_progress + ' in progress</span>' +
+        '<span class="lg lg-done">● ' + c.done + ' done</span></div>'
+      : '<div class="meta">No epics yet</div>';
+    var slices = p.nS ? '<div class="meta">' + p.sDone + " of " + p.nS + " slices done</div>" : '<div class="meta">No slices yet</div>';
+    var next = p.nextReady ? '<div class="next">Next ready <b>' + esc(p.nextReady) + "</b></div>" : "";
+    var prs = p.prs.map(function (pr) {
+      return '<span class="pr pr-' + esc(pr.state) + '">PR #' + pr.number + " " + esc(pr.state) + "</span>";
+    }).join("");
+    return '<article class="prog' + (sel ? " sel" : "") + (dim ? " dim" : "") + '" data-act="dock" data-id="' + id + '">' +
+      '<div class="prog-top"><button class="prog-name" type="button" data-act="dock" data-id="' + id + '">' + esc(p.name) + "</button>" +
+      '<button class="ico" type="button" data-act="info-prog" data-id="' + id + '" aria-label="Details for ' + esc(p.name) + '">i</button></div>' +
+      '<div class="prog-sub"><span class="badge">' + esc(p.stage) + "</span>" +
+      '<button class="pin' + (sel ? " on" : "") + '" type="button" data-act="dock" data-id="' + id + '" aria-pressed="' + sel + '">' + (sel ? "Docked" : "Dock") + "</button></div>" +
+      seg + legend + slices + next +
+      (prs ? '<div class="prs">' + prs + "</div>" : "") +
+      "</article>";
+  }
+
+  function chipCard(p) {
+    var sel = S.docked.indexOf(p.id) >= 0;
+    var dim = programDim(p);
+    return '<button class="pchip' + (sel ? " sel" : "") + (dim ? " dim" : "") + '" type="button" data-act="dock" data-id="' + esc(p.id) +
+      '" aria-pressed="' + sel + '" title="' + esc(p.name) + '"><span class="pchip-name">' + esc(p.name) + "</span>" +
+      '<span class="pchip-n">' + plural(p.epics.length, "epic") + "</span></button>";
+  }
+
+  function renderBoard(mode) {
+    return B.stageLanes.filter(function (l) { return !S.lanes.size || S.lanes.has(l.key); }).map(function (lane) {
+      var all = PROGS.filter(function (p) { return p.lane === lane.key; });
+      var fold = folded(lane.key);
+      if (fold) {
+        return '<section class="col folded"><button class="col-fold" type="button" data-act="fold" data-lane="' + lane.key +
+          '" aria-expanded="false" aria-label="Show ' + esc(lane.label) + '"><span class="col-vlabel">' + esc(lane.label) +
+          '</span><span class="count">' + all.length + "</span></button></section>";
+      }
+      var shown = sortProgs(all.filter(function (p) { return !programHidden(p); }));
+      var body = shown.length
+        ? shown.map(function (p) { return mode === "strip" ? chipCard(p) : progCard(p); }).join("")
+        : '<p class="empty">' + (all.length ? "No program matches the filters in this stage." : "No program in this stage.") + "</p>";
+      return '<section class="col"><header class="col-head"><span class="col-title">' + esc(lane.label) +
+        '</span><span class="count">' + shown.length + "/" + all.length + '</span>' +
+        '<button class="ico" type="button" data-act="fold" data-lane="' + lane.key + '" aria-label="Fold ' + esc(lane.label) + '" title="Fold column">‹</button>' +
+        '</header><div class="col-body">' + body + "</div></section>";
+    }).join("");
+  }
+
+  // Lane dock.
+  function laneHead(p, col) {
+    var sel = S.enter.has(p.id) ? " enter" : "";
+    var id = esc(p.id);
+    return '<header class="lane-head' + sel + '" style="grid-column:' + col + '">' +
+      '<div class="lh-top"><button class="lh-name" type="button" data-act="info-prog" data-id="' + id + '">' + esc(p.name) + "</button>" +
+      '<button class="unpin" type="button" data-act="dock" data-id="' + id + '" aria-label="Unpin ' + esc(p.name) + '">Unpin ×</button></div>' +
+      '<div class="lh-sub"><span class="badge">' + esc(p.stage) + "</span>" +
+      '<span class="meta">' + plural(p.epics.length, "epic") + " · " + plural(p.nS, "slice") + "</span></div></header>";
+  }
+
+  function sliceList(e) {
+    if (!e.slices.length) return '<p class="empty">No slices recorded for this epic.</p>';
+    var rows = e.slices.filter(function (s) { return sliceShown(e, s); });
+    if (!rows.length) return '<p class="empty">No slice matches the filters.</p>';
+    return '<div class="slices">' + rows.map(function (s) {
+      var st = STATUS[s.col];
+      return '<button class="slice" type="button" data-act="info-slice" data-id="' + esc(s.id) + '">' +
+        '<span class="mark ' + st.mk + '" title="' + st.word + '" aria-hidden="true">' + st.glyph + "</span>" +
+        '<span class="sn">#' + s.n + "</span>" +
+        '<span class="stitle">' + esc(s.title) + "</span>" +
+        '<span class="sright"><span class="score">' + esc(s.score) + "</span><span>" + attempts(s.attempts) + "</span></span>" +
+        "</button>";
+    }).join("") + "</div>";
+  }
+
+  function epicCard(e) {
+    var open = S.open.has(e.id);
+    var st = STATUS[e.col];
+    var id = esc(e.id);
+    var nS = e.slices.length;
+    var sDone = e.slices.filter(function (s) { return s.col === "done"; }).length;
+    var progress = nS ? sDone + " of " + nS + " slices done" : "No slices";
+    return '<div class="epic' + (open ? " open" : "") + '"><div class="epic-top">' +
+      '<button class="epic-toggle" type="button" data-act="epic" data-id="' + id + '" aria-expanded="' + open + '">' +
+      '<span class="epic-label">' + esc(e.label) + '</span><span class="epic-id">' + esc(e.epicId) + "</span></button>" +
+      '<button class="ico" type="button" data-act="info-epic" data-id="' + id + '" aria-label="Details for ' + esc(e.label) + '">i</button></div>' +
+      '<div class="epic-meta"><span class="st ' + st.st + '">' + st.glyph + " " + esc(e.status) + "</span>" +
+      (e.pr != null ? '<span class="pr pr-plain">PR #' + e.pr + "</span>" : "") +
+      '<span class="meta">' + progress + "</span></div>" +
+      (open ? sliceList(e) : "") + "</div>";
+  }
+
+  function bandCell(p, status, col, row) {
+    var total = p.epics.filter(function (e) { return e.col === status; });
+    var epics = total.filter(epicShown);
+    var isDone = status === "done";
+    var open = !isDone || S.doneOpen;
+    var label = STATUS[status].word;
+    var head = isDone
+      ? '<button class="band-head" type="button" data-act="band-done" aria-expanded="' + open + '"><span>' + label +
+        '</span><span class="bn">' + plural(epics.length, "epic") + (open ? " ▾" : " ▸") + "</span></button>"
+      : '<div class="band-head"><span>' + label + '</span><span class="bn">' + plural(epics.length, "epic") + "</span></div>";
+    var body = "";
+    if (open) {
+      body = '<div class="band-body">' + (epics.length
+        ? epics.map(epicCard).join("")
+        : '<p class="empty">' + (total.length ? "No epic matches the filters." : EMPTY_BAND[status]) + "</p>") + "</div>";
+    }
+    return '<section class="band' + (open ? "" : " folded") + '" style="grid-column:' + col + ";grid-row:" + row + '">' +
+      head + body + "</section>";
+  }
+
+  function renderDock() {
+    var dock = $("#dock"), n = S.docked.length;
+    dock.hidden = n === 0;
+    dock.classList.toggle("collapsed", S.collapsed);
+    dock.style.setProperty("--n", n);
+    $("#dock-n").textContent = n;
+    var tog = $("#collapse");
+    tog.textContent = S.collapsed ? "‹" : "›";
+    tog.setAttribute("aria-label", S.collapsed ? "Expand lanes" : "Collapse lanes");
+    var scroll = $("#dock-scroll");
+    if (!n) { scroll.innerHTML = ""; return; }
+    var bands = BANDS.filter(function (b) { return !S.statuses.size || S.statuses.has(b); });
+    var heads = "", cells = "";
+    S.docked.forEach(function (id, i) {
+      var p = PROG[id];
+      heads += laneHead(p, i + 1);
+      bands.forEach(function (b, r) { cells += bandCell(p, b, i + 1, r + 1); });
+    });
+    scroll.innerHTML = '<div class="dock-inner" style="--n:' + n + '"><div class="lane-heads">' + heads +
+      '</div><div class="lane-bands" style="grid-template-rows:repeat(' + bands.length + ',auto)">' + cells + "</div></div>";
+  }
+
+  // Toolbar, counts, and detail.
+  function renderToolbar() {
+    $("#stage-chips").innerHTML = B.stageLanes.map(function (l) {
+      var n = PROGS.filter(function (p) { return p.lane === l.key; }).length;
+      return '<button class="chip" type="button" data-act="stage" data-key="' + l.key + '" aria-pressed="' + S.lanes.has(l.key) + '">' +
+        esc(l.label) + ' <span class="n">' + n + "</span></button>";
+    }).join("");
+    $("#status-chips").innerHTML = B.statusColumns.map(function (c) {
+      return '<button class="chip" type="button" data-act="status" data-key="' + c.key + '" aria-pressed="' + S.statuses.has(c.key) + '">' +
+        STATUS[c.key].glyph + " " + esc(c.label) + ' <span class="n">' + EPIC_COUNT[c.key] + "</span></button>";
+    }).join("");
+    var n = S.docked.length;
+    $("#sel-count").textContent = n ? n + (n === 1 ? " program docked" : " programs docked") : "No program docked";
+    $("#clear").disabled = n === 0;
+    $("#theme").textContent = S.dark ? "Light theme" : "Dark theme";
+    $("#theme").setAttribute("aria-pressed", String(S.dark));
+  }
+
+  function renderCounts() {
+    var progs = PROGS.filter(function (p) { return !programHidden(p) && !folded(p.lane); });
+    var eps = 0, sls = 0;
+    progs.forEach(function (p) {
+      p.epics.forEach(function (e) {
+        if (!epicShown(e)) return;
+        eps++;
+        e.slices.forEach(function (s) { if (sliceShown(e, s)) sls++; });
+      });
+    });
+    $("#c-prog").textContent = progs.length + "/" + PROGS.length;
+    $("#c-epic").textContent = eps + "/" + EPIC_TOTAL;
+    $("#c-slice").textContent = sls + "/" + SLICE_TOTAL;
+  }
+
+  function list(items) { return items.length ? "<ul>" + items.map(function (x) { return "<li>" + x + "</li>"; }).join("") + "</ul>" : "None recorded"; }
+
+  function popHTML(kind, id) {
+    if (kind === "prog") {
+      var p = PROG[id];
+      var c = p.count;
+      return '<p class="eyebrow">Program</p><h2 id="pop-title">' + esc(p.name) + "</h2>" +
+        '<p><span class="badge">' + esc(p.stage) + '</span> <span class="meta">' + esc(laneLabel[p.lane]) + "</span></p>" +
+        "<h3>Outcome</h3><p class=\"serif\">" + esc(p.outcome) + "</p>" +
+        '<dl class="facts"><dt>Next ready</dt><dd>' + (p.nextReady ? esc(p.nextReady) : "Nothing ready") + "</dd>" +
+        "<dt>Epics</dt><dd>" + p.epics.length + " · " + c.planned + " planned, " + c.in_progress + " in progress, " + c.done + " done</dd>" +
+        "<dt>Slices</dt><dd>" + p.sDone + " of " + p.nS + " done</dd>" +
+        "<dt>Pull requests</dt><dd>" + list(p.prs.map(function (pr) { return "PR #" + pr.number + " · " + esc(pr.state) + " · " + plural(pr.epics.length, "epic"); })) + "</dd></dl>";
+    }
+    if (kind === "epic") {
+      var e = EPIC[id];
+      var st = STATUS[e.col];
+      var sDone = e.slices.filter(function (s) { return s.col === "done"; }).length;
+      return '<p class="eyebrow">Epic · ' + esc(e.epicId) + "</p><h2 id=\"pop-title\">" + esc(e.label) + "</h2>" +
+        '<dl class="facts"><dt>Program</dt><dd>' + esc(e.prog.name) + "</dd>" +
+        '<dt>Status</dt><dd><span class="st ' + st.st + '">' + st.glyph + " " + esc(e.status) + " · " + st.word + "</span></dd>" +
+        "<dt>Branch</dt><dd>" + (e.branch ? esc(e.branch) : "No branch recorded") + "</dd>" +
+        "<dt>Pull request</dt><dd>" + (e.pr != null ? "PR #" + e.pr : "None") + "</dd>" +
+        "<dt>Slices</dt><dd>" + (e.slices.length ? sDone + " of " + e.slices.length + " done" : "No slices") + "</dd></dl>" +
+        "<h3>Note</h3><p class=\"serif\">" + (e.note ? esc(e.note) : "No note recorded.") + "</p>";
+    }
+    var sl = SLICE[id];
+    var s = sl.s;
+    var sst = STATUS[s.col];
+    return '<p class="eyebrow">Slice #' + s.n + " · " + esc(sl.e.label) + "</p><h2 id=\"pop-title\">" + esc(s.title) + "</h2>" +
+      '<dl class="facts"><dt>Program</dt><dd>' + esc(sl.p.name) + "</dd>" +
+      '<dt>State</dt><dd><span class="st ' + sst.st + '">' + sst.glyph + " " + esc(s.state) + " · " + sst.word + "</span></dd>" +
+      "<dt>Score</dt><dd>" + (s.score && s.score !== "—" ? esc(s.score) : "No score") + "</dd>" +
+      "<dt>Attempts</dt><dd>" + attempts(s.attempts) + "</dd></dl>" +
+      "<h3>Ends with</h3><p class=\"serif\">" + esc(s.endsWith) + "</p>";
+  }
+
+  function openPop(kind, id) {
+    S.popFrom = document.activeElement;
+    $("#pop-body").innerHTML = popHTML(kind, id);
+    $("#pop").hidden = false;
+    $("#pop .pop-x").focus();
+  }
+  function closePop() {
+    $("#pop").hidden = true;
+    $("#pop-body").innerHTML = "";
+    if (S.popFrom && S.popFrom.focus) S.popFrom.focus();
+    S.popFrom = null;
+  }
+
+  // Actions.
+  function toggleDock(id) {
+    var i = S.docked.indexOf(id);
+    if (i >= 0) {
+      S.docked.splice(i, 1);
+    } else {
+      S.docked.push(id);
+      S.enter.add(id);
+      S.collapsed = false;
+    }
+    render();
+  }
+
+  function toggleIn(set, key) {
+    if (set.has(key)) set.delete(key); else set.add(key);
+  }
+
+  function readHash() {
+    var p = new URLSearchParams(location.hash.slice(1));
+    var sel = (p.get("select") || "").split(",").map(function (s) { return s.trim(); }).filter(function (id) { return !!PROG[id]; });
+    S.docked = sel.filter(function (id, i) { return sel.indexOf(id) === i; });
+    if (p.get("theme") === "dark") S.dark = true;
+    if (p.get("hide") === "1") S.hide = true;
+  }
+
+  function writeHash() {
+    var parts = [];
+    if (S.docked.length) parts.push("select=" + S.docked.map(encodeURIComponent).join(","));
+    if (S.dark) parts.push("theme=dark");
+    if (S.hide) parts.push("hide=1");
+    try {
+      history.replaceState(null, "", parts.length ? "#" + parts.join("&") : location.pathname + location.search);
+    } catch (err) { /* file:// history may refuse; the view still works */ }
+  }
+
+  function render() {
+    var n = S.docked.length;
+    var mode = !n || S.collapsed ? "full" : n >= 3 ? "strip" : "narrow";
+    $("#app").className = "mode-" + mode;
+    document.documentElement.setAttribute("data-theme", S.dark ? "dark" : "light");
+    $("#board").innerHTML = renderBoard(mode);
+    renderDock();
+    renderToolbar();
+    renderCounts();
+    writeHash();
+    S.enter.clear();
+  }
+
+  // Events.
+  document.addEventListener("click", function (ev) {
+    var el = ev.target.closest("[data-act]");
+    if (!el) return;
+    var act = el.getAttribute("data-act");
+    var id = el.getAttribute("data-id");
+    var key = el.getAttribute("data-key");
+    if (act === "dock") toggleDock(id);
+    else if (act === "info-prog") openPop("prog", id);
+    else if (act === "info-epic") openPop("epic", id);
+    else if (act === "info-slice") openPop("slice", id);
+    else if (act === "epic") { toggleIn(S.open, id); render(); }
+    else if (act === "band-done") { S.doneOpen = !S.doneOpen; render(); }
+    else if (act === "fold") { var lane = el.getAttribute("data-lane"); S.fold[lane] = !folded(lane); render(); }
+    else if (act === "stage") { toggleIn(S.lanes, key); render(); }
+    else if (act === "status") {
+      toggleIn(S.statuses, key);
+      if (key === "done" && S.statuses.has("done")) S.doneOpen = true;
+      render();
+    }
+    else if (act === "clear") { S.docked = []; render(); }
+    else if (act === "collapse") { S.collapsed = !S.collapsed; render(); }
+    else if (act === "theme") { S.dark = !S.dark; render(); }
+    else if (act === "close") closePop();
+  });
+
+  $("#pop").addEventListener("click", function (ev) { if (ev.target.id === "pop") closePop(); });
+
+  $("#q").addEventListener("input", function (ev) { S.q = ev.target.value.trim().toLowerCase(); render(); });
+  $("#hide").addEventListener("change", function (ev) { S.hide = ev.target.checked; S.fold = {}; render(); });
+  $("#sort").addEventListener("change", function (ev) { S.sort = ev.target.value; render(); });
+
+  document.addEventListener("keydown", function (ev) {
+    if (ev.key === "Escape" && !$("#pop").hidden) { closePop(); return; }
+    var tag = document.activeElement && document.activeElement.tagName;
+    if (ev.key === "/" && !$("#pop").hidden === false && tag !== "INPUT" && tag !== "SELECT" && tag !== "TEXTAREA") {
+      ev.preventDefault();
+      $("#q").focus();
+    }
+  });
+
+  window.addEventListener("hashchange", function () { readHash(); $("#hide").checked = S.hide; render(); });
+
+  readHash();
+  $("#hide").checked = S.hide;
+  render();
+})();
+</script>
+</body>
+</html>

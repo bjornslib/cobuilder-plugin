@@ -47,6 +47,7 @@ export interface PagedArgs {
   openSheet: (subject: SheetSubject) => void;
   unresolvedSlices: number;
   focusEpic: string | null;
+  focusSlice: string | null;
 }
 
 /*
@@ -89,9 +90,9 @@ function architectureSections({ work, theme, adrs, levelState, openSheet }: Page
   ];
 }
 
-function buildSections({ work, focusEpic, openSheet, unresolvedSlices }: PagedArgs): ReactNode[] {
+function buildSections({ work, focusEpic, focusSlice, openSheet, unresolvedSlices }: PagedArgs): ReactNode[] {
   const groups = epicGroups(work).map((group, position) => (
-    <EpicGroupSection key={`epics-${position}`} work={work} group={group} focusEpic={focusEpic} openSheet={openSheet} />
+    <EpicGroupSection key={`epics-${position}`} work={work} group={group} focusEpic={focusEpic} focusSlice={focusSlice} openSheet={openSheet} />
   ));
   const unresolved = unresolvedSlices > 0 ? [<UnresolvedSlicesSection key="unresolved" count={unresolvedSlices} />] : [];
   return [...groups, ...unresolved];

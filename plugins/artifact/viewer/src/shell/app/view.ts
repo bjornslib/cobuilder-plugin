@@ -30,6 +30,11 @@ function branchesOf(work: ShellState["work"]): string[] {
   return [...new Set((work?.epics ?? []).map((epic) => epic.branch).filter((b): b is string => !!b))];
 }
 
+function focusOf(section: SectionKey, route: ShellState["route"]) {
+  const focusEpic = section === "build" && route.sub === "epics" ? route.subId : null;
+  return { focusEpic, focusSlice: focusEpic === null ? null : route.sliceN };
+}
+
 /*
  * The level state behind a paged section. Build has none, because the rail's own gate
  * decides it. Every other section stacks its panels in the pane's own scroll, so this
@@ -57,7 +62,7 @@ function pagingOf(s: ShellState) {
     paged: programKey !== null || changePr !== null,
     pagedLevel: pagedLevelOf(levels, programKey),
     changeRow: CHANGE_KEYS[changeRowIndex(route.subId)],
-    focusEpic: section === "build" && route.sub === "epics" ? route.subId : null,
+    ...focusOf(section, route),
   };
 }
 

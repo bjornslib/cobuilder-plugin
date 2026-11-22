@@ -53,6 +53,7 @@ export interface Joins {
 
 export interface RecordIndex {
   schema_version: string;
+  built_at?: string;
   sources: {
     git_head: string;
     trees: Record<string, string>;

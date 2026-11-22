@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kanban board: three layout options</title>
+<link rel="stylesheet" href="./house.css">
+<style>
+  body { display: flex; flex-direction: column; min-height: 100%; }
+  header.band { background: var(--band); color: var(--band-ink); padding: 14px 24px; display: flex; align-items: baseline; gap: 18px; }
+  header.band h1 { font-size: 15px; font-weight: 600; margin: 0; letter-spacing: 0.01em; }
+  header.band p { margin: 0; opacity: 0.85; font-size: 11.5px; }
+  header.band button { margin-left: auto; background: transparent; border: 1px solid rgba(255,255,255,0.45); color: inherit; border-radius: 6px; padding: 4px 10px; cursor: pointer; }
+  main { padding: 18px 24px 40px; display: grid; gap: 22px; max-width: 1680px; width: 100%; margin: 0 auto; }
+  .tabs { display: flex; gap: 6px; align-items: stretch; flex-wrap: wrap; }
+  .tab { border: 1px solid var(--line); background: var(--surface); border-radius: var(--radius) var(--radius) 0 0; padding: 9px 14px 8px; cursor: pointer; text-align: left; border-bottom: none; min-width: 230px; }
+  .tab b { display: block; font-size: 12.5px; }
+  .tab span { color: var(--ink-dim); font-size: 10.5px; }
+  .tab[aria-selected="true"] { background: var(--tint); color: var(--tint-ink); border-color: var(--teal); }
+  .tab[aria-selected="true"] span { color: var(--tint-ink); }
+  .tabs a { margin-left: auto; align-self: center; color: var(--accent-deep); font-size: 11px; }
+  .stage { border: 1px solid var(--teal); border-radius: 0 var(--radius) var(--radius) var(--radius); overflow: hidden; background: var(--surface); box-shadow: var(--shadow-2); margin-top: -22px; }
+  .stage iframe { display: block; width: 100%; height: min(78vh, 860px); border: 0; }
+  .presets { display: flex; gap: 8px; align-items: center; padding: 8px 12px; border-top: 1px solid var(--line); background: var(--surface-2); flex-wrap: wrap; }
+  .presets span { color: var(--ink-dim); }
+  .presets button { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 3px 11px; cursor: pointer; }
+  .presets button:hover { background: var(--accent-wash); }
+  section.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow-1); overflow: hidden; }
+  section.card > h2 { margin: 0; padding: 8px 16px; font-size: 12px; background: var(--tint); color: var(--tint-ink); font-weight: 600; }
+  .wide { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; min-width: 900px; }
+  th, td { text-align: left; vertical-align: top; padding: 9px 16px; border-top: 1px solid var(--line-soft); }
+  th { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-dim); font-weight: 600; white-space: nowrap; }
+  td { font-family: var(--font-serif); font-size: 14px; line-height: 1.45; }
+  td:first-child, th:first-child { font-family: var(--font-mono); font-size: 11.5px; width: 150px; color: var(--ink-mid); }
+  ul.doubts { margin: 0; padding: 12px 16px 14px 34px; display: grid; gap: 8px; font-family: var(--font-serif); font-size: 14.5px; line-height: 1.45; }
+  ul.doubts code, td code { font-family: var(--font-mono); font-size: 0.82em; background: var(--surface-3); padding: 1px 5px; border-radius: 4px; }
+  section.ask { border: 2px solid var(--teal); }
+  section.ask > h2 { background: var(--band); color: var(--band-ink); font-size: 13px; padding: 11px 16px; }
+  ol.q { margin: 0; padding: 14px 16px 16px 38px; display: grid; gap: 10px; font-family: var(--font-serif); font-size: 15.5px; line-height: 1.45; }
+  ol.q small { display: block; font-family: var(--font-mono); font-size: 11px; color: var(--ink-dim); margin-top: 2px; }
+</style>
+</head>
+<body>
+<header class="band">
+  <h1>Kanban board: three layout options</h1>
+  <p>Design <b>kanban-board</b>, stage backlog. Each option runs on the real record index: 26 programs, 112 epics, 130 joined slices.</p>
+  <button id="theme" type="button">Dark</button>
+</header>
+<main>
+  <div>
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" data-src="option-a-lane-matrix.html" aria-selected="true"><b>A · Lane matrix</b><span>One matrix. Selected lanes stand up.</span></button>
+      <button class="tab" role="tab" data-src="option-b-stage-dock.html" aria-selected="false"><b>B · Stage board and lane dock</b><span>Programs are cards. A selected program docks.</span></button>
+      <button class="tab" role="tab" data-src="option-c-roster-focus.html" aria-selected="false"><b>C · Roster and focus board</b><span>A list on the left. The board follows the selection.</span></button>
+      <button class="tab" role="tab" data-src="option-d-program-drilldown.html" aria-selected="false"><b>D · Program board, then epic board</b><span>Programs by stage. A click opens the epics of one program.</span></button>
+      <a id="open" href="option-a-lane-matrix.html" target="_blank" rel="noopener">Open this option in its own tab</a>
+    </div>
+  </div>
+  <div class="stage">
+    <iframe id="frame" src="option-a-lane-matrix.html" title="Layout prototype"></iframe>
+    <div class="presets">
+      <span>Show:</span>
+      <button data-hash="">No selection</button>
+      <button data-hash="#select=cobuilder-viewer">One program selected</button>
+      <button data-hash="#select=beads-storage,cobuilder-viewer,plugin-split">Three programs selected</button>
+      <button data-hash="#select=beads-storage,cobuilder-viewer,plugin-split&pivot=1">Three selected, vertical lanes (A needs this)</button>
+    </div>
+  </div>
+
+  <section class="card">
+    <h2>How each option answers the request</h2>
+    <div class="wide">
+    <table>
+      <tr><th></th><th>A · Lane matrix</th><th>B · Stage board and lane dock</th><th>C · Roster and focus board</th></tr>
+      <tr><td>The card</td><td>An epic, or a slice with the grain switch.</td><td>A program on the board. An epic inside a docked lane.</td><td>A slice on the focus board. An epic in the vertical lanes.</td></tr>
+      <tr><td>The columns</td><td>Work status: Planned, In progress, Done.</td><td>Program stage: the five lanes of the Work drawer.</td><td>Work status: Planned, In progress, Done.</td></tr>
+      <tr><td>Horizontal lanes</td><td>One lane for each program, across the status columns.</td><td>None by name. The stage board is the survey of all programs.</td><td>One lane for each program in the survey. One lane for each epic on the focus board.</td></tr>
+      <tr><td>Vertical lanes</td><td>The reader turns the matrix. Each selected program becomes a column, and the statuses become bands.</td><td>Each selected program docks as a column beside the board. The bands align across the lanes.</td><td>Two or more selected programs show as columns with aligned bands.</td></tr>
+      <tr><td>Program status</td><td>A badge on the lane header. The reader does not see the stages side by side.</td><td>The column of the card. This is the strongest read of the stage of all programs.</td><td>A badge and a group heading in the roster.</td></tr>
+      <tr><td>Strength</td><td>One mental model. The same cards turn from rows to columns.</td><td>The overview and the detail show together. It reuses the stage lanes that the reader knows.</td><td>The roster keeps every program one click away. The focus board is the classic Kanban for one program.</td></tr>
+      <tr><td>Weakness</td><td>26 lanes make a long page. The stage is only a badge.</td><td>Two regions share the width. Four docked lanes leave the board a narrow strip.</td><td>Three shapes for one board. The reader must learn which selection gives which shape.</td></tr>
+      <tr><td>Build size</td><td>Medium. One grid and one transpose.</td><td>Large. Two surfaces and a resize rule.</td><td>Large. Three board shapes and a roster.</td></tr>
+    </table>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Findings and open doubts</h2>
+    <ul class="doubts">
+      <li><b>ADR-0034 stands against a column board in the drawer.</b> It rejected five Kanban columns inside the Work drawer, and its rule says that no full-page board route remains. Each option here needs a full page. So this design must amend ADR-0034, whichever layout wins.</li>
+      <li><b>Done is most of the data.</b> 127 of 130 joined slices are done, and 51 of 112 epics are done. Each prototype folds Done. A slice-grain board shows little work in flight today.</li>
+      <li><b>Some slices have no program.</b> The index holds 172 slices. 42 join no epic of a design, because their plans have no design: <code>priority-dev-spike</code> 31, <code>level-page-restructure</code> 5, <code>coach-reaches-green</code> 3, <code>describe-boundaries</code> 3. The prototypes do not show them.</li>
+      <li><b>An epic has no name in the index.</b> The epic entity holds an id, a branch, and a pull request, and no title. The prototypes show the last part of the branch, so the 19 epics of <code>cobuilder-viewer</code> all read <code>work-prototype</code>. The tracker holds a title for each epic, such as "The exporter seam". A readable card needs <code>build_index.py</code> to put that title in the index.</li>
+      <li><b>The index holds no date, priority, or assignee.</b> The sort uses the stage, the name, the open work, and the progress only. A sort by date or priority needs a change to <code>build_index.py</code>.</li>
+      <li><b>The prototypes are read-only.</b> The viewer is a static page, and workflow state moves only through <code>tracker.py</code>. A drag that changes a status needs a write path that does not exist.</li>
+      <li><b>Unverified.</b> The prototypes are vanilla HTML, not the React viewer. They prove the layout, not the build. Project memory was not reachable in this session, so no memory record was checked.</li>
+    </ul>
+  </section>
+
+  <section class="card ask">
+    <h2>The decision: which layout does the design take forward?</h2>
+    <ol class="q">
+      <li>Which layout wins: A, B, C, or a mix that you name?<small>Recommendation: B for the survey of all programs, with the aligned bands of its dock. Second choice: A, for the smaller build.</small></li>
+      <li>Where does the board live: a new full page beside the Work drawer, or in place of the drawer?<small>Recommendation: a new full page, and the drawer stays. ADR-0034 gets an amendment.</small></li>
+      <li>Is the board read-only in this design?<small>Recommendation: yes. A status change stays with tracker.py.</small></li>
+      <li>Do slices with no program get a lane of their own?<small>Recommendation: yes, one lane named "No program", closed by default.</small></li>
+    </ol>
+  </section>
+</main>
+<script>
+  const frame = document.getElementById("frame");
+  const open = document.getElementById("open");
+  let src = "option-a-lane-matrix.html";
+  let hash = "";
+  function show() {
+    const theme = document.documentElement.dataset.theme === "dark" ? (hash ? "&theme=dark" : "#theme=dark") : "";
+    // A new URL with only a new hash does not reload a frame, so the frame is replaced.
+    frame.src = "about:blank";
+    requestAnimationFrame(() => { frame.src = src + hash + theme; });
+    open.href = src + hash + theme;
+  }
+  document.querySelectorAll(".tab").forEach((tab) => tab.addEventListener("click", () => {
+    document.querySelectorAll(".tab").forEach((other) => other.setAttribute("aria-selected", String(other === tab)));
+    src = tab.dataset.src;
+    show();
+  }));
+  document.querySelectorAll(".presets button").forEach((button) => button.addEventListener("click", () => {
+    hash = button.dataset.hash;
+    show();
+  }));
+  document.getElementById("theme").addEventListener("click", (event) => {
+    const dark = document.documentElement.dataset.theme !== "dark";
+    document.documentElement.dataset.theme = dark ? "dark" : "light";
+    event.target.textContent = dark ? "Light" : "Dark";
+    show();
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,41 @@
+%% ADR-0050 proposal. No pull request exists. shell/board/ is a predicted folder, and its rules are pure.
+%% The shell loads the index once. The board gets resolved rows as props and never calls the data layer.
+sequenceDiagram
+    participant Reader
+    participant Shell as App.tsx and useShellState
+    participant Data as src/data/
+    participant Board as shell/board/ ProgramBoard
+    participant Query as shell/board/ rule modules
+    participant Clip as navigator.clipboard
+
+    Reader->>Shell: Opens the board address /board
+    Shell->>Data: loadIndex() once at start
+    Data-->>Shell: entities and joins
+    Shell->>Data: rows for the board
+    Data-->>Shell: rows with stage, status, lifecycle, and pr
+    Shell->>Board: passes the rows as props
+    Board->>Query: boardModel(rows, address)
+    Note over Query: program, orphans, q, sort, hide, and cards come from the address
+    Query-->>Board: BoardModel with columns, shown, total, and orphans
+    Note over Query: the columns are the five lanes of workDeck.ts, and Superseded starts hidden
+    Board-->>Reader: each program in the column of its stage
+
+    Reader->>Board: Clicks a program card
+    Board->>Shell: changes the address to /board?program=kanban-board
+    Note over Shell,Board: the change pushes one history entry, and the rows stay loaded
+    Shell->>Board: passes the same rows as props
+    Board->>Query: boardModel(rows, address)
+    Query-->>Board: BoardModel with Planned, In progress, and Done
+    Board-->>Reader: epic cards and the epics to slices switch
+
+    Reader->>Board: Clicks the copy icon
+    Board->>Query: promptFor(epic card)
+    Query-->>Board: /implement:start kanban-board board-page
+    Board->>Clip: writeText(prompt)
+    alt the clipboard accepts the write
+        Clip-->>Board: the promise resolves
+        Board-->>Reader: notice Prompt copied
+    else the clipboard refuses the write
+        Clip-->>Board: the promise rejects
+        Board-->>Reader: notice Copy failed, with the prompt text
+    end

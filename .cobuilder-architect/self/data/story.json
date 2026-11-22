@@ -58,7 +58,7 @@
         "id": "docs",
         "label": "Docs",
         "kind": "authored-source",
-        "files": 209,
+        "files": 462,
         "blurb": "Authored source that no script regenerates: architecture decision records under architecture/adr and adr, design proposals under architecture/designs, two architecture review reports, a plan for cobuilder-factory, and staged pull-request content under pull-requests. Submit and design mode write here. Generate mode never does.",
         "root_paths": [
           "docs"
@@ -68,7 +68,7 @@
         "id": ".cobuilder-architect",
         "label": "Bundle Store",
         "kind": "tooling",
-        "files": 106,
+        "files": 93,
         "blurb": "The plugin's own generated output, committed alongside the code it narrates. self holds this repo's own bundle. Two named subfolders hold committed test fixtures generated against other local checkouts. An active symlink and view-server pid and log files are the only entries meant to stay out of git.",
         "root_paths": [
           ".cobuilder-architect"
@@ -2718,6 +2718,199 @@
           "edges_removed": []
         },
         "regret_risk": "The cost the team carries is a swap that lands before the parity and the publish path that make it safe, and a bundle whose own viewer copy is the tripwire. Today the served bundle still holds the 249,710-byte legacy page, so serving and publishing both work, and the React application lives only in the plugin. The first person to run /artifact:view, /artifact:publish, /pr:baseline, /pr:review, or /pr:generate refreshes that copy from the plugin, and from then on every publish in this repository exits 1 with a message that blames a hand edit that never happened. That is the ordering risk ADR-0023 and the slice ladder both named, arriving from the one direction nobody wrote down. The second cost is the reader's. The committed viewer is now a compiled application that reads two of the bundle's seven globals, so the four narration levels, the diagrams, the scene art, the audio, the diff, and the intent and assessment sheet a reader met yesterday are gone from the file the bundle ships, replaced by three panels that say so. If slices 15 and 16 follow promptly the gap closes and the three panels are a truthful interim state. If they slip, the repository has shipped a viewer that shows less than the one it replaced, and the only record of that is a note inside the branch. The third cost is smaller and lasts longer: a Node 22 and npm toolchain requirement on a repository that needed none, held together by a guard test whose failure mode is a changed hash rather than a changed reason. The verdict is concerns rather than rework because every one of these gaps is recorded, dated, and owned by an epic, and the direction conforms to a decision the repo already made. The regret is the ordering and the tripwire, and both are cheap to settle before merge.",
+        "drift": []
+      }
+    },
+    {
+      "pr": 58,
+      "date": "2026-11-22",
+      "title": "Kanban board: programs, epics, and slices by status in the viewer",
+      "tagline": "",
+      "depth": "summary",
+      "size": {
+        "files": 145,
+        "adds": 21619,
+        "dels": 239
+      },
+      "touched": {
+        ".claude-plugin": 1,
+        ".cobuilder-architect": 7,
+        ".cobuilder": 10,
+        "(root)": 2,
+        "docs": 36,
+        "plugins": 84,
+        "shared": 2,
+        "tests": 3
+      },
+      "status": "open",
+      "commit": "96e9eb846fa15c40bc93bb366fbcdfb22058ea5d",
+      "intent": {
+        "captured": "2026-11-23",
+        "source": "author",
+        "authorship": "agent-generated",
+        "design": {
+          "name": "kanban-board",
+          "epic": null
+        },
+        "problem": "The Work drawer lists each program by stage and stops there. A reader cannot see which epics and slices of a program are planned, in progress, or done. The reader opens each program in turn to learn where its work stands.",
+        "why_now": "ADR-0047 made the tracker the one source of stage and status. The record index now holds the status of each epic and slice, and no surface shows it as a board.",
+        "approach": "A Kanban board is a full page of the viewer at #/board, with no left rail. The program board shows each program as a card in its stage column. A card opens the epic board of that program, and a slice card opens its epic page with the slice row marked. Pure rule modules group, search, and sort the cards, and the address holds the view state. The index gains an optional epic title and build time. A move between the board and a page slides in the direction of travel. The branch also carries the pull request refresh of commit 829ae285.",
+        "alternatives": [
+          {
+            "option": "A lane matrix: one row for each program, and selected programs turn into columns",
+            "rejected_because": "The engineer compared the prototype and chose the two-level board. The stage showed only as a badge, and 26 rows made a long page."
+          },
+          {
+            "option": "A stage board with a dock for selected programs",
+            "rejected_because": "Two regions share the width, and a fourth docked program needs a sideways scroll."
+          },
+          {
+            "option": "A roster on the left and a board whose shape follows the selection",
+            "rejected_because": "The reader must learn three board shapes. The engineer preferred one shape for each level."
+          },
+          {
+            "option": "Put the status columns inside the Work drawer",
+            "rejected_because": "ADR-0034 built this and rejected it. Columns behind a sideways scroll spend the width of the drawer."
+          },
+          {
+            "option": "A second HTML entry with its own data file and a new tracker operation",
+            "rejected_because": "A second built file breaks the one-shell model and the byte check of the build."
+          },
+          {
+            "option": "One data file for each program, loaded when a card opens",
+            "rejected_because": "The index holds 26 programs and 112 epics, so no scale problem exists. A page opened from disk cannot fetch a further file."
+          },
+          {
+            "option": "Copy the tracker command of the next step from a card",
+            "rejected_because": "The index holds no map from a stage to a command. The engineer chose a start prompt for the design and build workflows."
+          },
+          {
+            "option": "A plain fade, or a full-width push, for the move between the board and a page",
+            "rejected_because": "The engineer chose a 32 px slide with a fade, because it shows the direction of travel and stays short."
+          }
+        ],
+        "out_of_scope": [
+          "A change of workflow state from the board, and drag and drop",
+          "The multi-selection of programs and vertical swim lanes",
+          "A sort by date, priority, or assignee, because the index holds none of them",
+          "A page for one slice",
+          "A change to the Work drawer",
+          "Leave animations: a hidden column, a collapsed list, and a closed notice go at once"
+        ],
+        "risks": [
+          "A design named board would take the address of the board. The engineer accepted this risk",
+          "The build time changes the committed index on each build, so each build shows a diff",
+          "Some epics stay open while all their slices are done, until a person records the merge of their pull request",
+          "The start prompt names a command of another plugin as text. A renamed command leaves a stale prompt",
+          "The clipboard call is not verified in each host that embeds the viewer, such as a published Artifact"
+        ],
+        "testing": "RED, GREEN, and VALIDATE ran for each of the 7 slices and for the review change. VALIDATE scored each against a blind rubric at 1.00, with browser checks on the real bundle. The engineer checked the board in Chrome on 2026-11-23. The full pytest gives 2949 passed, and Vitest gives 437 passed.",
+        "reviewer_focus": [
+          "Does the build time sit outside the sources block and outside the projector, so the stale check still holds",
+          "Does any board file compute a status that the index does not hold",
+          "Does the amendment in ADR-0050 leave the rule of ADR-0034 true for the drawer",
+          "Is the reserved board segment safe against a real design name"
+        ],
+        "unknowns": []
+      },
+      "assessment": {
+        "stage": "pre",
+        "generated": "2026-11-23",
+        "verdict": "concerns",
+        "risk_tier": "architectural",
+        "summary": "The board reads the record index and adds no second store of workflow state, as ADR-0018 and ADR-0047 require. The one cost is the build time in the committed index, which adds a diff to each rebuild.",
+        "sensible": {
+          "answer": "Yes. The index already holds the status of each epic and slice, and the board only groups and shows it. The change sits in the viewer district, which owns each reading surface, and the drawer stays as ADR-0034 decided.",
+          "evidence": [
+            "ADR-0047",
+            "ADR-0050",
+            "plugins/artifact/viewer/src/shell/board/model.ts",
+            "plugins/artifact/viewer/src/data/board.ts"
+          ]
+        },
+        "maintainability": {
+          "answer": "Helps. Pure rule modules hold the grouping, search, order, and prompt rules, and each has unit tests. The address holds the whole view state, so a reload or a link restores it. The stage lanes have one definition that the drawer and the board share.",
+          "constraint_introduced": "The board computes no status. It groups only the stage and status that the record index holds, and the address is the one store of board view state.",
+          "evidence": [
+            "plugins/artifact/viewer/src/shell/board/search.ts",
+            "plugins/artifact/viewer/src/shell/board/address.ts",
+            "plugins/artifact/viewer/src/shell/board/prompt.ts",
+            "plugins/artifact/viewer/src/shell/app/travel.ts"
+          ]
+        },
+        "pattern": {
+          "verdict": "conforms",
+          "answer": "The index fields follow the projection pattern of ADR-0018. The route reads a reserved first segment, as the work-item routes read theirs. The travel motion follows the keyed motion wrapper that levelMotion.tsx already uses.",
+          "duplicates": [],
+          "evidence": [
+            "ADR-0018",
+            "shared/build_index.py:1583",
+            "plugins/artifact/viewer/src/shell/app/levelMotion.tsx"
+          ]
+        },
+        "findings": [
+          {
+            "severity": "concern",
+            "claim": "Each run of build_index.py writes a new built_at, so the committed index shows a diff after each rebuild, also when nothing else changed.",
+            "evidence": "shared/build_index.py:1691",
+            "district": "scripts",
+            "suggestion": "Accept the noise, as the design did, or take the time from the newest commit so that an unchanged tree gives an unchanged index."
+          },
+          {
+            "severity": "note",
+            "claim": "The branch also carries the pull request refresh, which is outside the program, so one PR holds two changes.",
+            "evidence": "shared/pull-request-refresh.md",
+            "district": "docs",
+            "suggestion": "Name both changes in the PR description, so that a later blame finds the right reason."
+          },
+          {
+            "severity": "note",
+            "claim": "The board has enter motion only. A hidden column, a collapsed list, and a closed notice go at once, which section 4.1 of the interaction design does not match.",
+            "evidence": "plugins/artifact/viewer/src/index.css:204",
+            "district": "viewer",
+            "suggestion": "Add leave motion later with a delayed unmount, if a reader misses it."
+          },
+          {
+            "severity": "note",
+            "claim": "The start prompt names commands of other plugins as text, so a renamed command leaves a stale prompt, and no test ties the two.",
+            "evidence": "plugins/artifact/viewer/src/shell/board/prompt.ts",
+            "district": "viewer",
+            "suggestion": "Add a test that each command in the prompt table exists under plugins/<name>/commands/."
+          }
+        ],
+        "boundary_checks": [
+          {
+            "rule": "Components never call HTTP clients directly",
+            "source": "stacks/react-typescript.md",
+            "result": "pass",
+            "evidence": "grep -rn \"axios\\|fetch(\" src/components/ src/shell/board/ gave no hit outside tests"
+          },
+          {
+            "rule": "No cross-feature deep imports",
+            "source": "stacks/react-typescript.md",
+            "result": "not-checkable",
+            "evidence": "The viewer has no src/features/ folder"
+          },
+          {
+            "rule": "Shared components never import from features",
+            "source": "stacks/react-typescript.md",
+            "result": "not-checkable",
+            "evidence": "The viewer has no src/features/ folder"
+          },
+          {
+            "rule": "Presentational components do not import global stores",
+            "source": "stacks/react-typescript.md",
+            "result": "pass",
+            "evidence": "grep -rn \"useStore\\|useSelector\\|useAtom\" src/shell/board src/components gave no hit"
+          }
+        ],
+        "delta": {
+          "districts_added": [],
+          "districts_changed": [],
+          "edges_added": [],
+          "edges_removed": []
+        },
+        "regret_risk": "Low. The board holds no state of its own, so a later tracker change reaches it through the index. In six months the team may tire of the index diff that each rebuild writes. The text prompts may also drift from renamed commands, because no test ties them.",
         "drift": []
       }
     }

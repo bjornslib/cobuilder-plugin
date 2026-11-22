@@ -1,0 +1,16 @@
+feature: kanban-board
+test_command: "cd plugins/artifact/viewer && npx vitest run && cd ../../.. && uv run pytest tests -q"
+thresholds:
+  accept: 0.90
+  investigate: 0.70
+max_attempts: 3
+epics:
+  - { id: "E1", name: "The Kanban board", slices: [1, 2, 3, 4, 5, 6, 7] }
+slices:
+  - { id: 1, name: "The program board shows each program by stage", epic: "E1", weight: 0.18 }
+  - { id: 2, name: "A program card opens the epic board of that program", epic: "E1", weight: 0.20 }
+  - { id: 3, name: "A slice card opens its epic page with the slice row marked", epic: "E1", weight: 0.16 }
+  - { id: 4, name: "Find, Order, and Hide shape the board, and the address keeps them", epic: "E1", weight: 0.16 }
+  - { id: 5, name: "The No program card opens the slices that belong to no program", epic: "E1", weight: 0.10 }
+  - { id: 6, name: "The board header shows the build time of the index", epic: "E1", weight: 0.09 }
+  - { id: 7, name: "A copy icon gives the start prompt of a program or an epic", epic: "E1", weight: 0.11 }

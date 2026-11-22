@@ -12,6 +12,7 @@ function chromeProps(s: ShellState) {
     onOpenWork: () => s.setWorkDrawerOpen(true),
     paneId: PANE_ID,
     nameId: "work-item-name",
+    kanban: s.kanban !== null,
   };
 }
 
@@ -75,12 +76,13 @@ function identityProps(v: ShellView) {
 function listProps(v: ShellView) {
   return {
     ready: v.load.state === "ready",
-    board: v.board || v.worklessPr !== null,
+    board: v.board || v.worklessPr !== null || v.kanban !== null,
     designs: v.workList.designs,
     epics: v.workList.epics,
   };
 }
 
 export function populatedBarProps(v: ShellView): TopBarProps {
-  return { ...identityProps(v), ...listProps(v), ...chromeProps(v) };
+  const identity = v.kanban === null ? identityProps(v) : { ...NO_WORK, workId: null, workName: null };
+  return { ...identity, ...listProps(v), ...chromeProps(v) };
 }

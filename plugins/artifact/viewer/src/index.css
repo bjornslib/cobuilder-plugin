@@ -201,6 +201,9 @@
   --shadow-2: 0 2px 6px rgba(18, 29, 28, 0.07), 0 12px 28px -14px rgba(18, 29, 28, 0.22);
   --shadow-3: 0 4px 12px rgba(18, 29, 28, 0.1), 0 24px 48px -20px rgba(18, 29, 28, 0.3);
   --ease: cubic-bezier(0.22, 0.75, 0.3, 1);
+  --motion-hover: 150ms;
+  --motion-panel: 180ms;
+  --motion-notice: 140ms;
 
   --background: var(--ground);
   --foreground: var(--ink);
@@ -427,4 +430,48 @@
   --smooth-900: oklch(0.74 0 0);
   --smooth-950: oklch(0.85 0 0);
   --smooth-1000: oklch(0.96 0 0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-hover: 0ms;
+    --motion-panel: 0ms;
+    --motion-notice: 0ms;
+  }
+}
+
+[data-reduce] {
+  --motion-hover: 0ms;
+  --motion-panel: 0ms;
+  --motion-notice: 0ms;
+}
+
+@keyframes board-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes board-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes board-column-in {
+  from {
+    opacity: 0;
+    transform: scaleX(0.96);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-pulse {
+    animation: none;
+  }
+}
+
+[data-reduce] .animate-pulse {
+  animation: none;
 }

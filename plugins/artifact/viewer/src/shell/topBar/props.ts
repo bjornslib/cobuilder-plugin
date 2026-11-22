@@ -31,4 +31,6 @@ export interface TopBarProps {
   /** The id of the scroll pane, so the skip link and the switcher can reach it. */
   paneId: string;
   nameId: string;
+  /** True on the Kanban board page, so its top bar link carries `aria-current="page"`. */
+  kanban: boolean;
 }

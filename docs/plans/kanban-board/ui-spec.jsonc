@@ -1,0 +1,972 @@
+// ui-spec: kanban-board
+// Gate 2b, step 3. The boards, their controls, and the contracts that cross
+// component boundaries. Values come from docs/plans/kanban-board/interaction-design.md.
+// Colours map to the viewer's own tokens in plugins/artifact/viewer/src/index.css.
+// No literal colour and no literal duration appears in this file.
+//
+// Source: the engineer-approved prototype
+// docs/architecture/designs/kanban-board/prototypes/option-d-program-drilldown.html.
+// Its pivot, multi-select, and in-page detail panel are dead code and are absent here.
+// contracts.md wins where the prototype differs: the address is #/board?program=<id>,
+// the No program board is #/board?orphans=1, and the column control is named Hide.
+{
+  "metadata": {
+    "name": "KanbanBoard",
+    "description": "A read-only, two-level Kanban board page of the viewer. Programs sit in five stage columns, and a program opens three status columns of epics or slices.",
+    "route": "#/board",
+    "version": "1.0",
+    "source": {
+      // The schema names four tools. An approved in-repo prototype is a fifth
+      // source, and this is it. The file is static HTML and CSS, so it is
+      // authoritative for layout and structure only.
+      "tool": "PrototypeHtml",
+      "hasHtmlCss": true,
+      "codeFile": "docs/architecture/designs/kanban-board/prototypes/option-d-program-drilldown.html",
+      "decisions": ["docs/architecture/designs/kanban-board/contracts.md", "ADR-0050"],
+      "approvedMockup": "docs/plans/kanban-board/mockups/program-board-and-epic-board.html"
+    }
+  },
+
+  "layout": {
+    "type": "page",
+    "structure": {
+      // The page fills the shell pane and never grows past it. The pane is the
+      // shell's only scroll region, and it does not overflow on this route.
+      "container": "flex h-full min-h-0 min-w-0 flex-col bg-ground",
+      "headingBand": "flex min-h-14 shrink-0 items-center gap-3 px-4 py-1.5 bg-band text-band-ink",
+      "commandRow": "flex h-12 shrink-0 items-center gap-4 border-b border-line bg-surface px-4",
+      "noProgramCard": "mx-4 mt-3 shrink-0",
+      "noticeLayer": "pointer-events-none absolute right-3 top-2 z-(--layer-panel) flex w-full max-w-[440px] justify-end",
+      "boardRegion": "relative flex min-h-0 min-w-0 flex-1 flex-col",
+      "columnRow": "flex min-h-0 min-w-0 flex-1 gap-3 overflow-x-auto overflow-y-clip px-4 py-3",
+      "column": "flex min-w-[176px] min-h-0 flex-1 basis-0 flex-col rounded-lg border border-line bg-surface-2",
+      "columnHead": "flex h-10 shrink-0 items-center gap-1.5 overflow-clip rounded-t-lg border-b border-line bg-surface px-2.5",
+      "columnBody": "flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overscroll-contain p-2",
+      "hiddenRail": "flex w-11 shrink-0 flex-col items-center gap-2 overflow-clip rounded-lg border border-line bg-surface-2 py-3 text-ink-dim"
+    },
+    "responsive": {
+      // 1280 x 800: pane 1024 px, so five columns of 188.8 px and no page-level
+      // sideways scroll. The abort_if of goal.json binds here.
+      "lg": "Five columns at 176 px or wider each, sharing the pane width. Each column scrolls inside itself.",
+      "md": "The pane is narrower than 960 px, so the column row scrolls sideways inside itself. Columns keep the 176 px floor and never stack.",
+      "sm": "The rail becomes the shell's drawer, so the pane takes the full width. The column row still scrolls sideways, and every control takes a 44 px target under a coarse pointer."
+    }
+  },
+
+  "sections": [
+    {
+      "id": "heading-band",
+      "description": "The page title, the level's subject, the three shown counts, the build time, and the back link on the two lower boards.",
+      "layout": "flex min-w-0 items-center gap-3",
+      "components": ["BoardHeadingBand", "BackLink", "CountsBlock", "BuildTime"],
+      "responsive": {
+        "lg": "One row. The counts and the build time sit in a right-aligned block of two lines.",
+        "sm": "The subject heading truncates, and the counts keep their three pairs."
+      }
+    },
+    {
+      "id": "command-row",
+      "description": "Find on every board. Order on the program board. Cards on the epic board. Each group is divided by a 1 px line.",
+      "layout": "flex min-w-0 items-center gap-0",
+      "components": ["FindField", "OrderSelect", "CardsSwitch"],
+      "responsive": {
+        "lg": "Find takes the free width up to 340 px, and the gated groups sit at the end.",
+        "sm": "Groups wrap-free: Find shrinks to 120 px, and the labels stay visible."
+      }
+    },
+    {
+      "id": "notices",
+      "description": "One floating notice over the board's top right corner: Prompt copied, Copy failed, or the unknown program sentence.",
+      "layout": "pointer-events-none",
+      "components": ["CopyNotice", "UnknownProgramNotice"]
+    },
+    {
+      "id": "no-program-card",
+      "description": "One full-width card between the command row and the columns, present only when orphan slices exist.",
+      "layout": "h-11",
+      "components": ["NoProgramCard"]
+    },
+    {
+      "id": "columns",
+      "description": "The column row. Five stage columns on the program board, three status columns on the epic board and the No program board.",
+      "layout": "flex min-h-0 min-w-0 flex-1 gap-3 overflow-x-auto px-4 py-3",
+      "components": ["ColumnHead", "HideButton", "HiddenColumnRail", "ProgramCard", "EpicCard", "SliceCard", "OrphanSliceCard", "EmptyColumnNotice", "BoardNoMatch"]
+    },
+    {
+      "id": "work-drawer",
+      "description": "The ADR-0034 drawer over the board. It is unchanged, and the board adds nothing to it.",
+      "components": ["WorkDrawerEntry"]
+    }
+  ],
+
+  "components": [
+    {
+      "name": "KanbanPage",
+      "description": "The page frame. It renders the band and the command row at first paint, and the board region follows the index load.",
+      "instances": 1,
+      "props": {
+        "board": "'programs' | 'epics' | 'orphans'",
+        "load": "{ state: 'loading' } | { state: 'ready', index: RecordIndex } | { state: 'failed', message: string }",
+        "model": "BoardModel | null"
+      },
+      "structure": {
+        "container": "flex h-full min-h-0 min-w-0 flex-col bg-ground",
+        "boardRegion": "relative flex min-h-0 min-w-0 flex-1 flex-col",
+        "loadingRegion": "aria-busy='true'",
+        "skeletonColumn": "flex min-w-[176px] flex-1 basis-0 flex-col gap-2 rounded-lg border border-line bg-surface-2 p-2"
+      },
+      "interaction": {
+        "states": [
+          { "name": "loading", "class": "loading", "initial": false, "timerArming": { "starts": "on the index request", "resets": "when the request settles" } },
+          { "name": "default", "class": "default", "initial": true, "timerArming": null },
+          { "name": "empty", "class": "empty", "initial": false, "timerArming": null },
+          { "name": "error", "class": "error", "initial": false, "timerArming": null }
+        ],
+        "notApplicable": ["hover", "focus-visible", "pressed", "selected", "disabled", "transient"]
+      },
+      "sampleData": [
+        { "board": "programs", "shown": 22, "total": 26 }
+      ]
+    },
+    {
+      "name": "BoardHeadingBand",
+      "description": "The one heading band. It carries the h1 Kanban board, the subject heading on the two lower boards, the counts, and the build time.",
+      "instances": 1,
+      "props": {
+        "subject": "string | null",
+        "counts": "{ programs?: { shown: number, total: number }, epics?: { shown: number, total: number }, slices: { shown: number, total: number } }",
+        "builtAt": "string | null"
+      },
+      "structure": {
+        "band": "flex min-h-14 min-w-0 items-center gap-3 px-4 py-1.5 bg-band text-band-ink",
+        "title": "m-0 shrink-0 font-mono text-[13px] font-bold tracking-[0.02em] uppercase",
+        "subject": "m-0 min-w-0 truncate font-serif text-[15px] leading-tight text-band-ink",
+        "rule": "h-4 w-px shrink-0 bg-band-ink/40",
+        "counts": "ml-auto flex shrink-0 items-baseline gap-5",
+        "countLabel": "font-mono text-[10px] tracking-[0.12em] uppercase",
+        "countValue": "font-mono text-[13px] font-semibold tabular-nums",
+        "buildTime": "font-mono text-[11px] text-band-ink"
+      }
+    },
+    {
+      "name": "CountsBlock",
+      "description": "A description list of the shown counts. The unit lives in the label, so a screen reader reads Programs, 22 of 26.",
+      "instances": 1,
+      "props": {
+        "pairs": "Array<{ label: string, shown: number, total: number }>"
+      },
+      "structure": {
+        "list": "dl aria-label='Shown counts' m-0 flex items-baseline gap-5",
+        "pair": "flex items-baseline gap-1.5",
+        "label": "font-mono text-[10px] tracking-[0.12em] uppercase",
+        "value": "font-mono text-[13px] font-semibold tabular-nums"
+      }
+    },
+    {
+      "name": "BuildTime",
+      "description": "The build time of the record index as a time element in the reader's own time zone.",
+      "instances": 1,
+      "props": {
+        "builtAt": "string | null"
+      },
+      "structure": {
+        "time": "font-mono text-[11px] text-band-ink",
+        "missing": "font-mono text-[11px] text-band-ink"
+      },
+      "sampleData": [
+        { "builtAt": "2026-11-21T09:41:00Z" },
+        { "builtAt": null }
+      ]
+    },
+    {
+      "name": "BackLink",
+      "description": "The link from a lower board to the program board. It keeps the search and drops the other query keys of the lower board.",
+      "instances": 1,
+      "props": {
+        "q": "string",
+        "href": "string"
+      },
+      "structure": {
+        "link": "inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md px-1.5 font-mono text-[12.5px] font-bold text-band-ink hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+        "icon": "size-3.5"
+      },
+      "interaction": {
+        "classes": { "default": "text-band-ink" },
+        "states": [
+          { "name": "default", "class": "default", "initial": true, "timerArming": null },
+          { "name": "hover", "class": "hoverInBand", "initial": false, "timerArming": null },
+          { "name": "focus-visible", "class": "focusVisible", "initial": false, "timerArming": null },
+          { "name": "pressed", "class": "pressedInBand", "initial": false, "timerArming": null }
+        ],
+        "notApplicable": ["selected", "disabled", "loading", "error", "empty", "transient"]
+      }
+    },
+    {
+      "name": "FindField",
+      "description": "The one text search of the board. It replaces the address on each key press, so each press adds no history entry.",
+      "instances": 1,
+      "props": {
+        "value": "string",
+        "onChange": "(text: string) => void",
+        "disabled": "boolean",
+        "inputRef": "RefObject<HTMLInputElement>"
+      },
+      "structure": {
+        "group": "flex min-w-0 flex-1 items-center gap-2",
+        "label": "shrink-0 font-mono text-[10px] tracking-[0.12em] uppercase text-ink-dim",
+        "input": "h-8 w-full max-w-[340px] min-w-0 rounded-md border border-line bg-surface px-2.5 font-mono text-[12.5px] text-ink outline-none placeholder:text-ink-faint",
+        "inputFocus": "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+        "inputHover": "hover:border-ink-faint",
+        "inputDisabled": "disabled:opacity-45 disabled:cursor-not-allowed"
+      },
+      "interaction": {
+        "states": [
+          { "name": "default", "class": "default", "initial": true, "timerArming": null },
+          { "name": "hover", "class": "hover", "initial": false, "timerArming": null },
+          { "name": "focus-visible", "class": "focusVisible", "initial": false, "timerArming": null },
+          { "name": "disabled", "class": "disabled", "initial": false, "timerArming": null },
+          { "name": "empty", "class": "empty", "initial": false, "timerArming": null }
+        ],
+        "notApplicable": ["pressed", "selected", "loading", "error", "transient"]
+      },
+      "sampleData": [{ "value": "", "placeholder": "Program, epic, or slice. Press / to focus" }]
+    },
+    {
+      "name": "OrderSelect",
+      "description": "The sort of the program cards inside each column. It is gated to the program board.",
+      "instances": 1,
+      "props": {
+        "value": "'name' | 'open' | 'progress'",
+        "onChange": "(value: string) => void"
+      },
+      "structure": {
+        "group": "flex shrink-0 items-center gap-2 border-l border-line pl-4",
+        "label": "font-mono text-[10px] tracking-[0.12em] uppercase text-ink-dim",
+        "select": "h-8 rounded-md border border-line bg-surface px-2 font-mono text-[12px] text-ink hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+      },
+      "interaction": {
+        "states": [
+          { "name": "default", "class": "default", "initial": true, "timerArming": null },
+          { "name": "hover", "class": "hover", "initial": false, "timerArming": null },
+          { "name": "focus-visible", "class": "focusVisible", "initial": false, "timerArming": null },
+          { "name": "pressed", "class": "native", "initial": false, "timerArming": null },
+          { "name": "selected", "class": "native", "initial": false, "timerArming": null }
+        ],
+        "notApplicable": ["disabled", "loading", "error", "empty", "transient"]
+      },
+      "sampleData": [
+        { "value": "name", "options": ["Name", "Most open work", "Progress"] }
+      ]
+    },
+    {
+      "name": "CardsSwitch",
+      "description": "The grain of the epic board: epics, or slices. It is gated to the epic board.",
+      "instances": 1,
+      "props": {
+        "value": "'epics' | 'slices'",
+        "onChange": "(value: 'epics' | 'slices') => void"
+      },
+      "structure": {
+        "group": "flex shrink-0 items-center gap-2 border-l border-line pl-4",
+        "label": "font-mono text-[10px] tracking-[0.12em] uppercase text-ink-dim",
+        "segmented": "inline-flex overflow-clip rounded-full border border-line bg-surface",
+        "button": "h-8 px-3 font-mono text-[12px] text-ink-mid hover:bg-surface-2 hover:text-foreground",
+        "buttonSelected": "bg-accent-wash text-accent-deep font-bold",
+        "buttonFocus": "focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring"
+      },
+      "interaction": {
+        "states": [
+          { "name": "default", "class": "default", "initial": true, "timerArming": null },
+          { "name": "hover", "class": "hover", "initial": false, "timerArming": null },
+          { "name": "focus-visible", "class": "focusVisible", "initial": false, "timerArming": null },
+          { "name": "pressed", "class": "pressed", "initial": false, "timerArming": null },
+          { "name": "selected", "class": "selected", "initial": false, "timerArming": null }
+        ],
+        "notApplicable": ["disabled", "loading", "error", "empty", "transient"]
+      },
+      "sampleData": [{ "value": "epics" }]
+    },
+    {
+      "name": "ColumnHead",
+      "description": "One column head: the stage badge or status pill, the count that hugs it, and the Hide control at the end. The head does not scroll with the cards.",
+      "instances": 5,
+      "props": {
+        "kind": "'stage' | 'status'",
+        "label": "string",
+        "shape": "'circle' | 'half' | 'filled' | null",
+        "count": "number",
+        "columnKey": "string",
+        "hideDisabled": "boolean"
+      },
+      "structure": {
+        "head": "flex h-10 shrink-0 items-center gap-1.5 overflow-clip rounded-t-lg border-b border-line bg-surface px-2.5",
+        "badge": "inline-flex shrink-0 items-center gap-1 rounded border border-line bg-surface-2 px-1.5 py-px font-mono text-[10px] tracking-[0.06em] uppercase text-ink-mid",
+        "badgeStage": { "decision": "border-warn text-warn", "build": "border-primary text-accent-deep", "review": "border-tint bg-tint text-tint-ink", "shipped": "border-good text-good", "superseded": "border-dashed border-line text-ink-dim" },
+        "badgeStatus": { "planned": "text-ink-dim", "in_progress": "text-warn", "done": "text-good" },
+        "count": "ml-0 font-mono text-[12px] font-bold tabular-nums text-ink",
+        "grow": "ml-auto",
+        "heading": "sr-only"
+      },
+      "sampleData": [
+        { "kind": "stage", "label": "Shipped", "count": 1 },
+        { "kind": "status", "label": "Done", "shape": "filled", "count": 13 }
+      ]
+    },
+    {
+      "name": "HideButton",
+      "description": "One Hide control on each visible column head. Its visible word is Hide, and its accessible name names the column.",
+      "instances": 5,
+      "props": {
+        "columnLabel": "string",
+        "columnKey": "string",
+        "disabled": "boolean",
+        "onHide": "() => void"
+      },
+      "structure": {
+        "button": "inline-flex h-7 shrink-0 cursor-pointer items-center rounded border border-line bg-surface px-2 font-mono text-[10.5px] text-ink-mid hover:bg-surface-2 hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+        "disabled": "disabled:pointer-events-none disabled:opacity-45"
+      },
+      "interaction": {
+        "states": [
+          { "name": "default", "class": "default", "initial": true, "timerArming": null },
+          { "name": "hover", "class": "hover", "initial": false, "timerArming": null },
+          { "name": "focus-visible", "class": "focusVisible", "initial": false, "timerArming": null },
+          { "name": "pressed", "class": "pressed", "initial": false, "timerArming": null },
+          { "name": "disabled", "class": "disabled", "initial": false, "timerArming": null }
+        ],
+        "notApplicable": ["selected", "loading", "error", "empty", "transient"]
+      },
+      "sampleData": [{ "columnLabel": "Superseded", "disabled": false }]
+    },
+    {
+      "name": "HiddenColumnRail",
+      "description": "A hidden column as a 44 px rail. The rail states the column label vertically and the count, and one press shows the column again.",
+      "instances": 1,
+      "props": {
+        "columnKey": "string",
+        "columnLabel": "string",
+        "count": "number",
+        "onShow": "() => void"
+      },
+      "structure": {
+        "rail": "flex w-11 shrink-0 flex-col items-center gap-2 overflow-clip rounded-lg border border-line bg-surface-2 py-3 text-ink-dim hover:bg-accent-wash hover:text-accent-deep",
+        "label": "[writing-mode:vertical-rl] rotate-180 font-mono text-[10.5px] tracking-[0.1em] uppercase whitespace-nowrap",
+        "count": "font-mono text-[13px] font-bold tabular-nums",
+        "focus": "focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring"
+      },
+      "interaction": {
+        "states": [
+          { "name": "default", "class": "default", "initial": true, "timerArming": null },
+          { "name": "hover", "class": "selected", "initial": false, "timerArming": null },
+          { "name": "focus-visible", "class": "focusVisible", "initial": false, "timerArming": null },
+          { "name": "pressed", "class": "pressed", "initial": false, "timerArming": null },
+          { "name": "empty", "class": "empty", "initial": false, "timerArming": null }
+        ],
+        "notApplicable": ["selected", "disabled", "loading", "error", "transient"]
+      },
+      "sampleData": [{ "columnLabel": "Superseded", "count": 4 }]
+    },
+    {
+      "name": "ProgramCard",
+      "description": "One program in its stage column: name, outcome, epic bar, the three epic counts, and the slice footer. The card body opens the epic board, and the name opens the program.",
+      "instances": 26,
+      "props": {
+        "program": "{ id: string, name: string, outcome: string, stage: string }",
+        "counts": "{ planned: number, inProgress: number, done: number }",
+        "slices": "{ total: number, done: number, nextReadyN: number | null }",
+        "prompt": "string | null"
+      },
+      "structure": {
+        "card": "group relative flex flex-col gap-1.5 overflow-clip rounded-lg border border-line bg-surface p-2.5 shadow-card transition-colors duration-150 ease-house hover:border-primary hover:shadow-raise focus-within:border-primary",
+        "targetLink": "absolute inset-0 rounded-lg after:absolute after:inset-0 after:content-[''] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+        "name": "relative z-10 m-0 font-mono text-[13px] font-bold break-words text-ink underline decoration-line decoration-1 underline-offset-[3px] hover:decoration-primary hover:text-accent-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+        "outcome": "m-0 line-clamp-2 font-serif text-[12px] leading-[1.4] text-ink-mid",
+        "bar": "flex h-1.5 gap-0.5 overflow-clip rounded-sm bg-surface-3",
+        "counts": "flex flex-wrap gap-x-2.5 gap-y-0.5 font-mono text-[10.5px] tabular-nums",
+        "footer": "font-mono text-[10.5px] text-ink-dim",
+        "copySlot": "absolute right-1.5 top-1.5 z-10"
+      },
+      "interaction": {
+        "states": [
+          { "name": "default", "class": "default", "initial": true, "timerArming": null },
+          { "name": "hover", "class": "cardHover", "initial": false, "timerArming": null },
+          { "name": "focus-visible", "class": "focusVisible", "initial": false, "timerArming": null },
+          { "name": "pressed", "class": "pressed", "initial": false, "timerArming": null }
+        ],
+        "notApplicable": ["selected", "disabled", "loading", "error", "empty", "transient"]
+      },
+      "sampleData": [
+        {
+          "program": { "id": "kanban-board", "name": "kanban-board", "outcome": "A reader sees every program by stage, then the epics of one program.", "stage": "approved" },
+          "counts": { "planned": 3, "inProgress": 2, "done": 1 },
+          "slices": { "total": 6, "done": 3, "nextReadyN": 4 },
+          "prompt": "/implement:start kanban-board"
+        }
+      ]
+    },
+    {
+      "name": "ProgramNameLink",
+      "description": "The name on a program card. It opens the program's own page and sits above the card's stretched target.",
+      "instances": 26,
+      "props": { "programId": "string", "name": "string" },
+      "structure": {
+        "link": "relative z-10 font-mono text-[13px] font-bold break-words text-ink underline decoration-line underline-offset-[3px] hover:decoration-primary hover:text-accent-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+      },
+      "interaction": {
+        "states": [
+          { "name": "default", "class": "default", "initial": true, "timerArming": null },
+          { "name": "hover", "class": "hover", "initial": false, "timerArming": null },
+          { "name": "focus-visible", "class": "focusVisible", "initial": false, "timerArming": null },
+          { "name": "pressed", "class": "pressed", "initial": false, "timerArming": null }
+        ],
+        "notApplicable": ["selected", "disabled", "loading", "error", "empty", "transient"]
+      }
+    },
+    {
+      "name": "EpicCard",
+      "description": "One epic in a status column. The head opens the epic page, the pips toggle shows the slices in place, and the copy icon copies the prompt. The card keeps the raw status word.",
+      "instances": 112,
+      "props": {
+        "epic": "{ id: string, epicId: string, title: string | null, status: string, lifecycle: 'open' | 'closed', pr: number | null, branch: string | null }",
+        "slices": "Array<{ n: number, title: string, state: string, score: string | null }>",
+        "slicesDone": "boolean",
+        "prompt": "string | null"
+      },
+      "structure": {
+        "card": "overflow-clip rounded-lg border border-line-soft bg-surface shadow-card",
+        "statusRule": { "planned": "border-l-[3px] border-l-ink-faint", "in_progress": "border-l-[3px] border-l-warn", "done": "border-l-[3px] border-l-good" },
+        "head": "relative p-2",
+        "targetLink": "absolute inset-0 after:absolute after:inset-0 after:content-[''] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+        "identity": "flex items-baseline gap-1.5 pr-8",
+        "epicId": "shrink-0 font-mono text-[10.5px] font-bold tracking-[0.04em] text-ink-dim",
+        "label": "min-w-0 truncate font-mono text-[12px] font-semibold text-ink",
+        "meta": "mt-1.5 flex flex-wrap items-center gap-1.5",
+        "statusPill": { "planned": "bg-surface-3 text-ink-dim", "in_progress": "bg-warn-wash text-warn", "done": "bg-good-wash text-good" },
+        "prBadge": "rounded bg-tint px-1.5 py-px font-mono text-[10.5px] text-tint-ink",
+        "copySlot": "absolute right-1 top-1 z-10",
+        "pipsRow": "flex w-full items-center gap-2 border-t border-dashed border-line px-2 py-1.5 font-mono text-[10.5px] text-ink-dim hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring",
+        "pip": { "planned": "size-2 rounded-sm border border-dashed border-ink-faint", "in_progress": "size-2 rounded-sm border border-warn bg-warn", "done": "size-2 rounded-sm border border-good bg-good" },
+        "pipsMore": "ml-auto whitespace-nowrap tabular-nums",
+        "sliceList": "flex flex-col gap-0.5 border-t border-line-soft p-1",
+        "sliceRow": "grid grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-2 rounded px-1.5 py-1 text-left hover:bg-surface-3 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring"
+      },
+      "interaction": {
+        "states": [
+          { "name": "default", "class": "default", "initial": true, "timerArming": null },
+          { "name": "hover", "class": "cardHover", "initial": false, "timerArming": null },
+          { "name": "focus-visible", "class": "focusVisible", "initial": false, "timerArming": null },
+          { "name": "pressed", "class": "pressed", "initial": false, "timerArming": null },
+          { "name": "empty", "class": "empty", "initial": false, "timerArming": null }
+        ],
+        "notApplicable": ["selected", "disabled", "loading", "error", "transient"]
+      },
+      "sampleData": [
+        {
+          "epic": { "id": "kanban-board/e3", "epicId": "e3", "title": "The epic board shows the epics of one program", "status": "in_progress", "lifecycle": "open", "pr": null, "branch": "feat/kanban-board-e3" },
+          "slices": [
+            { "n": 1, "title": "The board route resolves", "state": "completed", "score": "0.94" },
+            { "n": 2, "title": "The columns map each status", "state": "in_progress", "score": null },
+            { "n": 3, "title": "The pips row shows each slice", "state": "planned", "score": null }
+          ],
+          "slicesDone": false,
+          "prompt": "/implement:start kanban-board e3"
+        }
+      ]
+    },
+    {
+      "name": "SlicePipsToggle",
+      "description": "The row of pips under an epic card head. It expands the epic's slice list in place and states the done count.",
+      "instances": 1,
+      "props": {
+        "epicLabel": "string",
+        "slices": "Array<{ n: number, state: string }>",
+        "done": "number",
+        "expanded": "boolean",
+        "controlsId": "string",
+        "onToggle": "() => void"
+      },
+      "structure": {
+        "button": "flex w-full items-center gap-2 border-t border-dashed border-line px-2 py-1.5 font-mono text-[10.5px] text-ink-dim hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring",
+        "caret": "text-[10px] transition-transform duration-150 ease-house",
+        "caretOpen": "rotate-180"
+      },
+      "interaction": {
+        "states": [
+          { "name": "default", "class": "default", "initial": true, "timerArming": null },
+          { "name": "hover", "class": "hover", "initial": false, "timerArming": null },
+          { "name": "focus-visible", "class": "focusVisible", "initial": false, "timerArming": null },
+          { "name": "pressed", "class": "pressed", "initial": false, "timerArming": null },
+          { "name": "selected", "class": "selectedTint", "initial": false, "timerArming": null }
+        ],
+        "notApplicable": ["disabled", "loading", "error", "empty", "transient"]
+      },
+      "sampleData": [{ "epicLabel": "The epic board shows the epics of one program", "done": 1, "total": 3, "expanded": false }]
+    },
+    {
+      "name": "SlicesDoneMark",
+      "description": "The mark on an epic card whose lifecycle is open and whose slices are all done. It reads the lifecycle and the slice states, never the column.",
+      "instances": 1,
+      "props": { "visible": "boolean" },
+      "structure": {
+        "badge": "inline-flex items-center gap-1 rounded border border-good/40 bg-good-wash px-1.5 py-px font-mono text-[10.5px] font-semibold text-good"
+      },
+      "sampleData": [{ "visible": true }]
+    },
+    {
+      "name": "CopyPromptButton",
+      "description": "The copy icon on a program card or an epic card that has a next workflow. It writes one prompt line and never changes the board.",
+      "instances": 1,
+      "props": {
+        "prompt": "string",
+        "recordName": "string",
+        "onCopied": "() => void",
+        "onFailed": "(prompt: string) => void"
+      },
+      "structure": {
+        "button": "relative z-10 inline-flex size-8 cursor-pointer items-center justify-center rounded-md text-ink-faint hover:bg-surface-2 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+        "icon": "size-3.5"
+      },
+      "interaction": {
+        "states": [
+          { "name": "default", "class": "default", "initial": true, "timerArming": null },
+          { "name": "hover", "class": "hover", "initial": false, "timerArming": null },
+          { "name": "focus-visible", "class": "focusVisible", "initial": false, "timerArming": null },
+          { "name": "pressed", "class": "pressed", "initial": false, "timerArming": null }
+        ],
+        "notApplicable": ["selected", "disabled", "loading", "error", "empty", "transient"]
+      },
+      "sampleData": [{ "prompt": "/implement:start kanban-board", "recordName": "kanban-board" }]
+    },
+    {
+      "name": "CopyNotice",
+      "description": "The one notice of a clipboard write. Success holds for --hold-ack. Failure holds the prompt text until Close or Escape.",
+      "instances": 1,
+      "props": {
+        "kind": "'copied' | 'failed' | null",
+        "prompt": "string",
+        "onClose": "() => void"
+      },
+      "structure": {
+        "layer": "pointer-events-none absolute right-3 top-2 z-(--layer-panel) flex w-full max-w-[440px] justify-end",
+        "copied": "pointer-events-auto inline-flex items-center gap-1.5 rounded-md border border-good/40 bg-good-wash px-2.5 py-1.5 font-mono text-[12px] font-semibold text-good shadow-card",
+        "failed": "pointer-events-auto w-full rounded-md border border-destructive bg-danger-wash px-3 py-2 text-destructive shadow-card",
+        "promptText": "mt-1 block w-full resize-none rounded border border-destructive/40 bg-surface px-2 py-1 font-mono text-[11.5px] text-ink select-all",
+        "close": "mt-1.5 inline-flex h-7 items-center rounded border border-destructive/40 px-2 font-mono text-[11px] hover:bg-destructive/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+      },
+      "interaction": {
+        "states": [
+          { "name": "default", "class": "default", "initial": true, "timerArming": null },
+          { "name": "error", "class": "error", "initial": false, "timerArming": null },
+          { "name": "transient", "class": "transient", "initial": false, "timerArming": { "starts": "on the copy action that resolves", "resets": "after --hold-ack" } }
+        ],
+        "notApplicable": ["hover", "focus-visible", "pressed", "selected", "disabled", "loading", "empty"]
+      },
+      "sampleData": [
+        { "kind": "copied" },
+        { "kind": "failed", "prompt": "/implement:start kanban-board e3" }
+      ]
+    },
+    {
+      "name": "NoProgramCard",
+      "description": "The one card for slices that belong to no program. It never counts as a program, and it is absent when no such slice exists.",
+      "instances": 1,
+      "props": {
+        "orphanCount": "number",
+        "planCount": "number",
+        "onOpen": "() => void"
+      },
+      "structure": {
+        "link": "flex h-11 items-center gap-2.5 rounded-lg border border-l-2 border-dashed border-line border-l-ink-faint bg-surface px-3 hover:border-primary hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+        "name": "font-mono text-[13px] font-bold text-ink",
+        "count": "font-mono text-[11.5px] tabular-nums text-ink-dim",
+        "chevron": "ml-auto font-mono text-[12px] text-ink-dim"
+      },
+      "interaction": {
+        "states": [
+          { "name": "default", "class": "default", "initial": true, "timerArming": null },
+          { "name": "hover", "class": "cardHover", "initial": false, "timerArming": null },
+          { "name": "focus-visible", "class": "focusVisible", "initial": false, "timerArming": null },
+          { "name": "pressed", "class": "pressed", "initial": false, "timerArming": null }
+        ],
+        "notApplicable": ["selected", "disabled", "loading", "error", "empty", "transient"]
+      },
+      "sampleData": [{ "orphanCount": 42, "planCount": 4 }]
+    },
+    {
+      "name": "SliceCard",
+      "description": "One slice of a program on the epic board. It opens the epic page with the slice number as a fifth segment. In the Done column it reads as one compact line.",
+      "instances": 130,
+      "props": {
+        "slice": "{ n: number, title: string, state: string, score: string | null }",
+        "epicId": "string",
+        "programId": "string",
+        "compact": "boolean"
+      },
+      "structure": {
+        "link": "block rounded-lg border border-line-soft bg-surface p-2 text-left hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+        "compact": "px-2 py-1",
+        "line": "flex items-baseline gap-1.5",
+        "number": "shrink-0 font-mono text-[10.5px] font-bold text-ink-dim",
+        "title": "min-w-0 truncate font-mono text-[11.5px] text-ink",
+        "meta": "mt-1 flex flex-wrap items-center gap-1.5",
+        "score": "font-mono text-[10.5px] tabular-nums text-ink-dim"
+      },
+      "interaction": {
+        "states": [
+          { "name": "default", "class": "default", "initial": true, "timerArming": null },
+          { "name": "hover", "class": "cardHover", "initial": false, "timerArming": null },
+          { "name": "focus-visible", "class": "focusVisible", "initial": false, "timerArming": null },
+          { "name": "pressed", "class": "pressed", "initial": false, "timerArming": null }
+        ],
+        "notApplicable": ["selected", "disabled", "loading", "error", "empty", "transient"]
+      },
+      "sampleData": [{ "slice": { "n": 3, "title": "The pips row shows each slice", "state": "planned", "score": null }, "epicId": "e3", "programId": "kanban-board", "compact": false }]
+    },
+    {
+      "name": "OrphanSliceCard",
+      "description": "One slice with no program on the No program board. No page exists, so the card expands in place with the end state, the score, and the attempts.",
+      "instances": 42,
+      "props": {
+        "slice": "{ n: number, title: string, state: string, endsWith: string, score: string | null, attempts: number }",
+        "planSlug": "string",
+        "expanded": "boolean",
+        "onToggle": "() => void"
+      },
+      "structure": {
+        "card": "rounded-lg border border-line-soft bg-surface",
+        "button": "flex w-full flex-col gap-1 p-2 text-left hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring",
+        "panel": "border-t border-line-soft px-2 py-2",
+        "facts": "grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1 font-mono text-[11.5px]",
+        "factLabel": "text-ink-dim",
+        "endsWith": "font-serif text-[12px] leading-[1.4] text-ink-mid"
+      },
+      "interaction": {
+        "states": [
+          { "name": "default", "class": "default", "initial": true, "timerArming": null },
+          { "name": "hover", "class": "cardHover", "initial": false, "timerArming": null },
+          { "name": "focus-visible", "class": "focusVisible", "initial": false, "timerArming": null },
+          { "name": "pressed", "class": "pressed", "initial": false, "timerArming": null },
+          { "name": "selected", "class": "selectedTint", "initial": false, "timerArming": null },
+          { "name": "empty", "class": "empty", "initial": false, "timerArming": null }
+        ],
+        "notApplicable": ["disabled", "loading", "error", "transient"]
+      },
+      "sampleData": [
+        { "slice": { "n": 4, "title": "The rubric scores the slice", "state": "completed", "endsWith": "The rubric file holds one score per criterion.", "score": "0.92", "attempts": 2 }, "planSlug": "habit-sensors", "expanded": false }
+      ]
+    },
+    {
+      "name": "EmptyColumnNotice",
+      "description": "The sentence in a column body that holds no card. It states which cause emptied the column.",
+      "instances": 1,
+      "props": {
+        "cause": "'no-record' | 'search'",
+        "board": "'programs' | 'epics' | 'orphans'",
+        "q": "string"
+      },
+      "structure": {
+        "sentence": "m-0 px-1 py-3 font-serif text-[12.5px] italic text-ink-dim"
+      },
+      "sampleData": [
+        { "cause": "no-record", "board": "programs", "text": "No program is in this stage." },
+        { "cause": "search", "board": "epics", "q": "drawer", "text": "No epic matches “drawer”." }
+      ]
+    },
+    {
+      "name": "BoardNoMatch",
+      "description": "The one board sentence when the search empties every column. It holds the Clear the search button.",
+      "instances": 1,
+      "props": { "board": "'programs' | 'epics' | 'orphans'", "q": "string", "subject": "string | null" },
+      "structure": {
+        "wrapper": "flex flex-1 flex-col items-center justify-center gap-2 px-6 py-10 text-center",
+        "sentence": "m-0 max-w-[52ch] font-serif text-[15px] text-ink-mid",
+        "clear": "inline-flex h-8 items-center rounded-md border border-line bg-surface px-3 font-mono text-[12.5px] font-bold text-ink-mid hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+      },
+      "interaction": {
+        "states": [
+          { "name": "default", "class": "default", "initial": true, "timerArming": null },
+          { "name": "hover", "class": "hover", "initial": false, "timerArming": null },
+          { "name": "focus-visible", "class": "focusVisible", "initial": false, "timerArming": null },
+          { "name": "pressed", "class": "pressed", "initial": false, "timerArming": null }
+        ],
+        "notApplicable": ["selected", "disabled", "loading", "error", "empty", "transient"]
+      },
+      "sampleData": [{ "board": "programs", "q": "zzz", "text": "No program, epic, or slice matches “zzz”." }]
+    },
+    {
+      "name": "UnknownProgramNotice",
+      "description": "The notice for an address that names a program the index lacks. The program board shows under it.",
+      "instances": 1,
+      "props": { "value": "string", "onClose": "() => void" },
+      "structure": {
+        "notice": "pointer-events-auto flex w-full items-start gap-2 rounded-md border border-warn bg-warn-wash px-3 py-2 text-warn shadow-card",
+        "text": "m-0 font-mono text-[12px] leading-[1.5]",
+        "close": "ml-auto inline-flex h-7 shrink-0 items-center rounded border border-warn/40 px-2 font-mono text-[11px] hover:bg-warn/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+      },
+      "interaction": {
+        "states": [
+          { "name": "default", "class": "default", "initial": true, "timerArming": null },
+          { "name": "error", "class": "error", "initial": false, "timerArming": null }
+        ],
+        "notApplicable": ["hover", "focus-visible", "pressed", "selected", "disabled", "loading", "empty", "transient"]
+      },
+      "sampleData": [{ "value": "kanban-bord" }]
+    },
+    {
+      "name": "TopBarBoardLink",
+      "description": "The one link to the board, in the shell's top bar beside the Work board button. It navigates, so it is a link, and it marks the current page.",
+      "instances": 1,
+      "props": { "current": "boolean" },
+      "structure": {
+        "link": "inline-flex size-11 shrink-0 items-center justify-center rounded-lg border border-line bg-surface text-ink-mid transition-colors duration-150 ease-house hover:bg-surface-2 hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+        "linkCurrent": "bg-accent-wash text-accent-deep",
+        "icon": "size-[18px]"
+      },
+      "interaction": {
+        "states": [
+          { "name": "default", "class": "default", "initial": true, "timerArming": null },
+          { "name": "hover", "class": "hover", "initial": false, "timerArming": null },
+          { "name": "focus-visible", "class": "focusVisible", "initial": false, "timerArming": null },
+          { "name": "pressed", "class": "pressed", "initial": false, "timerArming": null },
+          { "name": "selected", "class": "selected", "initial": false, "timerArming": null }
+        ],
+        "notApplicable": ["disabled", "loading", "error", "empty", "transient"]
+      }
+    },
+    {
+      "name": "WorkDrawerEntry",
+      "description": "The existing Work board button. It is unchanged and still opens the drawer over the board.",
+      "instances": 1,
+      "props": { "onOpenWork": "() => void" },
+      "structure": {
+        "button": "inline-flex size-11 shrink-0 items-center justify-center rounded-lg border border-line bg-surface text-ink-mid hover:bg-surface-2 hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+      },
+      "interaction": {
+        "states": [
+          { "name": "default", "class": "default", "initial": true, "timerArming": null },
+          { "name": "hover", "class": "hover", "initial": false, "timerArming": null },
+          { "name": "focus-visible", "class": "focusVisible", "initial": false, "timerArming": null },
+          { "name": "pressed", "class": "pressed", "initial": false, "timerArming": null }
+        ],
+        "notApplicable": ["selected", "disabled", "loading", "error", "empty", "transient"]
+      }
+    }
+  ],
+
+  "colors": {
+    "note": "Every class names a token from plugins/artifact/viewer/src/index.css. The tokens switch on data-theme, so no dark: utility is needed and none is used.",
+    "band": { "usage": "The one heading band of the page", "token": "bg-band text-band-ink", "extracted": "#006572 on #ffffff" },
+    "surface": { "usage": "Cards, column heads, the command row", "token": "bg-surface", "extracted": "#ffffff" },
+    "surface2": { "usage": "Column bodies, control hover", "token": "bg-surface-2", "extracted": "#f4fafb" },
+    "surface3": { "usage": "Pressed controls, the progress bar track", "token": "bg-surface-3", "extracted": "#dfecee" },
+    "ground": { "usage": "The page ground", "token": "bg-ground", "extracted": "#e9f2f3" },
+    "line": { "usage": "Borders and dividers", "token": "border-line", "extracted": "#cfe0e2" },
+    "lineSoft": { "usage": "Card borders inside a column", "token": "border-line-soft", "extracted": "#e4eff1" },
+    "ink": { "usage": "Primary text", "token": "text-ink", "extracted": "#121d1c" },
+    "inkMid": { "usage": "Secondary text, idle controls", "token": "text-ink-mid", "extracted": "#3c4b4a" },
+    "inkDim": { "usage": "Labels, counts, empty sentences", "token": "text-ink-dim", "extracted": "#6a7978" },
+    "inkFaint": { "usage": "Placeholders, the copy icon, a planned pip", "token": "text-ink-faint", "extracted": "#93a1a0" },
+    "accent": { "usage": "Selected switch, hover wash, the current page link", "token": "bg-accent-wash text-accent-deep", "extracted": "#dcedf0 on #125460" },
+    "primary": { "usage": "Focus ring, card hover border, the build stage badge", "token": "border-primary text-accent-deep outline-ring", "extracted": "#1d7f8e" },
+    "tint": { "usage": "The review stage badge, the pull request badge", "token": "bg-tint text-tint-ink", "extracted": "#cde7ed on #10353b" },
+    "good": { "usage": "Done status, the done pip, the Slices done mark, the success notice", "token": "bg-good-wash text-good border-good/40", "extracted": "#2f6b42 on #dfeee4" },
+    "warn": { "usage": "In progress status, the decision stage badge, the unknown program notice", "token": "bg-warn-wash text-warn border-warn", "extracted": "#9e5c17 on #f6ead9" },
+    "danger": {
+      "usage": "The Copy failed notice only",
+      "token": "bg-danger-wash text-destructive border-destructive",
+      "extracted": "#9c3333 on #f7e3e3",
+      "note": "--color-danger is not registered in @theme inline, so the class is text-destructive. A text-danger class would generate no CSS and fail silently."
+    },
+    "overlay": { "usage": "The Work drawer's own overlay", "token": "bg-ink/55" }
+  },
+
+  "typography": {
+    "headings": {
+      "h1": "font-mono text-[13px] font-bold tracking-[0.02em] uppercase",
+      "h2": "m-0 truncate font-serif text-[15px] leading-tight",
+      "columnHeading": "sr-only font-mono text-[11px] uppercase"
+    },
+    "body": {
+      "default": "font-mono text-[12.5px] text-ink",
+      "cardTitle": "font-mono text-[12px] font-semibold text-ink",
+      "prose": "font-serif text-[12px] leading-[1.4] text-ink-mid",
+      "emptySentence": "font-serif text-[12.5px] italic text-ink-dim"
+    },
+    "special": {
+      "count": "font-mono text-[13px] font-semibold tabular-nums",
+      "columnCount": "font-mono text-[12px] font-bold tabular-nums",
+      "label": "font-mono text-[10px] tracking-[0.12em] uppercase",
+      "badge": "font-mono text-[10px] uppercase tracking-[0.06em]",
+      "meta": "font-mono text-[10.5px] tabular-nums text-ink-dim"
+    }
+  },
+
+  "interactions": {
+    "stateClasses": {
+      "default": "bg-surface text-ink",
+      "hover": "hover:bg-surface-2 hover:text-foreground",
+      "hoverInBand": "hover:underline",
+      "focusVisible": "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+      "pressed": "active:bg-surface-3",
+      "pressedInBand": "active:bg-band-ink/15",
+      "selected": "bg-accent-wash text-accent-deep",
+      "selectedTint": "bg-surface-2",
+      "disabled": "disabled:pointer-events-none disabled:opacity-45",
+      "loading": "opacity-70 pointer-events-none",
+      "error": "border-destructive bg-danger-wash text-destructive",
+      "empty": "text-ink-dim",
+      "transient": "bg-good-wash text-good",
+      "cardHover": "hover:border-primary hover:bg-surface-2",
+      "native": "appearance-auto, the platform draw only, no house class"
+    },
+
+    "transitions": [
+      { "trigger": "the index resolves", "from": "loading", "to": "default", "durationToken": "--motion-notice", "easing": "ease-house", "guard": null, "reset": "reduced motion sets 0" },
+      { "trigger": "Hide is pressed on a column, with another column visible", "from": "default", "to": "hidden", "durationToken": "--motion-panel", "easing": "ease-house", "guard": "the last visible column's Hide is disabled", "reset": "the rail is pressed" },
+      { "trigger": "a rail is pressed", "from": "hidden", "to": "default", "durationToken": "--motion-panel", "easing": "ease-house", "guard": null, "reset": "Hide is pressed again" },
+      { "trigger": "the pips toggle is pressed", "from": "collapsed", "to": "expanded", "durationToken": "--motion-panel", "easing": "ease-house", "guard": "the epic holds at least one slice", "reset": "a board change collapses every list" },
+      { "trigger": "the pips toggle is pressed again", "from": "expanded", "to": "collapsed", "durationToken": "--motion-panel", "easing": "ease-house", "guard": null, "reset": null },
+      { "trigger": "an orphan slice card is pressed", "from": "collapsed", "to": "expanded", "durationToken": "--motion-panel", "easing": "ease-house", "guard": "one card is open at a time", "reset": "another card's press, or a search change" },
+      { "trigger": "the open orphan slice card is pressed", "from": "expanded", "to": "collapsed", "durationToken": "--motion-panel", "easing": "ease-house", "guard": null, "reset": null },
+      { "trigger": "a program card, the back link, or the No program card is pressed", "from": "programs", "to": "epics", "durationToken": null, "easing": null, "guard": "the target board resolves", "reset": "the board region scrolls to 0 and focus moves to the subject heading" },
+      { "trigger": "the address changes to another board", "from": "any board", "to": "the board the address names", "durationToken": null, "easing": null, "guard": "an unknown program shows the program board and a notice", "reset": "scroll positions go to 0" },
+      { "trigger": "a clipboard write resolves", "from": "absent", "to": "transient", "durationToken": "--motion-notice", "easing": "ease-house", "guard": null, "reset": "after --hold-ack" },
+      { "trigger": "a clipboard write rejects, or the clipboard API is absent", "from": "absent", "to": "error", "durationToken": "--motion-notice", "easing": "ease-house", "guard": null, "reset": "Close or Escape" },
+      { "trigger": "Close or Escape on a notice", "from": "transient or error", "to": "absent", "durationToken": "--motion-notice", "easing": "ease-house", "guard": null, "reset": null },
+      { "trigger": "a key is typed in Find", "from": "any search", "to": "the search holds the text", "durationToken": null, "easing": null, "guard": null, "reset": "the address is replaced, never pushed" },
+      { "trigger": "the pointer enters a control", "from": "default", "to": "hover", "durationToken": "--motion-hover", "easing": "ease-house", "guard": null, "reset": "the pointer leaves" },
+      { "trigger": "a control takes keyboard focus", "from": "default", "to": "focus-visible", "durationToken": null, "easing": null, "guard": null, "reset": "focus leaves. The ring is drawn at once and never fades" }
+    ],
+
+    "visibility": [
+      { "control": "OrderSelect", "rendersWhen": "the board is the program board", "removedWhen": "any other board" },
+      { "control": "CardsSwitch", "rendersWhen": "the board is the epic board", "removedWhen": "any other board" },
+      { "control": "HideButton", "rendersWhen": "its column is visible", "removedWhen": "its column is hidden" },
+      { "control": "HideButton.disabled", "rendersWhen": "it is the last visible column's Hide", "removedWhen": "another column is visible again" },
+      { "control": "HiddenColumnRail", "rendersWhen": "its column is hidden", "removedWhen": "its column is visible" },
+      { "control": "CopyPromptButton", "rendersWhen": "the record has a next workflow, per the prompt table of contracts.md", "removedWhen": "a program is implemented or superseded, an epic's lifecycle is closed, or the card is a slice" },
+      { "control": "SlicesDoneMark", "rendersWhen": "the epic's lifecycle is open and every slice is done", "removedWhen": "any slice is not done, or the lifecycle is closed" },
+      { "control": "SlicePipsToggle", "rendersWhen": "the epic holds at least one slice", "removedWhen": "the epic holds no slice" },
+      { "control": "NoProgramCard", "rendersWhen": "orphans > 0 and at least one orphan slice matches the search", "removedWhen": "orphans is 0, or the search hides every orphan slice" },
+      { "control": "BoardNoMatch", "rendersWhen": "every column of the board is empty because of the search", "removedWhen": "the search is empty, or one column holds a card" },
+      { "control": "UnknownProgramNotice", "rendersWhen": "the address program value is not in the index", "removedWhen": "any address write, or its Close button" },
+      { "control": "BackLink", "rendersWhen": "the board is the epic board or the No program board", "removedWhen": "the board is the program board" },
+      { "control": "TopBarBoardLink", "rendersWhen": "always", "removedWhen": "never" },
+      { "control": "FindField", "rendersWhen": "always on the board. It is disabled, not gated, while the index loads", "removedWhen": "never" }
+    ],
+
+    "defaults": {
+      "board": "programs",
+      "searchText": "",
+      "sort": "name",
+      "cards": "epics",
+      "hiddenColumnsPrograms": ["superseded"],
+      "hiddenColumnsEpics": [],
+      "hiddenColumnsOrphans": [],
+      "epicSliceList": "collapsed",
+      "orphanSliceCard": "collapsed",
+      "columnScrollTop": 0,
+      "notice": null,
+      "theme": "light",
+      "workDrawer": "closed"
+    },
+
+    "timingTokens": {
+      "--motion-hover": "150ms",
+      "--motion-panel": "180ms",
+      "--motion-notice": "140ms",
+      "--hold-ack": "1800ms",
+      "--motion-skeleton": "2000ms"
+    },
+
+    "layering": {
+      "base": { "token": "--layer-base", "surfaces": ["KanbanPage"], "collisionRule": "the board is the page and sits under everything else" },
+      "raised": { "token": "--layer-raised", "surfaces": ["ColumnHead"], "collisionRule": "cards scroll under a column head and never over it" },
+      "panel": { "token": "--layer-panel", "surfaces": ["CopyNotice", "UnknownProgramNotice"], "collisionRule": "the notice floats over the board's top right corner and yields to any dialog" },
+      "chrome": { "token": "--layer-fixed", "surfaces": ["TopBar", "Rail"], "collisionRule": "yields to any panel or dialog" },
+      "modal": { "token": "--layer-modal", "surfaces": ["WorkDrawer"], "collisionRule": "above the board and above the notice. The board does not scroll while it is open" }
+    },
+
+    "hitTargets": [
+      { "control": "ProgramCard", "eventElement": "the card's own a, stretched by ::after at inset 0", "clickableBounds": "the whole card except the name and the copy button", "ancestorPointerEvents": "auto", "restorePointerEvents": "auto" },
+      { "control": "ProgramNameLink", "eventElement": "the a around the name text", "clickableBounds": "the text box and its underline", "ancestorPointerEvents": "auto", "restorePointerEvents": "auto", "note": "relative z-10, above the card overlay" },
+      { "control": "CopyPromptButton", "eventElement": "the button, 32 by 32 px", "clickableBounds": "the button box around a 14 px icon", "ancestorPointerEvents": "auto", "restorePointerEvents": "auto", "note": "relative z-10, above the card overlay" },
+      { "control": "EpicCard", "eventElement": "the head block's a, stretched by ::after over the head only", "clickableBounds": "the head block, never the pips row or the slice list", "ancestorPointerEvents": "auto", "restorePointerEvents": "auto" },
+      { "control": "SlicePipsToggle", "eventElement": "the whole pips row button", "clickableBounds": "the full row width, 22 px tall", "ancestorPointerEvents": "auto", "restorePointerEvents": "auto" },
+      { "control": "SliceCard", "eventElement": "the a around the whole card", "clickableBounds": "the whole card", "ancestorPointerEvents": "auto", "restorePointerEvents": "auto" },
+      { "control": "OrphanSliceCard", "eventElement": "the button around the whole row", "clickableBounds": "the whole row", "ancestorPointerEvents": "auto", "restorePointerEvents": "auto" },
+      { "control": "HideButton", "eventElement": "the button, 28 px tall", "clickableBounds": "the button box, not the column head", "ancestorPointerEvents": "auto", "restorePointerEvents": "auto" },
+      { "control": "HiddenColumnRail", "eventElement": "the rail button", "clickableBounds": "the full 44 px width and the full column height", "ancestorPointerEvents": "auto", "restorePointerEvents": "auto" },
+      { "control": "FindField", "eventElement": "the input", "clickableBounds": "32 px tall and up to 340 px wide. The Find label focuses it", "ancestorPointerEvents": "auto", "restorePointerEvents": "auto" },
+      { "control": "OrderSelect", "eventElement": "the select", "clickableBounds": "the control box, 32 px tall", "ancestorPointerEvents": "auto", "restorePointerEvents": "auto" },
+      { "control": "CardsSwitch", "eventElement": "each button", "clickableBounds": "the button box, 32 px tall", "ancestorPointerEvents": "auto", "restorePointerEvents": "auto" },
+      { "control": "BackLink", "eventElement": "the a", "clickableBounds": "the label text and the arrow", "ancestorPointerEvents": "auto", "restorePointerEvents": "auto" },
+      { "control": "CopyNotice", "eventElement": "the Close button", "clickableBounds": "the button box, 28 px tall", "ancestorPointerEvents": "none on the layer, auto on the notice", "restorePointerEvents": "auto" },
+      { "control": "TopBarBoardLink", "eventElement": "the a", "clickableBounds": "44 by 44 px", "ancestorPointerEvents": "auto", "restorePointerEvents": "auto" }
+    ],
+
+    "scrollOwnership": [
+      { "region": "the document", "owner": "nothing", "other": "html and body carry no overflow, and the shell fills its host", "overflow": "clip" },
+      { "region": "the shell pane on the board route", "owner": "the pane, on both axes, as the shell's contract says", "other": "the board fits the pane, so the pane never overflows on this route", "overflow": "auto" },
+      { "region": "each column body", "owner": "the column, vertically, with overscroll-contain", "other": "the column head stays still and the other columns do not move", "overflow": "auto" },
+      { "region": "the row of columns when the pane is narrower than 960 px", "owner": "the column row, horizontally", "other": "the page never scrolls sideways", "overflow": "auto" },
+      { "region": "the epic slice list", "owner": "nothing. The list grows and the column scrolls", "other": "the card never nests a scroller", "overflow": "clip" },
+      { "region": "the card corner", "owner": "nothing", "other": "the clip keeps the radius and claims no gesture", "overflow": "clip" },
+      { "region": "the Work drawer over the board", "owner": "the drawer, as ADR-0034 decides", "other": "the board behind it does not scroll", "overflow": "clip" }
+    ]
+  },
+
+  "accessibility": {
+    "landmarks": {
+      "pane": "the shell pane is labelled Kanban board, Kanban board, <program>, or Kanban board, No program",
+      "page": "one h1, Kanban board. The subject is an h2 on the two lower boards",
+      "columns": "each column is a section with aria-labelledby pointing at its heading and its count"
+    },
+    "labels": {
+      "boardRegion": "aria-busy='true' while the index loads",
+      "counts": "aria-label='Shown counts' on the description list",
+      "cardsSwitch": "role='group' aria-label='Cards', each button with aria-pressed",
+      "pipsToggle": "Show the 3 slices of <label>, and Hide the 3 slices of <label> when open",
+      "hideButton": "visible word Hide, accessible name Hide Superseded",
+      "rail": "Show Superseded, 4 programs",
+      "copyButton": "Copy the start prompt for <name>",
+      "cardTarget": "Open the epic board of <name>, Open epic <label>, or Open slice 3 of <epic label>",
+      "orphanCard": "Show the end state, score, and attempts of <title>",
+      "epicBar": "aria-hidden, because the counts line states the same numbers in text"
+    },
+    "keyboard": {
+      "focusOrder": "skip link, top bar, rail, the heading band's links, Find, Order or Cards, then each column in turn: its Hide, then each card's target, name, and copy",
+      "slashFocusesFind": "on the board, when no [role=dialog] is open and focus is not in a field, select, or textarea",
+      "escape": "dismisses a notice when no dialog is open. With the Work drawer open, vaul closes the drawer and the notice stays",
+      "arrows": "not bound on the board. Tab is the walk, and the Work drawer keeps its own arrows",
+      "focusOnLevelChange": "moves to the band's subject heading, which carries tabIndex -1 and receives focus with preventScroll",
+      "noTrap": "no board container traps focus. The Work drawer traps focus while it is open"
+    },
+    "screenReader": {
+      "statusAnnounce": "one role='status' aria-live='polite' aria-atomic='true' region holds Prompt copied, Copy failed, or the unknown program sentence",
+      "loadingAnnounce": "one polite live region states Loading the record index",
+      "countAnnounce": "a column reads Planned 4, and the header reads Programs, 22 of 26"
+    },
+    "colourIndependence": {
+      "status": "the shape glyph and the raw status word carry the state with the colour",
+      "progress": "the counts line states the three numbers beside the bar",
+      "hidden": "the vertical label and the count state a hidden column without its fill",
+      "notice": "the words Prompt copied and Copy failed carry the result"
+    }
+  },
+
+  "stateManagement": {
+    "required": false,
+    "note": "The board adds no store. The address holds the board, the search, the sort, the card grain, the hidden columns, and the open program. The data layer resolves every record, column, and count from data/index.json. Component state holds three things only: the open epic slice list, the open orphan slice card, and the notice.",
+    "addressKeys": ["program", "orphans", "q", "sort", "hide", "cards"],
+    "history": {
+      "replace": ["q"],
+      "push": ["program", "orphans", "sort", "cards", "hide"]
+    },
+    "componentState": {
+      "expandedEpicSlices": "Set<string> of epic ids, cleared on a board change",
+      "expandedOrphanCard": "string | null, one slice id, cleared on a search change",
+      "notice": "{ kind: 'copied', at: number } | { kind: 'failed', prompt: string } | { kind: 'unknown-program', value: string } | null"
+    }
+  }
+}

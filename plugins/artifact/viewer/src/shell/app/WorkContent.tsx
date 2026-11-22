@@ -17,8 +17,8 @@ interface WorkProps {
 }
 
 function programArgs(v: ShellView, work: WorkItem, section: PagedLevelKey): PagedArgs {
-  const { pagedLevel, adrs, theme, openSheet, unresolvedSlices, focusEpic } = v;
-  return { section, work, levelState: pagedLevel, adrs, theme, openSheet, unresolvedSlices, focusEpic };
+  const { pagedLevel, adrs, theme, openSheet, unresolvedSlices, focusEpic, focusSlice } = v;
+  return { section, work, levelState: pagedLevel, adrs, theme, openSheet, unresolvedSlices, focusEpic, focusSlice };
 }
 
 function ProgramPaged({ v, work, section }: WorkProps & { section: PagedLevelKey }) {

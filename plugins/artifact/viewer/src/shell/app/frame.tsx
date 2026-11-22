@@ -79,7 +79,7 @@ function Frame({ reduce, open, onOpenChange, children }: FrameProps) {
   const widthCap = useVisibleWidthCap();
 
   return (
-    <SidebarProvider open={open} onOpenChange={onOpenChange} className={FRAME_CLASS} style={{ ...shellTokens(reduce), ...RAIL_WIDTHS, ...widthCap }}>
+    <SidebarProvider open={open} onOpenChange={onOpenChange} className={FRAME_CLASS} data-reduce={reduce || undefined} style={{ ...shellTokens(reduce), ...RAIL_WIDTHS, ...widthCap }}>
       {children}
     </SidebarProvider>
   );

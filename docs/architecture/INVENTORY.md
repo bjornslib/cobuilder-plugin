@@ -10,12 +10,12 @@ Tracks the documentation status of each bounded context under
 | `cobuilder-packaging` | documented | yes | yes | ADR-0016 (approved), ADR-0017 (approved), ADR-0024 (approved) | 2026-10-08 |
 | `architect` | documented | yes | yes | none anchored (see findings) | 2026-10-08 |
 | `pr` | documented | yes | yes | none anchored (see findings) | 2026-10-08 |
-| `artifact` | documented | yes | yes | none anchored (see findings) | 2026-10-08 |
+| `artifact` | documented | yes | yes | none anchored (see findings) | 2026-11-14 |
 | `implement` | documented | yes | yes | ADR-0049 (decided). ADR-0025, ADR-0041, ADR-0042 anchor to cobuilder-packaging | 2026-11-10 |
 | `shared` | documented | yes | yes | none anchored (see findings) | 2026-11-14 |
 | `priority-dev` | documented | yes | yes | none anchored | 2026-11-10 |
 
-The six records above carry `verified_at: d086be981401779ba4691faed31a6f64598df589`. The `priority-dev` record carries `verified_at: 4cf849b`.
+The six records above carry `verified_at: d086be981401779ba4691faed31a6f64598df589`. The `priority-dev` record carries `verified_at: 4cf849b`. The `artifact` record carries `verified_at: 51e300b0015c6197d59c4d349b64acff7b466273` (2026-11-14), after a re-check for the `kanban-board` design.
 
 ## Findings of 2026-11-10
 

@@ -7,14 +7,22 @@ import BasicAccordion, { type AccordionItem } from "@/components/smoothui/basic-
 import { ActionButton, Box, Chip, KeyValue, SubHead } from "../atoms";
 import type { WorkItem } from "../model";
 import { ScoreChip, SliceNumber, SliceStateBadge, type OpenSheet } from "./common";
+import { sliceRowId } from "./sliceAnchor";
 
 const NO_ENDS_WITH = <span className="text-ink-dim">The slice records no ends-with condition.</span>;
 
-function SliceTitle({ slice }: { slice: SliceEntity }) {
+interface SliceTitleProps {
+  slice: SliceEntity;
+  rowId: string;
+  marked: boolean;
+}
+
+function SliceTitle({ slice, rowId, marked }: SliceTitleProps) {
   return (
-    <span className="flex min-w-0 flex-1 items-baseline gap-2.5">
+    <span id={rowId} aria-current={marked ? "true" : undefined} className="flex min-w-0 flex-1 items-baseline gap-2.5">
       <SliceNumber n={slice.n} />
       <span className="min-w-0 font-serif text-[16px] leading-[1.45]">{slice.title}</span>
+      {marked && <Chip tone="accent" title="The address names this slice.">Marked</Chip>}
     </span>
   );
 }
@@ -53,26 +61,29 @@ function SliceContent({ slice }: { slice: SliceEntity }) {
   );
 }
 
-function sliceItem(slice: SliceEntity): AccordionItem {
+function sliceItem(slice: SliceEntity, epicId: string, markedN: string | null): AccordionItem {
   return {
     id: slice.id,
-    title: <SliceTitle slice={slice} />,
+    title: <SliceTitle slice={slice} rowId={sliceRowId(epicId, slice.id)} marked={String(slice.n) === markedN} />,
     meta: <SliceMeta slice={slice} />,
     content: <SliceContent slice={slice} />,
   };
 }
 
+interface SliceDisclosureProps {
+  slices: SliceEntity[];
+  epicId: string;
+  markedN: string | null;
+}
+
 /* The caller gates on an empty list, so this is a guard rather than a state. */
-function SliceDisclosure({ slices, idPrefix }: { slices: SliceEntity[]; idPrefix: string }) {
+function SliceDisclosure({ slices, epicId, markedN }: SliceDisclosureProps) {
   if (slices.length === 0) return null;
+  const opened = slices.filter((slice) => String(slice.n) === markedN).map((slice) => slice.id);
+  const items = slices.map((slice) => sliceItem(slice, epicId, markedN));
   return (
-    <BasicAccordion
-      items={slices.map(sliceItem)}
-      allowMultiple={false}
-      idPrefix={idPrefix}
-      className="border-line-soft bg-card"
-      flush
-    />
+    <BasicAccordion key={markedN ?? ""} items={items} allowMultiple={false} idPrefix={`slice-${epicId}`}
+      defaultExpandedIds={opened} className="border-line-soft bg-card" flush />
   );
 }
 
@@ -94,12 +105,12 @@ function EpicOutcome({ work, epic }: { work: WorkItem; epic: EpicEntity }) {
   follow. The epic's own row states the count, so a block that held only a sentence
   about holding nothing is gone.
 */
-function EpicSlices({ slices, epicId }: { slices: SliceEntity[]; epicId: string }) {
+function EpicSlices({ slices, epicId, markedN }: SliceDisclosureProps) {
   if (slices.length === 0) return null;
   return (
     <div className="flex min-w-0 flex-col gap-2">
       <SubHead count={slices.length}>Slices</SubHead>
-      <SliceDisclosure slices={slices} idPrefix={`slice-${epicId}`} />
+      <SliceDisclosure slices={slices} epicId={epicId} markedN={markedN} />
     </div>
   );
 }
@@ -149,6 +160,7 @@ interface EpicDisclosureProps {
   epicId: string;
   index: number;
   openSheet: OpenSheet;
+  markedN: string | null;
 }
 
 /*
@@ -157,13 +169,13 @@ interface EpicDisclosureProps {
   branch for the work. What is left is what the epic is: its outcome here, its slices
   below.
 */
-export function EpicDisclosure({ work, epicId, index, openSheet }: EpicDisclosureProps) {
+export function EpicDisclosure({ work, epicId, index, openSheet, markedN }: EpicDisclosureProps) {
   const epic = work.epics.find((candidate) => candidate.epic_id === epicId);
   if (!epic) return null;
   return (
     <div className="flex min-w-0 flex-col gap-3">
       <EpicOutcome work={work} epic={epic} />
-      <EpicSlices slices={work.slicesByEpic.get(epic.id) ?? []} epicId={epic.epic_id} />
+      <EpicSlices slices={work.slicesByEpic.get(epic.id) ?? []} epicId={epic.epic_id} markedN={markedN} />
       <EpicDesign epic={epic} design={work.epicDesigns.get(epic.id)} openSheet={openSheet} />
       <EpicFooter index={index} total={work.epics.length} id={epic.id} />
     </div>

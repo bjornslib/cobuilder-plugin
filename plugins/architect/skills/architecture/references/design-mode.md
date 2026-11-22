@@ -74,6 +74,12 @@ Before the first question, run `tracker.py doctor`. Read the adapter and the
 migrates the tracker. Do not migrate from this mode. When the adapter is
 `files`, go on.
 
+After doctor, run the pull request refresh in
+[shared/pull-request-refresh.md](../../../../../shared/pull-request-refresh.md).
+It records each merge that GitHub shows, so the stage and the epics of the
+other programs are true before the engineer names a design. Report its result
+in one line.
+
 The engineer states the outcome and names the design **before** the agent
 reads a file. The outcome names a state, not an activity. Write it into
 `goal.outcome` and `goal.done_when`.

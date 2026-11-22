@@ -24,7 +24,7 @@ allowed_dependencies:
 context_map:
   - with: shared
     pattern: shared-kernel
-    shared: [_bundle_meta.read_plugin_version, _bundle_meta.require_compatible, _bundle_meta.stamp_generator, ledger.LedgerPaths, ledger.append_comment, gate_status, slice_table, tracker_port.reader]
+    shared: [_bundle_meta.SCHEMA_VERSION, _bundle_meta.read_plugin_version, _bundle_meta.require_compatible, _bundle_meta.stamp_generator, ledger.LedgerPaths, ledger.append_comment, gate_status, slice_table, tracker_port.reader]
     note: "Five scripts add the plugin's shared symlink to sys.path and import these modules. The skill also runs shared/build_index.py and migrate_bundle.py by shell."
   - with: bundle-directory
     pattern: open-host-service
@@ -42,7 +42,7 @@ forbidden_dependencies:
 
   - target: "scripts/*.py"
     from: viewer/src
-    why: "Rule holding, not a smell: grep of viewer/src for 'scripts/' and 'plugins/' finds no live reference. The viewer reads ../data/*, ../assets/*, and ../data/audio/* only."
+    why: "Rule holding, not a smell: grep of viewer/src for 'scripts/' and 'plugins/' finds no live reference. The three hits are one comment in index.css and path strings in two test fixtures. The viewer reads ../data/*, ../assets/*, and ../data/audio/* only."
 
   - target: "docs/architecture/designs/ and docs/plans/ as authored source"
     from: scripts (canvas_preflight.py, build_builds_view.py)
@@ -88,7 +88,7 @@ modules:
     public_interface: ["index.html (built, committed)"]
     allowed_inbound: [skill-cobuilder-artifacts]
     allowed_outbound: []
-    rule: "Leaf. Source is React, TypeScript, Vite, Tailwind, and Vitest in src (334 ts and tsx files). It reads the bundle over HTTP, root at .cobuilder-architect/. Build, then commit index.html."
+    rule: "Leaf. Source is React, TypeScript, Vite, Tailwind, and Vitest in src (334 ts and tsx files). The Vite config keeps its bundle-data plugin in vite.bundleData.ts. It reads the bundle over HTTP, root at .cobuilder-architect/. Build, then commit index.html."
 
   - id: shared-scripts
     path: plugins/artifact/shared
