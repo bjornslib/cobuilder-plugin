@@ -34,6 +34,30 @@ authored field of a design. Each authored field also has a word cap.
 `shared/skills/ste-writing/ste-lint.py` scores rule violations per 100 words,
 as a quick check. It checks rules only, not the ASD-STE100 dictionary.
 
+## Response structure
+
+Label each part of a response, so the reader sees at a glance which parts need
+them. Use these four labels in this order, and only the labels that hold
+content. An empty label teaches the reader to skip labels.
+
+- **FYI**: a fact the reader needs and does not act on, such as a finding, a
+  constraint, or a surprise in the code. It holds no question.
+- **Summary**: what happened. State what changed, what you verified, and the
+  evidence for each: the count, the reading, or the command. State each
+  failure, skipped step, and gap. A claim of success needs its evidence.
+- **Next steps**: what you do next without the reader. Name the work and the
+  actor. A step that waits on the reader is a decision.
+- **Decisions and questions**: what needs the reader, one item to a line. Give
+  the options and your recommendation, so a one-word answer settles it. State
+  what happens when the reader does not answer.
+
+A short response may carry one or two labels. Do not pad a response to reach
+four. The reader must be able to stop after FYI when nothing needs them. Use a
+list or a table where it carries the meaning better than a sentence.
+
+Before you send a response, run `Skill("architect:ste-writing")` on the draft
+and correct what it flags. The fallback above applies.
+
 ## Working rules
 
 These rules prefer caution to speed. For a trivial task, use judgment.
@@ -66,7 +90,7 @@ These rules prefer caution to speed. For a trivial task, use judgment.
      outside the request, or when two answers cost differently.
    - Only an ask-first question may end "With no answer, I do nothing". For a
      local action, do it and report it.
-   - Give each action you took without being asked one line in your reply, so
+   - Give each action you took without being asked one line under Summary, so
      the reader can ask you to undo it.
 
 # This repository

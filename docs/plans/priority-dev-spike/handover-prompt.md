@@ -16,5 +16,5 @@ Then, in this order:
 4. After "start", run /implement:start for the program priority-dev-spike. Follow its resume rule, the red-green-validate loop, and the blind rubrics in .cobuilder/rubrics/priority-dev-spike/. Do not read a slice rubric before its slice is built.
 5. Build slices 1 to 5 first. After slice 7, stop and ask the engineer for go or no-go.
 
-Rules: British English, Simplified Technical English, no exaggeration. Say "I do not know" and ask when unsure. Use priority-dev/.env for the OpenRouter key and never print it. Run probes only in a scratch tmux session with a scratch Claude Code session, never in a live one. The interpreter input is the stop brief, never "slice". Ask before any push or pull request.
+Rules: British English, Simplified Technical English, no exaggeration, label replies FYI, Summary, Next steps, Decisions and questions. Say "I do not know" and ask when unsure. Use priority-dev/.env for the OpenRouter key and never print it. Run probes only in a scratch tmux session with a scratch Claude Code session, never in a live one. The interpreter input is the stop brief, never "slice". Ask before any push or pull request.
 ```

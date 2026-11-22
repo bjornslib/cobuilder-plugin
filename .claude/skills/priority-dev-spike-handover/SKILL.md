@@ -57,8 +57,8 @@ Work in the worktree `/Users/theb/Documents/Windsurf/cobuilder-plugin/.claude/wo
 ## Rules
 
 - Write in British English. Money is in Australian dollars. Use Simplified Technical English: short sentences, active voice, no contractions, no semicolons, no em-dashes, and an article before each countable noun. Cap a sentence at 25 words and a paragraph at 6 sentences.
-- Do not exaggerate. Do not fill. Say "I do not know" and ask when you are unsure.
-- Back every claim of success with evidence. State each gap.
+- Do not exaggerate. Do not fill. Say "I do not know" and ask when you are unsure. Label what you read, what you inferred, and what you did not test.
+- Label every reply to the engineer, in this order, using only the labels with content: **FYI**, **Summary**, **Next steps**, **Decisions and questions**. Back every claim of success with evidence. State each gap.
 - Push `design/priority-dev` without asking. Do not open a pull request unless the engineer asks. Ask before any other push or merge.
 - Use Sonnet subagents for work that weighs options. Use Haiku for fetch and summarise.
 - Do not edit `CLAUDE.md` yet.
