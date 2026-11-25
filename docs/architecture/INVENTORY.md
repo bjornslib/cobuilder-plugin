@@ -12,7 +12,7 @@ Tracks the documentation status of each bounded context under
 | `pr` | documented | yes | yes | none anchored (see findings) | 2026-10-08 |
 | `artifact` | documented | yes | yes | none anchored (see findings) | 2026-10-08 |
 | `implement` | documented | yes | yes | none anchored (see findings) | 2026-10-08 |
-| `shared` | documented | yes | yes | none anchored (see findings) | 2026-10-08 |
+| `shared` | documented | yes | yes | none anchored (see findings) | 2026-11-25 |
 
 All six records carry `verified_at: d086be981401779ba4691faed31a6f64598df589`.
 

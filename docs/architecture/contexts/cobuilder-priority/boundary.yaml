@@ -1,17 +1,19 @@
 # Boundary record for the cobuilder-priority bounded context.
 # Machine-diffable architecture baseline — ../../standard.md §5.2.
-# Edges checked against code: the imports of plugins/cobuilder-priority/hooks and a grep of its path strings. Grounded as of 2026-11-11.
+# Edges checked against code: every import line of plugins/cobuilder-priority/hooks (17 files), in both directions, and a grep of its path strings. Grounded as of 2026-11-23.
 
 id: cobuilder-priority
 path: plugins/cobuilder-priority
 name: "cobuilder-priority: a live reader of session stops, with a pane for marks"
-verified_at: 4cf849b
+verified_at: d5e49a42
 
 public_interface:
   - "plugins/cobuilder-priority/.claude-plugin/plugin.json (userConfig: priority_dev_dir, program, timeout_seconds, llm_api_key)"
+  - "plugins/cobuilder-priority/hooks/hooks.json (modules: ./register.ts)"
+  - "plugins/cobuilder-priority/types/index.d.ts (Reading, Mark, Act, HeldQuestion, and the PluginState entry)"
   - "slash commands: /priority-on, /priority-off, /priority-pane"
-  - "hook: classic.Stop (main loop only)"
-  - "pane: requestId priority-reader"
+  - "hooks: classic.Stop (main loop only), prompt.submit, turn.complete, classic.UserPromptSubmit, tool.call AskUserQuestion"
+  - "ui.render: Pane with requestId priority-reader, and AbovePrompt"
 
 # The mod imports only the engine API and its own files.
 allowed_dependencies:
@@ -20,33 +22,114 @@ allowed_dependencies:
 context_map:
   - with: priority-dev
     pattern: conformist
-    note: "Runs `uv run priority digest` and `uv run priority interpret --digest` as a process in the priority-dev folder, and reads their JSON output. Never imports the package (ADR-0045, ADR-0049)."
+    note: "Runs `uv run priority digest` and `uv run priority interpret --digest` as a process in the priority-dev folder (hooks/cli.ts, the one caller of $.process.run for the CLI), and reads their JSON output. Never imports the package (ADR-0045, ADR-0049)."
   - with: cobuilder-packaging
     pattern: open-host-service
-    note: "marketplace.json lists the plugin. The packaging test allows its hooks/ folder."
+    note: "marketplace.json lists the plugin. The packaging tests allow its hooks/ folder. The umbrella install writes the plugin's userConfig through priority_settings.py in cobuilder-full-lifecycle."
 
 forbidden_dependencies:
   - target: "priority-dev/src as an import or a file read"
-    why: "The hooks module has no Node or filesystem access to the package. It reaches priority-dev only through $.process.run."
+    why: "The hooks module has no Node or filesystem access to the package. It reaches priority-dev only through $.process.run. A grep of hooks/ and types/ finds no import of priority-dev."
   - target: "plugins/<other>/ paths"
-    why: "Plugins meet at the bundle and by name. A grep of the hooks folder finds no other plugin path."
+    why: "Plugins meet at the bundle and by name. A grep of hooks/ and types/ finds no other plugin path."
 
 modules:
   - id: register
     path: plugins/cobuilder-priority/hooks/register.ts
-    public_interface: ["register (the hooks module entry)"]
+    public_interface: [register (the hooks module entry)]
     allowed_inbound: []
-    allowed_outbound: [reader, pane]
-    rule: "Registers the commands, the Stop hook, and the pane render. Holds the reader switch atom."
+    allowed_outbound: [band, ask, pane, reader]
+    rule: "Entry. Registers the commands, the hooks, the AskUserQuestion hold, and the two ui.render handlers. Holds the reader switch atom. Engine-bound."
   - id: reader
     path: plugins/cobuilder-priority/hooks/reader.ts
-    public_interface: ["enqueue", "readingsKey"]
-    allowed_inbound: [register, pane]
+    public_interface: [PANE_ID, readingsKey, enqueue, startWaiting, stopWaiting, failLostStops, scrollPaneToTop, isBusy, isQuestionBusy, isQuiet, isWaiting]
+    allowed_inbound: [register, ask, band, card, keys, pane, act]
+    allowed_outbound: [answers, cli, labels, pending]
+    rule: "One reading at a time. Runs the priority-dev CLI through cli and stores each reading in $.store. Engine-bound ($, atoms, $.ui, $.clock)."
+  - id: ask
+    path: plugins/cobuilder-priority/hooks/ask.ts
+    public_interface: [holdAsk, notePrompt, isHolding, sendAnswers, declineAnswers, pickOption, setOther, dropHeld]
+    allowed_inbound: [register, keys, question]
+    allowed_outbound: [answers, hold, reader]
+    rule: "Holds a main-loop AskUserQuestion call in the pane. Engine-bound ($.fs, $.ui, atoms)."
+  - id: answers
+    path: plugins/cobuilder-priority/hooks/answers.ts
+    public_interface: [recordAnswers, takeAnswers]
+    allowed_inbound: [reader, ask]
     allowed_outbound: []
-    rule: "One reading at a time. Runs the priority-dev CLI and stores each reading in $.store."
+    rule: "Leaf. Stores the answers of a held question on the mark of its reading, in $.store. Engine-bound ($.store only). It repeats the three store key strings of reader and act."
+  - id: cli
+    path: plugins/cobuilder-priority/hooks/cli.ts
+    public_interface: [cli]
+    allowed_inbound: [reader]
+    allowed_outbound: []
+    rule: "Leaf. The one place that starts `uv run priority ...` through $.process.run. Engine-bound ($.process)."
+  - id: pending
+    path: plugins/cobuilder-priority/hooks/pending.ts
+    public_interface: [markPending, clearPending, listPending, lostReadings]
+    allowed_inbound: [reader]
+    allowed_outbound: []
+    rule: "Leaf. Keeps the record of a queued stop in $.store, so a reload finds it lost. Engine-bound ($.store, $.session)."
+  - id: labels
+    path: plugins/cobuilder-priority/hooks/labels.ts
+    public_interface: [answerLabels, agentSummary, answersOf]
+    allowed_inbound: [reader]
+    allowed_outbound: []
+    rule: "Leaf. PURE: string parsing, no import. Reads the answer labels of the last agent message."
+  - id: hold
+    path: plugins/cobuilder-priority/hooks/hold.ts
+    public_interface: [holdPaths, waitArgv, typedOr, answeredCount, allAnswered, answerOf, holdInChild]
+    allowed_inbound: [ask, keys, question]
+    allowed_outbound: []
+    rule: "Leaf. PURE except holdInChild and drain, which use $.process.spawn and $.fs. The rest is plain functions over HeldQuestion."
+  - id: draft
+    path: plugins/cobuilder-priority/hooks/draft.ts
+    public_interface: [canSend, visibleNo, draftOf]
+    allowed_inbound: [act, card]
+    allowed_outbound: []
+    rule: "Leaf. PURE: builds the text of a send from the chosen steps. No import."
+  - id: names
+    path: plugins/cobuilder-priority/hooks/names.ts
+    public_interface: [statusName, priorityName, abstainName, briefName, stepName]
+    allowed_inbound: [band, card, pane]
+    allowed_outbound: []
+    rule: "Leaf. PURE: maps raw CLI values to display names. No import."
+  - id: act
+    path: plugins/cobuilder-priority/hooks/act.ts
+    public_interface: [EMPTY, marksKey, actFor, toggleStep, pick, answer, toggleSummary, openCard, saveMark, draftFor, send]
+    allowed_inbound: [card, keys, pane]
+    allowed_outbound: [draft, reader]
+    rule: "Pane selection and marks. Engine-bound ($.store, $.prompt, $.ui, atoms). draftFor is a thin call of draft."
+  - id: card
+    path: plugins/cobuilder-priority/hooks/card.tsx
+    public_interface: [keyed, quiet, clock, sendableNow, sendLink, draftBox, firstDecide, card, noteInput]
+    allowed_inbound: [band, keys, pane, question]
+    allowed_outbound: [act, draft, names, reader]
+    rule: "Draws one reading card. Engine-bound: JSX over the ui object that $.ui.resolve returns. clock, sendableNow, and firstDecide are pure."
+  - id: keys
+    path: plugins/cobuilder-priority/hooks/keys.tsx
+    public_interface: [keyRow, questionKeyRow]
+    allowed_inbound: [pane]
+    allowed_outbound: [act, ask, card, hold, reader]
+    rule: "The key row of the pane. Engine-bound (ui buttons)."
+  - id: question
+    path: plugins/cobuilder-priority/hooks/question.tsx
+    public_interface: [questionBlocks]
+    allowed_inbound: [pane]
+    allowed_outbound: [ask, card, hold]
+    rule: "Draws the held question. Engine-bound (ui)."
+  - id: band
+    path: plugins/cobuilder-priority/hooks/band.tsx
+    public_interface: [renderBand]
+    allowed_inbound: [register]
+    allowed_outbound: [card, names, reader]
+    rule: "The ready band above the prompt. Engine-bound ($.ui, $.store, atoms)."
   - id: pane
     path: plugins/cobuilder-priority/hooks/pane.tsx
-    public_interface: ["PANE_ID", "openPane", "renderPane"]
+    public_interface: [openPane, renderPane, paneView, INLINE_WARNING]
     allowed_inbound: [register]
-    allowed_outbound: [reader]
-    rule: "Draws one card per reading and stores the marks in $.store."
+    allowed_outbound: [act, card, keys, question, names, reader]
+    rule: "Draws the reader pane and stores nothing itself. Engine-bound ($.ui, atoms)."
+
+governed_by:
+  - ADR-0049

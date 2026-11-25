@@ -278,7 +278,37 @@ _Avoid_: label (a confirmed entry of the labelled fixture set)
 **Reader pane** (`cobuilder-priority`):
 The side pane that shows one card per live reading of the session, newest first, each with its reading marks.
 
+The next four terms come from the `priority-dev-pi-extension` design (ADR-0051).
+
+<a id="priority-core"></a>
+**Priority core** (`cobuilder-priority`):
+The shared TypeScript library in `shared/priority-core/` that holds the Reading contract, the card view model, the draft text, the reader queue, and `evaluate`. It imports no host engine.
+_Avoid_: shared code (a vague word for any file under `shared/`)
+
+<a id="host-adapter"></a>
+**Host adapter** (`cobuilder-priority`):
+The thin code that connects the priority core to one harness: `plugins/cobuilder-priority` for Claude Code, and `pi/cobuilder-priority` for Pi and OMP. It holds the stop hook, the pane, and the question hook of its host.
+_Avoid_: tracker adapter (a `cobuilder-packaging` term), transcript adapter (the `priority-dev` reader of one transcript dialect)
+
+<a id="golden-reading"></a>
+**Golden reading** (`cobuilder-priority`):
+A fixture that holds one Reading, a selection, the expected card view, and the expected draft text. The tests of each host adapter read every golden reading, so the card text cannot drift between hosts.
+
+<a id="agent-mode"></a>
+**Agent mode** (`cobuilder-priority`):
+The `priority read <session-file>` command, and the `priority_read` tool that wraps it, which give a coding agent one Reading as JSON. It draws no UI.
+
 ## priority-dev
+
+<a id="priority-transcript"></a>
+**Priority transcript** (`priority-dev`):
+The harness-neutral form of one session that the brief builder reads: the dialect, the session id, the leaf id, and the active branch as human, client, agent, and tool-result records. A transcript adapter writes it (ADR-0051).
+_Avoid_: turn record (a rejected name), session record (an `implement` term for the coach's session file)
+
+<a id="transcript-adapter"></a>
+**Transcript adapter** (`priority-dev`):
+The code in priority-dev that reads one transcript dialect, `claude-code` or `pi`, and writes a priority transcript. The `pi` dialect covers Pi and OMP sessions.
+_Avoid_: session adapter (the wider priority-dev part that also sends commands), host adapter (a `cobuilder-priority` term)
 
 <a id="stop-brief"></a>
 **Stop brief** (`priority-dev`):

@@ -2,12 +2,12 @@
 # Machine-diffable architecture baseline — ../../standard.md §5.2.
 # Authoring procedure: plugins/architect/skills/architecture/references/architecture-documentation.md.
 # Every edge below was checked against code (grep of imports and path strings).
-# Grounded in code as of 2026-10-08.
+# Grounded in code as of 2026-11-25 (commit d5e49a42).
 
 id: shared
 path: shared
 name: "Shared kernel vendored into each plugin by symlink"
-verified_at: a9f71efcf2311baccf87a6ab8d0fe1285c9f4deb
+verified_at: d5e49a42
 
 public_interface:
   - _bundle_meta.SCHEMA_VERSION
@@ -23,7 +23,11 @@ public_interface:
   - ledger.watch_feedback
   - gate_status
   - slice_table
-  - "scripts run by shell: build_index.py, migrate_bundle.py, verify_bundle.py, boundary_check.py, prose_budget.py, validate_decision_state.py, migrate_png_assets_to_webp.py"
+  - tracker_port.reader
+  - tracker_port.projector
+  - tracker_port.TrackerPort
+  - tracker_port.TrackerRecord
+  - "scripts run by shell: build_index.py, migrate_bundle.py, verify_bundle.py, boundary_check.py, prose_budget.py, validate_decision_state.py, migrate_png_assets_to_webp.py, tracker.py, habit_smells.py"
   - "skills/mermaid and skills/ste-writing"
 
 # Shared is the base layer. It depends on no other context.
@@ -32,19 +36,25 @@ allowed_dependencies: []
 context_map:
   - with: architect
     pattern: shared-kernel
-    note: "Consumed by shell only: build_index, migrate_bundle, prose_budget, boundary_check, validate_decision_state."
+    note: "Consumed by shell only: build_index, migrate_bundle, prose_budget, boundary_check, validate_decision_state, habit_smells, tracker."
   - with: pr
     pattern: shared-kernel
-    note: "Consumed by import (_bundle_meta, _manifest) and by shell (migrate_bundle, build_index, verify_bundle)."
+    note: "Consumed by import (_bundle_meta, _manifest) and by shell (migrate_bundle, build_index, verify_bundle, tracker)."
   - with: artifact
     pattern: shared-kernel
-    note: "Consumed by import (_bundle_meta, ledger, gate_status, slice_table) and by shell (build_index, migrate_bundle)."
+    note: "Consumed by import (_bundle_meta, ledger, gate_status, slice_table, tracker_port.reader) and by shell (build_index, migrate_bundle)."
   - with: implement
     pattern: shared-kernel
-    note: "Consumed by import (slice_table) and by shell (build_index)."
+    note: "Consumed by import (slice_table, gate_status, tracker_port.reader in verify_gate.py) and by shell (build_index, tracker). The tracker_reminder hook names tracker.py in text only."
   - with: cobuilder-packaging
     pattern: shared-kernel
-    note: "The umbrella plugin cobuilder-full-lifecycle imports ledger in watch_feedback.py."
+    note: "The umbrella plugin cobuilder-full-lifecycle imports ledger in watch_feedback.py, and its setup skill runs tracker.py."
+  - with: cobuilder-priority
+    pattern: shared-kernel
+    note: "plugins/cobuilder-priority holds the shared symlink but imports no shared code today. It is a planned consumer of shared/priority-core (ADR-0051)."
+  - with: cobuilder-memory
+    pattern: shared-kernel
+    note: "plugins/cobuilder-memory holds the shared symlink and imports no shared code. Its TypeScript hooks module sits outside the Python kernel."
 
 forbidden_dependencies:
   - target: "plugins/<name>/ as Python import"
@@ -52,11 +62,14 @@ forbidden_dependencies:
 
   - target: "plugins/artifact/viewer/index.html and the sibling artifact install cache"
     from: shared/migrate_bundle.py
-    why: "SMELL: find_viewer_source (lines 309-340) probes PLUGIN_ROOT/plugins/artifact/viewer/index.html and the sibling 'artifact/<version>/viewer/index.html' cache, and the warning text at line 582 names 'plugins/artifact/'. Shared code reaches into a plugin's files, which inverts the base layer. ADR candidate: pass the viewer path in as an argument, or ship the built viewer through shared."
+    why: "SMELL: find_viewer_source (lines 338-372) probes PLUGIN_ROOT/plugins/artifact/viewer/index.html and the sibling 'artifact/<version>/viewer/index.html' cache, and the warning text at line 577 names 'plugins/artifact/'. Shared code reaches into a plugin's files, which inverts the base layer. ADR candidate: pass the viewer path in as an argument, or ship the built viewer through shared."
 
   - target: "plugins/artifact/viewer/src/shell/workDeck.ts and plugin script paths"
     from: shared (_bundle_meta.py:32, slice_table.py:23-24)
     why: "SMELL (comment only): a comment in _bundle_meta.py names the viewer file workDeck.ts, and the slice_table.py docstring lists plugins/implement/scripts/verify_gate.py and plugins/artifact/scripts/build_builds_view.py. Nothing runs from these names, but they name paths in plugins. Replace them with plugin names. A test keeps DESIGN_STAGES equal to the lanes."
+
+  - target: "plugins/<name>/ or pi/<name>/ as TypeScript import (planned shared/priority-core/)"
+    why: "ADR-0051 plans shared/priority-core/, the first TypeScript library under shared/. It must stay a base layer: it imports no host engine (pi, omp, Claude Code) and no plugin, and it reaches process, store, and clock through ports. Plugins and pi/cobuilder-priority import it through the shared symlink, never the reverse. Not yet in code: no TypeScript file exists under shared/."
 
   - target: "authored content"
     why: "CLAUDE.md principle 2: a script moves data and never authors judgment. build_index.py is the only writer of data/adrs.json and data/index.json."
@@ -66,17 +79,17 @@ modules:
     path: shared
     members: [_bundle_meta.py, _manifest.py]
     public_interface: ["_bundle_meta.SCHEMA_VERSION", "_bundle_meta.CURRENT_BUNDLE_FORMAT", "_bundle_meta.require_compatible", "_manifest.rewrite_manifest"]
-    allowed_inbound: [index-and-verify, migration, ledger-and-gates]
+    allowed_inbound: [index-and-verify, migration, tracker-port]
     allowed_outbound: []
-    rule: "_bundle_meta.py is a leaf: standard library only. _manifest.py imports only _bundle_meta."
+    rule: "_bundle_meta.py is a leaf: standard library only. _manifest.py imports only _bundle_meta. migrate_png_assets_to_webp.py imports _manifest."
 
   - id: index-and-verify
     path: shared
-    members: [build_index.py, verify_bundle.py, validate_decision_state.py, boundary_check.py, prose_budget.py]
+    members: [build_index.py, verify_bundle.py, validate_decision_state.py, boundary_check.py, prose_budget.py, habit_smells.py]
     public_interface: []
     allowed_inbound: []
-    allowed_outbound: [bundle-meta, gate-parsers]
-    rule: "Run by shell, not imported by plugins. build_index.py imports _bundle_meta, prose_budget, slice_table, and gate_status. verify_bundle.py imports prose_budget and _bundle_meta. build_index.py needs PyYAML."
+    allowed_outbound: [bundle-meta, gate-parsers, tracker-port]
+    rule: "Run by shell, not imported by plugins. build_index.py imports _bundle_meta, prose_budget, slice_table, gate_status, validate_decision_state, and tracker_port (projector, reader). verify_bundle.py imports _bundle_meta only. boundary_check.py, prose_budget.py, and habit_smells.py are stdlib leaves. build_index.py and validate_decision_state.py need PyYAML."
 
   - id: migration
     path: shared
@@ -94,13 +107,22 @@ modules:
     allowed_outbound: []
     rule: "Leaf: standard library, and ulid when present. Imported by artifact serve_bundle.py and by the umbrella watch_feedback.py."
 
+
   - id: gate-parsers
     path: shared
     members: [gate_status.py, slice_table.py]
     public_interface: [gate_status, slice_table]
-    allowed_inbound: [index-and-verify]
+    allowed_inbound: [index-and-verify, tracker-port]
     allowed_outbound: []
     rule: "One parser for the gate block and the slice table, shared by build_index.py, verify_gate.py, and build_builds_view.py."
+
+  - id: tracker-port
+    path: shared/tracker_port
+    members: [tracker.py, "tracker_port/*.py"]
+    public_interface: ["tracker_port.reader", "tracker_port.projector", "tracker_port.TrackerPort", "tracker_port.TrackerRecord", "tracker_port.FakeAdapter", "tracker.py operations"]
+    allowed_inbound: [index-and-verify]
+    allowed_outbound: [bundle-meta, gate-parsers]
+    rule: "ADR-0040. Only the beads adapter (beads*.py, bd_runner.py) names bd. Imports gate_status, slice_table, and _bundle_meta (cli_operations.py) by bare name, and PyYAML (config.py). Imported by build_index.py and, through the symlink, by artifact build_builds_view.py and implement verify_gate.py. Run by shell as tracker.py."
 
   - id: shared-skills
     path: shared/skills

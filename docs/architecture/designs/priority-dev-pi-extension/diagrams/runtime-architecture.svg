@@ -1,0 +1,248 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 860" font-family="ui-monospace, Menlo, Monaco, monospace" font-size="12" aria-labelledby="doc-title">
+  <title id="doc-title">Runtime architecture of the priority-dev-pi-extension design (a prediction): host sessions and host adapters, the shared priority core, the priority-dev reader with transcript adapters, session files and stores, the planned Pi Durable orchestrator, and outside services</title>
+  <defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#3D3D3A"/></marker></defs>
+  <g id="bound-client">
+    <title>client boundary: the person and any coding agent</title>
+    <rect x="20" y="40" width="220" height="400" fill="none" stroke="#3D3D3A" stroke-width="1.5" rx="8"/>
+    <text x="32" y="60" fill="#87867F">client</text>
+    <g id="n-person">
+      <title>Person: switches the reader on, reads cards, marks, presses Send</title>
+      <rect x="30" y="90" width="200" height="52" rx="10" fill="#F0EEE6" stroke="#3D3D3A" stroke-width="1.5"/>
+      <text x="40" y="110" fill="#141413">Person</text>
+      <text x="40" y="124" fill="#87867F" font-size="10">marks, Send, Edit</text>
+    </g>
+    <g id="n-agent">
+      <title>Any coding agent: runs priority read on a session file (agent mode)</title>
+      <rect x="30" y="220" width="200" height="52" rx="10" fill="#F0EEE6" stroke="#3D3D3A" stroke-width="1.5"/>
+      <text x="40" y="240" fill="#141413">Coding agent</text>
+      <text x="40" y="254" fill="#87867F" font-size="10">agent mode</text>
+    </g>
+    <g id="n-notif">
+      <title>Notification surface for the person: Web Push, Slack, or email (planned)</title>
+      <rect x="30" y="350" width="200" height="52" rx="10" fill="none" stroke="#3D3D3A" stroke-width="1.5" stroke-dasharray="5 4"/>
+      <text x="40" y="370" fill="#141413">Notifications</text>
+      <text x="40" y="384" fill="#87867F" font-size="10">push, Slack (planned)</text>
+    </g>
+  </g>
+  <g id="bound-hosts">
+    <title>hosts boundary: harness sessions and their host adapters</title>
+    <rect x="280" y="40" width="260" height="560" fill="none" stroke="#3D3D3A" stroke-width="1.5" rx="8"/>
+    <text x="292" y="60" fill="#87867F">hosts</text>
+    <g id="n-cc">
+      <title>Claude Code session with plugins/cobuilder-priority, moved onto the core</title>
+      <rect x="300" y="90" width="230" height="52" rx="10" fill="#F0EEE6" stroke="#3D3D3A" stroke-width="1.5"/>
+      <text x="310" y="110" fill="#141413">Claude Code + plugin</text>
+      <text x="310" y="124" fill="#87867F" font-size="10">plugins/cobuilder-priority</text>
+    </g>
+    <g id="n-pi">
+      <title>Pi session (pi coding agent 1.6) with the pi/cobuilder-priority package</title>
+      <rect x="300" y="200" width="230" height="52" rx="10" fill="#F0EEE6" stroke="#3D3D3A" stroke-width="1.5"/>
+      <text x="310" y="220" fill="#141413">Pi session</text>
+      <text x="310" y="234" fill="#87867F" font-size="10">agent_settled</text>
+    </g>
+    <g id="n-omp">
+      <title>OMP session (oh-my-pi 19.1) with the same pi/cobuilder-priority package</title>
+      <rect x="300" y="290" width="230" height="52" rx="10" fill="#F0EEE6" stroke="#3D3D3A" stroke-width="1.5"/>
+      <text x="310" y="310" fill="#141413">OMP session</text>
+      <text x="310" y="324" fill="#87867F" font-size="10">session_stop</text>
+    </g>
+    <g id="n-pipkg">
+      <title>pi/cobuilder-priority: stop hook, pane component, question hook, priority_read tool</title>
+      <rect x="300" y="400" width="230" height="52" rx="10" fill="#F0EEE6" stroke="#3D3D3A" stroke-width="1.5"/>
+      <text x="310" y="420" fill="#141413">pi/cobuilder-priority</text>
+      <text x="310" y="434" fill="#87867F" font-size="10">one package, no fork</text>
+      <rect x="472" y="391" width="54" height="16" rx="8" fill="#D97757"/>
+      <text x="478" y="403" fill="#FFFFFF" font-size="10">pending</text>
+    </g>
+  </g>
+  <g id="bound-core">
+    <title>core boundary: the shared TypeScript core under shared/, no host engine import</title>
+    <rect x="580" y="40" width="250" height="560" fill="none" stroke="#3D3D3A" stroke-width="1.5" rx="8"/>
+    <text x="592" y="60" fill="#87867F">core (shared/)</text>
+    <g id="n-core">
+      <title>shared/priority-core: Reading types, card view, draft, reader queue, ports</title>
+      <rect x="595" y="150" width="220" height="52" fill="#F0EEE6" stroke="#3D3D3A" stroke-width="1.5"/>
+      <text x="605" y="170" fill="#141413">shared/priority-core</text>
+      <text x="605" y="184" fill="#87867F" font-size="10">contract + ports</text>
+      <rect x="757" y="141" width="54" height="16" rx="8" fill="#D97757"/>
+      <text x="763" y="153" fill="#FFFFFF" font-size="10">pending</text>
+    </g>
+    <g id="n-eval">
+      <title>evaluate(action, state): pure policy, deny list, rule id and hashes</title>
+      <rect x="595" y="290" width="220" height="52" fill="#F0EEE6" stroke="#3D3D3A" stroke-width="1.5"/>
+      <text x="605" y="310" fill="#141413">evaluate</text>
+      <text x="605" y="324" fill="#87867F" font-size="10">policy (E9)</text>
+      <rect x="757" y="281" width="54" height="16" rx="8" fill="#D97757"/>
+      <text x="763" y="293" fill="#FFFFFF" font-size="10">pending</text>
+    </g>
+    <g id="n-golden">
+      <title>Golden readings: Reading in, card view and draft text out</title>
+      <path d="M595 428 Q705.0 414 815 428 L815 472 L595 472 Z" fill="#F0EEE6" stroke="#3D3D3A" stroke-width="1.5"/>
+      <path d="M595 428 Q705.0 442 815 428" fill="none" stroke="#3D3D3A" stroke-width="1"/>
+      <text x="605" y="444" fill="#141413">golden readings</text>
+      <text x="605" y="458" fill="#87867F" font-size="10">fixtures</text>
+      <rect x="757" y="411" width="54" height="16" rx="8" fill="#D97757"/>
+      <text x="763" y="423" fill="#FFFFFF" font-size="10">pending</text>
+    </g>
+  </g>
+  <g id="bound-reader">
+    <title>reader boundary: priority-dev, Python, called only as a process (ADR-0045)</title>
+    <rect x="870" y="40" width="280" height="560" fill="none" stroke="#3D3D3A" stroke-width="1.5" rx="8"/>
+    <text x="882" y="60" fill="#87867F">reader (priority-dev)</text>
+    <g id="n-read">
+      <title>priority read: digest then interpret, prints one Reading as JSON</title>
+      <rect x="890" y="90" width="240" height="52" rx="10" fill="#F0EEE6" stroke="#3D3D3A" stroke-width="1.5"/>
+      <text x="900" y="110" fill="#141413">priority read</text>
+      <text x="900" y="124" fill="#87867F" font-size="10">uv run, JSON out</text>
+      <rect x="1072" y="81" width="54" height="16" rx="8" fill="#D97757"/>
+      <text x="1078" y="93" fill="#FFFFFF" font-size="10">pending</text>
+    </g>
+    <g id="n-adapters">
+      <title>Transcript adapters: claude-code and pi dialects to a priority transcript</title>
+      <rect x="890" y="200" width="240" height="52" rx="10" fill="#F0EEE6" stroke="#3D3D3A" stroke-width="1.5"/>
+      <text x="900" y="220" fill="#141413">transcript adapters</text>
+      <text x="900" y="234" fill="#87867F" font-size="10">claude-code, pi</text>
+      <rect x="1072" y="191" width="54" height="16" rx="8" fill="#D97757"/>
+      <text x="1078" y="203" fill="#FFFFFF" font-size="10">pending</text>
+    </g>
+    <g id="n-brief">
+      <title>brief builder: reads only the priority transcript</title>
+      <rect x="890" y="310" width="240" height="52" rx="10" fill="#F0EEE6" stroke="#3D3D3A" stroke-width="1.5"/>
+      <text x="900" y="330" fill="#141413">brief builder</text>
+      <text x="900" y="344" fill="#87867F" font-size="10">priority/brief</text>
+    </g>
+    <g id="n-interp">
+      <title>Digest and Interpreter (DSPy, program D1)</title>
+      <rect x="890" y="420" width="240" height="52" rx="10" fill="#F0EEE6" stroke="#3D3D3A" stroke-width="1.5"/>
+      <text x="900" y="440" fill="#141413">digest + interpret</text>
+      <text x="900" y="454" fill="#87867F" font-size="10">DSPy, D1</text>
+    </g>
+    <g id="n-dstore">
+      <title>Digest store: keyed by session id</title>
+      <path d="M890 528 Q1010.0 514 1130 528 L1130 572 L890 572 Z" fill="#F0EEE6" stroke="#3D3D3A" stroke-width="1.5"/>
+      <path d="M890 528 Q1010.0 542 1130 528" fill="none" stroke="#3D3D3A" stroke-width="1"/>
+      <text x="900" y="544" fill="#141413">digest store</text>
+      <text x="900" y="558" fill="#87867F" font-size="10">log dir</text>
+    </g>
+  </g>
+  <g id="bound-data">
+    <title>data boundary: session files and local stores</title>
+    <rect x="280" y="630" width="870" height="200" fill="none" stroke="#3D3D3A" stroke-width="1.5" rx="8"/>
+    <text x="292" y="650" fill="#87867F">data</text>
+    <g id="n-ccfile">
+      <title>Claude Code transcript JSONL</title>
+      <path d="M300 708 Q410.0 694 520 708 L520 752 L300 752 Z" fill="#F0EEE6" stroke="#3D3D3A" stroke-width="1.5"/>
+      <path d="M300 708 Q410.0 722 520 708" fill="none" stroke="#3D3D3A" stroke-width="1"/>
+      <text x="310" y="724" fill="#141413">Claude Code JSONL</text>
+      <text x="310" y="738" fill="#87867F" font-size="10">~/.claude/projects</text>
+    </g>
+    <g id="n-pifile">
+      <title>Pi and OMP session JSONL tree with a session header</title>
+      <path d="M560 708 Q670.0 694 780 708 L780 752 L560 752 Z" fill="#F0EEE6" stroke="#3D3D3A" stroke-width="1.5"/>
+      <path d="M560 708 Q670.0 722 780 708" fill="none" stroke="#3D3D3A" stroke-width="1"/>
+      <text x="570" y="724" fill="#141413">Pi / OMP JSONL</text>
+      <text x="570" y="738" fill="#87867F" font-size="10">session tree</text>
+    </g>
+    <g id="n-marks">
+      <title>Readings and marks: $.store in Claude Code, appendEntry and a local file in Pi</title>
+      <path d="M820 708 Q930.0 694 1040 708 L1040 752 L820 752 Z" fill="#F0EEE6" stroke="#3D3D3A" stroke-width="1.5"/>
+      <path d="M820 708 Q930.0 722 1040 708" fill="none" stroke="#3D3D3A" stroke-width="1"/>
+      <text x="830" y="724" fill="#141413">readings + marks</text>
+      <text x="830" y="738" fill="#87867F" font-size="10">local only</text>
+    </g>
+  </g>
+  <g id="bound-durable">
+    <title>durable boundary: Pi Durable on Cloudflare, planned epics E8 to E10</title>
+    <rect x="1190" y="40" width="390" height="560" fill="none" stroke="#3D3D3A" stroke-width="1.5" rx="8" stroke-dasharray="6 4"/>
+    <text x="1202" y="60" fill="#87867F">durable (planned)</text>
+    <g id="n-child">
+      <title>Child agent started by the orchestrator. Probe E8 picks its form: first candidate a container that runs the Pi agent with pi/cobuilder-priority, second a native Pi Durable extension with afterRun</title>
+      <rect x="1210" y="90" width="350" height="52" rx="10" fill="#F0EEE6" stroke="#3D3D3A" stroke-width="1.5"/>
+      <text x="1220" y="110" fill="#141413">child agent (form by E8)</text>
+      <text x="1220" y="124" fill="#87867F" font-size="10">1: container + Pi package</text>
+      <rect x="1502" y="81" width="54" height="16" rx="8" fill="#D97757"/>
+      <text x="1508" y="93" fill="#FFFFFF" font-size="10">pending</text>
+    </g>
+    <g id="n-orch">
+      <title>Orchestrator Durable Object: the advisor proposes an answer or a notification</title>
+      <rect x="1210" y="210" width="350" height="52" rx="10" fill="#F0EEE6" stroke="#3D3D3A" stroke-width="1.5"/>
+      <text x="1220" y="230" fill="#141413">orchestrator DO</text>
+      <text x="1220" y="244" fill="#87867F" font-size="10">advisor proposes</text>
+      <rect x="1502" y="201" width="54" height="16" rx="8" fill="#D97757"/>
+      <text x="1508" y="213" fill="#FFFFFF" font-size="10">pending</text>
+    </g>
+    <g id="n-act">
+      <title>Actuator: intent, evaluate again, send, effect; idempotency key is the action hash</title>
+      <rect x="1210" y="320" width="350" height="52" rx="10" fill="#F0EEE6" stroke="#3D3D3A" stroke-width="1.5"/>
+      <text x="1220" y="340" fill="#141413">actuator</text>
+      <text x="1220" y="354" fill="#87867F" font-size="10">submit, steer, signal</text>
+      <rect x="1502" y="311" width="54" height="16" rx="8" fill="#D97757"/>
+      <text x="1508" y="323" fill="#FFFFFF" font-size="10">pending</text>
+    </g>
+    <g id="n-endpoint">
+      <title>Reader for a child: in candidate 1, priority read runs as a local process inside the container; the route is an output of probe E8, not a decision</title>
+      <rect x="1210" y="440" width="350" height="52" rx="10" fill="#F0EEE6" stroke="#3D3D3A" stroke-width="1.5"/>
+      <text x="1220" y="460" fill="#141413">child reader</text>
+      <text x="1220" y="474" fill="#87867F" font-size="10">route is E8 output</text>
+      <rect x="1502" y="431" width="54" height="16" rx="8" fill="#D97757"/>
+      <text x="1508" y="443" fill="#FFFFFF" font-size="10">pending</text>
+    </g>
+  </g>
+  <g id="bound-external">
+    <title>external boundary: the model service</title>
+    <rect x="1190" y="630" width="390" height="200" fill="none" stroke="#3D3D3A" stroke-width="1.5" rx="8"/>
+    <text x="1202" y="650" fill="#87867F">external</text>
+    <g id="n-model">
+      <title>Model service of the priority-dev CLI (OpenRouter)</title>
+      <rect x="1210" y="700" width="350" height="52" rx="10" fill="none" stroke="#3D3D3A" stroke-width="1.5" stroke-dasharray="5 4"/>
+      <text x="1220" y="720" fill="#141413">model service</text>
+      <text x="1220" y="734" fill="#87867F" font-size="10">two calls per reading</text>
+    </g>
+  </g>
+  <line x1="230" y1="116.0" x2="300" y2="116.0" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="234" y="109" fill="#5E5D59" font-size="10">keys, Send</text>
+  <line x1="130.0" y1="220" x2="890" y2="116.0" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="250" y="190" fill="#5E5D59" font-size="10">uv run priority read</text>
+  <polyline points="300,226 288,226 288,426 300,426" fill="none" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="250" y="330" fill="#5E5D59" font-size="10" transform="rotate(-90 284 330)">jiti load</text>
+  <line x1="415.0" y1="342" x2="415.0" y2="400" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="420" y="375" fill="#5E5D59" font-size="10">jiti load</text>
+  <line x1="530" y1="426.0" x2="595" y2="176.0" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="566.5" y="296.0" fill="#5E5D59" font-size="10">import</text>
+  <line x1="530" y1="116.0" x2="595" y2="176.0" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="566.5" y="141.0" fill="#5E5D59" font-size="10">import</text>
+  <line x1="815" y1="176.0" x2="890" y2="116.0" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="856.5" y="141.0" fill="#5E5D59" font-size="10">subprocess spawn</text>
+  <line x1="415.0" y1="452" x2="670.0" y2="700" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="430" y="670" fill="#5E5D59" font-size="10">fs read path</text>
+  <line x1="1010.0" y1="142" x2="1010.0" y2="200" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="1015" y="190" fill="#5E5D59" font-size="10">call</text>
+  <line x1="890" y1="226.0" x2="410.0" y2="700" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="600" y="600" fill="#5E5D59" font-size="10">fs read</text>
+  <line x1="1010.0" y1="252" x2="670.0" y2="700" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="830" y="650" fill="#5E5D59" font-size="10">fs read</text>
+  <line x1="1010.0" y1="252" x2="1010.0" y2="310" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="1015" y="300" fill="#5E5D59" font-size="10">priority transcript</text>
+  <line x1="1010.0" y1="362" x2="1010.0" y2="420" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="1015" y="410" fill="#5E5D59" font-size="10">brief</text>
+  <line x1="1010.0" y1="472" x2="1010.0" y2="520" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="1015" y="512" fill="#5E5D59" font-size="10">fs write</text>
+  <line x1="1130" y1="446.0" x2="1385.0" y2="700" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="1160" y="690" fill="#5E5D59" font-size="10">HTTPS</text>
+  <line x1="705.0" y1="202" x2="930.0" y2="700" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="830" y="660" fill="#5E5D59" font-size="10">store port</text>
+  <line x1="1385.0" y1="142" x2="1385.0" y2="210" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="1390" y="200" fill="#5E5D59" font-size="10">DO RPC (E8)</text>
+  <line x1="1210" y1="236.0" x2="815" y2="316.0" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="880" y="280" fill="#5E5D59" font-size="10">propose -> evaluate</text>
+  <line x1="1385.0" y1="262" x2="1385.0" y2="320" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="1390" y="312" fill="#5E5D59" font-size="10">ALLOW</text>
+  <line x1="1560" y1="346.0" x2="1560" y2="116.0" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="1565" y="230" fill="#5E5D59" font-size="10">submit / signal</text>
+  <line x1="1210" y1="116.0" x2="1210" y2="466.0" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="1135" y="380" fill="#5E5D59" font-size="10">process (E8)</text>
+  <line x1="1210" y1="466.0" x2="1130" y2="116.0" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="1160" y="430" fill="#5E5D59" font-size="10">uv run</text>
+  <line x1="1210" y1="236.0" x2="230" y2="376.0" stroke="#3D3D3A" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="260" y="360" fill="#5E5D59" font-size="10">ASK -> notify (N0-N2)</text>
+</svg>
