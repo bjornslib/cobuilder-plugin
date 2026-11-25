@@ -1,13 +1,13 @@
 {
   "schema_version": "1.4",
   "sources": {
-    "git_head": "4083f56213bb6bb68513515ef9eeb50aa3c0d768",
+    "git_head": "d5e49a424812ee9a5ca1ea2a81a1bf474cb98abc",
     "trees": {
-      "docs/architecture/adr": "sha256:c0025216245bfddaa19dbd3d7188772a748b4be8fc1c6cc8778ea8fac9d35206",
-      "docs/architecture/designs": "sha256:6a7e087537298c9ec8abc9706b42a4dbed9f1180f734ca14ffd727e1a876aa15",
-      "docs/architecture/contexts": "sha256:e9537c5da21bf3f32eb547c8c422e8c3eb9acafefb5801143e53491b64ace073",
-      "docs/plans": "sha256:70742b843fbe65bf9c4644933ff6f5e07ffaa41dbb1d9280cbfbbda84f0a6527",
-      ".cobuilder/rubrics": "sha256:5692a7f5dfb80b64c26ad3a1bfb4a9ee04b301dc0a9b680240076ae34d002775"
+      "docs/architecture/adr": "sha256:64ad23e86f8bae7c7a99c47e70ae5979a2900b9caf727245be01271427edc75a",
+      "docs/architecture/designs": "sha256:10bc412f2e735054efdd8b70d4ac33f8153b1634ea28bb577260a4eee545b452",
+      "docs/architecture/contexts": "sha256:46a05b7e3bafc6a86d16e4076f5d5dfc57d8f8e4ee22fbc3d3f98a6fc6837494",
+      "docs/plans": "sha256:b9a7b1abadf23e7696066ebd997405214d4fd5c47c2c8590e8ea0431bac4e0a7",
+      ".cobuilder/rubrics": "sha256:38f8eece05f5c4733c6d111d5289848e0ee8b253b55115b796895c4c34a9f445"
     }
   },
   "entities": {
@@ -241,6 +241,11 @@
         "id": "ADR-0050",
         "title": "The priority reader answers an AskUserQuestion call from its pane",
         "state": "decided"
+      },
+      {
+        "id": "ADR-0051",
+        "title": "The priority reader runs in Pi and OMP on a shared core and priority transcripts",
+        "state": "decided"
       }
     ],
     "design": [
@@ -362,6 +367,12 @@
         "id": "priority-dev-cc-plugin",
         "name": "priority-dev-cc-plugin",
         "outcome": "With the reader switched on, each main-loop stop gets a D1 reading in a pane, and the session does not wait. The person marks each reading right or wrong, with a note, and sends the steps they choose to the session with one press. The marks stay local.",
+        "stage": "approved"
+      },
+      {
+        "id": "priority-dev-pi-extension",
+        "name": "priority-dev-pi-extension",
+        "outcome": "The cobuilder-priority digest and action cards run as a Pi extension. It behaves the same as the Claude Code plugin in both Pi and OMP. A coding agent can run the digest and get the action cards back as a structured response. Later, a Pi Durable orchestrator gets the digest and cards each time a hook fires in a harness it started.",
         "stage": "approved"
       },
       {
@@ -1117,7 +1128,7 @@
         "epic_id": "E3",
         "branch": null,
         "pr": null,
-        "state": null,
+        "state": "open",
         "note": null,
         "design_doc": "priority-ask-question/E3"
       },
@@ -1143,6 +1154,96 @@
         "id": "priority-dev-cc-plugin/E3",
         "design": "priority-dev-cc-plugin",
         "epic_id": "E3",
+        "branch": null,
+        "pr": null,
+        "state": null,
+        "note": null
+      },
+      {
+        "id": "priority-dev-pi-extension/E1",
+        "design": "priority-dev-pi-extension",
+        "epic_id": "E1",
+        "branch": null,
+        "pr": null,
+        "state": null,
+        "note": null
+      },
+      {
+        "id": "priority-dev-pi-extension/E2",
+        "design": "priority-dev-pi-extension",
+        "epic_id": "E2",
+        "branch": null,
+        "pr": null,
+        "state": null,
+        "note": null
+      },
+      {
+        "id": "priority-dev-pi-extension/E3",
+        "design": "priority-dev-pi-extension",
+        "epic_id": "E3",
+        "branch": null,
+        "pr": null,
+        "state": null,
+        "note": null
+      },
+      {
+        "id": "priority-dev-pi-extension/E4",
+        "design": "priority-dev-pi-extension",
+        "epic_id": "E4",
+        "branch": null,
+        "pr": null,
+        "state": null,
+        "note": null
+      },
+      {
+        "id": "priority-dev-pi-extension/E5",
+        "design": "priority-dev-pi-extension",
+        "epic_id": "E5",
+        "branch": null,
+        "pr": null,
+        "state": null,
+        "note": null
+      },
+      {
+        "id": "priority-dev-pi-extension/E6",
+        "design": "priority-dev-pi-extension",
+        "epic_id": "E6",
+        "branch": null,
+        "pr": null,
+        "state": null,
+        "note": null
+      },
+      {
+        "id": "priority-dev-pi-extension/E7",
+        "design": "priority-dev-pi-extension",
+        "epic_id": "E7",
+        "branch": null,
+        "pr": null,
+        "state": null,
+        "note": null
+      },
+      {
+        "id": "priority-dev-pi-extension/E8",
+        "design": "priority-dev-pi-extension",
+        "epic_id": "E8",
+        "branch": null,
+        "pr": null,
+        "state": null,
+        "note": null
+      },
+      {
+        "id": "priority-dev-pi-extension/E9",
+        "design": "priority-dev-pi-extension",
+        "epic_id": "E9",
+        "branch": null,
+        "pr": null,
+        "state": null,
+        "note": null
+      },
+      {
+        "id": "priority-dev-pi-extension/E10",
+        "design": "priority-dev-pi-extension",
+        "epic_id": "E10",
         "branch": null,
         "pr": null,
         "state": null,
@@ -2297,7 +2398,7 @@
         "kind": "forbidden-dependency",
         "detail": {
           "target": "priority-dev/src as an import or a file read",
-          "why": "The hooks module has no Node or filesystem access to the package. It reaches priority-dev only through $.process.run."
+          "why": "The hooks module has no Node or filesystem access to the package. It reaches priority-dev only through $.process.run. A grep of hooks/ and types/ finds no import of priority-dev."
         }
       },
       {
@@ -2306,7 +2407,7 @@
         "kind": "forbidden-dependency",
         "detail": {
           "target": "plugins/<other>/ paths",
-          "why": "Plugins meet at the bundle and by name. A grep of the hooks folder finds no other plugin path."
+          "why": "Plugins meet at the bundle and by name. A grep of hooks/ and types/ finds no other plugin path."
         }
       },
       {
@@ -2321,10 +2422,12 @@
           ],
           "allowed_inbound": [],
           "allowed_outbound": [
-            "reader",
-            "pane"
+            "band",
+            "ask",
+            "pane",
+            "reader"
           ],
-          "rule": "Registers the commands, the Stop hook, and the pane render. Holds the reader switch atom."
+          "rule": "Entry. Registers the commands, the hooks, the AskUserQuestion hold, and the two ui.render handlers. Holds the reader switch atom. Engine-bound."
         }
       },
       {
@@ -2335,15 +2438,34 @@
           "id": "reader",
           "path": "plugins/cobuilder-priority/hooks/reader.ts",
           "public_interface": [
+            "PANE_ID",
+            "readingsKey",
             "enqueue",
-            "readingsKey"
+            "startWaiting",
+            "stopWaiting",
+            "failLostStops",
+            "scrollPaneToTop",
+            "isBusy",
+            "isQuestionBusy",
+            "isQuiet",
+            "isWaiting"
           ],
           "allowed_inbound": [
             "register",
-            "pane"
+            "ask",
+            "band",
+            "card",
+            "keys",
+            "pane",
+            "act"
           ],
-          "allowed_outbound": [],
-          "rule": "One reading at a time. Runs the priority-dev CLI and stores each reading in $.store."
+          "allowed_outbound": [
+            "answers",
+            "cli",
+            "labels",
+            "pending"
+          ],
+          "rule": "One reading at a time. Runs the priority-dev CLI through cli and stores each reading in $.store. Engine-bound ($, atoms, $.ui, $.clock)."
         }
       },
       {
@@ -2351,20 +2473,330 @@
         "context": "cobuilder-priority",
         "kind": "module-invariant",
         "detail": {
-          "id": "pane",
-          "path": "plugins/cobuilder-priority/hooks/pane.tsx",
+          "id": "ask",
+          "path": "plugins/cobuilder-priority/hooks/ask.ts",
           "public_interface": [
-            "PANE_ID",
-            "openPane",
-            "renderPane"
+            "holdAsk",
+            "notePrompt",
+            "isHolding",
+            "sendAnswers",
+            "declineAnswers",
+            "pickOption",
+            "setOther",
+            "dropHeld"
+          ],
+          "allowed_inbound": [
+            "register",
+            "keys",
+            "question"
+          ],
+          "allowed_outbound": [
+            "answers",
+            "hold",
+            "reader"
+          ],
+          "rule": "Holds a main-loop AskUserQuestion call in the pane. Engine-bound ($.fs, $.ui, atoms)."
+        }
+      },
+      {
+        "id": "cobuilder-priority/module-invariant/4",
+        "context": "cobuilder-priority",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "answers",
+          "path": "plugins/cobuilder-priority/hooks/answers.ts",
+          "public_interface": [
+            "recordAnswers",
+            "takeAnswers"
+          ],
+          "allowed_inbound": [
+            "reader",
+            "ask"
+          ],
+          "allowed_outbound": [],
+          "rule": "Leaf. Stores the answers of a held question on the mark of its reading, in $.store. Engine-bound ($.store only). It repeats the three store key strings of reader and act."
+        }
+      },
+      {
+        "id": "cobuilder-priority/module-invariant/5",
+        "context": "cobuilder-priority",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "cli",
+          "path": "plugins/cobuilder-priority/hooks/cli.ts",
+          "public_interface": [
+            "cli"
+          ],
+          "allowed_inbound": [
+            "reader"
+          ],
+          "allowed_outbound": [],
+          "rule": "Leaf. The one place that starts `uv run priority ...` through $.process.run. Engine-bound ($.process)."
+        }
+      },
+      {
+        "id": "cobuilder-priority/module-invariant/6",
+        "context": "cobuilder-priority",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "pending",
+          "path": "plugins/cobuilder-priority/hooks/pending.ts",
+          "public_interface": [
+            "markPending",
+            "clearPending",
+            "listPending",
+            "lostReadings"
+          ],
+          "allowed_inbound": [
+            "reader"
+          ],
+          "allowed_outbound": [],
+          "rule": "Leaf. Keeps the record of a queued stop in $.store, so a reload finds it lost. Engine-bound ($.store, $.session)."
+        }
+      },
+      {
+        "id": "cobuilder-priority/module-invariant/7",
+        "context": "cobuilder-priority",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "labels",
+          "path": "plugins/cobuilder-priority/hooks/labels.ts",
+          "public_interface": [
+            "answerLabels",
+            "agentSummary",
+            "answersOf"
+          ],
+          "allowed_inbound": [
+            "reader"
+          ],
+          "allowed_outbound": [],
+          "rule": "Leaf. PURE: string parsing, no import. Reads the answer labels of the last agent message."
+        }
+      },
+      {
+        "id": "cobuilder-priority/module-invariant/8",
+        "context": "cobuilder-priority",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "hold",
+          "path": "plugins/cobuilder-priority/hooks/hold.ts",
+          "public_interface": [
+            "holdPaths",
+            "waitArgv",
+            "typedOr",
+            "answeredCount",
+            "allAnswered",
+            "answerOf",
+            "holdInChild"
+          ],
+          "allowed_inbound": [
+            "ask",
+            "keys",
+            "question"
+          ],
+          "allowed_outbound": [],
+          "rule": "Leaf. PURE except holdInChild and drain, which use $.process.spawn and $.fs. The rest is plain functions over HeldQuestion."
+        }
+      },
+      {
+        "id": "cobuilder-priority/module-invariant/9",
+        "context": "cobuilder-priority",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "draft",
+          "path": "plugins/cobuilder-priority/hooks/draft.ts",
+          "public_interface": [
+            "canSend",
+            "visibleNo",
+            "draftOf"
+          ],
+          "allowed_inbound": [
+            "act",
+            "card"
+          ],
+          "allowed_outbound": [],
+          "rule": "Leaf. PURE: builds the text of a send from the chosen steps. No import."
+        }
+      },
+      {
+        "id": "cobuilder-priority/module-invariant/10",
+        "context": "cobuilder-priority",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "names",
+          "path": "plugins/cobuilder-priority/hooks/names.ts",
+          "public_interface": [
+            "statusName",
+            "priorityName",
+            "abstainName",
+            "briefName",
+            "stepName"
+          ],
+          "allowed_inbound": [
+            "band",
+            "card",
+            "pane"
+          ],
+          "allowed_outbound": [],
+          "rule": "Leaf. PURE: maps raw CLI values to display names. No import."
+        }
+      },
+      {
+        "id": "cobuilder-priority/module-invariant/11",
+        "context": "cobuilder-priority",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "act",
+          "path": "plugins/cobuilder-priority/hooks/act.ts",
+          "public_interface": [
+            "EMPTY",
+            "marksKey",
+            "actFor",
+            "toggleStep",
+            "pick",
+            "answer",
+            "toggleSummary",
+            "openCard",
+            "saveMark",
+            "draftFor",
+            "send"
+          ],
+          "allowed_inbound": [
+            "card",
+            "keys",
+            "pane"
+          ],
+          "allowed_outbound": [
+            "draft",
+            "reader"
+          ],
+          "rule": "Pane selection and marks. Engine-bound ($.store, $.prompt, $.ui, atoms). draftFor is a thin call of draft."
+        }
+      },
+      {
+        "id": "cobuilder-priority/module-invariant/12",
+        "context": "cobuilder-priority",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "card",
+          "path": "plugins/cobuilder-priority/hooks/card.tsx",
+          "public_interface": [
+            "keyed",
+            "quiet",
+            "clock",
+            "sendableNow",
+            "sendLink",
+            "draftBox",
+            "firstDecide",
+            "card",
+            "noteInput"
+          ],
+          "allowed_inbound": [
+            "band",
+            "keys",
+            "pane",
+            "question"
+          ],
+          "allowed_outbound": [
+            "act",
+            "draft",
+            "names",
+            "reader"
+          ],
+          "rule": "Draws one reading card. Engine-bound: JSX over the ui object that $.ui.resolve returns. clock, sendableNow, and firstDecide are pure."
+        }
+      },
+      {
+        "id": "cobuilder-priority/module-invariant/13",
+        "context": "cobuilder-priority",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "keys",
+          "path": "plugins/cobuilder-priority/hooks/keys.tsx",
+          "public_interface": [
+            "keyRow",
+            "questionKeyRow"
+          ],
+          "allowed_inbound": [
+            "pane"
+          ],
+          "allowed_outbound": [
+            "act",
+            "ask",
+            "card",
+            "hold",
+            "reader"
+          ],
+          "rule": "The key row of the pane. Engine-bound (ui buttons)."
+        }
+      },
+      {
+        "id": "cobuilder-priority/module-invariant/14",
+        "context": "cobuilder-priority",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "question",
+          "path": "plugins/cobuilder-priority/hooks/question.tsx",
+          "public_interface": [
+            "questionBlocks"
+          ],
+          "allowed_inbound": [
+            "pane"
+          ],
+          "allowed_outbound": [
+            "ask",
+            "card",
+            "hold"
+          ],
+          "rule": "Draws the held question. Engine-bound (ui)."
+        }
+      },
+      {
+        "id": "cobuilder-priority/module-invariant/15",
+        "context": "cobuilder-priority",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "band",
+          "path": "plugins/cobuilder-priority/hooks/band.tsx",
+          "public_interface": [
+            "renderBand"
           ],
           "allowed_inbound": [
             "register"
           ],
           "allowed_outbound": [
+            "card",
+            "names",
             "reader"
           ],
-          "rule": "Draws one card per reading and stores the marks in $.store."
+          "rule": "The ready band above the prompt. Engine-bound ($.ui, $.store, atoms)."
+        }
+      },
+      {
+        "id": "cobuilder-priority/module-invariant/16",
+        "context": "cobuilder-priority",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "pane",
+          "path": "plugins/cobuilder-priority/hooks/pane.tsx",
+          "public_interface": [
+            "openPane",
+            "renderPane",
+            "paneView",
+            "INLINE_WARNING"
+          ],
+          "allowed_inbound": [
+            "register"
+          ],
+          "allowed_outbound": [
+            "act",
+            "card",
+            "keys",
+            "question",
+            "names",
+            "reader"
+          ],
+          "rule": "Draws the reader pane and stores nothing itself. Engine-bound ($.ui, atoms)."
         }
       },
       {
@@ -2374,7 +2806,7 @@
         "detail": {
           "with": "priority-dev",
           "pattern": "conformist",
-          "note": "Runs `uv run priority digest` and `uv run priority interpret --digest` as a process in the priority-dev folder, and reads their JSON output. Never imports the package (ADR-0045, ADR-0049)."
+          "note": "Runs `uv run priority digest` and `uv run priority interpret --digest` as a process in the priority-dev folder (hooks/cli.ts, the one caller of $.process.run for the CLI), and reads their JSON output. Never imports the package (ADR-0045, ADR-0049)."
         }
       },
       {
@@ -2384,7 +2816,7 @@
         "detail": {
           "with": "cobuilder-packaging",
           "pattern": "open-host-service",
-          "note": "marketplace.json lists the plugin. The packaging test allows its hooks/ folder."
+          "note": "marketplace.json lists the plugin. The packaging tests allow its hooks/ folder. The umbrella install writes the plugin's userConfig through priority_settings.py in cobuilder-full-lifecycle."
         }
       },
       {
@@ -2825,7 +3257,7 @@
         "kind": "forbidden-dependency",
         "detail": {
           "target": "plugins/<name>/ and shared/ as Python import or path",
-          "why": "Grep of every .py file in priority-dev/src, tools, and tests finds no plugins/ or shared/ path. The package imports only priority.* and third-party packages."
+          "why": "Grep of every .py file in priority-dev/src, tools, tests, and probes finds no plugins/ or shared/ path. The package imports only priority.* and third-party packages."
         }
       },
       {
@@ -2843,7 +3275,34 @@
         "kind": "forbidden-dependency",
         "detail": {
           "target": "other repo contexts importing priority.* (inbound)",
-          "why": "Zero inbound imports from outside priority-dev/. The context is a leaf in the repo graph."
+          "why": "Zero Python imports of priority.* from outside priority-dev/. plugins/cobuilder-priority/hooks/*.ts reaches the context only through the CLI process."
+        }
+      },
+      {
+        "id": "priority-dev/forbidden-dependency/4",
+        "context": "priority-dev",
+        "kind": "forbidden-dependency",
+        "detail": {
+          "target": "priority.brief importing priority.config, priority.evaluation, priority.replay, or any optimiser module",
+          "why": "brief imports only its own files and priority.interpreter (brief/shrink.py takes CallRecorder, Abstain, and shorten). Checked with the AST import graph."
+        }
+      },
+      {
+        "id": "priority-dev/forbidden-dependency/5",
+        "context": "priority-dev",
+        "kind": "forbidden-dependency",
+        "detail": {
+          "target": "priority.interpreter importing priority.brief, priority.evaluation, priority.replay, or any optimiser module",
+          "why": "interpreter imports only config, run_folder, and its own files. Its Interpreter takes brief text as a string, so brief depends on interpreter and never the reverse."
+        }
+      },
+      {
+        "id": "priority-dev/forbidden-dependency/6",
+        "context": "priority-dev",
+        "kind": "forbidden-dependency",
+        "detail": {
+          "target": "priority.evaluation importing priority.replay or any optimiser module",
+          "why": "The optimiser modules import evaluation. A reverse import would make a cycle."
         }
       },
       {
@@ -2857,15 +3316,12 @@
             "priority.config (model, base_url, judge_*, reflection_*, load_key)"
           ],
           "allowed_inbound": [
-            "brief",
             "interpreter",
-            "evaluation",
-            "optimiser",
-            "gepa_log",
-            "cli"
+            "evaluation/judge.py",
+            "optimiser"
           ],
           "allowed_outbound": [],
-          "rule": "Reads environment and .env at call time. Many modules read it. optimise_report.py reads it lazily."
+          "rule": "Reads environment and .env at call time. interpreter/module.py, interpreter/digest.py, evaluation/judge.py, gepa_log.py, optimise.py, and optimise_report.py import it. brief and replay do not."
         }
       },
       {
@@ -2877,20 +3333,24 @@
           "path": "priority-dev/src/priority",
           "members": [
             "run_folder.py",
-            "redact.py",
-            "models.py",
-            "labels.py",
-            "split.py",
+            "brief/models.py",
+            "brief/redact.py",
+            "brief/questions.py",
+            "interpreter/models.py",
+            "evaluation/labels.py",
+            "evaluation/split.py",
             "evaluation/payload_rules.py",
             "evaluation/judge_probe.py",
             "evaluation/judge_check_store.py",
-            "replay/store.py"
+            "replay/store.py",
+            "replay/figures.py",
+            "replay/options.py"
           ],
           "allowed_inbound": [
             "all modules"
           ],
           "allowed_outbound": [],
-          "rule": "Leaves: no import of another priority module, except where a module imports one of these."
+          "rule": "Leaves: no import of another priority module (checked in the AST graph)."
         }
       },
       {
@@ -2906,15 +3366,14 @@
           ],
           "allowed_inbound": [
             "cli",
-            "interpreter",
             "evaluation",
             "replay",
             "trainset"
           ],
           "allowed_outbound": [
-            "config"
+            "interpreter"
           ],
-          "rule": "Builds the stop brief from a coding transcript."
+          "rule": "Builds the stop brief from a coding transcript. transcript.py is the only reader of the Claude Code JSONL shape (cli_contract.transcript_shape). shrink.py imports interpreter.calls, interpreter.models, and interpreter.shrink."
         }
       },
       {
@@ -2925,23 +3384,47 @@
           "id": "interpreter",
           "path": "priority-dev/src/priority/interpreter",
           "public_interface": [
-            "priority.interpreter.Interpreter"
+            "priority.interpreter.Interpreter",
+            "priority.interpreter.DigestRun",
+            "priority.interpreter.RunDigest"
           ],
           "allowed_inbound": [
             "cli",
+            "brief",
             "evaluation",
             "replay",
-            "optimiser"
+            "optimiser",
+            "digest_store"
           ],
           "allowed_outbound": [
-            "brief",
-            "config"
+            "config",
+            "run_folder"
           ],
-          "rule": "Imports dspy. Its digest and module files read config at import time."
+          "rule": "Imports dspy. Its digest and module files read config. It never imports brief."
         }
       },
       {
         "id": "priority-dev/module-invariant/5",
+        "context": "priority-dev",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "digest-store",
+          "path": "priority-dev/src/priority/digest_store.py",
+          "public_interface": [
+            "priority.digest_store (digest_path, load_digest, save_digest)"
+          ],
+          "allowed_inbound": [
+            "cli",
+            "replay"
+          ],
+          "allowed_outbound": [
+            "interpreter"
+          ],
+          "rule": "Keeps one RunDigest file for each transcript stem in <log-dir>/digests/."
+        }
+      },
+      {
+        "id": "priority-dev/module-invariant/6",
         "context": "priority-dev",
         "kind": "module-invariant",
         "detail": {
@@ -2965,7 +3448,7 @@
         }
       },
       {
-        "id": "priority-dev/module-invariant/6",
+        "id": "priority-dev/module-invariant/7",
         "context": "priority-dev",
         "kind": "module-invariant",
         "detail": {
@@ -2981,13 +3464,13 @@
           "allowed_outbound": [
             "brief",
             "interpreter",
-            "config"
+            "digest_store"
           ],
-          "rule": "replay/drills.py imports litellm. Its importers are not yet traced."
+          "rule": "replay/drills.py imports litellm. Only replay/runner.py and the cli import the package, and no other module imports replay."
         }
       },
       {
-        "id": "priority-dev/module-invariant/7",
+        "id": "priority-dev/module-invariant/8",
         "context": "priority-dev",
         "kind": "module-invariant",
         "detail": {
@@ -3002,7 +3485,6 @@
             "trainset.py",
             "valset.py",
             "valset_mix.py",
-            "digest_store.py",
             "structure_diff.py"
           ],
           "public_interface": [
@@ -3015,9 +3497,19 @@
             "config",
             "evaluation",
             "brief",
-            "interpreter"
+            "interpreter",
+            "run_folder"
           ],
-          "rule": "Runs the GEPA search for one optimiser run. optimise_report.py probes optuna with find_spec only."
+          "rule": "Runs the GEPA search for one optimiser run. cli.py imports valset at module level (METHODS, ValsetSize) and imports optimise lazily. optimise_report.py probes optuna with find_spec only."
+        }
+      },
+      {
+        "id": "priority-dev/context-map/1",
+        "context": "priority-dev",
+        "kind": "context-map",
+        "detail": {
+          "neighbour": "plugins/cobuilder-priority",
+          "pattern": "Open Host Service: the priority CLI is the host. The plugin is a downstream client that starts it as a process and reads JSON from stdout. It never imports priority.*. Its priority_dev_dir option names this folder."
         }
       },
       {
@@ -3036,7 +3528,7 @@
         "detail": {
           "target": "plugins/artifact/viewer/index.html and the sibling artifact install cache",
           "from": "shared/migrate_bundle.py",
-          "why": "SMELL: find_viewer_source (lines 309-340) probes PLUGIN_ROOT/plugins/artifact/viewer/index.html and the sibling 'artifact/<version>/viewer/index.html' cache, and the warning text at line 582 names 'plugins/artifact/'. Shared code reaches into a plugin's files, which inverts the base layer. ADR candidate: pass the viewer path in as an argument, or ship the built viewer through shared."
+          "why": "SMELL: find_viewer_source (lines 338-372) probes PLUGIN_ROOT/plugins/artifact/viewer/index.html and the sibling 'artifact/<version>/viewer/index.html' cache, and the warning text at line 577 names 'plugins/artifact/'. Shared code reaches into a plugin's files, which inverts the base layer. ADR candidate: pass the viewer path in as an argument, or ship the built viewer through shared."
         }
       },
       {
@@ -3051,6 +3543,15 @@
       },
       {
         "id": "shared/forbidden-dependency/4",
+        "context": "shared",
+        "kind": "forbidden-dependency",
+        "detail": {
+          "target": "plugins/<name>/ or pi/<name>/ as TypeScript import (planned shared/priority-core/)",
+          "why": "ADR-0051 plans shared/priority-core/, the first TypeScript library under shared/. It must stay a base layer: it imports no host engine (pi, omp, Claude Code) and no plugin, and it reaches process, store, and clock through ports. Plugins and pi/cobuilder-priority import it through the shared symlink, never the reverse. Not yet in code: no TypeScript file exists under shared/."
+        }
+      },
+      {
+        "id": "shared/forbidden-dependency/5",
         "context": "shared",
         "kind": "forbidden-dependency",
         "detail": {
@@ -3078,10 +3579,10 @@
           "allowed_inbound": [
             "index-and-verify",
             "migration",
-            "ledger-and-gates"
+            "tracker-port"
           ],
           "allowed_outbound": [],
-          "rule": "_bundle_meta.py is a leaf: standard library only. _manifest.py imports only _bundle_meta."
+          "rule": "_bundle_meta.py is a leaf: standard library only. _manifest.py imports only _bundle_meta. migrate_png_assets_to_webp.py imports _manifest."
         }
       },
       {
@@ -3096,15 +3597,17 @@
             "verify_bundle.py",
             "validate_decision_state.py",
             "boundary_check.py",
-            "prose_budget.py"
+            "prose_budget.py",
+            "habit_smells.py"
           ],
           "public_interface": [],
           "allowed_inbound": [],
           "allowed_outbound": [
             "bundle-meta",
-            "gate-parsers"
+            "gate-parsers",
+            "tracker-port"
           ],
-          "rule": "Run by shell, not imported by plugins. build_index.py imports _bundle_meta, prose_budget, slice_table, and gate_status. verify_bundle.py imports prose_budget and _bundle_meta. build_index.py needs PyYAML."
+          "rule": "Run by shell, not imported by plugins. build_index.py imports _bundle_meta, prose_budget, slice_table, gate_status, validate_decision_state, and tracker_port (projector, reader). verify_bundle.py imports _bundle_meta only. boundary_check.py, prose_budget.py, and habit_smells.py are stdlib leaves. build_index.py and validate_decision_state.py need PyYAML."
         }
       },
       {
@@ -3162,7 +3665,8 @@
             "slice_table"
           ],
           "allowed_inbound": [
-            "index-and-verify"
+            "index-and-verify",
+            "tracker-port"
           ],
           "allowed_outbound": [],
           "rule": "One parser for the gate block and the slice table, shared by build_index.py, verify_gate.py, and build_builds_view.py."
@@ -3170,6 +3674,35 @@
       },
       {
         "id": "shared/module-invariant/6",
+        "context": "shared",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "tracker-port",
+          "path": "shared/tracker_port",
+          "members": [
+            "tracker.py",
+            "tracker_port/*.py"
+          ],
+          "public_interface": [
+            "tracker_port.reader",
+            "tracker_port.projector",
+            "tracker_port.TrackerPort",
+            "tracker_port.TrackerRecord",
+            "tracker_port.FakeAdapter",
+            "tracker.py operations"
+          ],
+          "allowed_inbound": [
+            "index-and-verify"
+          ],
+          "allowed_outbound": [
+            "bundle-meta",
+            "gate-parsers"
+          ],
+          "rule": "ADR-0040. Only the beads adapter (beads*.py, bd_runner.py) names bd. Imports gate_status, slice_table, and _bundle_meta (cli_operations.py) by bare name, and PyYAML (config.py). Imported by build_index.py and, through the symlink, by artifact build_builds_view.py and implement verify_gate.py. Run by shell as tracker.py."
+        }
+      },
+      {
+        "id": "shared/module-invariant/7",
         "context": "shared",
         "kind": "module-invariant",
         "detail": {
@@ -3195,7 +3728,7 @@
         "detail": {
           "with": "architect",
           "pattern": "shared-kernel",
-          "note": "Consumed by shell only: build_index, migrate_bundle, prose_budget, boundary_check, validate_decision_state."
+          "note": "Consumed by shell only: build_index, migrate_bundle, prose_budget, boundary_check, validate_decision_state, habit_smells, tracker."
         }
       },
       {
@@ -3205,7 +3738,7 @@
         "detail": {
           "with": "pr",
           "pattern": "shared-kernel",
-          "note": "Consumed by import (_bundle_meta, _manifest) and by shell (migrate_bundle, build_index, verify_bundle)."
+          "note": "Consumed by import (_bundle_meta, _manifest) and by shell (migrate_bundle, build_index, verify_bundle, tracker)."
         }
       },
       {
@@ -3215,7 +3748,7 @@
         "detail": {
           "with": "artifact",
           "pattern": "shared-kernel",
-          "note": "Consumed by import (_bundle_meta, ledger, gate_status, slice_table) and by shell (build_index, migrate_bundle)."
+          "note": "Consumed by import (_bundle_meta, ledger, gate_status, slice_table, tracker_port.reader) and by shell (build_index, migrate_bundle)."
         }
       },
       {
@@ -3225,7 +3758,7 @@
         "detail": {
           "with": "implement",
           "pattern": "shared-kernel",
-          "note": "Consumed by import (slice_table) and by shell (build_index)."
+          "note": "Consumed by import (slice_table, gate_status, tracker_port.reader in verify_gate.py) and by shell (build_index, tracker). The tracker_reminder hook names tracker.py in text only."
         }
       },
       {
@@ -3235,7 +3768,27 @@
         "detail": {
           "with": "cobuilder-packaging",
           "pattern": "shared-kernel",
-          "note": "The umbrella plugin cobuilder-full-lifecycle imports ledger in watch_feedback.py."
+          "note": "The umbrella plugin cobuilder-full-lifecycle imports ledger in watch_feedback.py, and its setup skill runs tracker.py."
+        }
+      },
+      {
+        "id": "shared/context-map/6",
+        "context": "shared",
+        "kind": "context-map",
+        "detail": {
+          "with": "cobuilder-priority",
+          "pattern": "shared-kernel",
+          "note": "plugins/cobuilder-priority holds the shared symlink but imports no shared code today. It is a planned consumer of shared/priority-core (ADR-0051)."
+        }
+      },
+      {
+        "id": "shared/context-map/7",
+        "context": "shared",
+        "kind": "context-map",
+        "detail": {
+          "with": "cobuilder-memory",
+          "pattern": "shared-kernel",
+          "note": "plugins/cobuilder-memory holds the shared symlink and imports no shared code. Its TypeScript hooks module sits outside the Python kernel."
         }
       }
     ],
@@ -4402,6 +4955,76 @@
         "state": "completed"
       },
       {
+        "id": "kanban-board/1",
+        "feature": "kanban-board",
+        "n": 1,
+        "title": "The program board shows each program by stage",
+        "ends_with": "In a browser on the real bundle, the top bar link opens `#/board`. Each program shows once as a card in the column of its stage, with its epic counts by status and its slice count, and the Superseded column starts hidden. The Work drawer still opens over the board. Typecheck, tests, and build hold.",
+        "score": "1.00",
+        "attempts": 2,
+        "state": "completed"
+      },
+      {
+        "id": "kanban-board/2",
+        "feature": "kanban-board",
+        "n": 2,
+        "title": "A program card opens the epic board of that program",
+        "ends_with": "A click on a program card opens `#/board?program=<id>`. Each epic sits in its status column by the map in `contracts.md`, with its tracker title. The Cards switch shows the slices, an epic card opens its epic page, and the back control returns to the program board.",
+        "score": "1.00",
+        "attempts": 2,
+        "state": "completed"
+      },
+      {
+        "id": "kanban-board/3",
+        "feature": "kanban-board",
+        "n": 3,
+        "title": "A slice card opens its epic page with the slice row marked",
+        "ends_with": "A click on a slice card opens `#/<program>/build/epics/<epic>/<n>`. The epic page shows the section of that epic, brings the slice row into view, and marks it. A reload of that address gives the same view. Every older address reads as before.",
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
+      },
+      {
+        "id": "kanban-board/4",
+        "feature": "kanban-board",
+        "n": 4,
+        "title": "Find, Order, and Hide shape the board, and the address keeps them",
+        "ends_with": "The search narrows both boards, Order sorts the program cards by name, open work, and progress, and Hide turns a column into a rail with its count. The header shows the true total, an empty column states its reason, and a reload restores the board from the address.",
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
+      },
+      {
+        "id": "kanban-board/5",
+        "feature": "kanban-board",
+        "n": 5,
+        "title": "The No program card opens the slices that belong to no program",
+        "ends_with": "The program board shows one No program card while such slices exist. It opens `#/board?orphans=1` with those slices by status, and a slice card there opens in place. The card is absent when no such slice exists, and it never counts as a program.",
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
+      },
+      {
+        "id": "kanban-board/6",
+        "feature": "kanban-board",
+        "n": 6,
+        "title": "The board header shows the build time of the index",
+        "ends_with": "`build_index.py` writes a top-level `built_at` that the stale check and the projector ignore. The board header shows that time. An index without `built_at` or epic titles still loads, and the board then shows no time and the epic id.",
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
+      },
+      {
+        "id": "kanban-board/7",
+        "feature": "kanban-board",
+        "n": 7,
+        "title": "A copy icon gives the start prompt of a program or an epic",
+        "ends_with": "A click on the copy icon of a card with a next workflow puts the exact prompt from `contracts.md` on the clipboard and shows \"Prompt copied\". A refused write shows \"Copy failed\" with the prompt text. An open epic with all slices done shows \"Slices done\", and a finished record has no icon.",
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
+      },
+      {
         "id": "level-page-restructure/1",
         "feature": "level-page-restructure",
         "n": 1,
@@ -4668,6 +5291,16 @@
         "title": "**Open-question input**",
         "ends_with": "`uv run priority interpret <transcript> --open-question q.json` builds a brief with an `OPEN QUESTION` section and prints a reading with `stop_kind: question`. Without the flag, the brief equals the stored snapshot and `stop_kind` is `turn_end`",
         "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
+      },
+      {
+        "id": "priority-ask-question/4",
+        "feature": "priority-ask-question",
+        "n": 4,
+        "title": "**Question in the reader**",
+        "ends_with": "The probe's hold, card, and answer move into `cobuilder-priority`. With the reader on, a main-loop AskUserQuestion call opens the pane with each question, its options, and one Other input. Send returns `{ questions, answers }`. A question job runs `priority interpret --open-question`, and the reading fills in under the card with `stop_kind: question`. The \"What will be sent\" block of `question-card.svg` frames every draft in the pane. The mark stores the answers. Esc refuses with no `$` call, and a failed child opens the dialog. `claude plugin test plugins/cobuilder-priority` passes",
+        "score": "0.929",
         "attempts": 1,
         "state": "completed"
       },
@@ -5277,9 +5910,9 @@
         "n": 19,
         "title": "`structure_evidence.py` keeps to the size guide",
         "ends_with": "The entry script has 200 lines or fewer, and each test of the evidence script still passes.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "work-drawer/1",
@@ -5447,6 +6080,15 @@
         "source_path": "docs/plans/priority-ask-question/01-product.md"
       },
       {
+        "id": "priority-dev-pi-extension",
+        "feature_slug": "priority-dev-pi-extension",
+        "gate": 1,
+        "title": "Product: The priority reader runs in Pi and OMP, and a coding agent can read a session",
+        "body_md": "# Product: The priority reader runs in Pi and OMP, and a coding agent can read a session\n\nGrounded in the design record `priority-dev-pi-extension`\n(`docs/architecture/designs/priority-dev-pi-extension/intent.json`) and\nADR-0051.\n\n## Problem\n\nThe engineer runs many coding agents at the same time. Nothing ranks or\nfilters what each agent needs, and no helper answers for the engineer when\nthe next step is obvious. The priority reader solves part of this: at the\nend of each turn it says how urgent the session is and which steps the\nengineer can take. But it works only in Claude Code, and the engineer now\nruns most agents in Pi and OMP. Another agent also cannot ask the reader\nabout a session, so no helper can act on the readings.\n\n## Success metric\n\nIn the first two weeks of use, the engineer switches the reader on in Pi\nand OMP sessions, and at least eight of every ten turn ends in those\nsessions get a reading card. The engineer marks at least 30 of those\nreadings right or wrong.\n\nHow we measure it: the reading history of each session holds every reading\nand every mark. A count over the session files gives the turn ends, the\nreadings, and the marks. Before the host work starts, a scored sample of Pi\nand OMP turn ends shows whether the readings are good enough to trust\n(epic E4). A clearly lower score than the Claude Code reader's 0.654 stops\nthe work.\n\n## Announcement — the blog post before the feature\n\nThe priority reader now works in Pi and OMP, the same way it works in\nClaude Code. Type `/priority-on`, and each time the agent stops, a card\nshows how urgent the session is and the steps you can take. Pick the steps,\nread the exact text, and press Send. When the agent asks you a question in\nPi, you answer it in the same pane, with a reading beside it. Any coding\nagent can now also ask for a reading of a session and get the cards back as\ndata. That is the first step towards a helper that answers the obvious\nquestions for you and calls you only when it matters.\n\n## Screens\n\n- `mockups/reader-pane.html`: the reader pane at the right of a Pi or OMP\n  session. It shows a card, its steps, the draft of what Send submits, and\n  the history.\n- `mockups/question-card.html`: a question that the agent asks in Pi. The\n  pane holds it until the engineer answers. In OMP, this screen exists only\n  if the first probe shows that OMP's own question can be held.\n- `mockups/running-and-closed.html`: a reading runs while the engineer keeps\n  typing. With the pane closed, one summary line sits above the editor.\n\nThe agent mode has no screen. It returns the reading as data. The planned\norchestrator (epics E8 to E10) has no screen in this plan.\n",
+        "approved_date": null,
+        "source_path": "docs/plans/priority-dev-pi-extension/01-product.md"
+      },
+      {
         "id": "priority-dev-spike",
         "feature_slug": "priority-dev-spike",
         "gate": 1,
@@ -5600,6 +6242,15 @@
         "body_md": "# Architecture: The priority reader answers an AskUserQuestion call\n\nGrounded in `docs/architecture/designs/priority-ask-question/contracts.md`\nand ADR-0050.\n\n## Fit\n\n- `priority-dev/probes/ask-hold/`, new: a probe mod that a person loads\n  with `--plugin-dir`. It is test equipment and ships in no marketplace\n  entry (E1).\n- `priority-dev/src/priority/cli.py` and `priority-dev/src/priority/brief/`:\n  the `--open-question` input and `stop_kind` (E2).\n- `plugins/cobuilder-priority/hooks/`: the `tool.call` hook, the question\n  card, and the answer (E3, planned after the probe).\n\n## Endpoints\n\nNone. The mod hooks the engine event `tool.call` for `AskUserQuestion`.\n\n## Data\n\n- The probe writes one JSON line for each event to\n  `priority-dev/reports/logs/ask-hold/probe.jsonl`, which Git ignores.\n- E2 reads a questions file: a JSON list in the AskUserQuestion input\n  shape.\n- E3 adds `stop_kind` and `answers` to a stored reading and its mark.\n\n## Flow\n\n1. The agent calls AskUserQuestion. The engine raises `tool.call`.\n2. The probe hook checks the main loop and its mode. In hold mode, it\n   opens the probe pane, logs the time and whether the transcript holds\n   the `tool_use`, and waits for a press.\n3. The person picks options and presses Send with one candidate answer\n   shape. The hook returns `{ result }`. The probe logs the elapsed time,\n   the shape, and the result or the engine error.\n4. In pass mode, the hook calls `next`, so the dialog opens. The probe\n   logs that it passed.\n\n## External\n\n- No new service. E2 and E3 use the same Mercury calls as ADR-0049.\n- No new environment variable.\n",
         "approved_date": null,
         "source_path": "docs/plans/priority-ask-question/02-architecture.md"
+      },
+      {
+        "id": "priority-dev-pi-extension",
+        "feature_slug": "priority-dev-pi-extension",
+        "gate": 2,
+        "title": "Architecture: The priority reader runs in Pi and OMP, and a coding agent can read a session",
+        "body_md": "# Architecture: The priority reader runs in Pi and OMP, and a coding agent can read a session\n\nGrounded in `docs/architecture/designs/priority-dev-pi-extension/contracts.md`,\n`intent.json`, and ADR-0051. The planned orchestrator adds detail to\n`priority-dev/docs/design/components.md` sections 2 and 3.2 and to\n`schemas.md` sections 4 to 8, and does not replace them.\n\n## Fit\n\n| Module | Status | Role | Epic |\n|---|---|---|---|\n| `priority-dev/src/priority/brief/transcript.py` | changed | Becomes the `claude-code` transcript adapter. It must give byte-identical briefs on the 56 scored stops | E2 |\n| `priority-dev/src/priority/brief/` (new `pi` adapter module) | new | The `pi` transcript adapter. It reads Pi and OMP session trees and walks the active branch | E2 |\n| `priority-dev/src/priority/brief/builder.py` | changed | Reads only the priority transcript. Drops earlier `priority read` output from the next brief | E2 |\n| `priority-dev/src/priority/digest_store.py` | changed | Keys digests on the session id, not the file stem | E2 |\n| `priority-dev/src/priority/cli.py` | changed | Adds `priority read`, which prints one Reading as JSON. `digest` and `interpret` keep their flags | E3 |\n| `priority-dev/calibration.json` | new | D1 score per program and dialect. `priority read` copies it into `calibrated` | E4 |\n| `shared/priority-core/` | new | TypeScript: Reading types, plain names, answer labels, card view model, draft, reader queue, pending record, ports, golden readings, later `evaluate` | E5, E9 |\n| `plugins/cobuilder-priority/hooks/` | changed | Moves onto the core. Keeps every behaviour of ADR-0049 and ADR-0050. Its 25 test files stay unchanged | E5 |\n| `pi/cobuilder-priority/` | new | The Pi package for Pi and OMP: stop hook, pane component, commands, `priority_read` tool, question hook, settings, install manifest | E6, E7 |\n| `docs/architecture/contexts/{cobuilder-priority,shared}/boundary.yaml` | changed | Allow the host adapters to import the core. Add `pi/cobuilder-priority` | E5, E6 |\n| `tests/test_plugin_manifests.py` | unchanged | Keeps `plugins/` for Claude Code plugins only. `pi/` sits outside it | E6 |\n| `CLAUDE.md`, `README.md` | changed | Name the `pi/` layout and the second install surface | E6 |\n| Pi Durable orchestrator | planned | Child hook, advisor, `evaluate`, actuator, notifiers. Probe E8 picks its route | E8–E10 |\n\nBoundaries that hold: nothing imports priority-dev, and each host calls it as a\nprocess (ADR-0045). The core imports no host engine (stack card `generic`,\nrule 1). Only `evaluate` may allow an answer that no person pressed (ADR-0051).\n\n## Endpoints\n\nNo network endpoint. The interfaces are a command, a tool, and host events.\n\n| Interface | Form | Purpose |\n|---|---|---|\n| `uv run priority read <session-file> [--program] [--log-dir] [--open-question] [--stop]` | CLI, JSON on stdout | Agent mode. One Reading for a Claude Code or Pi/OMP session |\n| `priority_read` tool | Pi and OMP tool, `{ session_file?, open_question? }` → `details: Reading` | Agent mode inside a Pi or OMP session |\n| `/priority-on`, `/priority-off`, `/priority-pane` | Pi and OMP commands | The switch and the pane |\n| `alt+p` | Pi shortcut (probe E1 checks OMP) | Focus the pane |\n| Stop events | Pi `agent_settled`, OMP `session_stop` (main session) | Start a reading. Dedupe by session id plus leaf id |\n| Question hook | Pi: the package's `AskUserQuestion` tool. OMP: the built-in `ask` tool, only if probe E1 shows it can be held | Hold a main-loop question in the pane |\n| Orchestrator messages (planned) | `child.reading`, `child.question`, `orchestrator.answer` | contracts.md, \"Orchestrator messages\" |\n\n## Data\n\nNo database table. Three stores, all local:\n\n- **Session entries (Pi and OMP).** The core's store port writes\n  `priority.reading` and `priority.mark` entries with `pi.appendEntry`. They\n  follow the branch, and the adapter rebuilds them at `session_start`.\n- **The Claude Code store.** `$.store` as today, keys `readings:<session>`,\n  `marks:<session>`, `pending:…`, `asked:…`. The move onto the core keeps the\n  keys.\n- **priority-dev files.** The digest store under `--log-dir`, keyed by\n  session id. `calibration.json` with the D1 score per program and dialect.\n  `reports/logs/live/` for call records and question files, which Git\n  ignores.\n\nNew data shapes (contracts.md, \"Data models\"): the priority transcript, the\nthree new Reading fields (`host`, `dialect`, `calibrated`), and the golden\nreadings. Planned: the policy file `priority-policy.json` and the\nauthorization record.\n\n## Flow\n\nThe primary path, one turn end in Pi or OMP with the reader on:\n\n1. The agent ends a turn. Pi fires `agent_settled`, or OMP fires\n   `session_stop`. The Pi package checks the switch and the dedupe key, and\n   returns at once. It never blocks the stop.\n2. The package hands the stop to the core's reader queue. The queue keeps\n   one reading at a time and only the newest waiting stop. It writes a\n   pending record first.\n3. The queue calls `uv run priority read <session-file>` through the\n   process port, in the `priority_dev_dir` checkout.\n4. In priority-dev, the `pi` transcript adapter reads the session tree and\n   writes the priority transcript. The brief builder builds the brief, and\n   it redacts secrets. The digest runs, then the interpretation with D1.\n   `priority read` adds `calibrated` and prints one Reading.\n5. The queue saves the Reading through the store port and clears the\n   pending record.\n6. The package sets the status line, shows notify steps above the editor,\n   raises a toast when the reading needs the engineer, and redraws the pane.\n7. The engineer presses `alt+p`, selects steps, and presses `s`. The core\n   builds the draft. The package calls `pi.sendUserMessage(draft)` and\n   records `sent` on the mark.\n\nAgent mode: a coding agent runs `priority read <session-file>`, or calls\nthe `priority_read` tool, and gets the same Reading as JSON. No pane draws.\n\nPlanned orchestrator path (E8–E10): a child's stop hook produces a Reading\nand sends `child.reading`. The advisor proposes an action. `evaluate`\ndecides. The actuator writes an authorization record, checks again, and\nsends with `submit`, `steer`, or `signal`. ASK and DENY open an attention\nitem that a notifier sends.\n\n## External\n\n| External | Use | Configuration |\n|---|---|---|\n| priority-dev checkout and `uv` | The reader runs `priority read` there | settings file `~/.config/cobuilder-priority/settings.json`: `priority_dev_dir`, `program`, `timeout_seconds`, optional `llm_api_key` |\n| The model service of priority-dev (OpenRouter) | Two model calls per reading, as today | `LLM_API_KEY` from the settings key, else `priority-dev/.env` |\n| Pi (`@earendil-works/pi-coding-agent` 1.6) | Host. Peer dependency of the Pi package | `pi install ./pi/cobuilder-priority` |\n| OMP (`omp` 19.1) | Host. Loads the Pi package unchanged | `omp plugin link ./pi/cobuilder-priority`, or `extensions:` in `~/.omp/agent/config.yml` |\n| Pi Durable 1.6 and Cloudflare `agents` 0.34 `PiHarness` (planned) | Orchestrator runtime | pinned minor version; route chosen by probe E8 |\n| Notifier channels (planned) | Web Push, Slack, or email from the orchestrator | chosen in E10 |\n\nNo new webhook. The new environment variable is only `LLM_API_KEY`, which\nthe reader already passes today.\n",
+        "approved_date": null,
+        "source_path": "docs/plans/priority-dev-pi-extension/02-architecture.md"
       },
       {
         "id": "priority-dev-spike",
@@ -6060,7 +6711,7 @@
         "epic_id": "E3",
         "feature_slug": "priority-ask-question",
         "title": "Epic E3: The reader holds an AskUserQuestion call in its pane",
-        "body_md": "# Epic E3: The reader holds an AskUserQuestion call in its pane\n\nThis addendum covers Gate 2b, the program design, and the epic design for\nE3. The probe record decided the path: hold the call, with the wait inside\n`$.process.spawn`. See `docs/architecture/designs/priority-ask-question/probe-record.md`.\n\n## What the probe proved\n\n- A `tool.call` hook has a fixed budget of 10 seconds of its own time. A\n  wait on a plain promise counts, so the engine skips that hook.\n- A wait inside a `$` call does not count. A hold inside\n  `$.process.spawn` lasted 41 seconds with no cut-off.\n- The result must match the tool's output schema:\n  `{ questions, answers: { \"<question text>\": \"<answer>\" } }`. A\n  multi-select answer is comma-joined.\n- At the catch, the transcript already holds the `tool_use`.\n\n## Gate 2b: the question card, on layout C\n\nLayout C is the pane design of `priority-dev-cc-plugin`:\n`docs/architecture/designs/priority-dev-cc-plugin/pane-design/layout-c.png`.\nThe pane keeps layout C: the fixed top (header, key row, note), then the\nbody. While a question is held, the question card replaces the newest\nturn-end card at the top of the body.\n\n```\nPriority reader  ● on  #5  ⠹ reading…\ns Send · e Edit · r Right · w Wrong · m Hide summary\nNote: Type an observation\n\nThe agent asks you\n1. Which store keeps the marks?            [Store]\n   [•] $.store      Keeps marks per plugin\n   [ ] JSONL file   One file per session\n   Other: ____________\n\n2. Which checks run on save?               [Checks] (several)\n   [x] Unit\n   [x] E2E\n   [ ] Lint\n   Other: ____________\n\nReading for this question\n   P1 High · Waits for your answer\n   1. You decide  Which store keeps the marks?  → $.store\n```\n\n- Each question shows its header chip, each option with its description,\n  and one Other input. A multi-select question shows \"(several)\".\n- A press on an option selects it. Other text replaces the picks of its\n  question.\n- `s` sends the answers. With a question that has no pick and no Other\n  text, `s` shows \"Answer each question first\" and sends nothing.\n- `Edit` is not used for a question card. The answer goes back as the\n  tool result, not as a prompt.\n- The reading fills in under the questions when it arrives. It never\n  changes the person's picks.\n- The pane opens and takes focus when the call is caught.\n\n## Program design addendum\n\nFiles, all in `plugins/cobuilder-priority/`:\n\n- `hooks/ask.ts` (new): the `tool.call` hook body. It catches, opens the\n  pane, holds in the child, and returns the result.\n- `hooks/hold.ts` (new): the answer paths, the `$.process.spawn` argv,\n  the stdout drain, and the outcome. This is the probe's `spawn.ts`.\n- `hooks/question.tsx` (new): the question card.\n- `hooks/register.ts`: registers the hook.\n- `hooks/reader.ts`: a question job that runs `priority digest`, then\n  `priority interpret --open-question <file>`.\n- `types/index.d.ts`: `Reading.stop_kind`, `Reading.questions`,\n  `Mark.answers`, and the held-question atom.\n- `tests/ask.test.ts`, `tests/question.test.tsx` (new).\n\n```ts\ntype HeldQuestion = { toolUseId: string; questions: Question[]; picks: Record<number, string[]>; other: Record<number, string>; startedAt: number }\ntype AskResult = { questions: Question[]; answers: Record<string, string> }\nfunction answerOf(held: HeldQuestion): AskResult\nfunction holdPaths(dir: string, toolUseId: string): { answer: string; done: string }\n```\n\nCall stack: `tool.call (AskUserQuestion)` → reader on and main loop, else\n`next(e)` → write the questions file → enqueue a question job → open and\nfocus the pane with the card → await `$.process.spawn` (the wait loop) →\nSend writes the answer file, then the done file → parse stdout → return\n`{ result }`. On Esc, return a refusal and make no `$` call. On a failed\nchild, log and return `next(e)`, so the dialog opens.\n\n## Epic design\n\n- **Outcome:** the person answers an agent's question in the pane, with a\n  reading beside it, and the dialog never opens.\n- **Scope:** main-loop calls only, with the reader on. A subagent call, or\n  the reader off, passes the call on.\n- **The reading:** it runs in the background, so a slow reading never\n  holds the answer. The person may send before the reading arrives.\n- **The mark:** the stored reading has `stop_kind: question` and the\n  questions. The mark stores the person's answers beside right or wrong.\n- **Fallback:** if the child fails to start or ends with an error, the\n  hook returns `next(e)`, and the engine's dialog opens.\n\n## Risks\n\n- A hold of three minutes and Esc during a hold have no logged evidence.\n  The live check of slice 4 covers both.\n- The answer files need a folder. The probe used\n  `<session cwd>/.cobuilder/ask-hold/`. The decision for E3 is open.\n- The reader runs one job at a time. A question job waits behind a\n  running turn-end reading.\n",
+        "body_md": "# Epic E3: The reader holds an AskUserQuestion call in its pane\n\nThis addendum covers Gate 2b, the program design, and the epic design for\nE3. The probe record decided the path: hold the call, with the wait inside\n`$.process.spawn`. See `docs/architecture/designs/priority-ask-question/probe-record.md`.\n\n## What the probe proved\n\n- A `tool.call` hook has a fixed budget of 10 seconds of its own time. A\n  wait on a plain promise counts, so the engine skips that hook.\n- A wait inside a `$` call does not count. A hold inside\n  `$.process.spawn` lasted 41 seconds with no cut-off.\n- The result must match the tool's output schema:\n  `{ questions, answers: { \"<question text>\": \"<answer>\" } }`. A\n  multi-select answer is comma-joined.\n- At the catch, the transcript already holds the `tool_use`.\n\n## Gate 2b: the question card\n\nThe layout is `question-card.svg` in this folder. It keeps only three\nparts: the two top rows (the header and the key row), the question and\nanswer pairs, and the \"What will be sent\" block.\n\n- Each question shows its number, its text, and its header chip. A\n  multi-select question shows \"(several)\".\n- Each option shows `[•]` or `[ ]` (one answer) or `[x]` or `[ ]`\n  (several), with its description dimmed beside it. One Other input\n  follows the options.\n- A press on an option selects it. Other text replaces the picks of its\n  question.\n- `s` sends the answers as the tool result. A question with no answer\n  blocks Send, and the block says \"Answer each question first\".\n- `e Edit` is dim on a question card, because the answer goes back as the\n  tool result, not as a prompt.\n- The reading of the question fills in when it arrives. It never changes\n  the person's picks.\n- The pane opens and takes focus when the call is caught.\n\n### \"What will be sent\", in every case\n\nThe block from layout C now frames every draft in the pane, not only a\nquestion (frames A, B, and C of the SVG):\n\n- A title row, `▸ WHAT WILL BE SENT`. The block is lit when Send can\n  act, and dim when it cannot.\n- The exact text that Send sends, in an inner box.\n- A footer with one field: Source (the answers, or the chosen steps).\n- With nothing chosen, the block is dim and says \"Provide your response\".\n\nThe key row of frame A is the key row in every case: `s` in cyan, `r` in\ngreen, `w` in red, and a key that cannot act now dimmed.\n\nThis brings back the title row that slice E3.13 of `priority-dev-cc-plugin`\nremoved, now with the footer.\n\n## Program design addendum\n\nFiles, all in `plugins/cobuilder-priority/`:\n\n- `hooks/ask.ts` (new): the `tool.call` hook body. It catches, opens the\n  pane, holds in the child, and returns the result.\n- `hooks/hold.ts` (new): the answer paths, the `$.process.spawn` argv,\n  the stdout drain, and the outcome. This is the probe's `spawn.ts`.\n- `hooks/question.tsx` (new): the question card.\n- `hooks/card.tsx`: the \"What will be sent\" block, with its title and its Source footer, for every draft.\n- `hooks/register.ts`: registers the hook.\n- `hooks/reader.ts`: a question job that runs `priority digest`, then\n  `priority interpret --open-question <file>`.\n- `types/index.d.ts`: `Reading.stop_kind`, `Reading.questions`,\n  `Mark.answers`, and the held-question atom.\n- `tests/ask.test.ts`, `tests/question.test.tsx` (new).\n\n```ts\ntype HeldQuestion = { toolUseId: string; questions: Question[]; picks: Record<number, string[]>; other: Record<number, string>; startedAt: number }\ntype AskResult = { questions: Question[]; answers: Record<string, string> }\nfunction answerOf(held: HeldQuestion): AskResult\nfunction holdPaths(dir: string, toolUseId: string): { answer: string; done: string }\n```\n\nCall stack: `tool.call (AskUserQuestion)` → reader on and main loop, else\n`next(e)` → write the questions file → enqueue a question job → open and\nfocus the pane with the card → await `$.process.spawn` (the wait loop) →\nSend writes the answer file, then the done file → parse stdout → return\n`{ result }`. On Esc, return a refusal and make no `$` call. On a failed\nchild, log and return `next(e)`, so the dialog opens.\n\n## Epic design\n\n- **Outcome:** the person answers an agent's question in the pane, with a\n  reading beside it, and the dialog never opens.\n- **Scope:** main-loop calls only, with the reader on. A subagent call, or\n  the reader off, passes the call on.\n- **The reading:** it runs in the background, so a slow reading never\n  holds the answer. The person may send before the reading arrives.\n- **The mark:** the stored reading has `stop_kind: question` and the\n  questions. The mark stores the person's answers beside right or wrong.\n- **Fallback:** if the child fails to start or ends with an error, the\n  hook returns `next(e)`, and the engine's dialog opens.\n\n## Storage\n\n- The record of each answer goes into `$.store`, with its reading and its\n  mark, beside the rest of the reader's history.\n- The two hand-off files go next to the run logs:\n  `<priority_dev_dir>/reports/logs/live/ask/<tool_use_id>.answer.json` and\n  `<tool_use_id>.done`. They pass the answer from the pane to the waiting\n  child process.\n\n## Risks\n\n- A hold of three minutes and Esc during a hold have no logged evidence.\n  The live check of slice 4 covers both.\n- None for storage. The engineer approved it on 2026-11-16.\n- The reader runs one job at a time. A question job waits behind a\n  running turn-end reading.\n",
         "approved_date": null,
         "source_path": "docs/plans/priority-ask-question/epic-E3-design.md"
       },
@@ -6197,6 +6848,14 @@
         "state": "APPROVED 2026-10-07 (waived) — Screens: \"Level page (work item or pull request)\"",
         "source_path": "docs/plans/level-page-restructure/interaction-design.md",
         "body_md": "# Interaction design: Level page restructure\n\nFeature: `level-page-restructure`. One screen changes: the level page of a work\nitem or a pull request. The approved prototype is the design:\nhttps://claude.ai/artifact/8vkqCoEjZfB5YpfiVcqbd6 (version 3).\n\n## 1. Vocabulary\n\n| Word | Meaning |\n|---|---|\n| Level | Intent, Problem & Solution, or Architecture. The three levels both accounts carry. |\n| Account | The work item (program account) or the pull request (change account). |\n| In Short | The strip above the section tabs. It holds the level's `narration` and, when audio exists, a Listen control. |\n| Section | One panel of a level. The tabs name them. |\n| Account link | The text link in the section heading: \"Read in PR 12 ›\" or \"Read in the work item ›\". |\n| Carry | The section name the account link hands to the destination level, so it can open the section of the same name. |\n\n## 2. Information Architecture\n\nTop to bottom: top bar, progress line, In Short strip, section tabs, section\npanel (heading with the account link, then the content), pager. The left rail\nlists levels once, then an \"Also\" group. The branch and the supersedes mark read\nin the top bar. The epic count is not shown on the page: the rail's Epics row\nholds it.\n\n### 2.3 Declared Defaults\n\n| State | Default |\n|---|---|\n| In Short | Open. Always shown on a level that has a narration. No collapse control. |\n| Listen | Shown only when a served audio file exists for the level. Idle. |\n| Account | The account of the address the reader arrived on. |\n| Section | The first section, or the section named by a carry. |\n| Branch | The work item's branch. With several branches, the first, and the title lists all. |\n\n## 3. Controls\n\n### 3.1 Inventory\n\n| Control | Kind | Behaviour |\n|---|---|---|\n| Rail row (Levels) | Link | Opens the level in the active account. |\n| Rail row (Also) | Link | Opens the row. A press on a row of the other account switches the account. Each row carries a small tag: \"work\" or \"PR\". |\n| Section tab | Button | Shows one section. The In Short strip does not change. |\n| Account link | Link | Moves to the same level in the other account, on the section of the same name. |\n| Listen | Button | Plays and pauses the level's audio. A thin progress line runs under the strip. |\n| Pager | Buttons | Previous and Next move one section. |\n\n### 3.2 Component States\n\n| Component | States |\n|---|---|\n| In Short | shown (has narration), absent (no narration: the strip is not drawn and no sentence about it is shown) |\n| Listen | hidden (no served file), idle, playing, ended |\n| Account link | drawn (the work item has a PR), absent (no PR: nothing is drawn) |\n| Rail \"Also\" row | current, other, disabled (the record is absent) |\n\n### 3.3 Visibility Gating\n\n| Element | Visible when |\n|---|---|\n| In Short strip | The level is paged and has a narration |\n| Listen | The bundle serves the level's audio file. A missing file shows nothing. |\n| Account link | The work item has a pull request and the section name exists on both sides, or the level exists on both sides |\n| Supersedes mark | The work item supersedes at least one design |\n| Branch | The work item has at least one epic branch |\n\n## 4. Motion\n\n### 4.1 Transition Table\n\n| Change | Motion |\n|---|---|\n| Section change | The existing slide of the section track |\n| Account change | A route change. The existing level fade |\n| Listen progress | A linear width change under the strip |\n\n### 4.2 Timing Tokens\n\nThe existing tokens apply: the section track's slide and the level's fade. The\nListen progress line has no easing and no token. `prefers-reduced-motion` drops\nthe slide and the fade as today.\n\n## 5. The keyboard contract\n\nThe arrow keys step the sections, as today. The account link and Listen are\nordinary focusable controls in the tab order. The rail's walk keeps its keys and\nsteps the new rows in reading order: the levels, then the \"Also\" rows.\n\n## 11. Layout\n\n### 11.2 Hit Targets\n\nThe account link and Listen are at least 32 px tall at every width. A rail row\nkeeps its current height.\n\n### 11.3 Scroll Ownership\n\nUnchanged: a paged level's pane does not scroll, and the section box owns the\nscroll. The In Short strip and the tabs stay in view above the box. A narration\nof up to three sentences wraps within the strip's width and never scrolls.\n\n## 12. Accessibility\n\nThe strip is a labelled region named \"In Short\". Listen has a pressed state and\nan accessible name that states play or pause. The account link is a real link\nwith a real address. The rail rows keep their `aria-label` form and name the\naccount in words.\n"
+      },
+      {
+        "feature_slug": "priority-dev-pi-extension",
+        "gate": "2b",
+        "title": "Priority reader in Pi and OMP: Interaction Design Specification",
+        "state": "n/a",
+        "source_path": "docs/plans/priority-dev-pi-extension/interaction-design.md",
+        "body_md": "# Priority reader in Pi and OMP: Interaction Design Specification\n\n**Version:** 1.0 (draft for Gate 2b)\n**Date:** 2026-11-25\n**Author:** design session for `priority-dev-pi-extension`, agent-assisted\n**Product document:** `01-product.md` is not written yet. Gate 1 and Gate 2\nhave not run. The engineer asked for this gate first. Until those documents\nexist, the design record stands in for them:\n`docs/architecture/designs/priority-dev-pi-extension/` (`intent.json`,\n`contracts.md`) and ADR-0051.\n\n**Supplied design.** The engineer chose \"the exact same functionality\" as the\nClaude Code plugin. The design source is therefore the approved Claude Code\npane, not a new mockup:\n\n- Layout C: `docs/architecture/designs/priority-dev-cc-plugin/pane-design/layout-c.png`\n  and `layout-c.html`.\n- The pane contract and the 60-column wireframe:\n  `docs/architecture/designs/priority-dev-cc-plugin/contracts.md`, sections\n  \"Acting on steps\" and \"The pane\".\n- The question card: `docs/plans/priority-ask-question/question-card.svg`.\n- The running Claude Code module, `plugins/cobuilder-priority/hooks/*.tsx`,\n  for every behaviour the mockup does not show.\n\nWhere this document differs from the Claude Code pane, section 1.2 lists the\ndifference and its reason. Each difference comes from the host, not from a\nnew idea.\n\n---\n\n## 1. Overview\n\nThe priority reader reads each main-loop stop of a coding session and shows\none card per reading. The card holds the status, the priority, the steps the\nperson may take, and a draft of what Send will submit. The person selects\nsteps, answers questions, marks the reading right or wrong, and sends the\ndraft. Nothing reaches the session without a press.\n\nThis document fixes how that pane behaves in Pi and in OMP. Both hosts load\none package, `pi/cobuilder-priority`. The card content, the draft text, and\nthe plain names come from `shared/priority-core`, so they are the same as in\nClaude Code (split parity, ADR-0051). Only the drawing and the input handling\nbelong to this host adapter.\n\nScope: the reader pane, the question card, the status line, the notify band,\nthe toast, and the fallbacks for RPC and headless modes. Out of scope: the\nagent-mode tool `priority_read`, which draws no UI, and the planned Pi\nDurable orchestrator, which has no terminal surface.\n\n### 1.1 Core Design Principles\n\n1. **The card text is the core's, not the host's.** The host adapter draws\n   the card view model from `shared/priority-core`. It never builds step\n   names, draft lines, or status words itself.\n2. **The keyboard is the contract.** Every action has a key. A mouse click is\n   a convenience where the host gives mouse events, and no action needs one.\n3. **The editor keeps the keyboard until the person asks for the pane.** A\n   new reading never steals the focus. Only a held question and an explicit\n   command or shortcut move the focus to the pane.\n4. **Nothing sends without a press, and a press on stale content does\n   nothing.** Send and Edit act only on the newest reading, and only while no\n   newer reading runs (ADR-0049).\n5. **Degrade by surface, never by behaviour.** When a host cannot draw the\n   overlay, the same readings, marks, and draft reach the person through\n   widgets and dialogs. No mode drops a reading in silence.\n\n### 1.2 Differences from the Claude Code pane\n\n| Claude Code | Pi and OMP | Reason |\n|---|---|---|\n| A docked side pane from the engine (`$.ui.open`) | A right-anchored overlay from `ctx.ui.custom(..., { overlay: true })` | Pi and OMP have no docked pane. The overlay is the nearest surface. |\n| Inline `Input` rows for Note and Other | `n` and `o` open the host's `ctx.ui.input` dialog | A plain-object component would need its own cursor and line editor. The host dialog is in both hosts' common subset. |\n| `Button` elements with hotkeys | One focused row, moved with `↑` and `↓`, plus the same letter and digit keys | The component draws lines. It has no button element. |\n| Focus moves with ctrl+x tab | Focus moves with `/priority-pane` or the shortcut `alt+p`. `esc` gives the focus back | Pi has `pi.registerShortcut`. Probe E1 checks it in OMP. |\n| The engine scrolls the pane body | The component keeps its own scroll offset | An overlay returns lines. It has no engine scroll window. |\n| The `AbovePrompt` slot | `ctx.ui.setWidget(..., { placement: \"aboveEditor\" })` | The same place, through the common subset. |\n\n---\n\n## 2. Information Architecture\n\n### 2.1 Navigation Structure\n\n```\nSession (Pi or OMP, TUI mode)\n├── Editor and transcript (host-owned)\n├── Status line: key \"priority-reader\"\n├── Notify band: widget \"priority-notify\", above the editor\n└── Reader pane: right overlay, id \"priority-reader\"\n    ├── Fixed top: header, key row\n    ├── Body (scrolls)\n    │   ├── Stale row (while a reading runs)\n    │   ├── Agent summary (digest)\n    │   ├── Live card: title row, steps, open items, draft block\n    │   │   or Question card (held question)\n    │   └── History: one row per older reading\n    └── Opened older card (replaces the live card, marks only)\n```\n\n### 2.2 Data Model\n\nEvery entity comes from the core. The pane reads them and writes only marks,\nselections, and answers.\n\n| Entity | Fields the pane reads | Fields the pane writes |\n|---|---|---|\n| `Reading` (core) | `n`, `at`, `state`, `result.status`, `result.priority`, `result.needs_human`, `result.steps[]`, `result.abstain`, `digest.ran`, `digest.result`, `digest.open_items`, `digest.decisions`, `stop_kind`, `questions`, `calibrated`, `host` | none |\n| `Mark` (core) | `verdict`, `note`, `sent`, `answers` | `verdict`, `note`, `sent` |\n| `Act` (core, per reading) | `steps`, `picks`, `other`, `summaryClosed`, `open`, `notice` | all of them |\n| `HeldQuestion` (core) | `questions`, `picks`, `other`, `notice` | `picks`, `other` |\n| `CardView` (core) | the rows, names, dim flags, draft text, source footer | none |\n| Pane state (host) | `focusedRow`, `scrollOffset`, `focused`, `visible` | all of them |\n\nThe core stores readings and marks through its `StorePort`. In Pi and OMP the\nport writes `pi.appendEntry(\"priority.reading\", …)` and\n`pi.appendEntry(\"priority.mark\", …)`, and it rebuilds the state from\n`ctx.sessionManager.getBranch()` at `session_start` (contracts.md, ADR-0051).\n\n### 2.3 Declared Defaults\n\n| Setting | Default value | Alternatives | Declared where |\n|---|---|---|---|\n| Reader switch | off in each new session | on | core, `on` key. `/priority-on` sets it |\n| Pane on `/priority-on` | open and focused | open and unfocused | host adapter |\n| Pane on a new reading | unchanged: stays as it is, focus stays where it is | open or focus | host adapter |\n| Pane on a held question | open and focused | — | host adapter (ADR-0050) |\n| Overlay anchor | `right-center` | `center` under 80 columns (section 9) | host adapter |\n| Overlay width | 60 columns, never more than 45% of the terminal | — | host adapter |\n| Agent summary | open | closed (`m`) | core, `Act.summaryClosed` |\n| Card shown | the newest reading | an older reading from History | core, `Act.open = null` |\n| Focused row on focus | the first selectable step of the live card. On a question card, the first option of question 1 | — | host adapter |\n| Focus shortcut | `alt+p` | any free key the person sets in settings | host adapter. Probe E1 checks that it is free in both hosts |\n| Key labels | words (`s Send`) at 56 columns or more, glyphs (`▶`) below | — | core, `KEY_LABEL_COLUMNS` |\n| Theme | the host theme | — | host |\n\n---\n\n## 3. States\n\n### 3.1 Screen States\n\n| State | Trigger | What the person sees |\n|---|---|---|\n| Off, closed | new session | nothing from the reader |\n| Off, open | `/priority-pane` with the switch off | header `○ off`, the hint `The reader is off. Run /priority-on to read each stop.` |\n| On, empty | `/priority-on`, no reading yet | header `● on · 0 readings`, the hint `No reading yet. The next stop starts one.` |\n| On, running (first reading) | a stop with no earlier reading | header with the moving indicator and `running…`, the empty hint below |\n| On, populated | a reading saved | summary, live card, draft block, history |\n| On, stale | a prompt was sent, or a newer reading runs | the stale row `Reading stop #<n+1>…`. The previous summary, card, and draft draw dim. Send and Edit do nothing |\n| Held question | a main-loop question call held by the hook | the question card in place of the live card, focus in the pane |\n| Settings missing | `priority_dev_dir` or `program` is empty | a failed reading card: `failed: Set priority_dev_dir and program in ~/.config/cobuilder-priority/settings.json.` |\n| Reading failed | the CLI exits non-zero or prints no JSON | a card with `failed: <last stderr line>` in red, marks still active |\n| Abstain | the reading abstains | a card with `abstain · <plain reason>`, no steps |\n| Overlay unavailable | `ctx.mode` is not `tui`, or `custom()` returns no handle | section 7.3: the widget and dialog fallback |\n\n### 3.2 Component States\n\nVocabulary: `default`, `hover`, `focus-visible`, `pressed`, `selected`,\n`disabled`, `loading`, `error`, `empty`, `transient`. A terminal has no hover.\n`hover` is \"not applicable\" in every table for that reason.\n\n#### Reader pane (the overlay)\n\n| State | Visual treatment | Initial | Timer arming |\n|---|---|---|---|\n| Default (open, unfocused) | thin border in the muted theme colour, no row highlight | Yes, when opened by a new reading | not applicable |\n| Hover | not applicable: no hover in a terminal | No | not applicable |\n| Focus-visible | border in the accent colour. The focused row draws inverse | Yes, when opened by `/priority-on`, `/priority-pane`, `alt+p`, or a held question | not applicable |\n| Pressed | not applicable: a key press acts at once | No | not applicable |\n| Selected | not applicable to the pane. Rows carry the selection | No | not applicable |\n| Disabled | not applicable: the pane is hidden, not disabled | No | not applicable |\n| Loading | header shows the frame indicator and `running…` in the warning colour | No | starts when the reader queue starts a job. Stops when the reading is saved or fails |\n| Error | a failed card (section 3.1) | No | not applicable |\n| Empty | the hint row of section 3.1 | No | not applicable |\n| Transient | not applicable | No | not applicable |\n\n#### Step row (selectable step on the live card)\n\n| State | Visual treatment | Initial | Timer arming |\n|---|---|---|---|\n| Default | `[ ] <n>. <plain name>`, body on the next line, dim body | Yes | not applicable |\n| Hover | not applicable | No | not applicable |\n| Focus-visible | the row drawn inverse while the pane has the focus | No | not applicable |\n| Pressed | not applicable | No | not applicable |\n| Selected | `[x] <n>. <plain name>`, a box border in the accent colour around the row and its body | No | not applicable |\n| Disabled | the whole card dims while the pane is stale. The row still toggles, and Send does nothing (Claude Code behaviour) | No | not applicable |\n| Loading | not applicable | No | not applicable |\n| Error | not applicable | No | not applicable |\n| Empty | not applicable: a card with no steps draws no rows | No | not applicable |\n| Transient | not applicable | No | not applicable |\n\nA step that cannot send (`interrupt`, `snooze`, `dismiss`) draws `[-] <n>.\n<name>` dim and takes no focus. An `interrupt` adds `(no target at a stop)`.\nA `notify` step draws no row (it goes to the notify band).\n\n#### Option row (decide question on a card, and the question card)\n\n| State | Visual treatment | Initial | Timer arming |\n|---|---|---|---|\n| Default | `[ ] <label>`, the description dim on the next line | Yes | not applicable |\n| Hover | not applicable | No | not applicable |\n| Focus-visible | inverse row | No | not applicable |\n| Pressed | not applicable | No | not applicable |\n| Selected | single choice `[•] <label>`, multi-select `[x] <label>` | No | not applicable |\n| Disabled | not applicable: an option is always pickable while the card is live | No | not applicable |\n| Loading | not applicable | No | not applicable |\n| Error | not applicable | No | not applicable |\n| Empty | not applicable | No | not applicable |\n| Transient | not applicable | No | not applicable |\n\nTyped text under Other replaces the picks of that question (ADR-0050). The\nOther row draws `Other: <text>` or `Other: o to type` dim.\n\n#### Draft block\n\n| State | Visual treatment | Initial | Timer arming |\n|---|---|---|---|\n| Default (nothing selected) | border, title `▸ WHAT WILL BE SENT`, body `Provide your response` dim | Yes | not applicable |\n| Hover | not applicable | No | not applicable |\n| Focus-visible | not applicable: the block takes no focus | No | not applicable |\n| Pressed | not applicable | No | not applicable |\n| Selected (lit) | the exact draft text at full colour, footer `Source: step <n> <name>` or `Source: steps 1, 3` | No | not applicable |\n| Disabled | dim, while the pane is stale | No | not applicable |\n| Loading | not applicable | No | not applicable |\n| Error | a red `notice` row: `Nothing to send yet`, `Answer each question first`, or `The prompt box is not available` | No | the notice clears on the next press of any action key. No timer |\n| Empty | gated: the block is absent when the card has no step that can send | No | not applicable |\n| Transient | not applicable | No | not applicable |\n\n#### Key row (fixed top)\n\n| State | Visual treatment | Initial | Timer arming |\n|---|---|---|---|\n| Default | `s Send  e Edit  r Right  w Wrong  m Hide summary` | Yes | not applicable |\n| Hover | not applicable | No | not applicable |\n| Focus-visible | not applicable: keys act from anywhere in the focused pane | No | not applicable |\n| Pressed | not applicable | No | not applicable |\n| Selected | Right or Wrong drawn with `✓` after it when that verdict is set | No | not applicable |\n| Disabled | Send and Edit dim when no step is selected or the pane is stale. Right and Wrong dim with no reading. On a question card, Edit is always dim | No | not applicable |\n| Loading | not applicable | No | not applicable |\n| Error | not applicable | No | not applicable |\n| Empty | not applicable | No | not applicable |\n| Transient | not applicable | No | not applicable |\n\n#### Status line, notify band, toast\n\n| Surface | State | Visual treatment | Initial | Timer arming |\n|---|---|---|---|---|\n| Status line | default | empty | Yes | not applicable |\n| Status line | transient | `Priority reader · #<n> ready`, `· needs you` when `needs_human`, or `#<n> failed` | No | set when a reading is saved. The next submitted prompt clears it. No clock timer |\n| Notify band | empty | absent | Yes | not applicable |\n| Notify band | default | one warning-colour line per `notify` step: `Notification: <excerpt>`. With the pane closed, also `Priority reader · #<n> · <priority> · <status>` | No | shown when a reading is saved. The next submitted prompt removes the notify lines. The summary line stays until the pane opens |\n| Toast | transient | `Priority reader · #<n> needs you` through `ctx.ui.notify(…, \"warning\")` | No | one toast per reading that is done, not abstained, and `needs_human`. The host owns its dwell |\n\n### 3.3 Visibility Gating\n\n| Control | Renders when | Removed when |\n|---|---|---|\n| Reader pane | `/priority-on`, `/priority-pane`, `alt+p`, or a held question, in TUI mode and when the overlay fits (section 9) | `/priority-off`, `esc` twice (first `esc` unfocuses, second hides), or the session ends |\n| Stale row | a reading runs, and it is not the reading of a held question | the reading is saved or fails |\n| Moving indicator and `running…` | a turn-end reading runs | the reading is saved or fails |\n| `ready` in the header | the reading of a held question runs | that reading is saved |\n| Summary body and digest lists | the summary is open | `m` closes it |\n| Open items above the first decide step | the reading has a decide step and `open_items` | — |\n| Draft block | the shown card is live and has a step that can send | the person opens an older card |\n| Send link and key row Send and Edit | the shown card is live and has a step that can send | the person opens an older card |\n| Question card | a main-loop question call is held | Send, Decline, `esc` on the held call, or the call ends |\n| `calibrated: false` tag `uncalibrated` in the title row | the reading's `calibrated` is false | — (it stays for that reading) |\n| History label and rows | at least one other reading exists | — |\n| Notify band | the newest reading has `notify` steps and no prompt was sent since, or the pane is closed | the next prompt is submitted, and the pane is open |\n| Fallback widget | the overlay is unavailable (section 7.3) | the overlay becomes available |\n\n---\n\n## 4. Transitions\n\n### 4.1 Transition Table\n\n| Trigger | From | To | Duration | Easing | Guard or reset |\n|---|---|---|---|---|---|\n| `/priority-on` | off | on, pane open and focused | `--motion-none` | none | writes the switch to the store |\n| `/priority-off` | on | off, pane hidden | `--motion-none` | none | a running reading finishes and is saved. A waiting stop is dropped, and its pending record is cleared |\n| `/priority-pane` or `alt+p` | pane hidden | pane open and focused | `--motion-none` | none | — |\n| `alt+p` | pane open, unfocused | pane focused | `--motion-none` | none | — |\n| `esc` | pane focused | pane open and unfocused, focus back in the editor | `--motion-none` | none | on a held question, `esc` declines nothing. It only unfocuses |\n| `esc` | pane open, unfocused, and the editor is empty | pane hidden | `--motion-none` | none | the host may keep `esc` for itself. Probe E1 decides. Otherwise only `/priority-pane` toggles |\n| Stop event (`agent_settled` in Pi, `session_stop` in OMP), switch on | populated or empty | running (stale if a card exists) | `--frame` per indicator step | linear | dedupe by session id plus leaf id. A stop with the same key is ignored |\n| Prompt submitted (`input` event), switch on | populated | stale | `--motion-none` | none | the status line and the notify lines clear |\n| Turn ends with no answer (abort or error, no reading) | stale | populated (previous card at full colour) | `--motion-none` | none | Pi `agent_settled.aborted`, or an OMP `session_stop` that leads to no reading |\n| Reading saved | running or stale | populated with the new card on top, body scrolled to the top | `--motion-none` | none | focus does not move. The selection of the new card starts empty |\n| Reading failed | running | populated with a failed card | `--motion-none` | none | — |\n| `1`–`9` | live card | step toggled | `--motion-none` | none | a decide step selects through its answers, not its digit |\n| `space` or `enter` on a focused row | live card | row toggled or option picked | `--motion-none` | none | — |\n| `o` on a focused question or decide step | live card or question card | host input dialog open | host-owned | host-owned | submit writes `other`. Cancel writes nothing |\n| `n` | any card | host input dialog for the note | host-owned | host-owned | submit saves the note on the mark |\n| `s` | live card, steps selected, not stale | draft submitted as a user message, selection cleared, `sent` on the mark | `--motion-none` | none | no steps: notice `Nothing to send yet`. Stale: no effect |\n| `e` | live card, steps selected, not stale | draft in the editor (`ctx.ui.setEditorText`), pane unfocused | `--motion-none` | none | the editor is unavailable: notice `The prompt box is not available` |\n| `r` or `w` | any card with a reading | verdict set on the mark | `--motion-none` | none | pressing the set verdict again keeps it |\n| `m` | any | summary open ↔ closed | `--motion-none` | none | the choice holds across readings |\n| `h`, then `↑`/`↓` and `enter` on a History row | live card | that older card, marks only | `--motion-none` | none | `enter` on the newest row returns to the live card |\n| `PgUp` / `PgDn` | pane focused | body scrolled one screen | `--motion-none` | none | fixed top never scrolls |\n| Question call held (Pi `AskUserQuestion`, OMP `ask` only when probe E1 shows the hold works) | any | question card, pane open and focused | `--motion-none` | none | a subagent call, the switch off, or a failed hold passes the call to the host dialog. In OMP without the hold, the reader ignores the call |\n| `s` on the question card | every question answered | call answered with the picks, question card removed, answers on the mark | `--motion-none` | none | not every question answered: notice `Answer each question first` |\n| `d` on the question card | question card | call answered with \"The user declined to answer these questions.\" and card removed | `--motion-none` | none | — |\n| Person interrupts the turn during a held question | question card | card removed at the next prompt | `--motion-none` | none | the core's `dropHeld` |\n\n### 4.2 Timing Tokens\n\nThe terminal draws no animated transition. Every state change is immediate.\nThe only motion is the running indicator.\n\n| Token | Value | Used for |\n|---|---|---|\n| `--motion-none` | 0 ms | every state change in section 4.1 |\n| `--frame` | 120 ms | one step of the braille indicator `⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏` (core `FRAME_MS`) |\n\n---\n\n## 5. Interaction Flows\n\n### 5.1 Switch the reader on and read a stop\n\n**User goal:** get a reading of each stop of this session.\n\n**Entry condition:** TUI mode, the package loaded, settings present.\n\n**Flow:**\n\n1. The person runs `/priority-on`. The pane opens focused and shows the empty\n   hint. The person presses `esc` and goes on typing.\n2. The agent ends a turn. The stop event fires. The pane header shows the\n   indicator and `running…`.\n3. The reader runs `priority read` in the priority-dev checkout. The session\n   is free for the next prompt.\n4. The reading is saved. The card appears on top, the status line reads\n   `Priority reader · #1 ready`, and a reading that needs the person raises\n   one toast.\n\n**Edge cases:**\n\n- If a second stop comes while a reading runs, the reader keeps only the\n  newest waiting stop.\n- If the settings are missing, the reading saves as failed and names the\n  settings file.\n- If the host fires both `agent_end` and its stop event for one turn, the\n  dedupe key keeps one reading.\n- If the session reloads during a reading, the next `session_start` saves a\n  failed reading `Lost to a reload of the extension. The next stop reads\n  again.` (core pending record).\n\n### 5.2 Select steps and send the draft\n\n**User goal:** act on the reading with one press.\n\n**Entry condition:** a live card with at least one step that can send, and\nno reading running.\n\n**Flow:**\n\n1. The person presses `alt+p`. The focus moves to the first selectable step.\n2. The person presses `1` and `3`, or moves with `↑`/`↓` and presses `space`.\n   The draft block lights and shows the exact text and its source.\n3. For a decide step, the person moves to an option and presses `enter`, or\n   presses `o` and types under Other in the host dialog.\n4. The person presses `s`. The draft is submitted as the user's message. The\n   selection clears, the mark records `sent`, and the pane turns stale until\n   the next reading.\n\n**Edge cases:**\n\n- If the person presses `e` instead, the draft goes into the editor, the\n  pane unfocuses, and nothing is submitted.\n- If the person presses `s` with nothing selected, the notice reads\n  `Nothing to send yet`.\n- If the person presses `s` while the pane is stale, nothing happens.\n\n### 5.3 Mark a reading\n\n**User goal:** record if the reading was right, with a note.\n\n**Entry condition:** any card with a reading, live or older.\n\n**Flow:**\n\n1. The person presses `r` or `w`. The key row shows the verdict with `✓`.\n2. The person presses `n`, types a note in the host dialog, and submits.\n3. The history row of that reading shows `✓`, `✗`, or `-`.\n\n**Edge cases:**\n\n- If the dialog is cancelled, the note does not change.\n- Marks stay in the session file (`priority.mark` entries) and follow the\n  branch. A marks entry on a branch that the person leaves is not shown on the\n  other branch.\n\n### 5.4 Answer a held question (Pi)\n\n**User goal:** answer the agent's question with a reading beside it.\n\n**Entry condition:** switch on, TUI mode, a main-loop call of the package's\n`AskUserQuestion` tool.\n\n**Flow:**\n\n1. The tool's `execute()` holds the call. The pane opens focused on the\n   question card: each question with its number, its header chip, and its\n   options with their descriptions. The header shows `ready`.\n2. A reading of this point runs with `--open-question`. Its summary fills in\n   under the card when it arrives. It never changes the picks.\n3. The person picks options, or presses `o` to type under Other.\n4. The person presses `s`. The tool returns the answers in the Claude Code\n   shape. The card goes, and the answers land on the reading's mark.\n\n**Edge cases:**\n\n- If the person presses `d`, the tool returns the decline text.\n- If a subagent calls the tool, or the switch is off, the tool shows the host\n  `select` and `input` dialogs, one per question, with no reading.\n- If the reading is slow, Send still works at once (ADR-0050).\n\n### 5.5 Answer a question in OMP\n\n**User goal:** the same as 5.4, with OMP's own `ask` tool.\n\n**Entry condition:** switch on, TUI mode, a main-loop `ask` call with a\n`questions[]` input.\n\n**Flow:** probe E1 decides if OMP question stops ship at all.\n\n1. **Hold works** (an override of `ask`, or a raised `toolCallTimeoutMs`):\n   the same as 5.4.\n2. **Hold does not work:** the reader does not support OMP question stops.\n   OMP's own dialog opens as usual, and the reader adds nothing to it: no\n   question card, no question reading, no answers on a mark. The next\n   turn-end stop reads as usual. The engineer decided this on 2026-11-25: a\n   read-only card beside the OMP dialog is not worth shipping.\n\n**Edge cases:**\n\n- An `ask` call with only an HTML form gets no question card and no question\n  reading, also when the hold works.\n\n### 5.6 Open an older reading\n\n**User goal:** look back at an earlier reading and mark it.\n\n**Entry condition:** at least two readings.\n\n**Flow:**\n\n1. The person presses `h`. The focus moves to the first History row.\n2. The person moves with `↑`/`↓` and presses `enter`. That card shows, marks\n   only: no draft block, no Send, steps dim.\n3. `enter` on the newest row, or `h` again, returns to the live card.\n\n**Edge cases:**\n\n- If a new reading arrives while an older card is open, the older card stays\n  open. The header count rises, and the History list gains the new row.\n\n---\n\n## 6. Component Specifications\n\n### 6.1 Reader pane\n\n**Dimensions:** 60 columns, never more than 45% of the terminal width. Height\nis the terminal height minus 2 rows of margin, with `maxHeight: \"100%\"`.\n**Position:** overlay, `anchor: \"right-center\"`, `margin: 1`. Shown with\n`nonCapturing: true` and focused through `OverlayHandle.focus()`.\n\n**Layout (60 columns):**\n\n```\n┌ Priority reader  ● on   4 readings  ⠹ running… ─────────┐\n│  s Send   e Edit   r Right   w Wrong   m Hide summary   │  fixed top\n├──────────────────────────────────────────────────────────┤\n│ Reading stop #5…                                        │  stale row\n│ ┌ ▾ Agent completed ──────────────────────────────────┐ │\n│ │ Ran the full test suite. Found the missing table.   │ │\n│ │ Decisions                                           │ │\n│ │ · Keep marks in the session file                    │ │\n│ └─────────────────────────────────────────────────────┘ │\n│ #4 14:32  P1 High  Blocked  needs you  uncalibrated     │\n│ Proposed steps (1–9 to select)                          │\n│ ╭─────────────────────────────────────────────────────╮ │\n│ │ [x] 1. Reply                                        │ │\n│ │     \"Run the migration before the tests.\"           │ │\n│ ╰─────────────────────────────────────────────────────╯ │\n│ [ ] 2. Continue until: tests pass (5 turns, 20 min)     │\n│ Open items                                              │\n│ · The migration is not committed                        │\n│     3. You decide                                       │\n│     \"Which store keeps the marks?\"                      │\n│     [•] session file   [ ] JSONL   Other: o to type     │\n│ [-] 4. Stop the turn (no target at a stop)              │\n│ ╭ ▸ WHAT WILL BE SENT ────────────────────────────────╮ │\n│ │ Run the migration before the tests.                 │ │\n│ │ Source: step 1 Reply                                │ │\n│ ╰─────────────────────────────────────────────────────╯ │\n│ History                                                 │\n│ #3 14:20 Still working P3 Low                       ✓   │\n│ #2 14:11 Done P4 Can wait                           ✗   │\n│ Note: n to write                                        │\n└──────────────────────────────────────────────────────────┘\n```\n\n**Behaviour:**\n\n- The fixed top is the first two rows. The body scrolls under it.\n- Keys work only while the pane has the focus. The digits `1` to `9` map to\n  step numbers. `s`, `e`, `r`, `w`, `m`, `n`, `o`, `h`, `d` are action keys.\n- In Pi, a mouse click on a row acts like `enter` on that row, through\n  `handleMouse`. OMP mouse support is a probe E1 question.\n- The note row sits at the foot of the body in Pi and OMP, not in the fixed\n  top. A dialog edits it, so it needs no fixed input row.\n\n### 6.2 Question card\n\n**Dimensions and position:** inside the pane body, in place of the live card.\n\n**Layout:**\n\n```\n│ 1. Which store keeps the marks?  Storage                │\n│ [•] session file                                        │\n│     One entry per mark in the session                   │\n│ [ ] JSONL file                                          │\n│ Other: o to type                                        │\n│ 2. Ship it now? (several)                               │\n│ [x] yes  [ ] after tests                                │\n│ ╭ ▸ WHAT WILL BE SENT ────────────────────────────────╮ │\n│ │ Which store keeps the marks? → session file          │ │\n│ │ Source: 2 answers                                   │ │\n│ ╰─────────────────────────────────────────────────────╯ │\n│ s Send   d Decline to answer                            │\n```\n\n**Behaviour:** Send is dim until each question has an answer. Edit is always\ndim, because a held answer goes back as the tool result, not as a prompt.\n\n### 6.3 Status line, notify band, and toast\n\n- Status line: `ctx.ui.setStatus(\"priority-reader\", text)`. One line.\n- Notify band: `ctx.ui.setWidget(\"priority-notify\", lines, { placement:\n  \"aboveEditor\" })`. At most 3 notify lines, then `+<k> more in the pane`.\n- Toast: `ctx.ui.notify(text, \"warning\")`.\n\n---\n\n## 7. Error States and Edge Cases\n\n### 7.1 The CLI fails or times out\n\n**Scenario:** `priority read` exits non-zero, prints no JSON, or passes\n`timeout_seconds`.\n\n**Handling:** the reading saves as failed with the last stderr line. The card\nshows `failed: <line>` in red. The status line reads `#<n> failed`. No toast.\nThe next stop reads again.\n\n### 7.2 Two stop events for one turn\n\n**Scenario:** a host fires its stop event twice, or OMP re-enters\n`session_stop` after an advisory continuation.\n\n**Handling:** the dedupe key (session id plus leaf id) drops the second. A\nliveness line in the status line names the event that fired on the first\nreading of the session: `Priority reader · stop event agent_settled`.\n\n### 7.3 The overlay is unavailable\n\n**Scenario:** RPC mode (`custom()` returns no handle), a terminal under 60\ncolumns, or probe E1 shows that one host cannot draw the component.\n\n**Handling:** the fallback surface keeps every action.\n\n- The notify band shows the summary line of the newest reading.\n- `/priority-pane` opens `ctx.ui.select` with the steps that can send. Each\n  pick toggles a step. A last item `Send`, `Edit`, `Right`, `Wrong`, or\n  `Note` acts like its key.\n- A decide question opens `ctx.ui.select` for its options and\n  `ctx.ui.input` for Other.\n\n### 7.4 Headless modes\n\n**Scenario:** print mode or JSON mode (`ctx.hasUI` is false).\n\n**Handling:** the reader still reads each stop when the switch is on, and it\nstores the reading. No surface draws. A held question is not held: the\n`AskUserQuestion` tool returns an error result that says no person can\nanswer. Agent mode (`priority_read`) is the way to get readings in these\nmodes.\n\n### 7.5 Session switch, fork, or branch\n\n**Scenario:** the person resumes another session, forks, or moves on the\ntree.\n\n**Handling:** at `session_start` (and OMP `session_branch` and\n`session_tree`), the adapter rebuilds readings and marks from\n`getBranch()`. The pane redraws for the new branch. A reading that runs for\nthe old session saves to the old session's entries and does not draw.\n\n### 7.6 Cases checked\n\n| Case | Applies | Handling |\n|---|---|---|\n| No data | yes | the empty hints of section 3.1 |\n| More data than the layout holds | yes | the body scrolls. History lists every reading |\n| Timeout | yes | 7.1 |\n| Offline | yes | the model call fails, as in 7.1 |\n| Concurrent editing | no | one person per session |\n| Reading arrives while an older card is open | yes | 5.6 edge case |\n| Resource deleted while open | yes | 7.5 |\n| Maximum limits | yes | steps after the ninth have no digit. They still take focus with `↑`/`↓` |\n\n---\n\n## 8. Accessibility\n\n### 8.1 Keyboard Navigation\n\n- `alt+p` or `/priority-pane` focuses the pane. `esc` returns the focus to\n  the editor.\n- `↑`/`↓` move the focused row over the rows that take focus: selectable\n  steps, options, Other rows, and History rows (after `h`).\n- `space` toggles a step or an option. `enter` picks an option or opens a\n  History row.\n- `1`–`9`, `s`, `e`, `r`, `w`, `m`, `n`, `o`, `h`, `d` act directly.\n- `PgUp`/`PgDn` scroll the body.\n\n### 8.2 Screen Reader Support\n\nA terminal overlay has no accessibility tree. The status line and the toast\ncarry each state change as plain text, so a terminal screen reader reads the\nreading number, the status, and `needs you` there.\n\n### 8.3 Colour Independence\n\n| Signal | Colour | Text that carries it |\n|---|---|---|\n| Switch on or off | success or dim | `● on`, `○ off` |\n| Running | warning | `running…` |\n| Needs the person | warning | `needs you` |\n| Failed | error | `failed:` |\n| Selected step | accent border | `[x]` |\n| Picked option | — | `[•]` or `[x]` |\n| Verdict | success or error | `✓`, `✗`, `-` |\n| Stale | dim | the stale row `Reading stop #<n>…` |\n| Uncalibrated | dim | `uncalibrated` |\n\n### 8.4 Focus Management\n\n- On open by command or shortcut: focus goes to the pane, on the row of\n  section 2.3.\n- On a new reading: the focus does not move. If the pane has the focus, the\n  focused row moves to the first selectable step of the new card.\n- On `e` (Edit): the pane unfocuses and the editor takes the focus with the\n  draft in it.\n- On `s` (Send): the focus stays in the pane.\n- On a held question: the pane takes the focus. On Send or Decline, the focus\n  returns to the editor.\n- A host dialog (`n`, `o`, fallback `select`) takes the focus while open, and\n  returns it to the pane on close.\n\n---\n\n## 9. Responsive Considerations\n\nA terminal has columns, not pixels. The breakpoints are the terminal width.\n\n### 9.1 Wide (110 columns or more)\n\nThe overlay sits at the right, 60 columns. The transcript stays readable on\nthe left.\n\n### 9.2 Medium (80 to 109 columns)\n\nThe overlay sits at the right at 45% of the width (36 to 49 columns). Key\nlabels turn to glyphs below 56 columns. The summary starts closed.\n\n### 9.3 Narrow (under 80 columns)\n\nThe overlay draws only while it has the focus, centred, at the full width\nminus 2. Unfocused, it is hidden (`visible()` returns false), and the notify\nband carries the summary line.\n\n---\n\n## 10. Animation Specifications\n\n| Animation | Where | Duration | Easing |\n|---|---|---|---|\n| Running indicator | header, before `running…` | `--frame` per step | linear |\n\nThe indicator redraws through `tui.requestRender()`. It stops on every path,\nalso on a failed reading (core `withSpinner`). No other motion exists.\n\n---\n\n## 11. Layering, Hit Targets, and Scroll Ownership\n\n### 11.1 Layering\n\n| Layer | Token | Surfaces | Collision rule |\n|---|---|---|---|\n| Base | `--z-base` | transcript, editor, status line, notify band | the reader pane covers the right part of the transcript. The editor and the status line stay visible below |\n| Panel | `--z-panel` | reader pane overlay | one reader pane per session. A second open call focuses the existing pane |\n| Dialog | `--z-dialog` | host `select`, `input`, OMP `ask` dialog | above the reader pane. It takes the focus while open |\n| Toast | `--z-toast` | host notification | the host decides. It never takes the focus |\n\n### 11.2 Hit Targets\n\n| Control | Element that receives the event | Clickable bounds | Ancestor pointer-events |\n|---|---|---|---|\n| Every key action | the reader pane component (`handleInput`) while focused | the whole pane | not applicable: a terminal has no pointer-events. The host routes keys to the focused component only |\n| Step row (mouse, Pi) | the step row | the full row width, both lines of the step | not applicable |\n| Option (mouse, Pi) | the option label | the label text and its marker | not applicable |\n| History row (mouse, Pi) | the History row | the full row width | not applicable |\n| Focus shortcut `alt+p` | the host shortcut registry | not applicable | not applicable |\n\nThe browser rule of this template (\"a control inside `pointer-events: none`\")\nhas a terminal twin: a key that the host keeps for itself never reaches the\ncomponent. Probe E1 records which of the pane keys each host keeps.\n\n### 11.3 Scroll Ownership\n\n| Region | Owns the wheel and the scroll keys | Other surface |\n|---|---|---|\n| Reader pane, focused | the pane (`capturesViewportInput: true`): `PgUp`, `PgDn`, the wheel | the transcript does not scroll |\n| Reader pane, unfocused | the transcript | the pane does not scroll |\n| Pane body under the fixed top | the body | the fixed top never scrolls |\n\n---\n\n## 12. Future Considerations\n\n1. **Inline text input in the pane:** a focusable line editor would replace the\n   `n` and `o` dialogs and match Claude Code exactly. Revisit when the host\n   adapters share a line-editor component.\n2. **A tmux or herdr side pane:** a real side pane through `ctx.ui.openTerminal`\n   (OMP) or tmux would give a docked view. Revisit if the overlay hides too\n   much of the transcript in use.\n3. **An orchestrator view:** the planned Pi Durable orchestrator needs a\n   surface for many children. It is a different screen, designed with epic E10.\n\n---\n\n## Document Validation Checklist\n\n- [x] Every interactive component has a state table in Section 3.2.\n- [x] Every component marks exactly one initial state. The pane marks two,\n  one per entry route, and section 2.3 decides which.\n- [x] Every timer names its arming event and its reset event (indicator,\n  status line, notify band, notice).\n- [x] Every control with a conditional existence appears in Section 3.3.\n- [x] Every multi-valued setting appears in Section 2.3 with a default.\n- [x] Every state change appears in Section 4.1 with a source and target state.\n- [x] Every duration in Section 4.1 names a token from Section 4.2.\n- [x] Every flow names its entry condition and its edge cases.\n- [x] Every floating surface names a layer from Section 11.1.\n- [x] Every control names its hit target element and its clickable bounds.\n- [x] Every overlapping region names the surface that owns the gesture.\n- [x] No section depends on the mockup for an answer.\n\n## Decisions from the engineer (2026-11-25)\n\n1. **Note and Other as dialogs (section 1.2).** Accepted. `n` and `o` open\n   the host input dialog.\n2. **The focus shortcut `alt+p`.** Accepted.\n3. **Focus on `/priority-on`.** Accepted. The pane opens focused, as in\n   Claude Code.\n4. **OMP question flow (5.5).** If probe E1 shows that OMP cannot hold the\n   `ask` call, OMP question stops are not supported. There is no read-only\n   fallback card.\n\n## Procedural notes\n\n- The engineer asked for this gate before Gates 1 and 2. Gate 1\n  (`01-product.md`) and Gate 2 (`02-architecture.md`) were then written on\n  2026-11-25, and this document agrees with both.\n- The tracker generates `00-status.md` when it seeds the program record.\n  The `2b` line then records this gate.\n- Step 2 (component research) and Step 3 (`ui-spec.jsonc`) wait for the\n  approval of this document, as the design-to-code checkpoint requires.\n"
       },
       {
         "feature_slug": "review-link",
@@ -7105,6 +7764,14 @@
         "source_path": ".cobuilder/rubrics/priority-ask-question/slice-3.md"
       },
       {
+        "id": "priority-ask-question/4",
+        "feature_slug": "priority-ask-question",
+        "n": 4,
+        "title": "Slice 4 — Question in the reader",
+        "body_md": "# Rubric: Slice 4 — Question in the reader\n\nFeature: priority-ask-question\nEpic: E3\nSlice goal: with the reader on, a main-loop AskUserQuestion call opens the reader's pane with a question card, holds the call inside `$.process.spawn`, and Send returns `{ questions, answers }` as the tool result. A question job reads the stop with `--open-question`. The \"What will be sent\" block and the key row follow `question-card.svg` in every case.\nTest command: `claude plugin test plugins/cobuilder-priority`\n\n## Criteria\n\n### C1 — Catch and hold [CRITICAL]\n**Must be true:** with the reader on, a main-loop AskUserQuestion call opens the pane and waits inside `$.process.spawn` with the wait-loop argv, on two files under `<priority_dev_dir>/reports/logs/live/ask/` named by `tool_use_id`. A subagent call, or the reader off, calls `next(e)` with no pane and no spawn.\n**Evidence to check:** tests that stub `process.spawn` beneath the plugin, and a mutation of the guard.\n**Scoring:** 1.0 — all tested and true. 0.5 — the hold is tested, but a pass-on case is not. 0.0 — no hold test.\n\n### C2 — The answer matches the tool schema [CRITICAL]\n**Must be true:** Send writes the answer file, then the done file. The tool result is `{ questions, answers }`, with `answers` keyed by question text and a multi-select answer comma-joined. Other text replaces the picks of its question. A question with no answer blocks Send with a notice, and nothing is written.\n**Evidence to check:** tests of the write order, the result, the multi-select join, the Other text, and the blocked Send.\n**Scoring:** 1.0 — all tested. 0.5 — one case untested. 0.0 — the result shape is untested.\n\n### C3 — Failure and Esc\n**Must be true:** a child that ends with a non-zero code or a signal logs the cause and returns `next(e)`. An aborted hook makes no `$` call and returns a refusal.\n**Scoring:** 1.0 — both tested or proven by reading the types and the code. 0.5 — one. 0.0 — neither.\n\n### C4 — The question card\n**Must be true:** the card shows each question with its number, text, and header chip, \"(several)\" for multi-select, each option with its description, and one Other input. `e Edit` is dim on a question card.\n**Scoring:** 1.0 — a render test finds each part. 0.5 — some parts. 0.0 — none.\n\n### C5 — The reading at the question\n**Must be true:** a question job runs `priority digest`, then `priority interpret --open-question <file>`. The stored reading has `stop_kind: question` and the questions. The reading fills in under the card and does not change the picks. The mark stores the answers.\n**Scoring:** 1.0 — tested. 0.5 — the argv is tested, but not the stored fields. 0.0 — untested.\n\n### C6 — Draft block and key row in every case\n**Must be true:** every draft shows the `▸ WHAT WILL BE SENT` title, the text in an inner box, and a Source footer. The block is lit when Send can act and dim when it cannot. The key row colours `s` cyan, `r` green, `w` red, and dims a key that cannot act. No `READY` tag, no length, and no target.\n**Scoring:** 1.0 — tested for a question and a turn-end stop. 0.5 — one case. 0.0 — neither.\n\n### C7 — Checks and hygiene\n**Must be true:** the mod tests pass, `claude plugin validate` passes, the hooks type-check clean, the plugin version is bumped in both manifests, and each file stays near 200 lines.\n**Scoring:** 1.0 — all. 0.5 — one gap. 0.0 — a failing check.\n",
+        "source_path": ".cobuilder/rubrics/priority-ask-question/slice-4.md"
+      },
+      {
         "id": "priority-dev-spike/1",
         "feature_slug": "priority-dev-spike",
         "n": 1,
@@ -7935,6 +8602,16 @@
           "priority-dev-cc-plugin/E1",
           "priority-dev-cc-plugin/E2",
           "priority-dev-cc-plugin/E3",
+          "priority-dev-pi-extension/E1",
+          "priority-dev-pi-extension/E2",
+          "priority-dev-pi-extension/E3",
+          "priority-dev-pi-extension/E4",
+          "priority-dev-pi-extension/E5",
+          "priority-dev-pi-extension/E6",
+          "priority-dev-pi-extension/E7",
+          "priority-dev-pi-extension/E8",
+          "priority-dev-pi-extension/E9",
+          "priority-dev-pi-extension/E10",
           "priority-dev-spike/E1",
           "priority-dev-spike/E2",
           "priority-dev-spike/E3",
@@ -7954,7 +8631,17 @@
           "priority-ask-question/E3",
           "priority-dev-cc-plugin/E1",
           "priority-dev-cc-plugin/E2",
-          "priority-dev-cc-plugin/E3"
+          "priority-dev-cc-plugin/E3",
+          "priority-dev-pi-extension/E1",
+          "priority-dev-pi-extension/E2",
+          "priority-dev-pi-extension/E3",
+          "priority-dev-pi-extension/E4",
+          "priority-dev-pi-extension/E5",
+          "priority-dev-pi-extension/E6",
+          "priority-dev-pi-extension/E7",
+          "priority-dev-pi-extension/E8",
+          "priority-dev-pi-extension/E9",
+          "priority-dev-pi-extension/E10"
         ]
       },
       "ADR-0050": {
@@ -7963,7 +8650,33 @@
         "path": [
           "priority-ask-question/E1",
           "priority-ask-question/E2",
-          "priority-ask-question/E3"
+          "priority-ask-question/E3",
+          "priority-dev-pi-extension/E1",
+          "priority-dev-pi-extension/E2",
+          "priority-dev-pi-extension/E3",
+          "priority-dev-pi-extension/E4",
+          "priority-dev-pi-extension/E5",
+          "priority-dev-pi-extension/E6",
+          "priority-dev-pi-extension/E7",
+          "priority-dev-pi-extension/E8",
+          "priority-dev-pi-extension/E9",
+          "priority-dev-pi-extension/E10"
+        ]
+      },
+      "ADR-0051": {
+        "pr": null,
+        "via": "epic",
+        "path": [
+          "priority-dev-pi-extension/E1",
+          "priority-dev-pi-extension/E2",
+          "priority-dev-pi-extension/E3",
+          "priority-dev-pi-extension/E4",
+          "priority-dev-pi-extension/E5",
+          "priority-dev-pi-extension/E6",
+          "priority-dev-pi-extension/E7",
+          "priority-dev-pi-extension/E8",
+          "priority-dev-pi-extension/E9",
+          "priority-dev-pi-extension/E10"
         ]
       }
     },
@@ -8094,6 +8807,16 @@
       "priority-dev-cc-plugin/E1": "unstarted",
       "priority-dev-cc-plugin/E2": "unstarted",
       "priority-dev-cc-plugin/E3": "unstarted",
+      "priority-dev-pi-extension/E1": "unstarted",
+      "priority-dev-pi-extension/E2": "unstarted",
+      "priority-dev-pi-extension/E3": "unstarted",
+      "priority-dev-pi-extension/E4": "unstarted",
+      "priority-dev-pi-extension/E5": "unstarted",
+      "priority-dev-pi-extension/E6": "unstarted",
+      "priority-dev-pi-extension/E7": "unstarted",
+      "priority-dev-pi-extension/E8": "unstarted",
+      "priority-dev-pi-extension/E9": "unstarted",
+      "priority-dev-pi-extension/E10": "unstarted",
       "priority-dev-spike/E1": "no-pull-request",
       "priority-dev-spike/E2": "no-pull-request",
       "priority-dev-spike/E3": "no-pull-request",
@@ -8352,7 +9075,8 @@
       "ADR-0043": "tracker-port",
       "ADR-0045": "cobuilder-packaging",
       "ADR-0049": "cobuilder-packaging",
-      "ADR-0050": "cobuilder-packaging"
+      "ADR-0050": "cobuilder-packaging",
+      "ADR-0051": "cobuilder-priority"
     },
     "adr_to_district": {
       "ADR-0001": "scripts",

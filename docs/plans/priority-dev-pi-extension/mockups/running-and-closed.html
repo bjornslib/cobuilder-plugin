@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Mockup 3: a reading runs, and the pane is closed</title>
+<style>
+  :root { --bg:#1e1e1e; --fg:#d4d4d4; --dim:#7a7a7a; --accent:#4fc1ff; --ok:#6a9955; --warn:#d7ba7d; --err:#f14c4c; }
+  body { margin:0; background:#2b2b2b; font-family: ui-monospace, Menlo, monospace; color:var(--fg); }
+  .term { width: 1180px; margin: 24px auto; background: var(--bg); border-radius: 8px; padding: 12px 14px; }
+  .row { display:flex; gap:12px; }
+  pre { margin:0; font: 13px/1.45 ui-monospace, Menlo, monospace; white-space: pre; }
+  .transcript { flex:1; }
+  .pane { width: 470px; border: 1px solid #555; padding: 4px 8px; }
+  .dim { color: var(--dim); } .ok { color: var(--ok); } .warn { color: var(--warn); } .err { color: var(--err); }
+  .band { color: var(--warn); margin-top: 8px; }
+  .editor, .status { border-top: 1px solid #444; margin-top: 4px; padding-top: 4px; }
+  .status { color: var(--dim); }
+  h2 { width:1180px; margin: 24px auto 0; color:#ddd; font: 600 15px system-ui, sans-serif; }
+  .caption { width:1180px; margin: 0 auto 24px; color:#bbb; font: 14px/1.5 system-ui, sans-serif; }
+</style>
+</head>
+<body>
+<h2>3a. A reading runs: the pane is open, but the editor has the focus</h2>
+<div class="term">
+  <div class="row">
+<pre class="transcript"><span class="dim">user</span>
+Run the migration on the test database.
+
+<span class="dim">assistant</span>
+Done. All 41 tests pass.
+</pre>
+<pre class="pane"><b>Priority reader</b>  <span class="ok">● on</span>  <span class="dim">4 readings</span>  <span class="warn">⠹ running…</span>
+ <span class="dim">▶ Send  ✎ Edit</span>  <span class="ok">r Right</span>  <span class="err">w Wrong</span>  m Hide summary
+──────────────────────────────────────────────────────
+<span class="dim">Reading stop #5…</span>
+<span class="dim">┌ ▾ Agent completed ────────────────────────────────┐</span>
+<span class="dim">│ Added a migration for hindsight_marks. 3 tests    │</span>
+<span class="dim">└───────────────────────────────────────────────────┘</span>
+<span class="dim">#4 14:32  P1 High  Blocked  needs you</span>
+<span class="dim">[ ] 1. Reply</span>
+<span class="dim">…</span>
+</pre>
+  </div>
+<pre class="editor">› typing continues here while the reading runs</pre>
+<pre class="status"> </pre>
+</div>
+<p class="caption">The previous card draws dim, and Send and Edit do nothing until reading #5 is saved.
+The border is grey: the pane does not have the focus.</p>
+
+<h2>3b. The pane is closed: the notify row carries the reading</h2>
+<div class="term">
+<pre class="transcript"><span class="dim">assistant</span>
+Done. All 41 tests pass. The migration is committed.
+</pre>
+<pre class="band">Notification: All 41 tests pass after the migration.
+Priority reader · #5 · P3 Low · Done</pre>
+<pre class="editor">› </pre>
+<pre class="status">Priority reader · #5 ready</pre>
+</div>
+<p class="caption">With the pane closed, a terminal under 80 columns, or a pane that cannot draw, the row
+above the editor shows one summary line. <code>/priority-pane</code> or <code>alt+p</code> opens the pane.</p>
+</body>
+</html>
