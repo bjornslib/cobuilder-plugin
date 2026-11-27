@@ -1,0 +1,103 @@
+%% ADR-0048 proposal. Module names linear_*.py are proposed. The other classes exist in shared/tracker_port.
+classDiagram
+    class TrackerPort {
+        <<protocol>>
+        +capabilities Capabilities
+        +name str
+        +all_records() list
+        +get_slice(id) TrackerRecord
+        +next_ready(kind, under) list
+        +sync() None
+        +prepare() dict
+        +claim_slice(id, claimant) TrackerRecord
+        +claim_next(claimant, under) TrackerRecord
+        +set_slice_state(id, state, score, attempts) TrackerRecord
+        +seed_from_files(plans_dir, dry_run, refresh_envelope) list
+        +regenerate_status_files(program, plans_dir) list
+    }
+
+    class TrackerRecord {
+        <<dataclass frozen>>
+        +id str
+        +kind Kind
+        +parent str
+        +blocked_by tuple
+        +lifecycle Lifecycle
+        +assignee str
+        +envelope Mapping
+        +external_ref str
+        +tracks tuple
+    }
+
+    class Capabilities {
+        <<dataclass frozen>>
+        +native_ready bool
+        +atomic_claim bool
+        +rich_envelope bool
+        +offline_read bool
+    }
+
+    class BeadsAdapter {
+        <<existing, unchanged>>
+        +name str
+        +capabilities Capabilities
+        +claim_slice(id, claimant) TrackerRecord
+        +claim_next(claimant, under) TrackerRecord
+    }
+
+    class LinearAdapter {
+        <<proposed>>
+        +name str
+        +capabilities Capabilities
+        +plan_changes list
+        +sync() None
+        +prepare() dict
+        +claim_slice(id, claimant) TrackerRecord
+        +claim_next(claimant, under) TrackerRecord
+        +lifecycle_of(issue) str
+        +release_claims(slice_id) None
+        +drop_stale_claims(slice_id) None
+    }
+
+    class LinearClient {
+        <<proposed>>
+        +query(text, variables) dict
+        +pages(query) list
+        +requests_left int
+        +reset_at str
+    }
+
+    class LinearRows {
+        <<proposed>>
+        +to_record(node) TrackerRecord
+        +lifecycle_of(state_type) Lifecycle
+        +seen_values(node) dict
+    }
+
+    class LinearClaim {
+        <<proposed>>
+        +claim(id, claimant) TrackerRecord
+        +winner(claims) str
+        +release(id) None
+    }
+
+    class LinearSeed {
+        <<proposed>>
+        +seed(plans_dir, dry_run) list
+        +conflicts list
+    }
+
+    TrackerPort <|.. BeadsAdapter : implements
+    TrackerPort <|.. LinearAdapter : implements
+    TrackerPort ..> TrackerRecord : returns
+    TrackerPort ..> Capabilities : declares
+    LinearAdapter --> LinearClient : reads and writes through
+    LinearAdapter --> LinearRows : maps issues with
+    LinearAdapter --> LinearClaim : claims with
+    LinearAdapter --> LinearSeed : seeds with
+    LinearRows ..> TrackerRecord : builds
+    LinearClaim --> LinearClient : writes through
+    LinearSeed --> LinearClient : creates issues through
+
+    note for LinearAdapter "Reports rich_envelope true<br>native_ready false<br>atomic_claim false<br>and offline_read false<br>Ready is computed on the client"
+    note for BeadsAdapter "Reports atomic_claim true<br>and offline_read true"

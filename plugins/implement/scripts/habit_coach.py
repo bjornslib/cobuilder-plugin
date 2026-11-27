@@ -17,6 +17,10 @@ command. Output that says "nothing scanned" or "is not a file in this
 project" means the coach did not read the file. The script reports that
 as exit code 2.
 
+For a GREEN write, the script also runs the structure signals. It joins
+that text to the habit-hooks text, with a blank line between them. The
+script skips habit-hooks for a file type that habit-hooks does not scan.
+
 Run the script with --check to prove the coach works. The check reads the
 git root of the current folder. It runs habit-hooks on the first tracked
 source file that it finds. The habit-hooks typescript plugin scans only
@@ -38,11 +42,28 @@ import subprocess
 import sys
 from typing import IO
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import structure_runner  # noqa: E402
+
 GREEN_AGENT_TYPES = frozenset({"implement:green"})
 
 UNSCANNED_MARKERS = ("nothing scanned", "is not a file in this project")
 
 SOURCE_EXTENSIONS = (".py", ".ts", ".tsx", ".php", ".java", ".rb")
+
+
+def read_payload(stdin: IO[str]) -> dict | None:
+    """Return the payload when the coach can use it, or None."""
+    try:
+        payload = json.loads(stdin.read())
+    except (json.JSONDecodeError, ValueError):
+        return None
+    if not isinstance(payload, dict) or not isinstance(payload.get("tool_input"), dict):
+        return None
+    path = payload["tool_input"].get("file_path")
+    usable = isinstance(payload.get("agent_type"), str) and isinstance(path, str)
+    # A NUL byte cannot name a file. The subprocess module rejects it.
+    return payload if usable and "\x00" not in path else None
 
 
 def is_green(payload: dict) -> bool:
@@ -54,6 +75,11 @@ def target_path(payload: dict) -> str | None:
     """Return the written file path, or None when the payload has none."""
     tool_input = payload.get("tool_input") or {}
     return tool_input.get("file_path")
+
+
+def scanned(path: str) -> bool:
+    """Return True when the lower-case suffix of path is one that habit-hooks scans."""
+    return os.path.splitext(path)[1].lower() in SOURCE_EXTENSIONS
 
 
 def git_root(path: str) -> str | None:
@@ -186,7 +212,32 @@ def check(root: str, runner=run_habit_hooks, stdout=sys.stdout) -> int:
     return 1
 
 
-def main(stdin: IO[str], stdout: IO[str], runner=run_habit_hooks, argv: list[str] | None = None) -> int:
+def habit_message(code: int, text: str, path: str) -> str:
+    """Return the habit-hooks message for a run, or "" when the run is clean."""
+    if code == 0:
+        return ""
+    if code == 1:
+        return f"habit-hooks coaching for {path}:\n{text}"
+    if code == 127:
+        return (
+            "habit-hooks is not installed. Run /implement:install, "
+            "which installs every language in one command."
+        )
+    if code == 2:
+        return (
+            f"habit-hooks failed to run on {path}. "
+            f"Report this in your GREEN report.\n{text}"
+        )
+    return text
+
+
+def main(
+    stdin: IO[str],
+    stdout: IO[str],
+    runner=run_habit_hooks,
+    structure=structure_runner.run,
+    argv: list[str] | None = None,
+) -> int:
     """Read the PostToolUse payload from stdin and coach GREEN writes.
 
     With --check in argv, run the proof check from the git root of the
@@ -201,35 +252,18 @@ def main(stdin: IO[str], stdout: IO[str], runner=run_habit_hooks, argv: list[str
             return 1
         return check(root, runner=runner, stdout=stdout)
 
-    try:
-        payload = json.loads(stdin.read())
-    except (json.JSONDecodeError, ValueError):
-        return 0
-
-    if not is_green(payload):
+    payload = read_payload(stdin)
+    if payload is None or not is_green(payload):
         return 0
 
     path = target_path(payload)
-    if path is None:
-        return 0
 
-    code, text = runner(path)
-    if code == 1:
-        message = f"habit-hooks coaching for {path}:\n{text}"
-    elif code == 127:
-        message = (
-            "habit-hooks is not installed. Run /implement:install, "
-            "which installs every language in one command."
-        )
-    elif code == 2:
-        message = (
-            f"habit-hooks failed to run on {path}. "
-            f"Report this in your GREEN report.\n{text}"
-        )
-    else:
-        message = text
+    code, text = runner(path) if scanned(path) else (0, "")
+    _, structure_text = structure(path, payload.get("session_id"))
+    parts = (habit_message(code, text, path), structure_text)
+    message = "\n\n".join(part for part in parts if part)
 
-    result = render(code, message)
+    result = render(1 if message else 0, message)
     if result is not None:
         json.dump(result, stdout)
 

@@ -7,6 +7,7 @@
     "lifecycle": "open",
     "assignee": null,
     "envelope": {},
-    "external_ref": "PR#101"
+    "external_ref": "gh-101",
+    "tracks": ["demo-E1", "demo-E2"]
   }
 ]

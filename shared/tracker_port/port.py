@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Protocol
+from typing import Any, Protocol
 
 from .record import Capabilities, TrackerRecord
 
@@ -32,6 +32,9 @@ class TrackerPort(Protocol):
 
     def list_pull_requests(self) -> list[TrackerRecord]: ...
 
+    def all_records(self) -> list[TrackerRecord]:
+        """Every program, epic, slice, and pull request record, from one read."""
+
     def get_slice(self, id: str) -> TrackerRecord: ...
 
     def next_ready(self, kind: str = "slice", under: str | None = None) -> list[TrackerRecord]: ...
@@ -42,7 +45,9 @@ class TrackerPort(Protocol):
 
     def claim_slice(self, id: str, claimant: str) -> TrackerRecord: ...
 
-    def set_program_stage(self, program: str, stage: str) -> TrackerRecord: ...
+    def claim_next(self, claimant: str, under: str | None = None) -> TrackerRecord | None: ...
+
+    def set_program_stage(self, program: str, stage: str, plans_dir: Path | None = None) -> TrackerRecord: ...
 
     def set_gate_value(self, program: str, gate: str, value: str) -> TrackerRecord: ...
 
@@ -71,3 +76,18 @@ class TrackerPort(Protocol):
     def seed_from_files(self, plans_dir: Path, dry_run: bool = False, refresh_envelope: bool = False) -> list[TrackerRecord]: ...
 
     def regenerate_status_files(self, program: str, plans_dir: Path) -> list[Path]: ...
+
+
+class MappingMigrationPort(Protocol):
+    """An optional operation. Only an adapter that once used an older mapping implements it.
+
+    The fake and the files adapter keep a stub, so the CLI answers every adapter the same way.
+    """
+
+    def migrate_mapping(self, dry_run: bool = False, plans_dir: Path | None = None) -> dict[str, object]: ...
+
+
+class StatusRepairPort(Protocol):
+    def repair_status(
+        self, dry_run: bool = False, plans_dir: Path | None = None, index: Path | None = None
+    ) -> dict[str, Any]: ...

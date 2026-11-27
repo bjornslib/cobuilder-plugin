@@ -1,0 +1,72 @@
+[
+  {
+    "id": "demo-E1",
+    "kind": "epic",
+    "parent": "demo",
+    "blocked_by": [],
+    "lifecycle": "open",
+    "assignee": null,
+    "envelope": {},
+    "external_ref": null
+  },
+  {
+    "id": "demo-E2",
+    "kind": "epic",
+    "parent": "demo",
+    "blocked_by": [
+      "demo-E1"
+    ],
+    "lifecycle": "open",
+    "assignee": null,
+    "envelope": {},
+    "external_ref": null
+  },
+  {
+    "id": "demo-E3",
+    "kind": "epic",
+    "parent": "demo",
+    "blocked_by": [
+      "demo-E2"
+    ],
+    "lifecycle": "open",
+    "assignee": null,
+    "envelope": {
+      "deferred": "2099-12-31"
+    },
+    "external_ref": null
+  },
+  {
+    "id": "alt-E1",
+    "kind": "epic",
+    "parent": "alt",
+    "blocked_by": [],
+    "lifecycle": "in_progress",
+    "assignee": null,
+    "envelope": {},
+    "external_ref": null
+  },
+  {
+    "id": "alt-E2",
+    "kind": "epic",
+    "parent": "alt",
+    "blocked_by": [
+      "alt-E1"
+    ],
+    "lifecycle": "open",
+    "assignee": null,
+    "envelope": {},
+    "external_ref": null
+  },
+  {
+    "id": "later-E1",
+    "kind": "epic",
+    "parent": "later",
+    "blocked_by": [],
+    "lifecycle": "open",
+    "assignee": null,
+    "envelope": {
+      "deferred": "2099-12-31"
+    },
+    "external_ref": null
+  }
+]

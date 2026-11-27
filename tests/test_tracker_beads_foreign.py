@@ -12,6 +12,7 @@ import copy
 
 import pytest
 
+import _beads_ready_support as ready
 import _beads_support as support
 
 FOREIGN_TITLE = "Foreign task made by another tool"
@@ -30,7 +31,8 @@ def test_foreign_transcript_records_bd_1_3_0_with_one_foreign_and_one_adapter_is
 
 
 def test_every_read_skips_the_foreign_issue_and_returns_the_cb_record() -> None:
-    adapter, _ = support.list_adapter(support.foreign_rows_all())
+    # bd gives the ready slice, and the list read maps its bd id to the cb record. The foreign task has no label cb.
+    adapter, _ = ready.adapter_over(support.foreign_rows_all(), ["demo-6gh"])
 
     assert [r.id for r in adapter.list_slices()] == [ADAPTER_ID]
     assert adapter.list_programs() == []
@@ -41,7 +43,7 @@ def test_every_read_skips_the_foreign_issue_and_returns_the_cb_record() -> None:
 
 
 def test_reads_over_only_foreign_issues_return_nothing_and_do_not_raise() -> None:
-    adapter, _ = support.list_adapter(support.foreign_only_rows())
+    adapter, _ = ready.adapter_over(support.foreign_only_rows(), [])
 
     assert adapter.list_programs() == []
     assert adapter.list_epics() == []

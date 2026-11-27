@@ -1,0 +1,81 @@
+{
+  "stage": "design",
+  "verdict": "concerns",
+  "risk_tier": "medium",
+  "regret_risk": "If the program ships as written, the team lives with a viewer whose public surface, the 40-plus model exports, the atom vocabulary, and the seven section renderers, now sits split across many files, and with a recorded exception that a 13-to-30-line unit may stay. The durable regret is the second epic. It holds 703 findings with no slices. If no later pass cuts it, the 157 cobuilder-memory any findings, the 206 duplicate findings, and the 12 swallowed exceptions stay standing, and the next engineer re-runs a fresh scan instead of reading the catalog.",
+  "summary": "The viewer epic is grounded in one scan of 2,340 findings and one catalog that names seven clusters. The by-area order, logic first, proves the export-stability contract before the render slices depend on it. Four abort conditions guard the real risks: a moved export, a changed render, an unowned card tune, and a comment that explained why. The second epic holds the rest without slices, so the standing scan stays work a later pass takes.",
+  "constraint_introduced": "The viewer's public surface is its public contract. model.ts, atoms.tsx, sections.tsx, App.tsx, and the shell hooks export names the tests and other files import. A split keeps every export name and re-exports the moved units, so an import of an old name still resolves. The habit-hooks scan is the standing verifier: a viewer file is done when habit-sensors reports no finding for it.",
+  "findings": [
+    {
+      "kind": "prediction",
+      "id": "F1",
+      "severity": "low",
+      "title": "Logic first is the right tracer bullet",
+      "detail": "The logic layer, model.ts and the data folder, is pure, so the vitest suite alone proves a split keeps behavior. It settles the export-stability contract and the byte-equal rebuild guard before the render slices depend on them. A render slice that lands first would force a browser proof where a unit test would do.",
+      "cites": "ADR-0023, docs/architecture/designs/mechanical-smells/findings-catalog.md section 4"
+    },
+    {
+      "kind": "prediction",
+      "id": "F2",
+      "severity": "high",
+      "title": "The 12-line function limit is the open concern the program must decide",
+      "detail": "The sensor caps a function at 12 lines. A React component of 13 lines is often one atomic render unit, and a test callback is often one case. Splitting either harms readability without lowering complexity. The program records a residual exception, and the catalog names it. If the sensor card cannot tune, the abort condition fires.",
+      "cites": "findings-catalog.md section 3 cluster S"
+    },
+    {
+      "kind": "prediction",
+      "id": "F3",
+      "severity": "high",
+      "title": "A split that moves an export breaks the tests that import it",
+      "detail": "The viewer's export surface is large: model.ts exports more than 40 names, atoms.tsx exports the UI vocabulary, sections.tsx exports the seven section renderers, App.tsx exports ShellApp and the Theme type. The abort condition on a moved export guards every slice, and slice one proves it holds on the logic layer first.",
+      "cites": "findings-catalog.md section 4, docs/architecture/designs/mechanical-smells/goal.json abort_if"
+    },
+    {
+      "kind": "prediction",
+      "id": "F4",
+      "severity": "high",
+      "title": "The comment slices reverse a deferral and need a sample review",
+      "detail": "The viewer holds 1,080 comment findings, two thirds of its total. The first draft deferred them, because deleting comments on a scan verdict is not safe. The engineer chose per-comment review in the last two slices. A reviewer samples each slice and counts deleted comments that explained why. More than one in twenty fires the abort condition.",
+      "cites": "docs/architecture/designs/mechanical-smells/goal.json abort_if"
+    },
+    {
+      "kind": "prediction",
+      "id": "F5",
+      "severity": "medium",
+      "title": "The second epic has no slices, so it can stall",
+      "detail": "Epic two holds 703 findings in named groups with a count and an approach each. It has no slices, by design. The risk is that no one cuts them. The catalog and the epic record keep the groups in view, and the tracker shows the epic open with no ready slice.",
+      "cites": "findings-catalog.md section 5, goal.json epics"
+    },
+    {
+      "kind": "prediction",
+      "id": "F6",
+      "severity": "low",
+      "title": "The install surface is untouched",
+      "detail": "The work is a maintainer step under plugins/artifact/viewer/src/, one sensor config, and one catalog. No agent, hook, or MCP server installs. ADR-0016 and ADR-0025 keep the install surface to the four shipped hooks, and this design adds none.",
+      "cites": "ADR-0016, ADR-0025, docs/architecture/contexts/cobuilder-packaging/boundary.yaml"
+    }
+  ],
+  "boundary_checks": [
+    {
+      "rule": "no plugin reads another plugin's files",
+      "result": "pass",
+      "detail": "Every path epic one touches sits under plugins/artifact/viewer/src/, .habit-hooks/, docs/architecture/designs/, or docs/architecture/adr/."
+    },
+    {
+      "rule": "no agents, hooks, or MCP servers in the install surface",
+      "result": "pass",
+      "detail": "The work is a maintainer refactor, a config change, and one catalog. Nothing new installs."
+    },
+    {
+      "rule": "ADR-0016: the viewer stays in plugins/artifact/",
+      "result": "pass",
+      "detail": "The split keeps every file under plugins/artifact/viewer/src/. The bundle seam holds."
+    },
+    {
+      "rule": "ADR-0038: the scan is the findings source",
+      "result": "pass",
+      "detail": "The catalog is the standing record the scan feeds, and epic one resolves the viewer part of it."
+    }
+  ],
+  "drift": []
+}

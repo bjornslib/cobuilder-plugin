@@ -31,7 +31,7 @@ version which contains it. A development checkout, or an older installed
 version, does not find it.
 
 Generate mode itself writes no ADR. A pre-merge decision is a proposal. The
-register holds decisions. Review mode writes the record after the PR
+register holds decisions. PR review mode writes the record after the PR
 merges, and reads the `intent` the interview captured.
 
 ## 2. Write markdown, then compile
@@ -57,7 +57,7 @@ Start a new record from the architecture skill's
 
 ## 3. State on a retro-created record
 
-A record that review mode creates is `state: decided`. Never `approved`.
+A record that PR review mode creates is `state: decided`. Never `approved`.
 An agent must not set `approved` on its own initiative. `approved_by` is
 stamped only when generate mode's post stage observes a human merge.
 

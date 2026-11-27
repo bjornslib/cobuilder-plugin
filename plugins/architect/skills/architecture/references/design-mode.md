@@ -67,9 +67,28 @@ in silence.
 
 ## 3. Stage 0 — Name and outcome
 
+Before the first question, run `tracker.py doctor`. Read the adapter and the
+`mapping` line. Stop when doctor exits with an error, or when it shows
+`mapping: legacy`. Tell the engineer to run
+`/cobuilder-full-lifecycle:install`, which asks for approval before it
+migrates the tracker. Do not migrate from this mode. When the adapter is
+`files`, go on.
+
+After doctor, run the pull request refresh in
+[shared/pull-request-refresh.md](../../../../../shared/pull-request-refresh.md).
+It records each merge that GitHub shows, so the stage and the epics of the
+other programs are true before the engineer names a design. Report its result
+in one line.
+
 The engineer states the outcome and names the design **before** the agent
 reads a file. The outcome names a state, not an activity. Write it into
 `goal.outcome` and `goal.done_when`.
+
+When `goal.json` holds `name`, `title`, and `outcome`, run `tracker.py sync`.
+Then run `tracker.py set-program-stage <name> backlog --plans-dir docs/plans`.
+This creates the program record. Run `tracker.py sync` again. Exit 2 means
+that no tracker is configured. In that case write `"stage": "backlog"` into
+`goal.json`.
 
 Then search existing designs for a duplicate. The match is semantic, not
 a keyword grep. For each candidate under `docs/architecture/designs/*/`,
@@ -80,10 +99,11 @@ word and solve different things, or share no words and collide.
 **Report what you searched and how many designs exist.** Never a bare
 "none found". If the tree is empty, say so and say this is the first
 design. If you searched N designs and none match, say that. On a hit,
-show the match and its `goal.stage`. Let the engineer choose with
-`AskUserQuestion`: resume it, supersede it, or proceed because it is
-genuinely different. A superseded design gets `stage: "superseded"` and
-a pointer to the new name.
+show the match and its stage, read with `tracker.py list-programs`. Let the
+engineer choose with `AskUserQuestion`: resume it, supersede it, or proceed
+because it is genuinely different. For a superseded design, run
+`tracker.py set-program-stage <old name> superseded`, and add a pointer to the
+new name.
 
 ## 4. Stage 1 — Ground
 
@@ -266,7 +286,7 @@ draft the thirty-second voice script first. Then write each field by the writing
 `prose_budget.py check` on `goal.json`, `intent.json`, and `assessment.json`, and fix every ceiling
 line. A cap is soft, so keep a point rather than cut it. STE is not optional, and a cap does not
 replace it. Run each
-prose pass through `Skill("architect:ste-writing")` in flavored mode. If that call
+prose pass through `Skill("ste-writing")` in flavored mode. If that call
 gives `Unknown skill`, read `${CLAUDE_PLUGIN_ROOT}/shared/skills/ste-writing/SKILL.md`
 directly and obey that file instead. Use strict mode for ADR procedural
 text: the constraint introduced, and the boundary rules.
@@ -435,7 +455,7 @@ Do not ask for a budget. An engineer who wants different limits says so.
 Write workflow state only through the tracker script. [shared/tracker-usage.md](../../../../../shared/tracker-usage.md) lists every operation. The call form is `uv run "${CLAUDE_PLUGIN_ROOT}/shared/tracker.py" <operation> args`.
 
 1. When the engineer approves a gate, run `tracker.py set-gate-value <program> <gate> <date>`. Then run `tracker.py add-note <program> <text>`.
-2. When the engineer decides or approves the design, run `tracker.py set-program-stage <program> <stage>`. The stage is one of the stages in the table in section 12.
+2. When the engineer decides or approves the design, run `tracker.py set-program-stage <program> <stage> --plans-dir docs/plans`. The stage is one of the stages in the table in section 12. Exit 2 means no tracker is configured, so write `stage` into `goal.json`. Exit 3 means stop and tell the engineer. Never write `stage` into `goal.json` after an exit 0.
 3. Run `tracker.py regenerate-status-files <program> --plans-dir <dir>` to refresh `00-status.md`. Do not edit `00-status.md` by hand.
 
 Each call exits with a code. Branch on the code only, and never parse the message. [Failure and refusal](../../../../../shared/tracker-usage.md#failure-and-refusal) lists the exit codes.
@@ -466,7 +486,8 @@ fails, it scans every `goal.json` for a matching `epics[].branch`.
 
 ## 12. `goal.json` schema
 
-Do not keep `branch` as a scalar. The join lives on `epics`.
+`goal.json` holds no workflow state. The tracker holds the stage of the program,
+and the branch, the pull request, and the state of each epic.
 
 ```json
 {
@@ -485,14 +506,9 @@ Do not keep `branch` as a scalar. The join lives on `epics`.
   },
   "limits": { "warn_after_rounds": 3, "cutoff_rounds": 6 },
   "epics": [
-    {"id": "E1", "slug": "guest-checkout",
-     "outcome": "<testable criterion>",
-     "branch": "design/checkout/guest-checkout",
-     "pr": 42, "state": "merged"},
-    {"id": "E2", "slug": "saved-cards",
-     "outcome": "<...>", "branch": null, "pr": null, "state": "planned"}
+    {"id": "E1", "slug": "guest-checkout", "outcome": "<testable criterion>"},
+    {"id": "E2", "slug": "saved-cards", "outcome": "<...>"}
   ],
-  "stage": "approved",
   "supersedes": null,
   "rounds": [
     { "n": 1, "changed": true, "feedback_class": "material" }
@@ -509,9 +525,11 @@ after a stage-6 reviewer round returned, not when the spawn was skipped.
 Design mode writes epic slugs at stage 7. It does not write testable
 criteria. A later factory pass may fill `epics[].outcome`.
 
-`goal.stage` takes one of six values. The Work board reads exactly these
-(`_bundle_meta.DESIGN_STAGES`). `build_index.py` rejects a goal with any other
-value or none, because a design with another stage shows in no lane.
+The program stage lives in the tracker and takes one of six values. The Work
+board reads exactly these (`_bundle_meta.DESIGN_STAGES`). `build_index.py`
+rejects a stage with any other value, and it rejects a design with no stage,
+because such a design shows in no lane. A legacy `stage` in `goal.json` is the
+fallback for a repo with no tracker.
 
 | Value | Meaning |
 |---|---|
@@ -523,7 +541,7 @@ value or none, because a design with another stage shows in no lane.
 | `superseded` | Stage 0 replaced this design with a newer one. |
 
 `design` is a stage of `assessment.json`, not of `goal.json`. Do not write it
-into `goal.stage`. A design reaches `implemented` when every epic has a merged
+as the program stage. A design reaches `implemented` when every epic has a merged
 pull request.
 
 ## 13. What this mode does not do

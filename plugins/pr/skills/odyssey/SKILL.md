@@ -32,12 +32,13 @@ lives in the `architecture` skill. See that skill's own `SKILL.md`.
 
 **This skill never edits application source.** The sanctioned writes are the
 bundle directory (`<bundle-dir>`, see Hub resolution below), `docs/`
-(self-only: reviews and pull-request files), and the confirmed
-`git push` / `gh pr create` of Generate mode. Baseline, Review, View, and
-Publish read the target, and write only inside the bundle. Generate mode
-takes the one action outside the bundle. That action is narrow. After an
-explicit confirmation, it pushes the branch and runs `gh pr create`. It
-still writes no application source, and it takes no other outward action.
+(self-only: reviews and pull-request files), the `git push` of a feature
+branch, and the confirmed `gh pr create` of Generate mode. Baseline, Review,
+View, and Publish read the target, and write only inside the bundle. Generate mode
+takes the two actions outside the bundle. Both are narrow. After an
+explicit confirmation, it runs `gh pr create`. It pushes a feature branch
+without asking. It still writes no application source, and it takes no other
+outward action.
 It posts no comments, edits no existing PR body, sets no labels, adds no
 reviewers, and performs no merges. See Generate mode.
 
@@ -58,7 +59,7 @@ skill never edits them.
 
 Write workflow state only through the tracker script. [shared/tracker-usage.md](../../../../shared/tracker-usage.md) lists every operation and its arguments. The call form is `uv run "${CLAUDE_PLUGIN_ROOT}/shared/tracker.py" <operation> args`. Do not edit tracker state by hand.
 
-- Review mode picks the program from the plan folder name under `docs/plans/`. It reads state with `tracker.py list-epics --program <program>`.
+- PR review mode picks the program from the plan folder name under `docs/plans/`. It reads state with `tracker.py list-epics --program <program>`.
 - A pull request ref `<ref>` must end in the GitHub number, such as `pr-101`.
 - Generate mode runs `gh pr create`. Then it runs `tracker.py open-pull-request <ref> <epic-id>...`.
 - After a human merges the PR, run `tracker.py set-pull-request-state <ref> merged`. Then run `tracker.py set-epic-state <epic> <state>`. The valid states are `open`, `in_progress`, and `closed`. Then run `tracker.py regenerate-status-files <program> --plans-dir <dir>`.
@@ -217,7 +218,7 @@ Do not perform the move yourself, and do not fall through to "no baseline
 found". Two reasons make this detect-but-not-migrate rather than an
 automatic fix. First, auto-running `git mv` inside a user's repo
 contradicts this skill's own rule to never edit the target repo's source.
-Second, without this check, Review mode's auto-baseline check (below)
+Second, without this check, PR review mode's auto-baseline check (below)
 would find nothing at the new path, announce "No baseline found", and
 silently regenerate over hand-authored narrative at real Gemini API cost.
 Remove this block once legacy `.odyssey/` layouts are no longer expected
@@ -371,7 +372,7 @@ never overwrites human-authored narrative fields already present in
 `story.json`. That discipline lives in `extract_story.py`, and in how you
 write district blurbs. Treat existing text as authored, not as scratch.
 
-## Review mode
+## PR Review Mode
 
 This mode runs the per-PR narrative, ADR, art, and audio sweep. Steps:
 
@@ -397,7 +398,7 @@ This mode runs the per-PR narrative, ADR, art, and audio sweep. Steps:
    its head and base branches instead of a merge or squash commit.
    Open-PR entries carry `"status": "open"` in `story.json`. They reflect
    the PR's diff as of generation time, not settled history. Re-running
-   review mode with `--force` for that PR, after new commits land on its
+   PR review mode with `--force` for that PR, after new commits land on its
    branch, refreshes the size, touched files, diff, and narrative for the
    new tip. It does not treat the original snapshot as immutable the way a
    merged PR's snapshot is.
@@ -517,7 +518,7 @@ This mode runs the per-PR narrative, ADR, art, and audio sweep. Steps:
 
 ### `--art` flag
 
-`--art both|diagram|image` selects which visual family review mode
+`--art both|diagram|image` selects which visual family PR review mode
 produces for levels 1 through 3 (level 4 has neither). The default is
 `both`.
 
@@ -565,7 +566,7 @@ tiers.
 
 2. **Resolve the target**, in this order:
    - `--prs <N>`. The PR already exists. Use the existing open-PR path
-     (see Review mode step 3). Nothing gets created.
+     (see PR Review Mode step 3). Nothing gets created.
    - no `--prs`. Use the current branch. Ask `gh pr view --json number`
      for it first. If a PR already exists for this branch, adopt its
      number and continue as in the case above. This is the
@@ -625,7 +626,8 @@ tiers.
 
    After the lookup above finds a design, do not stop there. Collect
    every design whose `epics[].branch` matches the current branch. Add
-   any design whose `goal.stage` is not `implemented` and whose declared
+   any design whose stage is not `implemented` (read it with
+   `tracker.py list-programs`) and whose declared
    modules the diff touches. This gives the full candidate set.
 
    If exactly one design results, behave exactly as today. Nothing
@@ -713,7 +715,7 @@ tiers.
 
 11. **Offer to continue into narrative generation.** Ask the author
     (`AskUserQuestion`) whether to move straight into the per-PR sweep of
-    Review mode for this PR, now that `intent` and `assessment` are
+    PR review mode for this PR, now that `intent` and `assessment` are
     captured. Frame it as optional. Declining just stops here, the same
     as before this step existed. If declined, tell the author the same
     PR can be narrated later with
@@ -722,13 +724,13 @@ tiers.
     If the author says yes, ask (the same or a follow-up
     `AskUserQuestion`):
     - `--art image` (Gemini-generated scene art) or `--art diagram`
-      (authored Mermaid, see the subagent-authoring rule in Review mode
+      (authored Mermaid, see the subagent-authoring rule in PR Review Mode
       step 4).
     - Whether to include audio narration (`--voice <V>`, or a specific
       voice), or skip audio entirely.
 
-    Then run the per-PR steps of Review mode above (steps 1 through 4)
-    for this PR with the chosen flags. The resumability check of Review
+    Then run the per-PR steps of PR review mode above (steps 1 through 4)
+    for this PR with the chosen flags. The resumability check of PR review
     mode itself (`verify_bundle.py --prs <N> --json`) already shows this
     PR's `diffs` as `ok` from step 3 above, so diff extraction does not
     repeat. Only `narrative.*`, the ADR pass, `asset.*`/`diagram.*`, and
@@ -742,17 +744,17 @@ tiers.
 Assess first, create second. The assessment is part of the author's
 decision about whether to open the PR at all.
 
-1. **Make sure the branch is pushed.** If `git rev-parse --abbrev-ref
-   --symbolic-full-name @{u}` finds no upstream, the branch needs
-   `git push -u origin <branch>` before `gh pr create` can work.
+1. **Push the feature branch.** Push a feature branch without asking.
+   A push to master or main still needs a confirmation. If
+   `git rev-parse --abbrev-ref --symbolic-full-name @{u}` finds no
+   upstream, run `git push -u origin <branch>` before `gh pr create`.
 
-2. **Confirm once, covering both outward actions.** Show the author the
+2. **Confirm once, before the pull request opens.** Show the author the
    rendered description, the base branch, the verdict, and the risk
-   tier. Then ask to "push `<branch>` and open a PR against `<base>`".
-   Pushing a branch and opening a PR are public actions, and they are
-   hard to walk back. **Nothing fires without this confirmation**, not
-   with `--force`, and not in `--non-interactive`, which takes the
-   `--no-create` path instead.
+   tier. Then ask to "open a PR against `<base>`". Opening a PR is a
+   public action, so this confirmation covers it. **Nothing opens
+   without this confirmation**, not with `--force`, and not in
+   `--non-interactive`, which takes the `--no-create` path instead.
    - A `rework` verdict does not block anything. Offer three ways
      forward: open it, open it as a draft, or stop and fix first. Let the
      author pick. This mode reports. It never gates.
@@ -794,9 +796,12 @@ This stage runs after the PR merges. Run the same steps 1 through 4, then:
    whole ADR. No single PR was going to satisfy all of a multi-epic
    design.
 
-   If this merge completes the last epic, roll `goal.stage` to
-   `implemented`. If some epics remain, set `goal.stage` to
-   `approved`.
+   If this merge completes the last epic, run
+   `tracker.py set-program-stage <design> implemented`. If some epics remain,
+   run `tracker.py set-program-stage <design> approved`. Exit 2 means no
+   tracker is configured, so write `stage` into `goal.json`. Exit 3 means
+   stop and tell the engineer. Never write `stage` into `goal.json` after an
+   exit 0.
 
    Stamp `approved_by` on the ADR this design wrote (the proposed record
    in `docs/architecture/adr/`), now that a human has merged it. An agent
@@ -820,7 +825,7 @@ This stage runs after the PR merges. Run the same steps 1 through 4, then:
    Check whether the `narrative.*`/`asset.*` keys of `verify_bundle.py`
    are still `missing` for this PR. If so, make the same offer, and ask
    the same two questions (`--art` mode, audio or not), then run the
-   per-PR steps of Review mode as pre-stage step 11 describes.
+   per-PR steps of PR review mode as pre-stage step 11 describes.
 
 ## Notes
 
@@ -829,7 +834,7 @@ This stage runs after the PR merges. Run the same steps 1 through 4, then:
   prompts, audio, bundle verification). Diagram authoring is also Claude
   judgment work, but it runs one step further removed. The orchestrating
   Claude never writes `.mmd` files itself. It delegates that to a per-PR
-  subagent (see Review mode, step 4), and only calls a script
+  subagent (see PR Review Mode, step 4), and only calls a script
   (`build_diagrams.py`) to compile and validate the subagent's output
   into `data/diagrams.js`. The author interview and the architecture
   assessment are the same kind of work. `render_review.py` lays out the
@@ -842,8 +847,9 @@ This stage runs after the PR merges. Run the same steps 1 through 4, then:
   pull-request files). `<target>/.env` is a read-only check, never
   written by this skill. `git push` and `gh pr create` in Generate mode
   are the only actions that reach past this line. They never write a
-  source file, and they run only after the explicit confirmation in
-  Generate mode. Design Mode, in the `architecture` skill, writes
+  source file. The push of a feature branch needs no question. The
+  `gh pr create` runs only after the explicit confirmation in Generate
+  mode. Design Mode, in the `architecture` skill, writes
   `docs/architecture/designs/` and creates the first local branch after
   confirmation. It never pushes, and never opens a pull request.
 

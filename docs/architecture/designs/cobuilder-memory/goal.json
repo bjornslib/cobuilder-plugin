@@ -48,7 +48,6 @@
       "outcome": "The memory pane lists every Hindsight call of the session, with the plugin's own runs marked apart. Sources: the agent's mcp__hindsight__ tool calls, the runtime's diag.jsonl, and the Hindsight audit log."
     }
   ],
-  "stage": "implemented",
   "supersedes": null,
   "rounds": [
     {

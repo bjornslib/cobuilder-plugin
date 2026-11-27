@@ -27,21 +27,20 @@ Everything runs in your own Claude Code session, against your own checkout. Your
    /plugin marketplace add bjornslib/cobuilder-plugin
    ```
 
-2. Install every plugin at once.
+2. Install every plugin at once. Then restart the session, or enable the plugins from `/plugin`.
 
    ```
    /plugin install cobuilder-full-lifecycle@cobuilder-plugin
    ```
 
-3. Restart the session, or enable the plugins from `/plugin`.
-4. Open the repo you want to work on, and run the setup once.
+3. Open the repo you want to work on, and run the setup once.
 
    ```
    /cobuilder-full-lifecycle:install
    ```
 
-   It installs habit-hooks and its detectors, and proves the coach. It checks for `DDD-VOCABULARY.md`. It adds the Hindsight allow rules to your user settings. It also sets up the tracker. It creates `.cobuilder/tracker.yaml`, runs the `prepare` step, and shows a backfill dry run before it writes. For the `beads` adapter, install `bd` first (see Prerequisites). It asks before each change.
-5. Run a command from the table above.
+   It installs habit-hooks and its detectors, and proves the coach. It checks for `DDD-VOCABULARY.md`. It shows the default structure config and the crowded folders, and writes `.cobuilder/structure-signals.json` after you approve it. It adds the Hindsight allow rules to your user settings. It also sets up the tracker. It asks for `beads` or `files`, creates `.cobuilder/tracker.yaml`, runs `prepare`, and shows a backfill dry run before it writes. For an existing beads tracker, it takes a snapshot and shows a dry run before each of these steps: `migrate-mapping` for an old mapping, `repair-status` for stale epics and slices, and `strip_goal_stage.py` for the old `stage` in `goal.json`. For the `beads` adapter, install `bd` first (see Prerequisites). It asks before each change.
+4. Run a command from the table above.
 
 To start with one job, install one plugin. For example, `/plugin install architect@cobuilder-plugin` gives you the design and review modes.
 
@@ -88,6 +87,9 @@ The `architect`, `implement`, and `artifact view` commands need no API key. The 
 Workflow state lives in a tracker, not in plan files or `goal.json`. State means the program stage and gates, the epic state and branch, the slice claim, the attempts, the score, and the pull request records. The `00-status.md` and `04-slices.md` state lines are generated. Do not edit them by hand. `goal.json` epics no longer hold `branch`, `pr`, or `state`.
 
 `shared/tracker.py` is the one command for all of it. `.cobuilder/tracker.yaml` picks the adapter. Without that file, every state write exits with code 2. The `implement` plugin also ships a `SessionStart` hook that reminds the agent to use the tracker. State syncs between machines through the git remote, under `refs/dolt/data`. It adds no branch.
+In beads, a program is a native `feature`. A pull request record is a `milestone` that `tracks` its epics. Slices are ordered, and native ready (`claim-next`) picks the next slice. Records carry label `cb`, and `external_ref` finds each record. Run `migrate-mapping` for an old tracker.
+
+The tracker also holds the stage of each design. `/architect:design` creates the program record at stage `backlog`, and the stage moves through `set-program-stage`. The index reads the stage from the tracker, and it uses `goal.json` only for an old design. The viewer Work board shows each design with its epics, its slices, the next ready slice, and its pull request records. `/architect:design` and `/implement:start` run `tracker.py doctor` first, and they stop on a legacy mapping or an unreadable tracker. Run `repair-status` to close the stale epics and slices of finished designs. Run `shared/strip_goal_stage.py` to remove the old `stage` from `goal.json` after the tracker holds it.
 
 For the details, read `shared/tracker-usage.md`, ADR-0031, ADR-0040, and ADR-0041.
 
@@ -108,6 +110,8 @@ The result is a design directory at `docs/architecture/designs/<name>/`:
 
 Before it challenges your approach, design mode checks the boundary records of the code the change touches. It describes any context whose record is missing or out of date. The reviewer round fails a design that cites an unchecked boundary.
 
+If you install the opt-in `cobuilder-memory` plugin, design mode asks project memory twice. The first call comes before the hypothesis. It asks what the project decided before. The second call comes before the first challenge. It asks if the leading approach, or one close to it, was rejected before. Without the plugin, design mode says so and continues.
+
 A reviewer subagent checks the draft against a blind rubric before you read it. If `DDD-VOCABULARY.md` does not exist, design mode helps you create it.
 
 
@@ -121,6 +125,8 @@ Four gates come before any code. You approve each one.
 2. Architecture, plus interaction design when the change has a screen.
 3. Program design.
 4. Slice plan, epic designs, and blind acceptance rubrics.
+
+With the `cobuilder-memory` plugin, the build also asks project memory twice. The first call comes at Gate 1. The second call comes before Gate 3, or before Gate 2 when no design record exists. It finds past module splits, test rules, and conventions. The build writes them into `03-program-design.md`, so the `red` agent reads them. The build records each call in `00-status.md`. Without the plugin, it records `absent` and continues.
 
 Each slice then runs a red, green, and validate loop. The `red` agent writes failing tests. The `green` agent writes the minimum code. The `validate` agent scores the result against a rubric that `green` never saw. A slice is done at a score of 0.90 or higher. A `vocabulary` agent also checks each slice against the glossary, and its notes never change the score.
 
@@ -154,7 +160,7 @@ The assessment asks four things a diff cannot show:
 
 The verdict is `sound`, `concerns`, or `rework`. It never blocks a merge. The command also records whether the change is `human`, `agent-assisted`, or `agent-generated`, and which parts the author cannot explain.
 
-Opening the pull request is the only GitHub action. The command shows you the description and asks first.
+Pushing a feature branch and opening the pull request are the two GitHub actions. The command pushes the feature branch without asking. It shows you the description and asks before it opens the pull request.
 
 ```
 /pr:generate --no-create          # write the files, open nothing
@@ -193,6 +199,8 @@ If the author ran `/pr:generate` first, `/pr:review` reads the stated intent and
 `/artifact:view` serves your bundles on `http://127.0.0.1:62583` and prints the URL. The port is fixed, so a saved review link works after a restart. `--list` shows the bundles, and `--stop` stops the server.
 
 The viewer shows each design, decision, build, and PR on one surface. A Work drawer lists every design by state, with search. A comment ledger anchors review notes to the page. Each level opens with an In Short strip, the level's one-paragraph summary, with a Listen control when audio exists. A link in each section heading, "Read in PR 12 ›", moves between a work item and its PR on the section of the same name.
+
+The Kanban board at `#/board` shows each program in a column for its stage. A program card opens the epics of that program by status, and a slice card opens its epic page with the slice row marked. Find, Order, and Hide shape the board, and the address keeps them. The copy icon of a card puts the start prompt of its next workflow on the clipboard. ADR-0050 records the decisions.
 
 `/artifact:publish --prs 73` flattens one PR into a single HTML file under the 16 MiB Artifact limit. The command lowers compression, and drops audio if it must. It also publishes an index page that links every PR you published. An unchanged PR reports "already up to date". Use `--force` to publish anyway.
 

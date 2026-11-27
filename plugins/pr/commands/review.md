@@ -17,7 +17,7 @@ plugin (`pr`, skill `odyssey`) than the architecture skill's own
 `/architect:review` command, so the two never collide despite sharing a
 mode name.
 
-Invoke the `odyssey` skill in review mode, forwarding any arguments the user
+Invoke the `odyssey` skill in PR review mode, forwarding any arguments the user
 supplied after `/pr:review` (`--repo`, `--prs`, `--latest`, `--force`,
 `--voice`, `--art`). `--repo <path>` targets any local checkout —
 not just the repo this session is running in (the skill will ask for

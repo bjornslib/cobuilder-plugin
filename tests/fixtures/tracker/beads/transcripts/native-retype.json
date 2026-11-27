@@ -1,0 +1,84 @@
+{
+  "bd": "bd version 1.3.0 (Homebrew)",
+  "steps": [
+    {
+      "args": [
+        "create",
+        "a",
+        "--type",
+        "task",
+        "--external-ref",
+        "ref-a",
+        "--json"
+      ],
+      "stdout": "{\n  \"created_at\": \"2026-10-24T00:29:15.666889Z\",\n  \"created_by\": \"alice\",\n  \"external_ref\": \"ref-a\",\n  \"id\": \"s-q8a\",\n  \"issue_type\": \"task\",\n  \"owner\": \"131568482+bjornslib@users.noreply.github.com\",\n  \"priority\": 2,\n  \"schema_version\": 1,\n  \"status\": \"open\",\n  \"title\": \"a\",\n  \"updated_at\": \"2026-10-24T00:29:15.666889Z\"\n}\n",
+      "stderr": "",
+      "exit": 0
+    },
+    {
+      "args": [
+        "create",
+        "b",
+        "--type",
+        "task",
+        "--json"
+      ],
+      "stdout": "{\n  \"created_at\": \"2026-10-24T00:29:16.196961Z\",\n  \"created_by\": \"alice\",\n  \"id\": \"s-a7i\",\n  \"issue_type\": \"task\",\n  \"owner\": \"131568482+bjornslib@users.noreply.github.com\",\n  \"priority\": 2,\n  \"schema_version\": 1,\n  \"status\": \"open\",\n  \"title\": \"b\",\n  \"updated_at\": \"2026-10-24T00:29:16.196961Z\"\n}\n",
+      "stderr": "",
+      "exit": 0
+    },
+    {
+      "args": [
+        "update",
+        "s-q8a",
+        "--type",
+        "feature"
+      ],
+      "stdout": "\u2713 Updated issue: s-q8a \u2014 a\n",
+      "stderr": "",
+      "exit": 0
+    },
+    {
+      "args": [
+        "show",
+        "s-q8a",
+        "--json"
+      ],
+      "stdout": "[\n  {\n    \"id\": \"s-q8a\",\n    \"title\": \"a\",\n    \"status\": \"open\",\n    \"priority\": 2,\n    \"issue_type\": \"feature\",\n    \"owner\": \"131568482+bjornslib@users.noreply.github.com\",\n    \"created_at\": \"2026-10-24T00:29:16Z\",\n    \"created_by\": \"alice\",\n    \"updated_at\": \"2026-10-24T00:29:17Z\",\n    \"external_ref\": \"ref-a\",\n    \"dependent_count\": 0,\n    \"dependency_count\": 0,\n    \"comment_count\": 0,\n    \"revision\": \"8178649076477689270\"\n  }\n]\n",
+      "stderr": "",
+      "exit": 0
+    },
+    {
+      "args": [
+        "update",
+        "s-a7i",
+        "--type",
+        "milestone"
+      ],
+      "stdout": "\u2713 Updated issue: s-a7i \u2014 b\n",
+      "stderr": "",
+      "exit": 0
+    },
+    {
+      "args": [
+        "update",
+        "s-a7i",
+        "--type",
+        "bogus"
+      ],
+      "stdout": "",
+      "stderr": "Error updating s-a7i: validation failed: invalid issue type bogus\nError: 1 of 1 issues failed to update\n  s-a7i: updating issue: validation failed: invalid issue type bogus\n",
+      "exit": 1
+    },
+    {
+      "args": [
+        "show",
+        "s-a7i",
+        "--json"
+      ],
+      "stdout": "[\n  {\n    \"id\": \"s-a7i\",\n    \"title\": \"b\",\n    \"status\": \"open\",\n    \"priority\": 2,\n    \"issue_type\": \"milestone\",\n    \"owner\": \"131568482+bjornslib@users.noreply.github.com\",\n    \"created_at\": \"2026-10-24T00:29:16Z\",\n    \"created_by\": \"alice\",\n    \"updated_at\": \"2026-10-24T00:29:17Z\",\n    \"dependent_count\": 0,\n    \"dependency_count\": 0,\n    \"comment_count\": 0,\n    \"revision\": \"7312436969047763952\"\n  }\n]\n",
+      "stderr": "",
+      "exit": 0
+    }
+  ]
+}

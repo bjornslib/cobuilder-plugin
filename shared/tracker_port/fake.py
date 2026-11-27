@@ -13,20 +13,23 @@ from .fake_support import (
     check_lifecycle,
     envelope_refreshes,
     is_ready,
+    is_under,
     load_corpus,
     load_state,
-    now,
 )
 from .files import seedable_records
+from .plan_program import missing_program_record
 from .port import AdapterError, ArgumentError
 from .program_state import program_lifecycle
 from .record import Capabilities, Kind, TrackerRecord
+from .fake_activity import _FakeActivityMixin
 from .fake_pull_requests import _PullRequestMixin
+from .fake_repair import _FakeRepairMixin
 from .skip_slice import _FakeSkipMixin
 from .regenerate import regenerate
 
 
-class FakeAdapter(_PullRequestMixin, _FakeSkipMixin):
+class FakeAdapter(_PullRequestMixin, _FakeSkipMixin, _FakeActivityMixin, _FakeRepairMixin):
     name = "fake"
     capabilities = Capabilities(
         native_ready=False,
@@ -73,6 +76,9 @@ class FakeAdapter(_PullRequestMixin, _FakeSkipMixin):
 
     def _of_kind(self, kind: Kind) -> list[TrackerRecord]:
         return [record for record in self._records if record.kind == kind]
+
+    def all_records(self) -> list[TrackerRecord]:
+        return list(self._records)
 
     def _record_of(self, id: str, kind: Kind | None = None) -> TrackerRecord:
         for record in self._records:
@@ -121,7 +127,7 @@ class FakeAdapter(_PullRequestMixin, _FakeSkipMixin):
         return [
             record
             for record in self._of_kind(kind)
-            if (under is None or record.parent == under) and is_ready(record, by_id)
+            if is_under(record, under, by_id) and is_ready(record, by_id)
         ]
 
     def sync(self) -> None:
@@ -134,9 +140,34 @@ class FakeAdapter(_PullRequestMixin, _FakeSkipMixin):
     def claim_slice(self, id: str, claimant: str) -> TrackerRecord:
         return self._update(id, "slice", assignee=claimant)
 
-    def set_program_stage(self, program: str, stage: str) -> TrackerRecord:
+    def claim_next(self, claimant: str, under: str | None = None) -> TrackerRecord | None:
+        if under is not None and self._record_of(under).kind not in ("epic", "program"):
+            raise ArgumentError(f"{under} is not an epic or a program")
+        ready = sorted(self.next_ready("slice", under), key=lambda record: record.id)
+        if not ready:
+            return None
+        record = self._update(ready[0].id, "slice", assignee=claimant, lifecycle="in_progress")
+        epic = next((r for r in self._of_kind("epic") if r.id == record.parent), None)
+        if epic is not None and epic.lifecycle == "open":
+            self.set_epic_state(epic.id, "in_progress")
+        return record
+
+    def set_program_stage(self, program: str, stage: str, plans_dir: Path | None = None) -> TrackerRecord:
+        if self._record_of_kind_or_none(program, "program") is None:
+            if plans_dir is None:
+                raise ArgumentError(f"no program with id {program}")
+            # The fake holds no program, so create one from the plan texts.
+            return self._create_program(missing_program_record(program, stage, plans_dir))
         record = self._update(program, "program", envelope={"stage": stage})
         return self._refollow(record)
+
+    def _record_of_kind_or_none(self, id: str, kind: Kind) -> TrackerRecord | None:
+        return next((record for record in self._records if record.id == id and record.kind == kind), None)
+
+    def _create_program(self, record: TrackerRecord) -> TrackerRecord:
+        self._records.append(record)
+        self._commit()
+        return record
 
     def _refollow(self, program: TrackerRecord) -> TrackerRecord:
         wanted = program_lifecycle(program.envelope.get("stage"), self.list_epics(program.id))
@@ -174,18 +205,3 @@ class FakeAdapter(_PullRequestMixin, _FakeSkipMixin):
             envelope["attempts"] = attempts
         return self._update(id, "slice", lifecycle=state, envelope=envelope)
 
-    def record_attempt(self, id: str, score: float, note: str | None = None) -> TrackerRecord:
-        attempts = self._record_of(id, "slice").envelope.get("attempts", 0)
-        if note is not None:
-            self.add_note(id, note)
-        return self._update(id, "slice", envelope={"score": score, "attempts": attempts + 1})
-
-    def add_note(self, id: str, text: str) -> None:
-        self._record_of(id)
-        self._notes.setdefault(id, []).append((now(), text))
-        self._commit()
-
-    def escalate(self, id: str, score: float, reason: str) -> TrackerRecord:
-        record = self._update(id, "slice", envelope={"escalated": True, "score": score})
-        self.add_note(id, f"escalated at score {score}: {reason}")
-        return record

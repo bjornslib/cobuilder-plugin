@@ -28,7 +28,6 @@
       "note": "A viewer link for each document under review. Slice 1 adds review_link.py and a --route argument to View mode. Slice 2 projects the Gate 1 and Gate 2 documents and adds the plan page under the Build level. Slice 3 adds the Present for review procedure to every presentation point, and the link check to verify_gate.py."
     }
   ],
-  "stage": "backlog",
   "supersedes": null,
   "rounds": []
 }

@@ -17,7 +17,7 @@ This skill sets up the CoBuilder family for the target repo. It asks before it i
 
 ## Install mode
 
-This mode runs the six parts below in order: habit-hooks setup, glossary check, Hindsight allow rules, priority reader settings, tracker backfill, and report. Run it once per repo, and again when the repo gains a language.
+This mode runs the seven parts below in order: habit-hooks setup, structure config, glossary check, Hindsight allow rules, priority reader settings, tracker backfill, and report. Run it once per repo, and again when the repo gains a language.
 
 ## Habit-hooks setup
 
@@ -99,6 +99,23 @@ This part installs habit-hooks and its per-project detectors, then proves the co
 `ste-writing` needs no install step. It ships in every plugin through
 `shared/`, so it is already present once the plugin is installed.
 
+## Structure config
+
+This part writes the config file, `.cobuilder/structure-signals.json`. The coach reads that file on each GREEN write.
+
+When `.cobuilder/structure-signals.json` exists, leave it. Tell the engineer that the install keeps the file. Then go on to the Glossary check.
+
+Otherwise, follow these steps:
+
+1. Run `uv run "${CLAUDE_PLUGIN_ROOT}/shared/structure_signals.py" --defaults`. The output is the default config, in JSON.
+2. Run `uv run "${CLAUDE_PLUGIN_ROOT}/shared/structure_signals.py" --survey`. The output holds the folder limit and each folder over it.
+3. Show the engineer the default config and each folder over the limit.
+4. Ask the engineer to approve the config. Say that the engineer can add an excluded path for a folder flat by design, such as a reference collection.
+5. When the engineer names such a folder, add a glob for it to `excluded_paths`. Use the form `<folder>/**`, with the path from the repo root. Keep every entry from the default config, so the default globs still apply.
+6. When the engineer approves and the `.cobuilder` folder does not exist, create that folder.
+7. When the engineer approves, write the JSON from step 1 to the config file. Include any glob that the engineer added.
+8. Without approval, do not write any file. The structure signals script then uses its defaults.
+
 ## Glossary check
 
 During the setup-and-verify pass, check whether `DDD-VOCABULARY.md` exists
@@ -171,7 +188,17 @@ This part runs after the engineer configures the tracker adapter. It follows `sh
    For beads, write `sync: async` in the file without a question. It makes each write return at once, and a short-lived worker runs the sync. To change it, the engineer sets `sync: write` or `sync: off` in `.cobuilder/tracker.yaml`. For files, write no `sync` key. If the file exists, keep its `sync` key.
 1. **Check the adapter.** When the adapter is beads and the repo has no `.beads` folder, read `shared/tracker-adapter-beads.md`. It holds the approval step for the beads setup. Do not run any beads command from this skill.
 2. **Check the beads tool.** When the adapter is beads, run `tracker.py doctor`. If it exits 3 and reports that the beads binary is not found, stop this part. Tell the engineer to install the beads tool as the Prerequisites section of the README says, and to run install again. Do not install it from this skill.
-3. **Prepare beads.** When the adapter is beads, tell the engineer that this step sets the issue type list of the repo to include `program`, and that the types already in the list stay. Ask the engineer to agree. After the engineer agrees, run `tracker.py prepare`. If the engineer declines, stop this part.
+   When `tracker.py doctor` reports `mapping: legacy`, first take a snapshot
+   with the tracker export described in `shared/tracker-adapter-beads.md`.
+   Then run `tracker.py migrate-mapping --dry-run` and show the changes to
+   the engineer. Get approval, then run `tracker.py migrate-mapping`.
+   For an existing tracker, take three more steps in this order.
+   1. Take a snapshot, as in the snapshot step above.
+   2. Run `tracker.py repair-status --dry-run --plans-dir docs/plans --index .cobuilder-architect/self/data/index.json`. Read the list with the engineer and get approval. Then run the same command without `--dry-run`, and run `tracker.py sync`.
+   3. Rebuild the index with `build_index.py`. Run `uv run shared/strip_goal_stage.py --dry-run` and read the list. Then run it without `--dry-run`.
+
+   A design with no stage anywhere needs `tracker.py set-program-stage <design> backlog --plans-dir docs/plans`.
+3. **Prepare beads.** When the adapter is beads, ask the engineer to approve the setup before you run `tracker.py prepare`. If the engineer declines, stop this part.
 4. **Run the dry run.** Run `tracker.py seed-from-files <plans-dir> --dry-run`. Show the engineer the list of planned creates.
 5. **Ask for consent.** Ask the engineer for explicit consent to write. Do not write on silence or on a vague answer.
 
@@ -185,6 +212,7 @@ Report one list with one item for each part:
 
 - **Languages and detectors:** the languages that habit-hooks setup detected, and the detectors that it installed or still lacks.
 - **Coach check:** the line that the coach-check mode printed.
+- **Structure config:** whether the install kept or wrote the config file. With no config file, the structure signals script uses its defaults.
 - **Glossary:** whether `DDD-VOCABULARY.md` exists at the repository root.
 - **Allow rules:** each rule that the user file received, already held, or left for the user.
 - **Priority reader settings:** whether the reader was absent, unchanged, written, skipped, or left as a manual step.

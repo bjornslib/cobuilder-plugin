@@ -23,7 +23,7 @@ checkout, or to override where output lands, the skill will refuse.
 The run ends with one habit-hooks step: it executes `shared/habit_smells.py`
 against the default branch and writes `habit-smells.json` beside the reports.
 
-Invoke the `architecture` skill in review mode, forwarding any arguments the
+Invoke the `architecture` skill in architect review mode, forwarding any arguments the
 user supplied after `/architect:review`:
 
 ```

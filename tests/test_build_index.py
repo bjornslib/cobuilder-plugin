@@ -880,7 +880,8 @@ def test_a_missing_stage_fails_the_goal(repo, bundle_dir):
 
     _, _, _, failures = build_index.build_index(repo, bundle_dir)
     assert len(failures) == 1
-    assert "(got None)" in failures[0]
+    assert "holds no stage" in failures[0]
+    assert "tracker.py set-program-stage design-a backlog --plans-dir docs/plans" in failures[0]
 
 
 @pytest.mark.parametrize("stage", ["backlog", "decided", "approved", "review", "implemented", "superseded"])

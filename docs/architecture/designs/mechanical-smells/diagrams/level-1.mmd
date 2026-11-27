@@ -1,0 +1,14 @@
+flowchart TB
+    Scan["habit-sensors\n(habit-hooks v1.5.0)"]
+    Config[".habit-hooks/config.toml\nexcludes components/ui and smoothui"]
+    Catalog["findings-catalog.md\n14 smells, 7 clusters, verdicts"]
+    E1["E1 viewer-findings\n1,637 findings, 7 slices"]
+    E2["E2 remaining-findings\n703 findings, slices cut later"]
+    Viewer["viewer\nplugins/artifact/viewer/src"]
+
+    Scan -->|2,340 findings| Catalog
+    Config -->|scope| Scan
+    Catalog -->|viewer groups| E1
+    Catalog -->|other groups| E2
+    E1 -->|split by area, keep exports| Viewer
+    Viewer -.->|habit-sensors clean per file| E1

@@ -30,7 +30,7 @@ def section(text: str, heading: str) -> str:
 
 
 def review_mode() -> str:
-    return section(SKILL.read_text(), "Review Mode")
+    return section(SKILL.read_text(), "Architect Review Mode")
 
 
 def maintenance_mode() -> str:

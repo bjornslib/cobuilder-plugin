@@ -1,0 +1,18 @@
+sequenceDiagram
+    participant Scan as habit-sensors
+    participant Cat as findings-catalog
+    participant E1 as E1 viewer-findings
+    participant V as viewer
+    participant E2 as E2 remaining-findings
+
+    Scan->>Cat: 2,340 findings, 14 smells
+    Cat->>Cat: cluster into 7, verdict each
+    Cat->>E1: 1,637 viewer findings
+    E1->>V: slice 1 logic layer, keep exports
+    V-->>E1: vitest passes, rebuild byte-identical
+    E1->>V: slices 2 to 5 atoms, change, shell, tests
+    V-->>E1: every structural finding clears
+    E1->>V: slices 6 and 7 comments, per-comment review
+    V-->>E1: sample review keeps the comments that explain why
+    Cat->>E2: 703 findings in named groups
+    E2-->>Cat: a later pass cuts the slices

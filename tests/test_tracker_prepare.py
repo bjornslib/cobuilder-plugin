@@ -1,7 +1,8 @@
-"""The `prepare` port operation: bd gets the `program` custom issue type, once and without loss.
+"""The `prepare` port operation: bd needs no custom issue type, so prepare sets none and changes nothing.
 
-Real-bd tests run in a temp dir. The transcript create_in_progress_steps.json holds the real bd
-1.3.0 answers: `config get types.custom` prints `types.custom (not set)` when the key is unset.
+Real-bd tests run in a temp dir. A tracker whose `types.custom` lacks `program`, or holds other entries,
+still takes a program create, because a program is the native type `feature` (ADR-0044).
+The replay test of the argv is in test_tracker_beads_mapping_legacy.py.
 
 Run with: uv run pytest tests/test_tracker_prepare.py -q
 """
@@ -37,48 +38,18 @@ def _program() -> Any:
     )
 
 
-class _RejectsType:
-    """Answers a create with bd's invalid-issue-type error. Every other call works."""
-
-    def __init__(self, stderr: str = "Error: validation failed: invalid issue type: program\n") -> None:
-        self.stderr = stderr
-        self.calls: list[list[str]] = []
-
-    def run(self, args: list[str]) -> str:
-        from tracker_port.bd_runner import BdError
-
-        self.calls.append(list(args))
-        if args[0] == "create":
-            raise BdError(f"bd {' '.join(args)} exited 1", 1, self.stderr)
-        if args[0] == "list":
-            return "[]"
-        return "types.custom (not set)\n" if args[:2] == ["config", "get"] else ""
-
-
-
-
 @pytest.mark.slow
-def test_prepare_on_bd_without_custom_types_sets_exactly_program() -> None:
+def test_prepare_on_bd_without_custom_types_sets_nothing() -> None:
     support.require_bd()
 
     with tempfile.TemporaryDirectory() as tmp:
         adapter = ip.beads_adapter(Path(tmp), ip.CountingRunner)
-
-        assert adapter.prepare() == {"changed": True}
-        assert _types(adapter) == "program"
-
-
-@pytest.mark.slow
-def test_prepare_twice_changes_once_and_the_second_call_sets_nothing() -> None:
-    support.require_bd()
-
-    with tempfile.TemporaryDirectory() as tmp:
-        adapter = ip.beads_adapter(Path(tmp), ip.CountingRunner)
-        adapter.prepare()
-        adapter.runner.calls.clear()
+        assert _types(adapter).startswith("types.custom (not set)")
 
         assert adapter.prepare() == {"changed": False}
-        assert adapter.runner.count("config") == 1 and adapter.runner.calls[0][:2] == ["config", "get"], adapter.runner.calls
+
+        assert _types(adapter).startswith("types.custom (not set)")
+        assert not any(call[:2] == ["config", "set"] for call in adapter.runner.calls), adapter.runner.calls
 
 
 @pytest.mark.slow
@@ -89,32 +60,38 @@ def test_prepare_keeps_the_existing_custom_types() -> None:
         adapter = ip.beads_adapter(Path(tmp), ip.CountingRunner)
         _set_types(adapter, "foo,bar")
 
-        assert adapter.prepare() == {"changed": True}
-        assert _types(adapter) == "foo,bar,program"
+        assert adapter.prepare() == {"changed": False}
+
+        assert _types(adapter) == "foo,bar"
 
 
 @pytest.mark.slow
-def test_prepare_does_nothing_when_program_is_among_the_types() -> None:
+def test_create_record_of_a_program_succeeds_on_bd_without_the_program_type() -> None:
     support.require_bd()
 
     with tempfile.TemporaryDirectory() as tmp:
         adapter = ip.beads_adapter(Path(tmp), ip.CountingRunner)
-        _set_types(adapter, "foo,program,bar")
-        adapter.runner.calls.clear()
+        assert _types(adapter).startswith("types.custom (not set)"), "the scratch tracker must start without types.custom"
 
-        assert adapter.prepare() == {"changed": False}
-        assert _types(adapter) == "foo,program,bar"
+        adapter.create_record(_program())
+
+        assert ip.lifecycles(support.all_records(adapter)) == {"demo-prog": "open"}
+        assert _types(adapter).startswith("types.custom (not set)"), "a create must not set a custom type"
+
+
+@pytest.mark.slow
+def test_create_record_of_a_program_succeeds_on_a_tracker_whose_custom_types_lack_program() -> None:
+    support.require_bd()
+
+    with tempfile.TemporaryDirectory() as tmp:
+        adapter = ip.beads_adapter(Path(tmp), ip.CountingRunner)
+        _set_types(adapter, "foo,bar")
+
+        adapter.create_record(_program())
+
+        assert ip.lifecycles(support.all_records(adapter)) == {"demo-prog": "open"}
+        assert _types(adapter) == "foo,bar"
         assert not any(call[:2] == ["config", "set"] for call in adapter.runner.calls), adapter.runner.calls
-
-
-def test_prepare_replays_the_recorded_bd_answers() -> None:
-    from tracker_port.beads import BeadsAdapter
-
-    recorded = support.steps("create_in_progress_steps")
-    runner = support.SequenceRunner([recorded[0], recorded[2]])
-
-    assert BeadsAdapter(runner).prepare() == {"changed": True}
-    assert runner.calls == [["config", "get", "types.custom"], ["config", "set", "types.custom", "program"]]
 
 
 def test_prepare_on_the_fake_and_files_adapters_changes_nothing(tmp_path: Path) -> None:
@@ -143,50 +120,12 @@ def test_cli_prepare_without_an_adapter_exits_2(tmp_path: Path) -> None:
 
 
 @pytest.mark.slow
-def test_cli_prepare_on_real_bd_changes_once(tmp_path: Path) -> None:
+def test_cli_prepare_on_real_bd_changes_nothing_twice(tmp_path: Path) -> None:
     support.require_bd()
 
     seed = support.scratch_tracker(tmp_path)
     config = tmp_path / "beads.yaml"
     config.write_text("adapter: beads\nsync: write\n", encoding="utf-8")
 
-    assert cli_support.ok(cli_support.cli(config, seed, "prepare")) == {"changed": True}
     assert cli_support.ok(cli_support.cli(config, seed, "prepare")) == {"changed": False}
-
-
-@pytest.mark.slow
-def test_create_record_of_a_program_succeeds_on_bd_without_custom_types() -> None:
-    support.require_bd()
-
-    with tempfile.TemporaryDirectory() as tmp:
-        adapter = ip.beads_adapter(Path(tmp), ip.CountingRunner)
-        assert _types(adapter).startswith("types.custom (not set)"), "the scratch tracker must start without types.custom"
-
-        adapter.create_record(_program())
-
-        assert ip.lifecycles(support.all_records(adapter)) == {"demo-prog": "open"}
-        assert _types(adapter) == "program"
-
-
-def test_create_record_retries_once_after_invalid_issue_type() -> None:
-    from tracker_port.bd_runner import BdError
-    from tracker_port.beads import BeadsAdapter
-
-    runner = _RejectsType()
-    with pytest.raises(BdError):
-        BeadsAdapter(runner).create_record(_program())
-
-    verbs = [call[0] for call in runner.calls]
-    assert verbs.count("create") == 2, runner.calls
-    assert runner.calls.count(["config", "set", "types.custom", "program"]) == 1, runner.calls
-
-
-def test_create_record_does_not_retry_another_error() -> None:
-    from tracker_port.bd_runner import BdError
-    from tracker_port.beads import BeadsAdapter
-
-    runner = _RejectsType(stderr="Error: database is locked\n")
-    with pytest.raises(BdError):
-        BeadsAdapter(runner).create_record(_program())
-
-    assert [call[0] for call in runner.calls if call[0] != "list"] == ["create"], runner.calls  # the held-id read comes first
+    assert cli_support.ok(cli_support.cli(config, seed, "prepare")) == {"changed": False}

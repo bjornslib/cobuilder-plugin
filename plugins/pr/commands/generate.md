@@ -31,15 +31,18 @@ that PR without creating anything.
 ## What this opens
 
 This is the one command in the plugin that acts outside `.cobuilder-architect/`. On a
-branch with no pull request, it pushes the branch and runs `gh pr create` —
-after showing you the description, the base branch, and the verdict, and asking
-first. Nothing is pushed or opened without that confirmation.
+branch with no pull request, it pushes the branch without asking. A push to
+master or main still needs your confirmation. Before it runs `gh pr create`, it
+shows you the description, the base branch, and the verdict.
+It runs `gh pr create` only after you confirm. Nothing is opened without that
+confirmation.
 
 After `gh pr create`, it records the PR in the tracker with `tracker.py open-pull-request <ref> <epic-id>...`. The skill's Workflow state section holds the call form.
 
 It does nothing else on GitHub. No comments, no edits to an existing PR body, no
-labels, no reviewers, no merges. `--no-create` stops before the push and leaves
-the description and the assessment in `docs/pull-requests/branch-<slug>/`.
+labels, no reviewers, no merges. `--no-create` stops before the pull request
+opens. The push of the feature branch still happens, and the command leaves the
+description and the assessment in `docs/pull-requests/branch-<slug>/`.
 
 ## Stages
 

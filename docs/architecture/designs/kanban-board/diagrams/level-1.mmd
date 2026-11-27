@@ -1,0 +1,41 @@
+%% ADR-0050 proposal. No pull request exists. shell/board/ and the two index fields are predictions.
+%% The board has no write edge and no edge to tracker.py. It draws rows that the shell resolved.
+%% docs/ is authored source in its own district, outside the derived bundle.
+C4Container
+    title Kanban board - a full page beside the Work drawer
+
+    Person(reader, "Reader", "Surveys the work and copies a start prompt")
+
+    Container_Boundary(browser, "Browser: the viewer shell, one built index.html") {
+        Container(shell, "App.tsx, routes.ts, useShellState", "React", "Reads the address and loads the index once. It passes the rows to each surface")
+        Container(board, "shell/board/ - proposed", "React and pure rules", "Program board and epic board. It draws rows that it gets as props, and it writes no state")
+        Container(drawer, "WorkDrawer.tsx", "React", "The Work drawer of ADR-0034, unchanged. It opens over each surface")
+        Container(data, "src/data/", "TypeScript", "loadIndex and the joins. The one reader of the record index")
+    }
+
+    Container_Boundary(bundle, "Bundle .cobuilder-architect/self/ - derived") {
+        ContainerDb(index, "data/index.json", "JSON", "Design, epic, and slice entities. It gains built_at and the epic title")
+    }
+
+    Container_Boundary(authored, "docs/ - authored source, a separate district") {
+        Container(source, "docs/", "Markdown and JSON", "Authored ADRs, designs, plans, and story.json")
+    }
+
+    Container_Boundary(shared, "shared/ - the scripts that build the bundle and move state") {
+        Container(build, "build_index.py", "Python, uv run", "Reads the docs and the tracker, then writes the index")
+        Container(cli, "tracker.py", "Python CLI", "The one command for workflow state")
+        Container(port, "tracker_port/", "Python", "The tracker port and the beads adapter over bd")
+        ContainerDb(store, "Tracker store", "bd and Dolt", "Program stage, epic and slice state")
+    }
+
+    Rel(reader, shell, "Opens a link or types an address", "hash change")
+    Rel(shell, board, "Passes the resolved rows as props", "#/board")
+    Rel(shell, drawer, "Opens over each surface")
+    Rel(shell, data, "Loads the index once at start", "loadIndex()")
+    Rel(drawer, data, "Reads its rows", "in-process call")
+    Rel(data, index, "Reads", "fetch or inline global")
+    Rel(build, source, "Reads", "fs read")
+    Rel(build, port, "Reads each record through", "Python import")
+    Rel(cli, port, "Calls", "adapter call")
+    Rel(port, store, "Reads and writes", "bd read/write")
+    Rel(build, index, "Writes", "fs write")

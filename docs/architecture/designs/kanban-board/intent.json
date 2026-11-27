@@ -1,0 +1,83 @@
+{
+  "captured": "2026-11-17",
+  "source": "design",
+  "design_name": "kanban-board",
+  "authorship": "agent-generated",
+  "problem": "The Work drawer lists each program by stage and stops there. A reader cannot see which epics and slices of a program are planned, in progress, or done. The reader opens each program in turn to learn where its work stands.",
+  "why_now": "ADR-0047 made the tracker the one source of stage and status. The record index now holds the status of each epic and slice, and no surface shows it as a board.",
+  "approach": "A Kanban board is a full page in the viewer shell, at the address #/board. The program board shows each program as a card in its stage column. A card opens the epic board of that program, with the epics in three status columns, and a switch shows the slices. Pure rule modules group, search, and sort the cards, and the address holds the view state. The index gains the epic title and a build time. A copy icon copies a start prompt. The board changes no workflow state, and the Work drawer stays.",
+  "alternatives": [
+    {
+      "option": "A lane matrix: one row for each program, and selected programs turn into columns",
+      "rejected_because": "The engineer compared the prototype and chose the two-level board. The stage showed only as a badge, and 26 rows made a long page."
+    },
+    {
+      "option": "A stage board with a dock for selected programs",
+      "rejected_because": "Two regions share the width, and a fourth docked program needs a sideways scroll. The two-level board keeps the stage columns and drops the dock."
+    },
+    {
+      "option": "A roster on the left and a board whose shape follows the selection",
+      "rejected_because": "The reader must learn three board shapes. The engineer liked the idea and preferred one shape for each level."
+    },
+    {
+      "option": "Put the status columns inside the Work drawer",
+      "rejected_because": "ADR-0034 built this and rejected it. Columns behind a sideways scroll spend the width of the drawer, and each lane needs a second scrollbar."
+    },
+    {
+      "option": "A second HTML entry with its own data file and a new tracker operation",
+      "rejected_because": "A second built file breaks the one-shell model and the byte check of the build. The index read already covers the new operation."
+    },
+    {
+      "option": "A source field on each record, content hashes, and a log of each status change",
+      "rejected_because": "One reader on one machine does not need an audit. The log would be a second store of workflow state."
+    },
+    {
+      "option": "One data file for each program, loaded when a card opens, with windowed columns",
+      "rejected_because": "The index holds 26 programs and 112 epics, so no scale problem exists. A page opened from disk cannot fetch a further file."
+    },
+    {
+      "option": "Show the epic id in place of a title, and leave out slices with no program",
+      "rejected_because": "The epics of one program read alike without a title. A board that drops 42 slices shows totals that differ from the index."
+    },
+    {
+      "option": "Copy the tracker command of the next step from a card",
+      "rejected_because": "The index holds no map from a stage to a command. The engineer chose a start prompt for the design and build workflows."
+    }
+  ],
+  "out_of_scope": [
+    "A change of workflow state from the board, and drag and drop",
+    "The multi-selection of programs and vertical swim lanes, which the engineer removed on 2026-11-14",
+    "A sort by date, priority, or assignee, because the index holds none of them",
+    "A page for one slice",
+    "A filter by epic status on the program board",
+    "A rule that closes an epic on its last slice, or a check of pull requests at a workflow start. The engineer handles that check outside this program",
+    "A change to the Work drawer"
+  ],
+  "risks": [
+    "A design named board would take the address of the board. The engineer accepted this risk",
+    "The build time changes the committed index on each build, so each build shows a diff",
+    "22 epics are open while all of their slices are done, because merged pull requests were not recorded. The board shows them as open until a person records the merge",
+    "The start prompt names a command of another plugin as text. A renamed command leaves a stale prompt on the board"
+  ],
+  "testing": [
+    "Rule tests: the stage column and counts of each program, each emitted status in its column, true totals, empty reasons, a hidden column, and the No program card",
+    "Sort tests: name, open, and progress, each with the name tie-break and a program with no epic",
+    "Codec tests: a round trip of each query key, an unknown key, an unknown program, and the No program board",
+    "Prompt tests: each stage and epic case, the merged-open case, and no icon on a finished record",
+    "Index tests: the epic title, built_at outside sources and the projector, and a viewer load of an index without both fields",
+    "Component tests: the card click, the back control, the slice switch, the Slices done mark, the copy notices, and the build time header",
+    "Shell tests: the Work drawer opens over the board, and a slice address marks its row on the epic page",
+    "A browser check at 1280 by 800: five stage columns with no sideways scroll of the page"
+  ],
+  "reviewer_focus": [
+    "Does the build time sit outside the sources block and outside the projector, so the stale check and the golden index still hold",
+    "Does any board file compute a status that the index does not hold",
+    "Does the amendment leave the rule of ADR-0034 true for the drawer",
+    "Is the reserved segment for the No program card safe against a real design name"
+  ],
+  "unknowns": [
+    "Whether the two new index fields need a schema version step, or stay optional fields",
+    "How the epic page marks one slice row. It has no anchor for a slice today",
+    "Whether the clipboard call works in each host that embeds the viewer, such as a published Artifact"
+  ]
+}

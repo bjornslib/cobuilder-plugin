@@ -1,0 +1,80 @@
+{
+  "stage": "pre",
+  "generated": "2026-11-23",
+  "verdict": "concerns",
+  "risk_tier": "architectural",
+  "summary": "The board reads the record index and adds no second store of workflow state, as ADR-0018 and ADR-0047 require. The one cost is the build time in the committed index, which adds a diff to each rebuild.",
+  "sensible": {
+    "answer": "Yes. The index already holds the status of each epic and slice, and the board only groups and shows it. The change sits in the viewer district, which owns each reading surface, and the drawer stays as ADR-0034 decided.",
+    "evidence": [
+      "ADR-0047",
+      "ADR-0050",
+      "plugins/artifact/viewer/src/shell/board/model.ts",
+      "plugins/artifact/viewer/src/data/board.ts"
+    ]
+  },
+  "maintainability": {
+    "answer": "Helps. Pure rule modules hold the grouping, search, order, and prompt rules, and each has unit tests. The address holds the whole view state, so a reload or a link restores it. The stage lanes have one definition that the drawer and the board share.",
+    "constraint_introduced": "The board computes no status. It groups only the stage and status that the record index holds, and the address is the one store of board view state.",
+    "evidence": [
+      "plugins/artifact/viewer/src/shell/board/search.ts",
+      "plugins/artifact/viewer/src/shell/board/address.ts",
+      "plugins/artifact/viewer/src/shell/board/prompt.ts",
+      "plugins/artifact/viewer/src/shell/app/travel.ts"
+    ]
+  },
+  "pattern": {
+    "verdict": "conforms",
+    "answer": "The index fields follow the projection pattern of ADR-0018. The route reads a reserved first segment, as the work-item routes read theirs. The travel motion follows the keyed motion wrapper that levelMotion.tsx already uses.",
+    "duplicates": [],
+    "evidence": [
+      "ADR-0018",
+      "shared/build_index.py:1583",
+      "plugins/artifact/viewer/src/shell/app/levelMotion.tsx"
+    ]
+  },
+  "findings": [
+    {
+      "severity": "concern",
+      "claim": "Each run of build_index.py writes a new built_at, so the committed index shows a diff after each rebuild, also when nothing else changed.",
+      "evidence": "shared/build_index.py:1691",
+      "district": "scripts",
+      "suggestion": "Accept the noise, as the design did, or take the time from the newest commit so that an unchanged tree gives an unchanged index."
+    },
+    {
+      "severity": "note",
+      "claim": "The branch also carries the pull request refresh, which is outside the program, so one PR holds two changes.",
+      "evidence": "shared/pull-request-refresh.md",
+      "district": "docs",
+      "suggestion": "Name both changes in the PR description, so that a later blame finds the right reason."
+    },
+    {
+      "severity": "note",
+      "claim": "The board has enter motion only. A hidden column, a collapsed list, and a closed notice go at once, which section 4.1 of the interaction design does not match.",
+      "evidence": "plugins/artifact/viewer/src/index.css:204",
+      "district": "viewer",
+      "suggestion": "Add leave motion later with a delayed unmount, if a reader misses it."
+    },
+    {
+      "severity": "note",
+      "claim": "The start prompt names commands of other plugins as text, so a renamed command leaves a stale prompt, and no test ties the two.",
+      "evidence": "plugins/artifact/viewer/src/shell/board/prompt.ts",
+      "district": "viewer",
+      "suggestion": "Add a test that each command in the prompt table exists under plugins/<name>/commands/."
+    }
+  ],
+  "boundary_checks": [
+    { "rule": "Components never call HTTP clients directly", "source": "stacks/react-typescript.md", "result": "pass", "evidence": "grep -rn \"axios\\|fetch(\" src/components/ src/shell/board/ gave no hit outside tests" },
+    { "rule": "No cross-feature deep imports", "source": "stacks/react-typescript.md", "result": "not-checkable", "evidence": "The viewer has no src/features/ folder" },
+    { "rule": "Shared components never import from features", "source": "stacks/react-typescript.md", "result": "not-checkable", "evidence": "The viewer has no src/features/ folder" },
+    { "rule": "Presentational components do not import global stores", "source": "stacks/react-typescript.md", "result": "pass", "evidence": "grep -rn \"useStore\\|useSelector\\|useAtom\" src/shell/board src/components gave no hit" }
+  ],
+  "delta": {
+    "districts_added": [],
+    "districts_changed": [],
+    "edges_added": [],
+    "edges_removed": []
+  },
+  "regret_risk": "Low. The board holds no state of its own, so a later tracker change reaches it through the index. In six months the team may tire of the index diff that each rebuild writes. The text prompts may also drift from renamed commands, because no test ties them.",
+  "drift": []
+}

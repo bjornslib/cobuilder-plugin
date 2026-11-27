@@ -239,6 +239,12 @@ def test_every_sparse_design_is_a_work_item_with_a_stage():
             "be read as planned, in design, or shipped."
         )
         authored = goal.get("stage")
+        if authored is None:
+            assert entity.get("stage_source") == "tracker", (
+                f"{design_id} holds no goal stage, so its stage must come from the tracker. "
+                f"The index says stage_source is {entity.get('stage_source')!r}."
+            )
+            continue
         assert stage == authored, (
             f"the index says {design_id} is at stage {stage!r}, and the authored goal "
             f"says {authored!r}. The index is derived from the goal, so the two must agree."

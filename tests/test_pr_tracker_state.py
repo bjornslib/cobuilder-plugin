@@ -53,10 +53,14 @@ def test_epics_ready_before_pull_request(tmp_path: Path) -> None:
     assert _ready_epics(config, tmp_path) == set(EPICS)
 
 
-def test_open_pull_request_blocks_both_epics(tmp_path: Path) -> None:
+def test_open_pull_request_tracks_both_epics_and_blocks_none(tmp_path: Path) -> None:
+    # E7-4 changes the slice 15 rule: the PR holds its epics by `tracks`, and no epic is blocked_by the PR.
     config, _ = _repo(tmp_path)
     _ok(_cli(config, tmp_path, "open-pull-request", REF, *EPICS))
-    assert _ready_epics(config, tmp_path) == set()
+    assert _ready_epics(config, tmp_path) == set(EPICS)
+    pull_requests = _ok(_cli(config, tmp_path, "list-pull-requests"))
+    assert [(p["id"], sorted(p["tracks"]), p["blocked_by"]) for p in pull_requests] == [(REF, EPICS, [])]
+    assert all(REF not in e["blocked_by"] for e in _ok(_cli(config, tmp_path, "list-epics")))
 
 
 def test_open_pull_request_twice_changes_no_file(tmp_path: Path) -> None:
@@ -71,11 +75,13 @@ def test_open_pull_request_twice_changes_no_file(tmp_path: Path) -> None:
     assert _snapshot(tmp_path) == before
 
 
-def test_merge_frees_both_epics(tmp_path: Path) -> None:
+def test_merge_only_closes_the_pull_request_and_both_epics_stay_ready(tmp_path: Path) -> None:
     config, _ = _repo(tmp_path)
     _ok(_cli(config, tmp_path, "open-pull-request", REF, *EPICS))
     _ok(_cli(config, tmp_path, "set-pull-request-state", REF, "merged"))
     assert _ready_epics(config, tmp_path) == set(EPICS)
+    [pull_request] = _ok(_cli(config, tmp_path, "list-pull-requests"))
+    assert (pull_request["lifecycle"], sorted(pull_request["tracks"])) == ("closed", EPICS)
 
 
 def test_pr_record_never_ready(tmp_path: Path) -> None:

@@ -1,0 +1,167 @@
+{
+  "stage": "design",
+  "verdict": "concerns",
+  "risk_tier": "high",
+  "regret_risk": "The smoke test may show that Linear cannot hold the envelope or the slice order. Then the design aborts, and the team keeps an unused layer. If the test passes, the team lives with an inexact claim. Agent writes carry the name of a person, and changes show only at the next call. A change in the Linear API or its attachment limits would hit an adapter that only a live workspace can test in full. The first two build steps run over a fake Linear. If the smoke test aborts the design, the team keeps that code unused.",
+  "summary": "The design adds a linear adapter behind the existing tracker port. Linear holds the plan, and one attachment on each issue holds the CoBuilder state. The port gains no method, and the beads files stay unchanged. The main risks are four unverified Linear behaviors, a claim that is not exact, and the outside-action rule in CLAUDE.md.",
+  "constraint_introduced": "An adapter that calls a network API runs only inside shared/tracker_port/<name>*.py. It reads its key from an environment variable and stores no key in the repo. It reports offline_read false. When the tracker has no compare-and-set, it reports atomic_claim false, and a claim is a write followed by a read of the claim records in server order. People own the plan fields. The adapter writes the envelope and the workflow state, and it never overwrites a plan field after the first seed.",
+  "findings": [
+    {
+      "kind": "prediction",
+      "id": "F1",
+      "severity": "info",
+      "title": "The port needs no new method",
+      "detail": "Each of the 25 operations maps to Linear, and contracts.md states each behavior. The CLI prints plan_changes when set, as it prints conflicts for a seed. The TrackerPort protocol and the beads files stay unchanged.",
+      "cites": [
+        "ADR-0040",
+        "shared boundary rule: tracker-port"
+      ]
+    },
+    {
+      "kind": "prediction",
+      "id": "F2",
+      "severity": "high",
+      "title": "A claim is not exact",
+      "detail": "Linear has no compare-and-set on the assignee. A claim writes its attachment first and ranks all claim attachments by server time, with a nonce tie-break. Only the winner writes the assignee, and the claim ends when the slice leaves in progress. A short window of a double claim stays open.",
+      "cites": [
+        "ADR-0040"
+      ]
+    },
+    {
+      "kind": "prediction",
+      "id": "F3",
+      "severity": "medium",
+      "title": "The callers assume a cheap read",
+      "detail": "The beads adapter reads the whole list on each call, and that read is local. A copy of that habit would cost about 6 requests for 265 issues on every call. The adapter needs batched reads, and a read by id for a single record. The hourly limit allows about 400 full reads by estimate.",
+      "cites": [
+        "ADR-0040",
+        "shared boundary rule: tracker-port"
+      ]
+    },
+    {
+      "kind": "prediction",
+      "id": "F4",
+      "severity": "high",
+      "title": "Four Linear behaviors are unverified",
+      "detail": "Four behaviors need a live workspace. They are the order of two claim attachments, a repeated create with one key, the three-level sub-issue chain, and the login to user map. The smoke test is the third build step. The design aborts on a failed envelope round trip.",
+      "cites": [
+        "ADR-0040"
+      ]
+    },
+    {
+      "kind": "prediction",
+      "id": "F5",
+      "severity": "medium",
+      "title": "The plan has two authors",
+      "detail": "Plan files and people both write the plan. After the first seed, Linear wins and a re-seed reports a conflict. A slice that a person creates has no plan row, no rubric, and no n. It lists as unplanned, and the projector and regenerate skip it. It is never ready.",
+      "cites": [
+        "ADR-0047",
+        "district: implement"
+      ]
+    },
+    {
+      "kind": "prediction",
+      "id": "F6",
+      "severity": "medium",
+      "title": "The outside-action rule needs a change",
+      "detail": "CLAUDE.md principle 7 allows two outside actions, both on GitHub. A Linear adapter writes to an outside service on each state change. The rule needs a short amendment, and the adapter calls the API directly because ADR-0016 forbids a server.",
+      "cites": [
+        "ADR-0016",
+        "ADR-0040"
+      ]
+    },
+    {
+      "kind": "prediction",
+      "id": "F7",
+      "severity": "medium",
+      "title": "The envelope slot holds only strings and numbers",
+      "detail": "A list of paths becomes a JSON string in an attachment. The round trip test compares every value. A person who edits the attachment can break the string, so a read must tolerate it.",
+      "cites": [
+        "ADR-0031",
+        "ADR-0040"
+      ]
+    },
+    {
+      "kind": "prediction",
+      "id": "F8",
+      "severity": "info",
+      "title": "The sync hooks stay idle",
+      "detail": "The hooks act only when tracker.yaml sets sync: async. A Linear config omits the key, so the mode reads as write and the hooks start no worker. Linear writes are direct requests. They need no worker.",
+      "cites": [
+        "ADR-0042"
+      ]
+    },
+    {
+      "kind": "prediction",
+      "id": "F9",
+      "severity": "medium",
+      "title": "Ready must follow the epic order",
+      "detail": "ADR-0044 treats a child of a blocked parent as blocked. The client rule checks the blockers of the slice and the open blockers of its epic. Without the second check, the first slice of epic 2 is ready while epic 1 is open.",
+      "cites": [
+        "ADR-0044"
+      ]
+    },
+    {
+      "kind": "prediction",
+      "id": "F10",
+      "severity": "medium",
+      "title": "The install step offers beads and files only",
+      "detail": "cobuilder-setup and its test pin two choices. The fourth build step adds linear, the team and project questions, a key check, and an approval before prepare.",
+      "cites": [
+        "ADR-0025"
+      ]
+    },
+    {
+      "kind": "prediction",
+      "id": "F11",
+      "severity": "info",
+      "title": "The port knows three lifecycle words",
+      "detail": "A slice is open, in_progress, or closed. Outcome, reason, and escalated live in the envelope. A skipped slice needs a canceled workflow state, so the states map has four entries.",
+      "cites": [
+        "ADR-0031",
+        "ADR-0044"
+      ]
+    },
+    {
+      "kind": "prediction",
+      "id": "F12",
+      "severity": "high",
+      "title": "A close by hand or by automation could skip the gate",
+      "detail": "The lifecycle comes from the workflow state type. A person can drag a slice to Done, and a Linear automation can close issues. The slice then has no passing score, and the next slice unblocks. The adapter reads a close as closed only with proof in the envelope: a score of 0.90 or more, or the outcome skipped. The envelope wins over the Linear state. sync reports the difference. doctor warns about the team settings that auto-close child or stale issues.",
+      "cites": [
+        "ADR-0040",
+        "ADR-0044"
+      ]
+    },
+    {
+      "kind": "prediction",
+      "id": "F13",
+      "severity": "medium",
+      "title": "Archived issues drop out of the default read",
+      "detail": "Linear auto-archives closed issues. The published schema shows that the issues query skips archived issues unless includeArchived is true. A read without it loses closed slices, so blockers, the projector, and history break. The full read sets includeArchived true.",
+      "cites": [
+        "ADR-0040"
+      ]
+    },
+    {
+      "kind": "prediction",
+      "id": "F14",
+      "severity": "medium",
+      "title": "A crashed session leaves a claim that never ends",
+      "detail": "A claim attachment ends when the slice leaves in progress, and a held slice is refused. A crash leaves the claim. The existing operation set-slice-state open removes every claim attachment and the assignee. A claim on a slice that is not in progress and is older than two minutes is stale, and the next claim deletes it. doctor lists held claims with their age.",
+      "cites": [
+        "ADR-0040"
+      ]
+    },
+    {
+      "kind": "prediction",
+      "id": "F15",
+      "severity": "medium",
+      "title": "One heavy first slice would wait on a workspace",
+      "detail": "The first slice held the live smoke test, the install change, the boundary edit, and the rule change, and the engineer has no workspace. The build order now puts the adapter over a fake first, then the docs and rule change, then the smoke test, then the install offer. Only the last two wait on a workspace. The gates decide the slice cut.",
+      "cites": [
+        "ADR-0040"
+      ]
+    }
+  ]
+}

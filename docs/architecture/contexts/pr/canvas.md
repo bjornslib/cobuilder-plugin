@@ -28,7 +28,7 @@ related:
 | Term | Meaning inside this context |
 |------|-----------------------------|
 | [**District**](../../../../DDD-VOCABULARY.md#district) | A `world.districts` entry that describe-lite infers for any repo. |
-| [**Review mode**](../../../../DDD-VOCABULARY.md#review-mode) | The `/pr:review` sweep that narrates merged history. |
+| [**PR review mode**](../../../../DDD-VOCABULARY.md#pr-review-mode) | The `/pr:review` sweep that narrates merged history. |
 | [**review-mode.md**](../../../../DDD-VOCABULARY.md#review-mode-md) | The reference for the three-question assessment of `/pr:generate`. |
 | [**Assessment stage**](../../../../DDD-VOCABULARY.md#assessment-stage) | The `stage` field of `assessment.json`. |
 | [**Drift**](../../../../DDD-VOCABULARY.md#drift) | An assessment finding that a shipped record no longer matches the tree. |

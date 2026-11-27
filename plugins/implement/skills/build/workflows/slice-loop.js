@@ -73,15 +73,37 @@ looks helpful — those are separate iterations and their code does not exist ye
 Do not modify or delete work from earlier slices beyond the minimum needed to
 integrate this one.`
 
+// RED and GREEN may note what they learned. They never act on it. The
+// orchestrating session decides each one at the slice boundary.
+const SUGGESTIONS = {
+  type: 'array',
+  description: 'spec or test changes you propose, or questions for the orchestrator; empty if none',
+  items: {
+    type: 'object',
+    required: ['kind', 'target', 'issue', 'evidence'],
+    properties: {
+      kind: { type: 'string', enum: ['spec-change', 'test-change', 'question'] },
+      target: { type: 'string', description: 'file path, and section or test name' },
+      issue: { type: 'string' },
+      evidence: { type: 'string', description: 'what you saw that shows the issue' },
+      proposal: { type: 'string', description: 'the change you propose, if any' },
+    },
+  },
+}
+
 const RED_SCHEMA = {
   type: 'object',
-  required: ['testFiles', 'newFailingTests', 'failuresAreAssertions', 'preexistingPassCount'],
+  required: ['testFiles', 'newFailingTests', 'failuresAreAssertions', 'preexistingPassCount', 'sliceBase', 'branch'],
   properties: {
     testFiles: { type: 'array', items: { type: 'string' } },
     newFailingTests: { type: 'integer' },
     failuresAreAssertions: { type: 'boolean', description: 'false if any new test fails on an import/collection/syntax error rather than an assertion' },
     preexistingPassCount: { type: 'integer' },
+    sliceBase: { type: 'string', description: 'the full sha from git rev-parse HEAD, run before RED writes any file' },
+    branch: { type: 'string', description: 'the output of git rev-parse --abbrev-ref HEAD, run before RED writes any file' },
+    dirtyFiles: { type: 'array', items: { type: 'string' }, description: 'the paths that git status --porcelain lists before RED writes any file' },
     notes: { type: 'string' },
+    suggestions: SUGGESTIONS,
   },
 }
 
@@ -95,6 +117,7 @@ const GREEN_SCHEMA = {
     touchedATestFile: { type: 'boolean', description: 'true if any test file appears in the diff — this voids the run' },
     feedbackAddressed: { type: 'string', description: 'on a retry, how each prior gap was addressed' },
     browserEvidencePath: { type: 'string', description: 'path to the browser-evidence file written for this slice, only when browserEvidence was required' },
+    suggestions: SUGGESTIONS,
   },
 }
 
@@ -199,6 +222,10 @@ epic design doc: ${epicDesignDoc}
 04-slices.md: ${plan}/04-slices.md
 test command: ${testCommand}
 
+Before you write any file, run git rev-parse HEAD. Report its full sha as sliceBase.
+Then run git rev-parse --abbrev-ref HEAD. Report its output as branch.
+Then run git status --porcelain. Report each path it lists as dirtyFiles.
+
 ${scopeContract(s)}
 ${BLIND}`,
     { label: `red:slice-${s.id}`, phase: 'Red', schema: RED_SCHEMA, model: BUILD_MODEL, agentType: 'implement:red' },
@@ -208,15 +235,38 @@ ${BLIND}`,
     results.push({ slice: s, verdict: 'ERROR', reason: 'RED agent returned nothing' })
     continue
   }
+  // The packet and the slice diff both start at sliceBase, so the slice cannot run without it.
+  if (!red.sliceBase) {
+    results.push({ slice: s, verdict: 'ERROR', reason: 'RED did not report sliceBase', red })
+    break
+  }
+  // GREEN commits each attempt, and the script has no git access. RED reports the branch, and RED never commits.
+  // A protected or detached branch stops the run before GREEN, so no commit lands on it.
+  if (!red.branch || ['master', 'main', 'HEAD'].includes(red.branch)) {
+    const named = red.branch ? `branch ${red.branch}` : 'no branch name'
+    log(`Slice ${s.id} stopped: RED reported ${named}. Start the loop on a feature branch.`)
+    results.push({
+      slice: s,
+      verdict: 'ERROR',
+      reason: `RED reported ${named}. Start the loop on a feature branch, not master, main, or a detached HEAD.`,
+      red,
+    })
+    break
+  }
+  if (red.dirtyFiles && red.dirtyFiles.length) {
+    log(`Slice ${s.id}: the work tree held uncommitted files before RED. They enter the slice diff from ${red.sliceBase}: ${red.dirtyFiles.join(', ')}`)
+  }
   if (!red.failuresAreAssertions) {
     log(`Slice ${s.id}: RED produced tests that fail on errors, not assertions — the contract is not real. Skipping to report.`)
     results.push({ slice: s, verdict: 'VOID', reason: 'RED tests fail on errors, not assertions', red })
     continue
   }
 
+  const packet = `${evidence}/slice-${s.id}-packet.json`
   let attempt = 0
   let verdict = null
   let last = null
+  const suggestions = (red.suggestions || []).map(x => ({ ...x, from: 'red' }))
 
   while (attempt < MAX_ATTEMPTS) {
     attempt += 1
@@ -249,7 +299,14 @@ ${evidence}/slice-${s.id}-browser.md recording the page(s) you loaded, the
 actions you took, a screenshot or DOM excerpt proving the behavior, and the
 full console log for that session. A run with a console error in it is not
 evidence of a working slice — fix the error before reporting. Report the
-file's path as browserEvidencePath.` : ''}`,
+file's path as browserEvidencePath.` : ''}
+
+After the checks in step 3 of your body pass, commit this attempt on the current feature branch.
+Never commit on master or main. When the current branch is master or main, stop and say so in your report.
+Run git add with the failing test files and each file you changed, and nothing else.
+Then run git commit -m "slice ${s.id} attempt ${attempt}: <one-line summary>".
+When nothing changed, skip the commit and say so in your report.
+Never run git push.`,
       { label: `green:slice-${s.id}:a${attempt}`, phase: 'Green', schema: GREEN_SCHEMA, model: BUILD_MODEL, agentType: 'implement:green' },
     )
 
@@ -257,12 +314,14 @@ file's path as browserEvidencePath.` : ''}`,
       last = { verdict: 'ERROR', reason: 'GREEN agent returned nothing', attempt }
       break
     }
+    suggestions.push(...(green.suggestions || []).map(x => ({ ...x, from: `green:a${attempt}` })))
 
     phase('Validate')
     // VALIDATE scores this attempt against the blind rubric. VOCABULARY
     // checks the same diff against DDD-VOCABULARY.md. Neither reads the
     // other's output, so they run together instead of one after the other.
-    const diffCommand = 'git diff HEAD; git status --porcelain'
+    // Both read the diff from the slice base. GREEN commits each attempt, so a diff from HEAD is empty.
+    const diffCommand = `git diff ${red.sliceBase}; git status --porcelain`
     // parallel() is the Workflow runtime's own global, not a local helper.
     const [v, vocab] = await parallel([
       () => agent(
@@ -274,6 +333,10 @@ feedback file (if it exists): ${evidence}/slice-${s.id}-feedback.md
 test command: ${testCommand}
 this is attempt ${attempt} of ${MAX_ATTEMPTS}
 accept threshold: ${ACCEPT}
+GREEN commits each attempt, so a diff from HEAD is empty. Read the slice diff with the diff command below.
+diff command: ${diffCommand}
+structure evidence: uv run \${CLAUDE_PLUGIN_ROOT}/shared/structure_evidence.py --base ${red.sliceBase} --out ${packet}
+structure judgment: \${CLAUDE_PLUGIN_ROOT}/skills/build/references/structure-judgment.md
 ${s.browserEvidence ? `\nThis slice requires browser evidence. Read
 ${green.browserEvidencePath || `${evidence}/slice-${s.id}-browser.md`}. Score
 every browser-related criterion 0.0, with that fact as the cited evidence, if
@@ -288,6 +351,7 @@ append the same block to ${evidence}/slice-${s.id}-feedback.md.`,
         `slug: ${slug}
 slice: ${s.id} — "${s.name}"
 diff command: ${diffCommand}
+structure packet: ${packet}. VALIDATE writes it with uv run \${CLAUDE_PLUGIN_ROOT}/shared/structure_evidence.py --base ${red.sliceBase} --out ${packet}
 this is attempt ${attempt} of ${MAX_ATTEMPTS}
 
 Append your "### Vocabulary" section to
@@ -320,7 +384,7 @@ ${evidence}/slice-${s.id}-attempt-${attempt}.md.`,
   }
 
   if (!verdict && last) verdict = last.verdict === 'ERROR' ? 'ERROR' : 'ESCALATION'
-  results.push({ slice: s, verdict, ...last })
+  results.push({ slice: s, verdict, ...last, suggestions })
 
   // A voided or errored slice stops the run — later slices build on this one.
   if (verdict === 'VOID' || verdict === 'ERROR') {
@@ -351,6 +415,8 @@ return {
   })),
   voidedOrErrored: broken.map(r => ({ id: r.slice.id, verdict: r.verdict, reason: r.voidReason || r.reason })),
   notRun: notRun.map(s => s.id),
+  suggestions: results.filter(r => r.suggestions && r.suggestions.length)
+    .map(r => ({ id: r.slice.id, items: r.suggestions })),
   // Deliberately not written to 00-status.md here — the orchestrating session
   // records scores and takes escalations to the user at a slice boundary.
   // The tracker calls and the slice note (see references/slice-loop.md) also run in the orchestrating session, not in

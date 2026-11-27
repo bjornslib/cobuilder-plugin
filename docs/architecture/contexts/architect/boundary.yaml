@@ -17,7 +17,7 @@ public_interface:
   - commands/debug.md
   - commands/options.md
   - "Skill(\"architect:architecture\", args=\"<mode> ...\") with modes design, review, maintenance, decisions, describe, debug, options"
-  - "Skill(\"architect:mermaid\") and Skill(\"architect:ste-writing\") (vendored from shared)"
+  - "Skill(\"mermaid\") and Skill(\"ste-writing\") (vendored from shared)"
   - scripts/check_design_svg.py
   - scripts/check_options_report.py
 
@@ -46,7 +46,7 @@ forbidden_dependencies:
 
   - target: "pr skill odyssey: SKILL.md, references/interview-guide.md, references/review-mode.md, references/pr-description-template.md, references/decision-records-lite.md"
     from: plugins/architect/skills/architecture
-    why: "SMELL: design mode tells Claude to read files inside the odyssey skill of the pr plugin. Grep counts 10 mentions of 'odyssey' in references/design-mode.md, 8 in SKILL.md (Hub resolution at line 85, odyssey Review mode step 4 at line 163), and 1 in references/decision-records.md. A name in prose is not an import, but the file path inside another plugin's cache cannot resolve when pr is not installed. The pr plugin is not in architect's manifest dependencies. ADR candidate: copy the interview, assessment, and PR-template text into architect or into shared."
+    why: "SMELL: design mode tells Claude to read files inside the odyssey skill of the pr plugin. Grep counts 10 mentions of 'odyssey' in references/design-mode.md, 8 in SKILL.md (Hub resolution at line 85, odyssey PR review mode step 4 at line 163), and 1 in references/decision-records.md. A name in prose is not an import, but the file path inside another plugin's cache cannot resolve when pr is not installed. The pr plugin is not in architect's manifest dependencies. ADR candidate: copy the interview, assessment, and PR-template text into architect or into shared."
 
   - target: "scripts of shared imported as Python"
     from: plugins/architect/scripts
@@ -89,7 +89,7 @@ modules:
   - id: shared-skills
     path: plugins/architect/shared/skills
     members: [mermaid, ste-writing]
-    public_interface: ["Skill(\"architect:mermaid\")", "Skill(\"architect:ste-writing\")"]
+    public_interface: ["Skill(\"mermaid\")", "Skill(\"ste-writing\")"]
     allowed_inbound: [skill-architecture]
     allowed_outbound: []
     rule: "A symlink into shared/. The architect context owns none of this text."

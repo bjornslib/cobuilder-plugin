@@ -8,7 +8,7 @@ last_verified: 2026-08-04
 
 # architect: Maintenance
 
-Re-runs the same review corpus chain used by review mode, then diffs the
+Re-runs the same review corpus chain used by architect review mode, then diffs the
 results against the most recent prior `architecture-review-YYYY-MM-DD-*.html`
 report, surfacing findings as NEW, ESCALATED, STABLE, or RESOLVED. If no
 prior report exists, this run establishes the baseline instead of a trend.

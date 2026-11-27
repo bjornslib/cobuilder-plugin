@@ -101,7 +101,7 @@ FAKE_EXPECTED = [
         "id": "demo-E1-s2",
         "n": 2,
         "score": "—",
-        "state": "planned",
+        "state": "in_progress",
         "title": "Fake slice two",
     },
     {

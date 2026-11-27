@@ -1,0 +1,10 @@
+{
+  "name": "mapped",
+  "title": "Mapped program title",
+  "outcome": "The mapped program outcome.",
+  "done_when": ["First done", "Second done"],
+  "stage": "design",
+  "epics": [
+    {"id": "E1", "outcome": "The first epic outcome."}
+  ]
+}

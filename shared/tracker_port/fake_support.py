@@ -31,6 +31,11 @@ def record_of_row(row: dict[str, Any]) -> TrackerRecord:
         assignee=row["assignee"],
         envelope=envelope,
         external_ref=row["external_ref"],
+        title=row.get("title"),
+        description=row.get("description"),
+        acceptance_criteria=row.get("acceptance_criteria"),
+        design=row.get("design"),
+        tracks=tuple(row.get("tracks", ())),
     )
 
 
@@ -61,15 +66,38 @@ def check_lifecycle(state: str) -> None:
 def now() -> str:
     return datetime.now(UTC).isoformat(timespec="seconds")
 
+def _blockers_closed(record: TrackerRecord, by_id: dict[str, TrackerRecord]) -> bool:
+    # A missing blocker counts as not closed. A pull request never blocks (ADR-0040).
+    for blocker in record.blocked_by:
+        held = by_id.get(blocker)
+        if held is None:
+            if blocker.startswith("pr-"):
+                continue
+            return False
+        if held.kind != "pr" and held.lifecycle != "closed":
+            return False
+    return True
+
+
+def is_under(record: TrackerRecord, under: str | None, by_id: dict[str, TrackerRecord]) -> bool:
+    # A record is under its parent and under each ancestor of the parent.
+    parent = by_id.get(record.parent) if record.parent else None
+    while under is not None and parent is not None and parent.id != under:
+        parent = by_id.get(parent.parent) if parent.parent else None
+    return under is None or parent is not None
+
+
 def is_ready(record: TrackerRecord, by_id: dict[str, TrackerRecord]) -> bool:
-    # ADR-0040 ready rule, as the epic design states it for slice 1: open, not deferred,
-    # and every blocker closed. A missing blocker counts as not closed.
-    if record.lifecycle != "open" or "deferred" in record.envelope:
+    # The ready rule of bd: the record is open, not deferred, and each blocker is closed.
+    # Each ancestor must be unblocked and not deferred, but it may be in progress.
+    if record.lifecycle != "open" or "deferred" in record.envelope or not _blockers_closed(record, by_id):
         return False
-    return all(
-        blocker in by_id and by_id[blocker].lifecycle == "closed"
-        for blocker in record.blocked_by
-    )
+    parent = by_id.get(record.parent) if record.parent else None
+    while parent is not None:
+        if "deferred" in parent.envelope or not _blockers_closed(parent, by_id):
+            return False
+        parent = by_id.get(parent.parent) if parent.parent else None
+    return True
 
 
 def envelope_refreshes(records: list[TrackerRecord], found: list[TrackerRecord]) -> dict[str, TrackerRecord]:

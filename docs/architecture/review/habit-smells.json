@@ -1,0 +1,3140 @@
+{
+  "available": true,
+  "branch_base": "feature/work-board-alignment",
+  "commits_behind": 0,
+  "count_basis": "issues",
+  "findings": [
+    {
+      "details": {
+        "maxAllowed": 200
+      },
+      "issues": [
+        {
+          "details": {
+            "file": "shared/build_index.py",
+            "lines": 1692,
+            "source": "line-count"
+          },
+          "key": "shared/build_index.py"
+        },
+        {
+          "details": {
+            "file": "shared/tracker_port/fake.py",
+            "lines": 206,
+            "source": "line-count"
+          },
+          "key": "shared/tracker_port/fake.py"
+        },
+        {
+          "details": {
+            "file": "tests/test_build_index.py",
+            "lines": 939,
+            "source": "line-count"
+          },
+          "key": "tests/test_build_index.py"
+        },
+        {
+          "details": {
+            "file": "tests/test_tracker_contract.py",
+            "lines": 217,
+            "source": "line-count"
+          },
+          "key": "tests/test_tracker_contract.py"
+        },
+        {
+          "details": {
+            "file": "tests/test_index_stage_source.py",
+            "lines": 219,
+            "source": "line-count"
+          },
+          "key": "tests/test_index_stage_source.py"
+        }
+      ],
+      "smell": "oversized-file"
+    },
+    {
+      "details": {
+        "lines": 6,
+        "tokens": 82
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 39,
+            "file": "architect/skills/architecture/references/book-index.md:markdown",
+            "source": "jscpd:duplication",
+            "startLine": 34
+          },
+          "key": "architect/skills/architecture/references/book-index.md:markdown"
+        },
+        {
+          "details": {
+            "endLine": 72,
+            "file": "architect/skills/architecture/references/book-index.md:markdown",
+            "source": "jscpd:duplication",
+            "startLine": 67
+          },
+          "key": "architect/skills/architecture/references/book-index.md:markdown"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 17,
+        "tokens": 154
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 25,
+            "file": "architect/skills/architecture/references/stacks/README.md:markdown",
+            "source": "jscpd:duplication",
+            "startLine": 9
+          },
+          "key": "architect/skills/architecture/references/stacks/README.md:markdown"
+        },
+        {
+          "details": {
+            "endLine": 25,
+            "file": "pr/skills/odyssey/references/stacks/README.md:markdown",
+            "source": "jscpd:duplication",
+            "startLine": 9
+          },
+          "key": "pr/skills/odyssey/references/stacks/README.md:markdown"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 6,
+        "tokens": 93
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 30,
+            "file": "architect/skills/architecture/references/stacks/README.md:markdown",
+            "source": "jscpd:duplication",
+            "startLine": 25
+          },
+          "key": "architect/skills/architecture/references/stacks/README.md:markdown"
+        },
+        {
+          "details": {
+            "endLine": 30,
+            "file": "pr/skills/odyssey/references/stacks/README.md:markdown",
+            "source": "jscpd:duplication",
+            "startLine": 25
+          },
+          "key": "pr/skills/odyssey/references/stacks/README.md:markdown"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 20,
+        "tokens": 168
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 55,
+            "file": "architect/skills/architecture/references/stacks/README.md:markdown",
+            "source": "jscpd:duplication",
+            "startLine": 36
+          },
+          "key": "architect/skills/architecture/references/stacks/README.md:markdown"
+        },
+        {
+          "details": {
+            "endLine": 55,
+            "file": "pr/skills/odyssey/references/stacks/README.md:markdown",
+            "source": "jscpd:duplication",
+            "startLine": 36
+          },
+          "key": "pr/skills/odyssey/references/stacks/README.md:markdown"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 22,
+        "tokens": 219
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 44,
+            "file": "architect/skills/architecture/references/stacks/generic.md:markdown",
+            "source": "jscpd:duplication",
+            "startLine": 23
+          },
+          "key": "architect/skills/architecture/references/stacks/generic.md:markdown"
+        },
+        {
+          "details": {
+            "endLine": 44,
+            "file": "pr/skills/odyssey/references/stacks/generic.md:markdown",
+            "source": "jscpd:duplication",
+            "startLine": 23
+          },
+          "key": "pr/skills/odyssey/references/stacks/generic.md:markdown"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 11,
+        "tokens": 80
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 21,
+            "file": "architect/skills/architecture/references/stacks/nextjs.md:markdown",
+            "source": "jscpd:duplication",
+            "startLine": 11
+          },
+          "key": "architect/skills/architecture/references/stacks/nextjs.md:markdown"
+        },
+        {
+          "details": {
+            "endLine": 21,
+            "file": "pr/skills/odyssey/references/stacks/nextjs.md:markdown",
+            "source": "jscpd:duplication",
+            "startLine": 11
+          },
+          "key": "pr/skills/odyssey/references/stacks/nextjs.md:markdown"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 12,
+        "tokens": 119
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 37,
+            "file": "architect/skills/architecture/references/stacks/nextjs.md:markdown",
+            "source": "jscpd:duplication",
+            "startLine": 26
+          },
+          "key": "architect/skills/architecture/references/stacks/nextjs.md:markdown"
+        },
+        {
+          "details": {
+            "endLine": 37,
+            "file": "pr/skills/odyssey/references/stacks/nextjs.md:markdown",
+            "source": "jscpd:duplication",
+            "startLine": 26
+          },
+          "key": "pr/skills/odyssey/references/stacks/nextjs.md:markdown"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 27,
+        "tokens": 126
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 35,
+            "file": "architect/skills/architecture/references/stacks/python-fastapi.md:markdown",
+            "source": "jscpd:duplication",
+            "startLine": 9
+          },
+          "key": "architect/skills/architecture/references/stacks/python-fastapi.md:markdown"
+        },
+        {
+          "details": {
+            "endLine": 35,
+            "file": "pr/skills/odyssey/references/stacks/python-fastapi.md:markdown",
+            "source": "jscpd:duplication",
+            "startLine": 9
+          },
+          "key": "pr/skills/odyssey/references/stacks/python-fastapi.md:markdown"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 9,
+        "tokens": 82
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 43,
+            "file": "architect/skills/architecture/references/stacks/python-fastapi.md:markdown",
+            "source": "jscpd:duplication",
+            "startLine": 35
+          },
+          "key": "architect/skills/architecture/references/stacks/python-fastapi.md:markdown"
+        },
+        {
+          "details": {
+            "endLine": 43,
+            "file": "pr/skills/odyssey/references/stacks/python-fastapi.md:markdown",
+            "source": "jscpd:duplication",
+            "startLine": 35
+          },
+          "key": "pr/skills/odyssey/references/stacks/python-fastapi.md:markdown"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 23,
+        "tokens": 248
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 65,
+            "file": "architect/skills/architecture/references/stacks/python-fastapi.md:markdown",
+            "source": "jscpd:duplication",
+            "startLine": 43
+          },
+          "key": "architect/skills/architecture/references/stacks/python-fastapi.md:markdown"
+        },
+        {
+          "details": {
+            "endLine": 65,
+            "file": "pr/skills/odyssey/references/stacks/python-fastapi.md:markdown",
+            "source": "jscpd:duplication",
+            "startLine": 43
+          },
+          "key": "pr/skills/odyssey/references/stacks/python-fastapi.md:markdown"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 26,
+        "tokens": 283
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 90,
+            "file": "architect/skills/architecture/references/stacks/python-fastapi.md:markdown",
+            "source": "jscpd:duplication",
+            "startLine": 65
+          },
+          "key": "architect/skills/architecture/references/stacks/python-fastapi.md:markdown"
+        },
+        {
+          "details": {
+            "endLine": 90,
+            "file": "pr/skills/odyssey/references/stacks/python-fastapi.md:markdown",
+            "source": "jscpd:duplication",
+            "startLine": 65
+          },
+          "key": "pr/skills/odyssey/references/stacks/python-fastapi.md:markdown"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 9,
+        "tokens": 111
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 30,
+            "file": "architect/skills/architecture/references/stacks/python-fastapi.md:text",
+            "source": "jscpd:duplication",
+            "startLine": 22
+          },
+          "key": "architect/skills/architecture/references/stacks/python-fastapi.md:text"
+        },
+        {
+          "details": {
+            "endLine": 30,
+            "file": "pr/skills/odyssey/references/stacks/python-fastapi.md:text",
+            "source": "jscpd:duplication",
+            "startLine": 22
+          },
+          "key": "pr/skills/odyssey/references/stacks/python-fastapi.md:text"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 24,
+        "tokens": 89
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 32,
+            "file": "architect/skills/architecture/references/stacks/react-typescript.md:markdown",
+            "source": "jscpd:duplication",
+            "startLine": 9
+          },
+          "key": "architect/skills/architecture/references/stacks/react-typescript.md:markdown"
+        },
+        {
+          "details": {
+            "endLine": 32,
+            "file": "pr/skills/odyssey/references/stacks/react-typescript.md:markdown",
+            "source": "jscpd:duplication",
+            "startLine": 9
+          },
+          "key": "pr/skills/odyssey/references/stacks/react-typescript.md:markdown"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 11,
+        "tokens": 107
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 52,
+            "file": "architect/skills/architecture/references/stacks/react-typescript.md:markdown",
+            "source": "jscpd:duplication",
+            "startLine": 42
+          },
+          "key": "architect/skills/architecture/references/stacks/react-typescript.md:markdown"
+        },
+        {
+          "details": {
+            "endLine": 52,
+            "file": "pr/skills/odyssey/references/stacks/react-typescript.md:markdown",
+            "source": "jscpd:duplication",
+            "startLine": 42
+          },
+          "key": "pr/skills/odyssey/references/stacks/react-typescript.md:markdown"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 13,
+        "tokens": 113
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 65,
+            "file": "architect/skills/architecture/references/stacks/react-typescript.md:markdown",
+            "source": "jscpd:duplication",
+            "startLine": 53
+          },
+          "key": "architect/skills/architecture/references/stacks/react-typescript.md:markdown"
+        },
+        {
+          "details": {
+            "endLine": 65,
+            "file": "pr/skills/odyssey/references/stacks/react-typescript.md:markdown",
+            "source": "jscpd:duplication",
+            "startLine": 53
+          },
+          "key": "pr/skills/odyssey/references/stacks/react-typescript.md:markdown"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 12,
+        "tokens": 131
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 76,
+            "file": "architect/skills/architecture/references/stacks/react-typescript.md:markdown",
+            "source": "jscpd:duplication",
+            "startLine": 65
+          },
+          "key": "architect/skills/architecture/references/stacks/react-typescript.md:markdown"
+        },
+        {
+          "details": {
+            "endLine": 76,
+            "file": "pr/skills/odyssey/references/stacks/react-typescript.md:markdown",
+            "source": "jscpd:duplication",
+            "startLine": 65
+          },
+          "key": "pr/skills/odyssey/references/stacks/react-typescript.md:markdown"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 14,
+        "tokens": 136
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 90,
+            "file": "architect/skills/architecture/references/stacks/react-typescript.md:markdown",
+            "source": "jscpd:duplication",
+            "startLine": 77
+          },
+          "key": "architect/skills/architecture/references/stacks/react-typescript.md:markdown"
+        },
+        {
+          "details": {
+            "endLine": 90,
+            "file": "pr/skills/odyssey/references/stacks/react-typescript.md:markdown",
+            "source": "jscpd:duplication",
+            "startLine": 77
+          },
+          "key": "pr/skills/odyssey/references/stacks/react-typescript.md:markdown"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 9,
+        "tokens": 119
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 27,
+            "file": "architect/skills/architecture/references/stacks/react-typescript.md:text",
+            "source": "jscpd:duplication",
+            "startLine": 19
+          },
+          "key": "architect/skills/architecture/references/stacks/react-typescript.md:text"
+        },
+        {
+          "details": {
+            "endLine": 27,
+            "file": "pr/skills/odyssey/references/stacks/react-typescript.md:text",
+            "source": "jscpd:duplication",
+            "startLine": 19
+          },
+          "key": "pr/skills/odyssey/references/stacks/react-typescript.md:text"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 16,
+        "tokens": 86
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 249,
+            "file": "artifact/scripts/export_artifact.py",
+            "source": "jscpd:duplication",
+            "startLine": 234
+          },
+          "key": "artifact/scripts/export_artifact.py"
+        },
+        {
+          "details": {
+            "endLine": 51,
+            "file": "artifact/scripts/export_index.py",
+            "source": "jscpd:duplication",
+            "startLine": 36
+          },
+          "key": "artifact/scripts/export_index.py"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 19,
+        "tokens": 87
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 252,
+            "file": "artifact/scripts/export_artifact.py",
+            "source": "jscpd:duplication",
+            "startLine": 234
+          },
+          "key": "artifact/scripts/export_artifact.py"
+        },
+        {
+          "details": {
+            "endLine": 87,
+            "file": "pr/scripts/build_diagrams.py",
+            "source": "jscpd:duplication",
+            "startLine": 69
+          },
+          "key": "pr/scripts/build_diagrams.py"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 19,
+        "tokens": 87
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 252,
+            "file": "artifact/scripts/export_artifact.py",
+            "source": "jscpd:duplication",
+            "startLine": 234
+          },
+          "key": "artifact/scripts/export_artifact.py"
+        },
+        {
+          "details": {
+            "endLine": 94,
+            "file": "pr/scripts/extract_diffs.py",
+            "source": "jscpd:duplication",
+            "startLine": 76
+          },
+          "key": "pr/scripts/extract_diffs.py"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 19,
+        "tokens": 87
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 252,
+            "file": "artifact/scripts/export_artifact.py",
+            "source": "jscpd:duplication",
+            "startLine": 234
+          },
+          "key": "artifact/scripts/export_artifact.py"
+        },
+        {
+          "details": {
+            "endLine": 97,
+            "file": "pr/scripts/extract_story.py",
+            "source": "jscpd:duplication",
+            "startLine": 79
+          },
+          "key": "pr/scripts/extract_story.py"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 19,
+        "tokens": 87
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 252,
+            "file": "artifact/scripts/export_artifact.py",
+            "source": "jscpd:duplication",
+            "startLine": 234
+          },
+          "key": "artifact/scripts/export_artifact.py"
+        },
+        {
+          "details": {
+            "endLine": 86,
+            "file": "pr/scripts/render_review.py",
+            "source": "jscpd:duplication",
+            "startLine": 68
+          },
+          "key": "pr/scripts/render_review.py"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 19,
+        "tokens": 87
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 252,
+            "file": "artifact/scripts/export_artifact.py",
+            "source": "jscpd:duplication",
+            "startLine": 234
+          },
+          "key": "artifact/scripts/export_artifact.py"
+        },
+        {
+          "details": {
+            "endLine": 106,
+            "file": "build_index.py",
+            "source": "jscpd:duplication",
+            "startLine": 88
+          },
+          "key": "build_index.py"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 10,
+        "tokens": 52
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 244,
+            "file": "artifact/scripts/export_artifact.py",
+            "source": "jscpd:duplication",
+            "startLine": 235
+          },
+          "key": "artifact/scripts/export_artifact.py"
+        },
+        {
+          "details": {
+            "endLine": 199,
+            "file": "validate_decision_state.py",
+            "source": "jscpd:duplication",
+            "startLine": 190
+          },
+          "key": "validate_decision_state.py"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 14,
+        "tokens": 84
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 349,
+            "file": "artifact/scripts/export_artifact.py",
+            "source": "jscpd:duplication",
+            "startLine": 336
+          },
+          "key": "artifact/scripts/export_artifact.py"
+        },
+        {
+          "details": {
+            "endLine": 380,
+            "file": "artifact/scripts/export_artifact.py",
+            "source": "jscpd:duplication",
+            "startLine": 367
+          },
+          "key": "artifact/scripts/export_artifact.py"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 7,
+        "tokens": 50
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 345,
+            "file": "artifact/scripts/export_artifact.py",
+            "source": "jscpd:duplication",
+            "startLine": 339
+          },
+          "key": "artifact/scripts/export_artifact.py"
+        },
+        {
+          "details": {
+            "endLine": 261,
+            "file": "verify_bundle.py",
+            "source": "jscpd:duplication",
+            "startLine": 255
+          },
+          "key": "verify_bundle.py"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 7,
+        "tokens": 50
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 631,
+            "file": "artifact/scripts/export_artifact.py",
+            "source": "jscpd:duplication",
+            "startLine": 625
+          },
+          "key": "artifact/scripts/export_artifact.py"
+        },
+        {
+          "details": {
+            "endLine": 41,
+            "file": "artifact/scripts/record_publish.py",
+            "source": "jscpd:duplication",
+            "startLine": 35
+          },
+          "key": "artifact/scripts/record_publish.py"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 6,
+        "tokens": 52
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 692,
+            "file": "artifact/scripts/export_artifact.py",
+            "source": "jscpd:duplication",
+            "startLine": 687
+          },
+          "key": "artifact/scripts/export_artifact.py"
+        },
+        {
+          "details": {
+            "endLine": 502,
+            "file": "pr/scripts/extract_diffs.py",
+            "source": "jscpd:duplication",
+            "startLine": 497
+          },
+          "key": "pr/scripts/extract_diffs.py"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 7,
+        "tokens": 64
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 31,
+            "file": "artifact/scripts/export_index.py",
+            "source": "jscpd:duplication",
+            "startLine": 25
+          },
+          "key": "artifact/scripts/export_index.py"
+        },
+        {
+          "details": {
+            "endLine": 55,
+            "file": "pr/scripts/extract_diffs.py",
+            "source": "jscpd:duplication",
+            "startLine": 49
+          },
+          "key": "pr/scripts/extract_diffs.py"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 9,
+        "tokens": 67
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 33,
+            "file": "artifact/scripts/export_index.py",
+            "source": "jscpd:duplication",
+            "startLine": 25
+          },
+          "key": "artifact/scripts/export_index.py"
+        },
+        {
+          "details": {
+            "endLine": 30,
+            "file": "pr/scripts/generate_audio.py",
+            "source": "jscpd:duplication",
+            "startLine": 22
+          },
+          "key": "pr/scripts/generate_audio.py"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 8,
+        "tokens": 59
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 36,
+            "file": "artifact/scripts/export_index.py",
+            "source": "jscpd:duplication",
+            "startLine": 29
+          },
+          "key": "artifact/scripts/export_index.py"
+        },
+        {
+          "details": {
+            "endLine": 35,
+            "file": "artifact/scripts/record_publish.py",
+            "source": "jscpd:duplication",
+            "startLine": 28
+          },
+          "key": "artifact/scripts/record_publish.py"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 7,
+        "tokens": 55
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 781,
+            "file": "artifact/viewer/src/data/bundle.ts",
+            "source": "jscpd:duplication",
+            "startLine": 775
+          },
+          "key": "artifact/viewer/src/data/bundle.ts"
+        },
+        {
+          "details": {
+            "endLine": 208,
+            "file": "artifact/viewer/src/data/works.ts",
+            "source": "jscpd:duplication",
+            "startLine": 202
+          },
+          "key": "artifact/viewer/src/data/works.ts"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 13,
+        "tokens": 101
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 954,
+            "file": "artifact/viewer/src/shell/App.tsx",
+            "source": "jscpd:duplication",
+            "startLine": 942
+          },
+          "key": "artifact/viewer/src/shell/App.tsx"
+        },
+        {
+          "details": {
+            "endLine": 1065,
+            "file": "artifact/viewer/src/shell/App.tsx",
+            "source": "jscpd:duplication",
+            "startLine": 1045
+          },
+          "key": "artifact/viewer/src/shell/App.tsx"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 18,
+        "tokens": 66
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 1001,
+            "file": "artifact/viewer/src/shell/App.tsx",
+            "source": "jscpd:duplication",
+            "startLine": 984
+          },
+          "key": "artifact/viewer/src/shell/App.tsx"
+        },
+        {
+          "details": {
+            "endLine": 1153,
+            "file": "artifact/viewer/src/shell/App.tsx",
+            "source": "jscpd:duplication",
+            "startLine": 1136
+          },
+          "key": "artifact/viewer/src/shell/App.tsx"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 11,
+        "tokens": 71
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 197,
+            "file": "artifact/viewer/src/shell/Sheet.tsx",
+            "source": "jscpd:duplication",
+            "startLine": 187
+          },
+          "key": "artifact/viewer/src/shell/Sheet.tsx"
+        },
+        {
+          "details": {
+            "endLine": 91,
+            "file": "artifact/viewer/src/shell/jump.tsx",
+            "source": "jscpd:duplication",
+            "startLine": 81
+          },
+          "key": "artifact/viewer/src/shell/jump.tsx"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 11,
+        "tokens": 82
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 739,
+            "file": "artifact/viewer/src/shell/Sheet.tsx",
+            "source": "jscpd:duplication",
+            "startLine": 729
+          },
+          "key": "artifact/viewer/src/shell/Sheet.tsx"
+        },
+        {
+          "details": {
+            "endLine": 761,
+            "file": "artifact/viewer/src/shell/Sheet.tsx",
+            "source": "jscpd:duplication",
+            "startLine": 751
+          },
+          "key": "artifact/viewer/src/shell/Sheet.tsx"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 11,
+        "tokens": 95
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 16,
+            "file": "cobuilder-memory/tests/bank.test.ts",
+            "source": "jscpd:duplication",
+            "startLine": 6
+          },
+          "key": "cobuilder-memory/tests/bank.test.ts"
+        },
+        {
+          "details": {
+            "endLine": 32,
+            "file": "cobuilder-memory/tests/bank.test.ts",
+            "source": "jscpd:duplication",
+            "startLine": 22
+          },
+          "key": "cobuilder-memory/tests/bank.test.ts"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 10,
+        "tokens": 94
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 31,
+            "file": "cobuilder-memory/tests/bank.test.ts",
+            "source": "jscpd:duplication",
+            "startLine": 22
+          },
+          "key": "cobuilder-memory/tests/bank.test.ts"
+        },
+        {
+          "details": {
+            "endLine": 46,
+            "file": "cobuilder-memory/tests/bank.test.ts",
+            "source": "jscpd:duplication",
+            "startLine": 37
+          },
+          "key": "cobuilder-memory/tests/bank.test.ts"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 9,
+        "tokens": 115
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 14,
+            "file": "cobuilder-memory/tests/check.test.ts",
+            "source": "jscpd:duplication",
+            "startLine": 6
+          },
+          "key": "cobuilder-memory/tests/check.test.ts"
+        },
+        {
+          "details": {
+            "endLine": 105,
+            "file": "cobuilder-memory/tests/check.test.ts",
+            "source": "jscpd:duplication",
+            "startLine": 97
+          },
+          "key": "cobuilder-memory/tests/check.test.ts"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 10,
+        "tokens": 105
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 102,
+            "file": "cobuilder-memory/tests/check.test.ts",
+            "source": "jscpd:duplication",
+            "startLine": 93
+          },
+          "key": "cobuilder-memory/tests/check.test.ts"
+        },
+        {
+          "details": {
+            "endLine": 124,
+            "file": "cobuilder-memory/tests/check.test.ts",
+            "source": "jscpd:duplication",
+            "startLine": 115
+          },
+          "key": "cobuilder-memory/tests/check.test.ts"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 6,
+        "tokens": 51
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 98,
+            "file": "cobuilder-memory/tests/check.test.ts",
+            "source": "jscpd:duplication",
+            "startLine": 93
+          },
+          "key": "cobuilder-memory/tests/check.test.ts"
+        },
+        {
+          "details": {
+            "endLine": 87,
+            "file": "cobuilder-memory/tests/hindsight.test.ts",
+            "source": "jscpd:duplication",
+            "startLine": 82
+          },
+          "key": "cobuilder-memory/tests/hindsight.test.ts"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 8,
+        "tokens": 50
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 34,
+            "file": "cobuilder-memory/tests/focus.test.ts",
+            "source": "jscpd:duplication",
+            "startLine": 27
+          },
+          "key": "cobuilder-memory/tests/focus.test.ts"
+        },
+        {
+          "details": {
+            "endLine": 71,
+            "file": "cobuilder-memory/tests/focus.test.ts",
+            "source": "jscpd:duplication",
+            "startLine": 64
+          },
+          "key": "cobuilder-memory/tests/focus.test.ts"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 7,
+        "tokens": 68
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 47,
+            "file": "cobuilder-memory/tests/hindsight.test.ts",
+            "source": "jscpd:duplication",
+            "startLine": 41
+          },
+          "key": "cobuilder-memory/tests/hindsight.test.ts"
+        },
+        {
+          "details": {
+            "endLine": 139,
+            "file": "cobuilder-memory/tests/hindsight.test.ts",
+            "source": "jscpd:duplication",
+            "startLine": 133
+          },
+          "key": "cobuilder-memory/tests/hindsight.test.ts"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 7,
+        "tokens": 64
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 47,
+            "file": "cobuilder-memory/tests/hindsight.test.ts",
+            "source": "jscpd:duplication",
+            "startLine": 41
+          },
+          "key": "cobuilder-memory/tests/hindsight.test.ts"
+        },
+        {
+          "details": {
+            "endLine": 29,
+            "file": "cobuilder-memory/tests/run.test.ts",
+            "source": "jscpd:duplication",
+            "startLine": 19
+          },
+          "key": "cobuilder-memory/tests/run.test.ts"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 7,
+        "tokens": 62
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 77,
+            "file": "cobuilder-memory/tests/hindsight.test.ts",
+            "source": "jscpd:duplication",
+            "startLine": 71
+          },
+          "key": "cobuilder-memory/tests/hindsight.test.ts"
+        },
+        {
+          "details": {
+            "endLine": 125,
+            "file": "cobuilder-memory/tests/hindsight.test.ts",
+            "source": "jscpd:duplication",
+            "startLine": 118
+          },
+          "key": "cobuilder-memory/tests/hindsight.test.ts"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 6,
+        "tokens": 72
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 35,
+            "file": "cobuilder-memory/tests/pane.test.ts",
+            "source": "jscpd:duplication",
+            "startLine": 30
+          },
+          "key": "cobuilder-memory/tests/pane.test.ts"
+        },
+        {
+          "details": {
+            "endLine": 68,
+            "file": "cobuilder-memory/tests/run.test.ts",
+            "source": "jscpd:duplication",
+            "startLine": 63
+          },
+          "key": "cobuilder-memory/tests/run.test.ts"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 6,
+        "tokens": 57
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 66,
+            "file": "cobuilder-memory/tests/pane.test.ts",
+            "source": "jscpd:duplication",
+            "startLine": 61
+          },
+          "key": "cobuilder-memory/tests/pane.test.ts"
+        },
+        {
+          "details": {
+            "endLine": 122,
+            "file": "cobuilder-memory/tests/pane.test.ts",
+            "source": "jscpd:duplication",
+            "startLine": 117
+          },
+          "key": "cobuilder-memory/tests/pane.test.ts"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 7,
+        "tokens": 68
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 94,
+            "file": "cobuilder-memory/tests/pane.test.ts",
+            "source": "jscpd:duplication",
+            "startLine": 88
+          },
+          "key": "cobuilder-memory/tests/pane.test.ts"
+        },
+        {
+          "details": {
+            "endLine": 76,
+            "file": "cobuilder-memory/tests/run.test.ts",
+            "source": "jscpd:duplication",
+            "startLine": 70
+          },
+          "key": "cobuilder-memory/tests/run.test.ts"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 11,
+        "tokens": 68
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 165,
+            "file": "cobuilder-memory/tests/pane.test.ts",
+            "source": "jscpd:duplication",
+            "startLine": 155
+          },
+          "key": "cobuilder-memory/tests/pane.test.ts"
+        },
+        {
+          "details": {
+            "endLine": 186,
+            "file": "cobuilder-memory/tests/pane.test.ts",
+            "source": "jscpd:duplication",
+            "startLine": 176
+          },
+          "key": "cobuilder-memory/tests/pane.test.ts"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 11,
+        "tokens": 69
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 165,
+            "file": "cobuilder-memory/tests/pane.test.ts",
+            "source": "jscpd:duplication",
+            "startLine": 155
+          },
+          "key": "cobuilder-memory/tests/pane.test.ts"
+        },
+        {
+          "details": {
+            "endLine": 324,
+            "file": "cobuilder-memory/tests/pane.test.ts",
+            "source": "jscpd:duplication",
+            "startLine": 314
+          },
+          "key": "cobuilder-memory/tests/pane.test.ts"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 7,
+        "tokens": 51
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 215,
+            "file": "cobuilder-memory/tests/pane.test.ts",
+            "source": "jscpd:duplication",
+            "startLine": 209
+          },
+          "key": "cobuilder-memory/tests/pane.test.ts"
+        },
+        {
+          "details": {
+            "endLine": 261,
+            "file": "cobuilder-memory/tests/pane.test.ts",
+            "source": "jscpd:duplication",
+            "startLine": 255
+          },
+          "key": "cobuilder-memory/tests/pane.test.ts"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 8,
+        "tokens": 52
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 216,
+            "file": "cobuilder-memory/tests/pane.test.ts",
+            "source": "jscpd:duplication",
+            "startLine": 209
+          },
+          "key": "cobuilder-memory/tests/pane.test.ts"
+        },
+        {
+          "details": {
+            "endLine": 382,
+            "file": "cobuilder-memory/tests/pane.test.ts",
+            "source": "jscpd:duplication",
+            "startLine": 375
+          },
+          "key": "cobuilder-memory/tests/pane.test.ts"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 15,
+        "tokens": 105
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 223,
+            "file": "cobuilder-memory/tests/pane.test.ts",
+            "source": "jscpd:duplication",
+            "startLine": 209
+          },
+          "key": "cobuilder-memory/tests/pane.test.ts"
+        },
+        {
+          "details": {
+            "endLine": 476,
+            "file": "cobuilder-memory/tests/pane.test.ts",
+            "source": "jscpd:duplication",
+            "startLine": 462
+          },
+          "key": "cobuilder-memory/tests/pane.test.ts"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 7,
+        "tokens": 51
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 215,
+            "file": "cobuilder-memory/tests/pane.test.ts",
+            "source": "jscpd:duplication",
+            "startLine": 209
+          },
+          "key": "cobuilder-memory/tests/pane.test.ts"
+        },
+        {
+          "details": {
+            "endLine": 489,
+            "file": "cobuilder-memory/tests/pane.test.ts",
+            "source": "jscpd:duplication",
+            "startLine": 483
+          },
+          "key": "cobuilder-memory/tests/pane.test.ts"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 7,
+        "tokens": 51
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 215,
+            "file": "cobuilder-memory/tests/pane.test.ts",
+            "source": "jscpd:duplication",
+            "startLine": 209
+          },
+          "key": "cobuilder-memory/tests/pane.test.ts"
+        },
+        {
+          "details": {
+            "endLine": 520,
+            "file": "cobuilder-memory/tests/pane.test.ts",
+            "source": "jscpd:duplication",
+            "startLine": 514
+          },
+          "key": "cobuilder-memory/tests/pane.test.ts"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 14,
+        "tokens": 96
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 223,
+            "file": "cobuilder-memory/tests/pane.test.ts",
+            "source": "jscpd:duplication",
+            "startLine": 210
+          },
+          "key": "cobuilder-memory/tests/pane.test.ts"
+        },
+        {
+          "details": {
+            "endLine": 246,
+            "file": "cobuilder-memory/tests/pane.test.ts",
+            "source": "jscpd:duplication",
+            "startLine": 233
+          },
+          "key": "cobuilder-memory/tests/pane.test.ts"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 12,
+        "tokens": 88
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 242,
+            "file": "cobuilder-memory/tests/pane.test.ts",
+            "source": "jscpd:duplication",
+            "startLine": 231
+          },
+          "key": "cobuilder-memory/tests/pane.test.ts"
+        },
+        {
+          "details": {
+            "endLine": 440,
+            "file": "cobuilder-memory/tests/pane.test.ts",
+            "source": "jscpd:duplication",
+            "startLine": 429
+          },
+          "key": "cobuilder-memory/tests/pane.test.ts"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 13,
+        "tokens": 91
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 267,
+            "file": "cobuilder-memory/tests/pane.test.ts",
+            "source": "jscpd:duplication",
+            "startLine": 255
+          },
+          "key": "cobuilder-memory/tests/pane.test.ts"
+        },
+        {
+          "details": {
+            "endLine": 495,
+            "file": "cobuilder-memory/tests/pane.test.ts",
+            "source": "jscpd:duplication",
+            "startLine": 483
+          },
+          "key": "cobuilder-memory/tests/pane.test.ts"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 10,
+        "tokens": 63
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 264,
+            "file": "cobuilder-memory/tests/pane.test.ts",
+            "source": "jscpd:duplication",
+            "startLine": 255
+          },
+          "key": "cobuilder-memory/tests/pane.test.ts"
+        },
+        {
+          "details": {
+            "endLine": 523,
+            "file": "cobuilder-memory/tests/pane.test.ts",
+            "source": "jscpd:duplication",
+            "startLine": 514
+          },
+          "key": "cobuilder-memory/tests/pane.test.ts"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 12,
+        "tokens": 81
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 267,
+            "file": "cobuilder-memory/tests/pane.test.ts",
+            "source": "jscpd:duplication",
+            "startLine": 256
+          },
+          "key": "cobuilder-memory/tests/pane.test.ts"
+        },
+        {
+          "details": {
+            "endLine": 310,
+            "file": "cobuilder-memory/tests/pane.test.ts",
+            "source": "jscpd:duplication",
+            "startLine": 299
+          },
+          "key": "cobuilder-memory/tests/pane.test.ts"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 13,
+        "tokens": 99
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 310,
+            "file": "cobuilder-memory/tests/pane.test.ts",
+            "source": "jscpd:duplication",
+            "startLine": 298
+          },
+          "key": "cobuilder-memory/tests/pane.test.ts"
+        },
+        {
+          "details": {
+            "endLine": 510,
+            "file": "cobuilder-memory/tests/pane.test.ts",
+            "source": "jscpd:duplication",
+            "startLine": 498
+          },
+          "key": "cobuilder-memory/tests/pane.test.ts"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 8,
+        "tokens": 60
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 361,
+            "file": "cobuilder-memory/tests/pane.test.ts",
+            "source": "jscpd:duplication",
+            "startLine": 354
+          },
+          "key": "cobuilder-memory/tests/pane.test.ts"
+        },
+        {
+          "details": {
+            "endLine": 413,
+            "file": "cobuilder-memory/tests/pane.test.ts",
+            "source": "jscpd:duplication",
+            "startLine": 405
+          },
+          "key": "cobuilder-memory/tests/pane.test.ts"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 8,
+        "tokens": 64
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 368,
+            "file": "cobuilder-memory/tests/pane.test.ts",
+            "source": "jscpd:duplication",
+            "startLine": 361
+          },
+          "key": "cobuilder-memory/tests/pane.test.ts"
+        },
+        {
+          "details": {
+            "endLine": 420,
+            "file": "cobuilder-memory/tests/pane.test.ts",
+            "source": "jscpd:duplication",
+            "startLine": 413
+          },
+          "key": "cobuilder-memory/tests/pane.test.ts"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 8,
+        "tokens": 77
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 398,
+            "file": "cobuilder-memory/tests/pane.test.ts",
+            "source": "jscpd:duplication",
+            "startLine": 391
+          },
+          "key": "cobuilder-memory/tests/pane.test.ts"
+        },
+        {
+          "details": {
+            "endLine": 421,
+            "file": "cobuilder-memory/tests/pane.test.ts",
+            "source": "jscpd:duplication",
+            "startLine": 414
+          },
+          "key": "cobuilder-memory/tests/pane.test.ts"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 10,
+        "tokens": 61
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 498,
+            "file": "cobuilder-memory/tests/pane.test.ts",
+            "source": "jscpd:duplication",
+            "startLine": 489
+          },
+          "key": "cobuilder-memory/tests/pane.test.ts"
+        },
+        {
+          "details": {
+            "endLine": 514,
+            "file": "cobuilder-memory/tests/pane.test.ts",
+            "source": "jscpd:duplication",
+            "startLine": 504
+          },
+          "key": "cobuilder-memory/tests/pane.test.ts"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 13,
+        "tokens": 68
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 29,
+            "file": "cobuilder-memory/tests/run.test.ts",
+            "source": "jscpd:duplication",
+            "startLine": 17
+          },
+          "key": "cobuilder-memory/tests/run.test.ts"
+        },
+        {
+          "details": {
+            "endLine": 536,
+            "file": "cobuilder-memory/tests/run.test.ts",
+            "source": "jscpd:duplication",
+            "startLine": 526
+          },
+          "key": "cobuilder-memory/tests/run.test.ts"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 13,
+        "tokens": 104
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 188,
+            "file": "cobuilder-memory/tests/run.test.ts",
+            "source": "jscpd:duplication",
+            "startLine": 176
+          },
+          "key": "cobuilder-memory/tests/run.test.ts"
+        },
+        {
+          "details": {
+            "endLine": 203,
+            "file": "cobuilder-memory/tests/run.test.ts",
+            "source": "jscpd:duplication",
+            "startLine": 192
+          },
+          "key": "cobuilder-memory/tests/run.test.ts"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 11,
+        "tokens": 55
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 213,
+            "file": "cobuilder-memory/tests/run.test.ts",
+            "source": "jscpd:duplication",
+            "startLine": 203
+          },
+          "key": "cobuilder-memory/tests/run.test.ts"
+        },
+        {
+          "details": {
+            "endLine": 234,
+            "file": "cobuilder-memory/tests/run.test.ts",
+            "source": "jscpd:duplication",
+            "startLine": 222
+          },
+          "key": "cobuilder-memory/tests/run.test.ts"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 22,
+        "tokens": 88
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 87,
+            "file": "pr/scripts/build_diagrams.py",
+            "source": "jscpd:duplication",
+            "startLine": 66
+          },
+          "key": "pr/scripts/build_diagrams.py"
+        },
+        {
+          "details": {
+            "endLine": 63,
+            "file": "pr/scripts/generate_audio.py",
+            "source": "jscpd:duplication",
+            "startLine": 42
+          },
+          "key": "pr/scripts/generate_audio.py"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 6,
+        "tokens": 56
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 58,
+            "file": "pr/scripts/extract_diffs.py",
+            "source": "jscpd:duplication",
+            "startLine": 53
+          },
+          "key": "pr/scripts/extract_diffs.py"
+        },
+        {
+          "details": {
+            "endLine": 47,
+            "file": "pr/scripts/generate_prompts.py",
+            "source": "jscpd:duplication",
+            "startLine": 42
+          },
+          "key": "pr/scripts/generate_prompts.py"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 64,
+        "tokens": 318
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 144,
+            "file": "pr/scripts/extract_diffs.py",
+            "source": "jscpd:duplication",
+            "startLine": 81
+          },
+          "key": "pr/scripts/extract_diffs.py"
+        },
+        {
+          "details": {
+            "endLine": 147,
+            "file": "pr/scripts/extract_story.py",
+            "source": "jscpd:duplication",
+            "startLine": 84
+          },
+          "key": "pr/scripts/extract_story.py"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 23,
+        "tokens": 159
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 198,
+            "file": "pr/scripts/extract_diffs.py",
+            "source": "jscpd:duplication",
+            "startLine": 176
+          },
+          "key": "pr/scripts/extract_diffs.py"
+        },
+        {
+          "details": {
+            "endLine": 218,
+            "file": "pr/scripts/extract_story.py",
+            "source": "jscpd:duplication",
+            "startLine": 195
+          },
+          "key": "pr/scripts/extract_story.py"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 15,
+        "tokens": 96
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 213,
+            "file": "pr/scripts/extract_diffs.py",
+            "source": "jscpd:duplication",
+            "startLine": 199
+          },
+          "key": "pr/scripts/extract_diffs.py"
+        },
+        {
+          "details": {
+            "endLine": 233,
+            "file": "pr/scripts/extract_story.py",
+            "source": "jscpd:duplication",
+            "startLine": 219
+          },
+          "key": "pr/scripts/extract_story.py"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 11,
+        "tokens": 52
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 244,
+            "file": "pr/scripts/extract_diffs.py",
+            "source": "jscpd:duplication",
+            "startLine": 234
+          },
+          "key": "pr/scripts/extract_diffs.py"
+        },
+        {
+          "details": {
+            "endLine": 289,
+            "file": "pr/scripts/extract_story.py",
+            "source": "jscpd:duplication",
+            "startLine": 278
+          },
+          "key": "pr/scripts/extract_story.py"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 22,
+        "tokens": 88
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 97,
+            "file": "pr/scripts/extract_story.py",
+            "source": "jscpd:duplication",
+            "startLine": 76
+          },
+          "key": "pr/scripts/extract_story.py"
+        },
+        {
+          "details": {
+            "endLine": 111,
+            "file": "pr/scripts/generate_prompts.py",
+            "source": "jscpd:duplication",
+            "startLine": 90
+          },
+          "key": "pr/scripts/generate_prompts.py"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 8,
+        "tokens": 54
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 591,
+            "file": "pr/scripts/extract_story.py",
+            "source": "jscpd:duplication",
+            "startLine": 584
+          },
+          "key": "pr/scripts/extract_story.py"
+        },
+        {
+          "details": {
+            "endLine": 334,
+            "file": "pr/scripts/generate_prompts.py",
+            "source": "jscpd:duplication",
+            "startLine": 327
+          },
+          "key": "pr/scripts/generate_prompts.py"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 20,
+        "tokens": 67
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 214,
+            "file": "tracker-usage.md:text",
+            "source": "jscpd:duplication",
+            "startLine": 195
+          },
+          "key": "tracker-usage.md:text"
+        },
+        {
+          "details": {
+            "endLine": 327,
+            "file": "tracker-usage.md:text",
+            "source": "jscpd:duplication",
+            "startLine": 308
+          },
+          "key": "tracker-usage.md:text"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 16,
+        "tokens": 52
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 229,
+            "file": "tracker-usage.md:text",
+            "source": "jscpd:duplication",
+            "startLine": 214
+          },
+          "key": "tracker-usage.md:text"
+        },
+        {
+          "details": {
+            "endLine": 253,
+            "file": "tracker-usage.md:text",
+            "source": "jscpd:duplication",
+            "startLine": 238
+          },
+          "key": "tracker-usage.md:text"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 17,
+        "tokens": 57
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 307,
+            "file": "tracker-usage.md:text",
+            "source": "jscpd:duplication",
+            "startLine": 291
+          },
+          "key": "tracker-usage.md:text"
+        },
+        {
+          "details": {
+            "endLine": 346,
+            "file": "tracker-usage.md:text",
+            "source": "jscpd:duplication",
+            "startLine": 330
+          },
+          "key": "tracker-usage.md:text"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 9,
+        "tokens": 71
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 162,
+            "file": "_beads_mapping_support.py",
+            "source": "jscpd:duplication",
+            "startLine": 154
+          },
+          "key": "_beads_mapping_support.py"
+        },
+        {
+          "details": {
+            "endLine": 165,
+            "file": "_beads_support.py",
+            "source": "jscpd:duplication",
+            "startLine": 157
+          },
+          "key": "_beads_support.py"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 9,
+        "tokens": 71
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 162,
+            "file": "_beads_mapping_support.py",
+            "source": "jscpd:duplication",
+            "startLine": 154
+          },
+          "key": "_beads_mapping_support.py"
+        },
+        {
+          "details": {
+            "endLine": 30,
+            "file": "test_tracker_program_create.py",
+            "source": "jscpd:duplication",
+            "startLine": 22
+          },
+          "key": "test_tracker_program_create.py"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 7,
+        "tokens": 54
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 162,
+            "file": "_beads_mapping_support.py",
+            "source": "jscpd:duplication",
+            "startLine": 156
+          },
+          "key": "_beads_mapping_support.py"
+        },
+        {
+          "details": {
+            "endLine": 189,
+            "file": "test_index_stage_source.py",
+            "source": "jscpd:duplication",
+            "startLine": 183
+          },
+          "key": "test_index_stage_source.py"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 7,
+        "tokens": 57
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 31,
+            "file": "_beads_pr_support.py",
+            "source": "jscpd:duplication",
+            "startLine": 25
+          },
+          "key": "_beads_pr_support.py"
+        },
+        {
+          "details": {
+            "endLine": 161,
+            "file": "_beads_support.py",
+            "source": "jscpd:duplication",
+            "startLine": 155
+          },
+          "key": "_beads_support.py"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 7,
+        "tokens": 57
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 31,
+            "file": "_beads_pr_support.py",
+            "source": "jscpd:duplication",
+            "startLine": 25
+          },
+          "key": "_beads_pr_support.py"
+        },
+        {
+          "details": {
+            "endLine": 26,
+            "file": "test_tracker_program_create.py",
+            "source": "jscpd:duplication",
+            "startLine": 20
+          },
+          "key": "test_tracker_program_create.py"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 6,
+        "tokens": 51
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 60,
+            "file": "_beads_support.py",
+            "source": "jscpd:duplication",
+            "startLine": 55
+          },
+          "key": "_beads_support.py"
+        },
+        {
+          "details": {
+            "endLine": 32,
+            "file": "_skip_slice_support.py",
+            "source": "jscpd:duplication",
+            "startLine": 27
+          },
+          "key": "_skip_slice_support.py"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 9,
+        "tokens": 60
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 167,
+            "file": "_beads_support.py",
+            "source": "jscpd:duplication",
+            "startLine": 159
+          },
+          "key": "_beads_support.py"
+        },
+        {
+          "details": {
+            "endLine": 32,
+            "file": "test_tracker_program_create.py",
+            "source": "jscpd:duplication",
+            "startLine": 24
+          },
+          "key": "test_tracker_program_create.py"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 7,
+        "tokens": 51
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 163,
+            "file": "test_boundary_check.py",
+            "source": "jscpd:duplication",
+            "startLine": 157
+          },
+          "key": "test_boundary_check.py"
+        },
+        {
+          "details": {
+            "endLine": 178,
+            "file": "test_boundary_check.py",
+            "source": "jscpd:duplication",
+            "startLine": 172
+          },
+          "key": "test_boundary_check.py"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 6,
+        "tokens": 61
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 29,
+            "file": "test_build_builds_view.py",
+            "source": "jscpd:duplication",
+            "startLine": 24
+          },
+          "key": "test_build_builds_view.py"
+        },
+        {
+          "details": {
+            "endLine": 41,
+            "file": "test_verify_gate.py",
+            "source": "jscpd:duplication",
+            "startLine": 36
+          },
+          "key": "test_verify_gate.py"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 6,
+        "tokens": 60
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 29,
+            "file": "test_build_builds_view.py",
+            "source": "jscpd:duplication",
+            "startLine": 24
+          },
+          "key": "test_build_builds_view.py"
+        },
+        {
+          "details": {
+            "endLine": 45,
+            "file": "test_verify_gate_2b.py",
+            "source": "jscpd:duplication",
+            "startLine": 40
+          },
+          "key": "test_verify_gate_2b.py"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 6,
+        "tokens": 60
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 29,
+            "file": "test_build_builds_view.py",
+            "source": "jscpd:duplication",
+            "startLine": 24
+          },
+          "key": "test_build_builds_view.py"
+        },
+        {
+          "details": {
+            "endLine": 29,
+            "file": "test_verify_gate_links.py",
+            "source": "jscpd:duplication",
+            "startLine": 24
+          },
+          "key": "test_verify_gate_links.py"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 13,
+        "tokens": 57
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 15,
+            "file": "test_bundle_meta.py",
+            "source": "jscpd:duplication",
+            "startLine": 3
+          },
+          "key": "test_bundle_meta.py"
+        },
+        {
+          "details": {
+            "endLine": 15,
+            "file": "test_migrate_bundle.py",
+            "source": "jscpd:duplication",
+            "startLine": 3
+          },
+          "key": "test_migrate_bundle.py"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 9,
+        "tokens": 56
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 87,
+            "file": "test_design_svg.py",
+            "source": "jscpd:duplication",
+            "startLine": 79
+          },
+          "key": "test_design_svg.py"
+        },
+        {
+          "details": {
+            "endLine": 61,
+            "file": "test_options_report.py",
+            "source": "jscpd:duplication",
+            "startLine": 53
+          },
+          "key": "test_options_report.py"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 10,
+        "tokens": 95
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 61,
+            "file": "test_epic_state_in_tracker.py",
+            "source": "jscpd:duplication",
+            "startLine": 52
+          },
+          "key": "test_epic_state_in_tracker.py"
+        },
+        {
+          "details": {
+            "endLine": 57,
+            "file": "test_index_stage_source.py",
+            "source": "jscpd:duplication",
+            "startLine": 48
+          },
+          "key": "test_index_stage_source.py"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 13,
+        "tokens": 59
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 60,
+            "file": "test_export_artifact_markers.py",
+            "source": "jscpd:duplication",
+            "startLine": 48
+          },
+          "key": "test_export_artifact_markers.py"
+        },
+        {
+          "details": {
+            "endLine": 515,
+            "file": "test_viewer_build.py",
+            "source": "jscpd:duplication",
+            "startLine": 503
+          },
+          "key": "test_viewer_build.py"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 10,
+        "tokens": 50
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 171,
+            "file": "test_export_artifact_markers.py",
+            "source": "jscpd:duplication",
+            "startLine": 162
+          },
+          "key": "test_export_artifact_markers.py"
+        },
+        {
+          "details": {
+            "endLine": 271,
+            "file": "test_export_artifact_markers.py",
+            "source": "jscpd:duplication",
+            "startLine": 261
+          },
+          "key": "test_export_artifact_markers.py"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 8,
+        "tokens": 55
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 180,
+            "file": "test_habit_coach.py",
+            "source": "jscpd:duplication",
+            "startLine": 173
+          },
+          "key": "test_habit_coach.py"
+        },
+        {
+          "details": {
+            "endLine": 266,
+            "file": "test_habit_coach.py",
+            "source": "jscpd:duplication",
+            "startLine": 259
+          },
+          "key": "test_habit_coach.py"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 9,
+        "tokens": 66
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 217,
+            "file": "test_habit_coach.py",
+            "source": "jscpd:duplication",
+            "startLine": 209
+          },
+          "key": "test_habit_coach.py"
+        },
+        {
+          "details": {
+            "endLine": 230,
+            "file": "test_habit_coach.py",
+            "source": "jscpd:duplication",
+            "startLine": 222
+          },
+          "key": "test_habit_coach.py"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 11,
+        "tokens": 50
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 220,
+            "file": "test_habit_coach.py",
+            "source": "jscpd:duplication",
+            "startLine": 210
+          },
+          "key": "test_habit_coach.py"
+        },
+        {
+          "details": {
+            "endLine": 308,
+            "file": "test_habit_coach.py",
+            "source": "jscpd:duplication",
+            "startLine": 298
+          },
+          "key": "test_habit_coach.py"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 10,
+        "tokens": 68
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 230,
+            "file": "test_habit_coach.py",
+            "source": "jscpd:duplication",
+            "startLine": 221
+          },
+          "key": "test_habit_coach.py"
+        },
+        {
+          "details": {
+            "endLine": 305,
+            "file": "test_habit_coach.py",
+            "source": "jscpd:duplication",
+            "startLine": 296
+          },
+          "key": "test_habit_coach.py"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 9,
+        "tokens": 56
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 449,
+            "file": "test_habit_coach.py",
+            "source": "jscpd:duplication",
+            "startLine": 441
+          },
+          "key": "test_habit_coach.py"
+        },
+        {
+          "details": {
+            "endLine": 496,
+            "file": "test_habit_coach.py",
+            "source": "jscpd:duplication",
+            "startLine": 488
+          },
+          "key": "test_habit_coach.py"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 13,
+        "tokens": 84
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 467,
+            "file": "test_habit_coach.py",
+            "source": "jscpd:duplication",
+            "startLine": 455
+          },
+          "key": "test_habit_coach.py"
+        },
+        {
+          "details": {
+            "endLine": 488,
+            "file": "test_habit_coach.py",
+            "source": "jscpd:duplication",
+            "startLine": 476
+          },
+          "key": "test_habit_coach.py"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 8,
+        "tokens": 51
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 952,
+            "file": "test_habit_coach.py",
+            "source": "jscpd:duplication",
+            "startLine": 945
+          },
+          "key": "test_habit_coach.py"
+        },
+        {
+          "details": {
+            "endLine": 968,
+            "file": "test_habit_coach.py",
+            "source": "jscpd:duplication",
+            "startLine": 961
+          },
+          "key": "test_habit_coach.py"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 7,
+        "tokens": 66
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 155,
+            "file": "test_server_watch.py",
+            "source": "jscpd:duplication",
+            "startLine": 149
+          },
+          "key": "test_server_watch.py"
+        },
+        {
+          "details": {
+            "endLine": 203,
+            "file": "test_server_watch.py",
+            "source": "jscpd:duplication",
+            "startLine": 197
+          },
+          "key": "test_server_watch.py"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 8,
+        "tokens": 55
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 57,
+            "file": "test_tracker_beads_claim_real.py",
+            "source": "jscpd:duplication",
+            "startLine": 50
+          },
+          "key": "test_tracker_beads_claim_real.py"
+        },
+        {
+          "details": {
+            "endLine": 59,
+            "file": "test_tracker_claim_next_real.py",
+            "source": "jscpd:duplication",
+            "startLine": 52
+          },
+          "key": "test_tracker_claim_next_real.py"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 7,
+        "tokens": 51
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 65,
+            "file": "test_tracker_beads_claim_real.py",
+            "source": "jscpd:duplication",
+            "startLine": 59
+          },
+          "key": "test_tracker_beads_claim_real.py"
+        },
+        {
+          "details": {
+            "endLine": 67,
+            "file": "test_tracker_claim_next_real.py",
+            "source": "jscpd:duplication",
+            "startLine": 61
+          },
+          "key": "test_tracker_claim_next_real.py"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 11,
+        "tokens": 62
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 75,
+            "file": "test_tracker_beads_edges_ready.py",
+            "source": "jscpd:duplication",
+            "startLine": 65
+          },
+          "key": "test_tracker_beads_edges_ready.py"
+        },
+        {
+          "details": {
+            "endLine": 86,
+            "file": "test_tracker_beads_edges_ready.py",
+            "source": "jscpd:duplication",
+            "startLine": 76
+          },
+          "key": "test_tracker_beads_edges_ready.py"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 6,
+        "tokens": 68
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 25,
+            "file": "test_tracker_claim_next_cli.py",
+            "source": "jscpd:duplication",
+            "startLine": 20
+          },
+          "key": "test_tracker_claim_next_cli.py"
+        },
+        {
+          "details": {
+            "endLine": 43,
+            "file": "test_tracker_migrate_mapping_cli.py",
+            "source": "jscpd:duplication",
+            "startLine": 38
+          },
+          "key": "test_tracker_migrate_mapping_cli.py"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 8,
+        "tokens": 62
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 136,
+            "file": "test_tracker_program_create.py",
+            "source": "jscpd:duplication",
+            "startLine": 129
+          },
+          "key": "test_tracker_program_create.py"
+        },
+        {
+          "details": {
+            "endLine": 326,
+            "file": "test_tracker_program_create.py",
+            "source": "jscpd:duplication",
+            "startLine": 319
+          },
+          "key": "test_tracker_program_create.py"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 6,
+        "tokens": 63
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 29,
+            "file": "test_verify_bundle_webp.py",
+            "source": "jscpd:duplication",
+            "startLine": 24
+          },
+          "key": "test_verify_bundle_webp.py"
+        },
+        {
+          "details": {
+            "endLine": 44,
+            "file": "test_verify_bundle_webp.py",
+            "source": "jscpd:duplication",
+            "startLine": 39
+          },
+          "key": "test_verify_bundle_webp.py"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 10,
+        "tokens": 72
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 142,
+            "file": "test_verify_gate.py",
+            "source": "jscpd:duplication",
+            "startLine": 133
+          },
+          "key": "test_verify_gate.py"
+        },
+        {
+          "details": {
+            "endLine": 157,
+            "file": "test_verify_gate.py",
+            "source": "jscpd:duplication",
+            "startLine": 148
+          },
+          "key": "test_verify_gate.py"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 9,
+        "tokens": 65
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 143,
+            "file": "test_verify_gate.py",
+            "source": "jscpd:duplication",
+            "startLine": 135
+          },
+          "key": "test_verify_gate.py"
+        },
+        {
+          "details": {
+            "endLine": 174,
+            "file": "test_verify_gate.py",
+            "source": "jscpd:duplication",
+            "startLine": 166
+          },
+          "key": "test_verify_gate.py"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 9,
+        "tokens": 66
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 144,
+            "file": "test_verify_gate.py",
+            "source": "jscpd:duplication",
+            "startLine": 136
+          },
+          "key": "test_verify_gate.py"
+        },
+        {
+          "details": {
+            "endLine": 197,
+            "file": "test_verify_gate.py",
+            "source": "jscpd:duplication",
+            "startLine": 189
+          },
+          "key": "test_verify_gate.py"
+        }
+      ],
+      "smell": "duplicated-code"
+    },
+    {
+      "details": {
+        "lines": 10,
+        "tokens": 52
+      },
+      "issues": [
+        {
+          "details": {
+            "endLine": 215,
+            "file": "test_verify_gate.py",
+            "source": "jscpd:duplication",
+            "startLine": 206
+          },
+          "key": "test_verify_gate.py"
+        },
+        {
+          "details": {
+            "endLine": 232,
+            "file": "test_verify_gate.py",
+            "source": "jscpd:duplication",
+            "startLine": 223
+          },
+          "key": "test_verify_gate.py"
+        }
+      ],
+      "smell": "duplicated-code"
+    }
+  ],
+  "run_complete": true,
+  "smells": {
+    "duplicated-code": 228,
+    "oversized-file": 5
+  },
+  "tool": "habit-sensors"
+}

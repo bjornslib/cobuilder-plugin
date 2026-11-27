@@ -19,14 +19,15 @@ def test_set_slice_state_sends_the_full_cb_block() -> None:
 
 
 def test_open_pull_request_replays_the_recorded_argv() -> None:
-    # E5-4 adds one gate for each epic, so the replay uses the transcript that holds the gate calls.
+    # E7-4: the PR is a milestone with one tracks edge for each epic, so the replay has no gate call.
     from tracker_port.beads import BeadsAdapter
 
-    steps = support.with_syncs(support.steps("open_pull_request_gate_steps"))
+    steps = support.with_syncs(support.steps("open_pull_request_tracks_steps"))
     runner = support.SequenceRunner(steps)
     BeadsAdapter(runner).open_pull_request("pr-101", ["demo-E1", "demo-E2"])
 
     assert len(runner.calls) == len(steps)
+    assert not [call for call in runner.calls if call[0] == "gate"]
 
 
 def test_sequence_runner_rejects_a_drifted_argument() -> None:

@@ -1,0 +1,90 @@
+%% ADR-0050 proposal. No pull request exists. Every class below is envisioned in shell/board/.
+%% Field names follow contracts.md: the address keys, the board model, and the card values.
+classDiagram
+    class BoardQuery {
+        <<envisioned>>
+        +search string
+        +sort string
+        +hidden list
+        +cards string
+        +program string
+        +orphans string
+        +isDefault() bool
+    }
+
+    class BoardModel {
+        <<envisioned>>
+        +columns list
+        +shown int
+        +total int
+        +orphans int
+        +build(query, rows) BoardModel
+    }
+
+    class Column {
+        <<envisioned>>
+        +key string
+        +label string
+        +cards list
+        +count int
+        +hidden bool
+        +emptyReason string
+    }
+
+    class ProgramCard {
+        <<envisioned>>
+        +id string
+        +name string
+        +outcome string
+        +stage string
+        +epicCounts list
+        +sliceCount int
+        +nextReadySlice string
+    }
+
+    class EpicCard {
+        <<envisioned>>
+        +id string
+        +title string
+        +branch string
+        +status string
+        +lifecycle string
+        +pr int
+        +slicesDone int
+        +slicesTotal int
+    }
+
+    class SliceCard {
+        <<envisioned>>
+        +n int
+        +title string
+        +state string
+        +score string
+        +attempts int
+    }
+
+    class StartPromptRule {
+        <<envisioned>>
+        +promptFor(card) string
+        +hasIcon(card) bool
+    }
+
+    class AddressCodec {
+        <<envisioned>>
+        +decode(address) BoardQuery
+        +encode(query) string
+        +programOf(address) string
+    }
+
+    AddressCodec ..> BoardQuery : decodes into
+    BoardQuery --> BoardModel : builds
+    BoardModel *-- Column : holds
+    Column o-- ProgramCard : holds on the program board
+    Column o-- EpicCard : holds on the epic board
+    Column o-- SliceCard : holds on the slices switch
+    StartPromptRule ..> ProgramCard : reads the stage of
+    StartPromptRule ..> EpicCard : reads the status of
+
+    note for BoardQuery "Envisioned: program, orphans, q, sort, hide, and cards<br>come from the address after the board segment"
+    note for BoardModel "Envisioned: a hidden column keeps a rail with its count,<br>and an empty column states why it is empty"
+    note for StartPromptRule "Envisioned: one prompt for each stage and status.<br>A refused clipboard shows the prompt in place"

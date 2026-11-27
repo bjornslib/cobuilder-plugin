@@ -1,12 +1,10 @@
 /**
- * The smoke test for the component runner.
+ * The smoke test for the component runner. It proves that a `.tsx` source under `src/`
+ * renders in jsdom, that the `@` alias resolves, and that the runner reports a pass. It is
+ * not a claim about `StageBadge` itself.
  *
- * It proves that a `.tsx` source under `src/` renders in jsdom, that the `@` alias
- * resolves, and that the runner reports a pass. It is not a claim about
- * `StageBadge` itself.
- *
- * `src/App.tsx:131` supplies the tooltip context for the real app, so this test
- * supplies it the same way, at the same delay.
+ * `src/App.tsx` supplies the tooltip context for the real app, so this test supplies it the
+ * same way, at the same delay.
  */
 
 import { cleanup, render, screen } from "@testing-library/react";

@@ -3,7 +3,7 @@
     "id": "demo-E1",
     "kind": "epic",
     "parent": "demo",
-    "blocked_by": ["pr-101"],
+    "blocked_by": [],
     "lifecycle": "open",
     "assignee": null,
     "envelope": {},
@@ -13,7 +13,7 @@
     "id": "demo-E2",
     "kind": "epic",
     "parent": "demo",
-    "blocked_by": ["pr-101"],
+    "blocked_by": ["demo-E1"],
     "lifecycle": "open",
     "assignee": null,
     "envelope": {},
@@ -23,10 +23,10 @@
     "id": "demo-E3",
     "kind": "epic",
     "parent": "demo",
-    "blocked_by": [],
+    "blocked_by": ["demo-E2"],
     "lifecycle": "open",
     "assignee": null,
-    "envelope": {"deferred": "2026-11-01"},
+    "envelope": {"deferred": "2099-12-31"},
     "external_ref": null
   }
 ]

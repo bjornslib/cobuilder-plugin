@@ -1,0 +1,82 @@
+%% ADR-0048 proposal. No PR yet. linear_*.py modules are proposed.
+sequenceDiagram
+    participant Session as CoBuilder session
+    participant CLI as tracker.py
+    participant Linear as LinearAdapter - proposed
+    participant API as Linear API
+
+    Session->>CLI: claim-next
+    CLI->>Linear: claim_next(claimant, under)
+
+    Note over Linear,API: Full read, about 6 requests for 265 issues. includeArchived is true, because Linear skips archived issues by default
+    loop each page of 50 issues
+        Linear->>API: issues query with parent, relations, assignee, state, cobuilder:// attachments
+        API-->>Linear: page of issues and endCursor
+    end
+    Linear->>Linear: map rows to TrackerRecord, no envelope means unplanned
+    alt Linear type is completed and the envelope score is 0.90 or more
+        Linear->>Linear: the slice reads as closed
+    else Linear type is completed with no passing score
+        Linear->>Linear: the slice reads as open, and the next slice stays blocked
+    end
+    Linear->>Linear: compute ready on the client
+    Note over Linear: Ready means open and unclaimed, each blocker closed, and the parent epic has no open blocker. Never a pull request or an unplanned issue
+    Linear->>Linear: pick the first ready slice
+
+    Note over Linear,API: claim_slice
+    alt the slice already has a claim
+        Linear->>Linear: refuse this slice, as beads does
+    else the slice has no claim
+        opt a claim exists on a slice that is not in progress and is older than two minutes
+            Linear->>API: delete the stale claim attachment
+        end
+        Linear->>API: attachmentCreate cobuilder://repo/id#claim-nonce
+        Linear->>API: query all claim attachments of the issue
+        API-->>Linear: claim attachments with server creation time
+        alt this nonce is earliest by server time, or wins the tie on the lower nonce
+            Linear->>API: issueUpdate sets the assignee from the users map
+            Linear->>API: attachment update writes the envelope with state in_progress
+            Linear-->>CLI: claimed TrackerRecord
+            CLI-->>Session: JSON record
+        else another claim is earlier
+            Linear->>API: delete own claim attachment
+            Linear->>Linear: refuse this slice
+        end
+    end
+    opt the claim was refused
+        Linear->>Linear: claim_next takes the next ready slice
+        Linear-->>CLI: next slice record, or None when no slice is ready
+        CLI-->>Session: JSON record, or empty answer
+    end
+
+    Note over Session,API: Later, the slice leaves in_progress
+    Session->>CLI: set-slice-state closed
+    CLI->>Linear: set_slice_state(id, state)
+    Linear->>API: issueUpdate moves the workflow state
+    Linear->>API: delete the claim attachment of the slice
+    Linear->>API: attachment update stores the new state type in seen
+
+    Note over Session,API: Release of a crashed claim
+    Session->>CLI: set-slice-state open
+    CLI->>Linear: set_slice_state(id, open)
+    Linear->>API: delete all claim attachments of the slice
+    Linear->>API: issueUpdate clears the assignee
+
+    Note over Session,API: Second part, sync finds a plan change
+    Session->>CLI: sync
+    CLI->>Linear: sync()
+    Linear->>API: full read as above
+    API-->>Linear: issues with envelopes and seen values
+    Linear->>Linear: compare each plan field with the value seen last
+    Note over Linear: Plan fields are title, description hash, parent id, sorted blocker ids, workflow state type, and assignee id
+    alt a plan field differs from its seen value
+        Linear->>API: commentCreate, one comment on the changed issue
+        Linear->>API: attachment update refreshes the seen values
+        Linear->>Linear: set plan_changes with field, old value, and new value
+        Linear-->>CLI: sync done
+        CLI-->>Session: JSON payload with plan_changes
+    else every field equals its seen value
+        Linear-->>CLI: sync done
+        CLI-->>Session: JSON payload without plan_changes
+    end
+    Note over Linear: A CoBuilder write updates only the seen fields that it writes, so it raises no plan change

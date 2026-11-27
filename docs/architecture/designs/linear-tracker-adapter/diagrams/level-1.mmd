@@ -1,0 +1,36 @@
+%% ADR-0048 proposal. No PR yet. Parts marked proposed do not exist in the repo.
+C4Container
+    title Linear tracker adapter - proposal
+
+    Person(planner, "Planner", "Plans the backlog, epics, and slices in Linear and watches progress there")
+    Person(developer, "Developer", "Runs CoBuilder sessions, local or cloud")
+
+    Container(session, "CoBuilder session", "Claude Code", "Skills and implement workers call tracker.py")
+    Container(setup, "cobuilder-setup skill", "Claude Code skill", "Install step. Offers linear beside beads and files - proposed change")
+
+    Container_Boundary(shared, "shared/ - existing, plus the proposed Linear files") {
+        Container(cli, "tracker.py", "Python CLI", "One command for workflow state. Prints plan_changes when set - proposed")
+        Container(port, "tracker_port/port.py", "Python Protocol", "TrackerPort and its error classes - existing")
+        Container(config, "tracker_port/config.py", "Python", "load_adapter picks the adapter that tracker.yaml names - existing, gains linear")
+        Container(beads, "tracker_port/beads*.py", "Python", "BeadsAdapter over the bd binary - existing, unchanged")
+        Container(linear, "tracker_port/linear*.py", "Python and stdlib HTTP", "LinearAdapter over the Linear GraphQL API - proposed")
+    }
+
+    Container(files, "Repo files", "YAML and Markdown", ".cobuilder/tracker.yaml and docs/plans")
+    ContainerDb(beadsdb, "beads store", "bd and Dolt", "State of a beads repo")
+    System_Ext(linearapi, "Linear", "Plan fields, workflow states, and one envelope attachment for each issue")
+
+    Rel(planner, linearapi, "Plans and watches in")
+    Rel(developer, session, "Starts")
+    Rel(developer, setup, "Runs once for each repo")
+    Rel(setup, files, "Writes adapter and team and project to tracker.yaml")
+    Rel(session, cli, "Calls", "shell")
+    Rel(cli, config, "Loads the adapter through")
+    Rel(config, files, "Reads adapter and settings from")
+    Rel(config, beads, "Builds when adapter is beads")
+    Rel(config, linear, "Builds when adapter is linear - proposed")
+    Rel(beads, port, "Implements")
+    Rel(linear, port, "Implements - proposed")
+    Rel(beads, beadsdb, "Reads and writes", "bd")
+    Rel(linear, linearapi, "Reads and writes", "GraphQL over HTTPS with LINEAR_API_KEY")
+    Rel(linear, files, "Seeds from docs/plans and writes status lines back")

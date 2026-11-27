@@ -4,8 +4,6 @@
  * A gate state holds a status word and a date. It often adds a note in parentheses or
  * after a dash. The row shows the status word and the date in a short pill. The full
  * text moves to a tooltip, so a long note never squeezes the gate name.
- *
- * This function is pure, so its test needs no DOM.
  */
 
 const NOTE_MARKS = [" (", " — "] as const;

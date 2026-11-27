@@ -36,7 +36,6 @@
       "note": "plugins/artifact/viewer/index.html: make gate-rail-grid cards (renderBuildsMainContent, ~line 3249) clickable, opening a gate-doc sheet modeled on openAdrSheet. Add a design-doc chip to renderEpicCard (~line 3282) for epics with an epic_design entity."
     }
   ],
-  "stage": "decided",
   "supersedes": null,
   "rounds": [
     {

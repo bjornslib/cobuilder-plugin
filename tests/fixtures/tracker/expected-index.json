@@ -18,9 +18,7 @@
       "id": "demo-E1",
       "kind": "epic",
       "parent": "demo",
-      "blocked_by": [
-        "pr-101"
-      ],
+      "blocked_by": [],
       "lifecycle": "open",
       "assignee": null,
       "envelope": {},
@@ -31,7 +29,7 @@
       "kind": "epic",
       "parent": "demo",
       "blocked_by": [
-        "pr-101"
+        "demo-E1"
       ],
       "lifecycle": "open",
       "assignee": null,
@@ -42,11 +40,13 @@
       "id": "demo-E3",
       "kind": "epic",
       "parent": "demo",
-      "blocked_by": [],
+      "blocked_by": [
+        "demo-E2"
+      ],
       "lifecycle": "open",
       "assignee": null,
       "envelope": {
-        "deferred": "2026-11-01"
+        "deferred": "2099-12-31"
       },
       "external_ref": null
     },
@@ -58,7 +58,11 @@
       "lifecycle": "open",
       "assignee": null,
       "envelope": {},
-      "external_ref": "PR#101"
+      "external_ref": "gh-101",
+      "tracks": [
+        "demo-E1",
+        "demo-E2"
+      ]
     },
     "demo-E1-s1": {
       "id": "demo-E1-s1",
@@ -104,11 +108,6 @@
       "parent"
     ],
     [
-      "demo-E1",
-      "pr-101",
-      "blocked_by"
-    ],
-    [
       "demo-E1-s1",
       "demo-E1",
       "parent"
@@ -140,13 +139,28 @@
     ],
     [
       "demo-E2",
-      "pr-101",
+      "demo-E1",
       "blocked_by"
     ],
     [
       "demo-E3",
       "demo",
       "parent"
+    ],
+    [
+      "demo-E3",
+      "demo-E2",
+      "blocked_by"
+    ],
+    [
+      "pr-101",
+      "demo-E1",
+      "tracks"
+    ],
+    [
+      "pr-101",
+      "demo-E2",
+      "tracks"
     ]
   ]
 }
