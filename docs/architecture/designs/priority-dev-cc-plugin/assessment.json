@@ -40,7 +40,7 @@
       "kind": "prediction",
       "severity": "concern",
       "claim": "Each stop with the switch on sends the transcript to an outside service.",
-      "evidence": "ADR-0049",
+      "evidence": "ADR-0051",
       "district": "docs",
       "suggestion": "Keep the switch off by default, and show its state in the pane title."
     },
@@ -58,7 +58,7 @@
       "rule": "Only implement and cobuilder-memory may ship hooks/",
       "source": "ADR-0039",
       "result": "violation",
-      "evidence": "The design adds hooks/ to cobuilder-priority. ADR-0049 amends the rule."
+      "evidence": "The design adds hooks/ to cobuilder-priority. ADR-0051 amends the rule."
     },
     {
       "rule": "priority-dev never imports from plugins/ or shared/, and nothing imports it",

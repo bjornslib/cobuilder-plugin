@@ -1,8 +1,8 @@
 {
   "name": "priority-dev-pi-extension",
   "title": "The priority reader runs in Pi and OMP, and a coding agent can read a session",
-  "adr": "ADR-0051",
-  "adrs": ["ADR-0051", "ADR-0049", "ADR-0050", "ADR-0045", "ADR-0016", "ADR-0017"],
+  "adr": "ADR-0053",
+  "adrs": ["ADR-0053", "ADR-0051", "ADR-0052", "ADR-0045", "ADR-0016", "ADR-0017"],
   "created": "2026-11-23",
   "outcome": "The cobuilder-priority digest and action cards run as a Pi extension. It behaves the same as the Claude Code plugin in both Pi and OMP. A coding agent can run the digest and get the action cards back as a structured response. Later, a Pi Durable orchestrator gets the digest and cards each time a hook fires in a harness it started.",
   "done_when": [
@@ -18,7 +18,7 @@
     "Pi Durable cannot deliver a child event to its orchestrator by any route. This pauses epics E8 to E10, not the Pi package"
   ],
   "min_work": {
-    "derived_from": "3 districts (scripts, commands, docs), 6 ADRs (ADR-0016, ADR-0017, ADR-0025, ADR-0045, ADR-0049, ADR-0050), 2 contexts (cobuilder-priority, priority-dev), generic stack card rule 1",
+    "derived_from": "3 districts (scripts, commands, docs), 6 ADRs (ADR-0016, ADR-0017, ADR-0025, ADR-0045, ADR-0051, ADR-0052), 2 contexts (cobuilder-priority, priority-dev), generic stack card rule 1",
     "alternatives_explored": 15,
     "boundary_rules_checked": true,
     "challenge_stage_run": true,
@@ -34,7 +34,7 @@
     {"id": "E6", "slug": "pi-reader", "title": "Pi package: install, settings, the switch, the stop reading, the pane, the marks, Send, and the priority_read tool.", "outcome": "In Pi and OMP, a stop gives a card in the pane, Send submits the draft, and the boundary record covers pi/cobuilder-priority.", "branch": "design/priority-dev-pi-extension", "pr": null, "state": "planned"},
     {"id": "E7", "slug": "pi-questions", "title": "The question hook for the question tool of each host.", "outcome": "In Pi, a main-loop question opens a question card, and Send answers it. In OMP this holds only when probe E1 shows the hold works. Otherwise OMP question stops are not supported.", "branch": "design/priority-dev-pi-extension", "pr": null, "state": "planned"},
     {"id": "E8", "slug": "orchestrator-probe", "title": "Probe: the route from a PiHarness child to its orchestrator and to a reader.", "outcome": "A probe record names one working route. A container child that runs the Pi package is the first candidate.", "branch": "design/priority-dev-pi-extension", "pr": null, "state": "planned"},
-    {"id": "E9", "slug": "policy-core", "title": "evaluate and the rules file from schemas.md section 4, with the two ADR-0051 guards, in the core.", "outcome": "Table tests over the golden readings pass, and each decision records the rule id, the policy hash, the action hash, and the state digest.", "branch": "design/priority-dev-pi-extension", "pr": null, "state": "planned"},
+    {"id": "E9", "slug": "policy-core", "title": "evaluate and the rules file from schemas.md section 4, with the two ADR-0053 guards, in the core.", "outcome": "Table tests over the golden readings pass, and each decision records the rule id, the policy hash, the action hash, and the state digest.", "branch": "design/priority-dev-pi-extension", "pr": null, "state": "planned"},
     {"id": "E10", "slug": "orchestrator", "title": "Pi Durable orchestrator: the child hook, the advisor, the actuator, and notifications.", "outcome": "The orchestrator answers an allowed card in a child, or notifies the person, and records the decision.", "branch": "design/priority-dev-pi-extension", "pr": null, "state": "planned"}
   ],
   "stage": "approved",

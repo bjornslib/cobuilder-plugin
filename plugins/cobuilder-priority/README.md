@@ -4,7 +4,7 @@ An opt-in mod. It reads each stop of a live Claude Code session with the
 priority-dev interpreter, and shows each reading in a side pane. You mark
 each reading right or wrong, with a note, and you can send the steps you
 choose to the session. The marks stay on this machine. Nothing reaches the
-session without your press. ADR-0049 holds the decision.
+session without your press. ADR-0051 holds the decision.
 
 ## Install
 

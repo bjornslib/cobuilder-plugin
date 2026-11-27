@@ -1,5 +1,5 @@
 // What each press on the pane does: select steps, answer questions, mark, and send.
-// Nothing reaches the session without a press of Send or Edit (ADR-0049).
+// Nothing reaches the session without a press of Send or Edit (ADR-0051).
 import { atom, read, update } from 'claude-code'
 import type { Act, Mark, Reading } from '../types'
 import { draftOf } from './draft'

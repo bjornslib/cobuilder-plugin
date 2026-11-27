@@ -1,12 +1,12 @@
 ---
 # --- doc-gardener required frontmatter ---
-title: "ADR-0049 — cobuilder-priority reads each stop of a live session"
+title: "ADR-0051 — cobuilder-priority reads each stop of a live session"
 status: active
 type: architecture
 last_verified: 2026-11-11
 owner: bjornslib
 # --- 42010 decision-record index (schema: references/decision-records.md §2) ---
-id: ADR-0049
+id: ADR-0051
 name: "cobuilder-priority reads each stop of a live session"
 state: approved
 approved_by: bjornslib
@@ -80,7 +80,7 @@ related:
   - "docs/architecture/contexts/priority-dev/boundary.yaml"
 ---
 
-# ADR-0049 — cobuilder-priority reads each stop of a live session
+# ADR-0051 — cobuilder-priority reads each stop of a live session
 
 ## Context
 

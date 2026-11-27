@@ -1,18 +1,18 @@
 ---
 # --- doc-gardener required frontmatter ---
-title: "ADR-0051 — The priority reader runs in Pi and OMP on a shared core and priority transcripts"
+title: "ADR-0053 — The priority reader runs in Pi and OMP on a shared core and priority transcripts"
 status: active
 type: architecture
 last_verified: 2026-11-25
 owner: bjornslib
 # --- 42010 decision-record index (schema: references/decision-records.md §2) ---
-id: ADR-0051
+id: ADR-0053
 name: "The priority reader runs in Pi and OMP on a shared core and priority transcripts"
 state: decided
 groups: [workflow, packaging]
 approved_by: ""
 problem: "Many coding agents run in parallel, and nothing ranks what they need. The priority reader works only in Claude Code. priority-dev reads only Claude Code transcripts, and the plugin runs on the Claude Code mod engine. The fleet moves to Pi, OMP, and later Pi Durable."
-decision: "priority-dev reads each harness through one transcript adapter for each dialect, which writes a priority transcript. priority read prints one Reading as JSON for any agent. A shared TypeScript core holds the reading contract and a pure evaluate. The Claude Code plugin and a new Pi package for Pi and OMP use the core. A Pi Durable orchestrator may answer for the person only when evaluate allows the action. This amends ADR-0049, ADR-0050, and ADR-0016."
+decision: "priority-dev reads each harness through one transcript adapter for each dialect, which writes a priority transcript. priority read prints one Reading as JSON for any agent. A shared TypeScript core holds the reading contract and a pure evaluate. The Claude Code plugin and a new Pi package for Pi and OMP use the core. A Pi Durable orchestrator may answer for the person only when evaluate allows the action. This amends ADR-0051, ADR-0052, and ADR-0016."
 alternatives:
   - option: "A separate Pi extension with no code from the Claude Code plugin"
     rejected_because: "Two hand copies of the card and draft logic drift apart. The engineer chose one shared core for Claude Code, Pi, and OMP."
@@ -21,7 +21,7 @@ alternatives:
   - option: "Port the D1 program to a TypeScript runner"
     rejected_because: "The 0.654 score holds only for its model, provider, and DSPy prompt. A second reader drifts from the first."
   - option: "A long-lived reader service that every host posts turn records to"
-    rejected_because: "The repo has no deploy step. A service that receives full transcripts weakens the per-session opt-in of ADR-0049."
+    rejected_because: "The repo has no deploy step. A service that receives full transcripts weakens the per-session opt-in of ADR-0051."
   - option: "Byte-identical readings for the same transcript in every host"
     rejected_because: "The model is not deterministic. Parity is exact from a reading to its card text, and by score from a transcript to a reading."
   - option: "A spot check of the cards by eye"
@@ -35,7 +35,7 @@ alternatives:
   - option: "A priority_ask tool in both hosts, with the OMP ask tool blocked"
     rejected_because: "The engineer chose to hook the question tool of each host, in its own data shape."
   - option: "Leave question stops out"
-    rejected_because: "ADR-0050 already reads question stops in Claude Code, so Pi and OMP would fall behind."
+    rejected_because: "ADR-0052 already reads question stops in Claude Code, so Pi and OMP would fall behind."
   - option: "The Pi package as a sub-folder of plugins/cobuilder-priority"
     rejected_because: "Each Claude Code install would carry a Pi package that it cannot load."
   - option: "The Pi package inside priority-dev"
@@ -55,8 +55,8 @@ forces:
   - "tests/test_plugin_manifests.py requires a Claude Code manifest in each folder under plugins/."
   - "priority-dev/docs/design/components.md section 2: the interpreter proposes, a pure evaluate decides, and the actuator executes and checks again."
 related_decisions:
-  - { type: is-related-to, target: ADR-0049 }
-  - { type: is-related-to, target: ADR-0050 }
+  - { type: is-related-to, target: ADR-0051 }
+  - { type: is-related-to, target: ADR-0052 }
   - { type: is-related-to, target: ADR-0045 }
   - { type: is-related-to, target: ADR-0016 }
   - { type: is-related-to, target: ADR-0017 }
@@ -85,12 +85,12 @@ related:
   - "priority-dev/docs/design/schemas.md"
 ---
 
-# ADR-0051 — The priority reader runs in Pi and OMP on a shared core and priority transcripts
+# ADR-0053 — The priority reader runs in Pi and OMP on a shared core and priority transcripts
 
 ## Context
 
-The priority reader of ADR-0049 reads each main-loop stop of a Claude Code
-session. ADR-0050 adds question stops. Two parts tie the reader to Claude
+The priority reader of ADR-0051 reads each main-loop stop of a Claude Code
+session. ADR-0052 adds question stops. Two parts tie the reader to Claude
 Code. The brief builder in priority-dev reads only Claude Code transcripts.
 The plugin runs on the Claude Code mod engine, and only three of its files
 are free of the engine.
@@ -140,7 +140,7 @@ It reaches the process, the store, and the clock through ports. The core
 reaches each plugin through the `shared` symlink of ADR-0017.
 
 **Host adapters.** `plugins/cobuilder-priority` moves onto the core and keeps
-each behaviour of ADR-0049 and ADR-0050. A new Pi package,
+each behaviour of ADR-0051 and ADR-0052. A new Pi package,
 `pi/cobuilder-priority`, loads in Pi and OMP with no fork. It catches a stop
 on `agent_settled` (Pi) and `session_stop` (OMP), and it dedupes by leaf id.
 It draws the pane with a plain-object component that imports no pi-tui.
@@ -166,7 +166,7 @@ the Claude Code shape. In OMP, the hook targets the built-in `ask` tool and
 maps its `questions[]` input to the question file of `--open-question`. An
 `ask` call with only an HTML form gets no question reading. In Pi, when the
 hold fails, the host dialog opens and the reading shows beside it, as in
-ADR-0050. In OMP, when probe E1 shows that the `ask` call cannot be held, the
+ADR-0052. In OMP, when probe E1 shows that the `ask` call cannot be held, the
 reader does not support OMP question stops. The OMP dialog opens as usual,
 and the reader adds nothing to it.
 
@@ -179,7 +179,7 @@ Pi package. A native Pi Durable extension is the second, and its
 `api.entries` transcript would be a third dialect. The orchestrator model
 proposes an answer or a notification. `evaluate(action, state)` in the core
 decides. The first DENY wins, then ASK, then ALLOW, and no match gives ASK.
-The starting verdicts are the ones in `schemas.md` section 4. ADR-0051 adds
+The starting verdicts are the ones in `schemas.md` section 4. ADR-0053 adds
 two guards. An answer to a question stop gives ASK. Any ALLOW needs a
 calibrated, newest Reading with no `needs_human` and no abstain. The
 actuator writes the intent, runs `evaluate` again, sends with `submit`,
@@ -210,10 +210,10 @@ Pi and OMP.
   - Pi Durable is experimental. The orchestrator epics pin its minor version
     and open with a probe.
   - Readings in Pi and OMP stay uncalibrated until epic E4 scores them.
-- This record amends ADR-0049: an answer may reach a session with no press
+- This record amends ADR-0051: an answer may reach a session with no press
   when `evaluate` allows it. An authorization record then names the actor,
   the rule id, the policy hash, the action hash, the state digest, and the
-  draft hash. It amends ADR-0050: the question hook targets the question tool
+  draft hash. It amends ADR-0052: the question hook targets the question tool
   of each host. It amends ADR-0016: a top-level `pi/` folder holds Pi
   packages. It amends the `cobuilder-priority` boundary record: the host
   adapters may import `shared/priority-core`.

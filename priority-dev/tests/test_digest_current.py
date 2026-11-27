@@ -1,4 +1,4 @@
-"""The --digest flag of priority interpret (design priority-dev-cc-plugin, ADR-0049). Every test uses DummyLM.
+"""The --digest flag of priority interpret (design priority-dev-cc-plugin, ADR-0051). Every test uses DummyLM.
 
 The contract that these tests pin:
 - `priority interpret ... --digest current` labels the stored digest `CURRENT RUN:` in the brief that the model reads.

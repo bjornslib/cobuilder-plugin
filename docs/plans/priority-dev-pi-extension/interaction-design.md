@@ -7,7 +7,7 @@
 have not run. The engineer asked for this gate first. Until those documents
 exist, the design record stands in for them:
 `docs/architecture/designs/priority-dev-pi-extension/` (`intent.json`,
-`contracts.md`) and ADR-0051.
+`contracts.md`) and ADR-0053.
 
 **Supplied design.** The engineer chose "the exact same functionality" as the
 Claude Code plugin. The design source is therefore the approved Claude Code
@@ -39,7 +39,7 @@ draft. Nothing reaches the session without a press.
 This document fixes how that pane behaves in Pi and in OMP. Both hosts load
 one package, `pi/cobuilder-priority`. The card content, the draft text, and
 the plain names come from `shared/priority-core`, so they are the same as in
-Claude Code (split parity, ADR-0051). Only the drawing and the input handling
+Claude Code (split parity, ADR-0053). Only the drawing and the input handling
 belong to this host adapter.
 
 Scope: the reader pane, the question card, the status line, the notify band,
@@ -59,7 +59,7 @@ Durable orchestrator, which has no terminal surface.
    command or shortcut move the focus to the pane.
 4. **Nothing sends without a press, and a press on stale content does
    nothing.** Send and Edit act only on the newest reading, and only while no
-   newer reading runs (ADR-0049).
+   newer reading runs (ADR-0051).
 5. **Degrade by surface, never by behaviour.** When a host cannot draw the
    overlay, the same readings, marks, and draft reach the person through
    widgets and dialogs. No mode drops a reading in silence.
@@ -114,7 +114,7 @@ selections, and answers.
 The core stores readings and marks through its `StorePort`. In Pi and OMP the
 port writes `pi.appendEntry("priority.reading", …)` and
 `pi.appendEntry("priority.mark", …)`, and it rebuilds the state from
-`ctx.sessionManager.getBranch()` at `session_start` (contracts.md, ADR-0051).
+`ctx.sessionManager.getBranch()` at `session_start` (contracts.md, ADR-0053).
 
 ### 2.3 Declared Defaults
 
@@ -123,7 +123,7 @@ port writes `pi.appendEntry("priority.reading", …)` and
 | Reader switch | off in each new session | on | core, `on` key. `/priority-on` sets it |
 | Pane on `/priority-on` | open and focused | open and unfocused | host adapter |
 | Pane on a new reading | unchanged: stays as it is, focus stays where it is | open or focus | host adapter |
-| Pane on a held question | open and focused | — | host adapter (ADR-0050) |
+| Pane on a held question | open and focused | — | host adapter (ADR-0052) |
 | Overlay anchor | `right-center` | `center` under 80 columns (section 9) | host adapter |
 | Overlay width | 60 columns, never more than 45% of the terminal | — | host adapter |
 | Agent summary | open | closed (`m`) | core, `Act.summaryClosed` |
@@ -208,7 +208,7 @@ A `notify` step draws no row (it goes to the notify band).
 | Empty | not applicable | No | not applicable |
 | Transient | not applicable | No | not applicable |
 
-Typed text under Other replaces the picks of that question (ADR-0050). The
+Typed text under Other replaces the picks of that question (ADR-0052). The
 Other row draws `Other: <text>` or `Other: o to type` dim.
 
 #### Draft block
@@ -415,7 +415,7 @@ no reading running.
 - If the person presses `d`, the tool returns the decline text.
 - If a subagent calls the tool, or the switch is off, the tool shows the host
   `select` and `input` dialogs, one per question, with no reading.
-- If the reading is slow, Send still works at once (ADR-0050).
+- If the reading is slow, Send still works at once (ADR-0052).
 
 ### 5.5 Answer a question in OMP
 

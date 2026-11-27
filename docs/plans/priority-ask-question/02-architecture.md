@@ -1,7 +1,7 @@
 # Architecture: The priority reader answers an AskUserQuestion call
 
 Grounded in `docs/architecture/designs/priority-ask-question/contracts.md`
-and ADR-0050.
+and ADR-0052.
 
 ## Fit
 
@@ -39,5 +39,5 @@ None. The mod hooks the engine event `tool.call` for `AskUserQuestion`.
 
 ## External
 
-- No new service. E2 and E3 use the same Mercury calls as ADR-0049.
+- No new service. E2 and E3 use the same Mercury calls as ADR-0051.
 - No new environment variable.

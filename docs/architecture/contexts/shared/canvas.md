@@ -59,7 +59,7 @@ related:
 | implement | Import `slice_table`, `gate_status`, and `tracker_port.reader` in `verify_gate.py`. Import `structure_signals` and `structure.keys` in `structure_runner.py`. Shell: `build_index`, `tracker`, and `structure_evidence` in VALIDATE. The tracker hook scripts run `tracker.py` by subprocess |
 | architect | Shell only: `build_index`, `migrate_bundle`, `prose_budget`, `boundary_check`, `validate_decision_state`, `habit_smells`, `tracker`, and `structure_evidence` in architect review mode |
 | cobuilder-packaging | `watch_feedback.py` imports `ledger`. The install command and setup skill run `tracker.py` and `structure_signals` |
-| cobuilder-memory, cobuilder-priority | Symlink only. No import or shell call today. `cobuilder-priority` is a planned consumer of `shared/priority-core/` (ADR-0051) |
+| cobuilder-memory, cobuilder-priority | Symlink only. No import or shell call today. `cobuilder-priority` is a planned consumer of `shared/priority-core/` (ADR-0053) |
 
 ## 6. Outbound communication (dependencies + integration pattern)
 
@@ -189,10 +189,10 @@ flowchart LR
 
 ## Open items
 
-- **ADR-0051 plans `shared/priority-core/`, the first TypeScript library under `shared/`.** The ADR (frontmatter `status: active`, `state: decided`) puts the Reading types, the card view model, the reader queue, and `evaluate` there. `plugins/cobuilder-priority` and `pi/cobuilder-priority` import it through the `shared` symlink. No TypeScript file exists under `shared/` today, and neither `plugins/cobuilder-priority` nor `pi/` imports shared code yet. When the library lands, give it its own module in `boundary.yaml` with `allowed_outbound: []`, because the ADR says it imports no host engine, and add `cobuilder-priority` and the Pi package to its `allowed_inbound`. The base-layer rule then also covers TypeScript (see `forbidden_dependencies`).
+- **ADR-0053 plans `shared/priority-core/`, the first TypeScript library under `shared/`.** The ADR (frontmatter `status: active`, `state: decided`) puts the Reading types, the card view model, the reader queue, and `evaluate` there. `plugins/cobuilder-priority` and `pi/cobuilder-priority` import it through the `shared` symlink. No TypeScript file exists under `shared/` today, and neither `plugins/cobuilder-priority` nor `pi/` imports shared code yet. When the library lands, give it its own module in `boundary.yaml` with `allowed_outbound: []`, because the ADR says it imports no host engine, and add `cobuilder-priority` and the Pi package to its `allowed_inbound`. The base-layer rule then also covers TypeScript (see `forbidden_dependencies`).
 - **ADR candidates from this run:** smells 1 and 2 above, still open. Smell 3 follows smell 1. No new violation: `tracker_port/`, `habit_smells.py`, and the other files added since 2026-10-08 import only the standard library, PyYAML, and sibling shared modules.
 - `governed_by` stays empty. ADR-0017 and ADR-0040 anchor to `cobuilder-packaging`.
 
 ## Governing decisions
 
-ADR-0017 (vendored shared code and bundle compatibility), ADR-0006 (three-phase bundle self-migration), and ADR-0022 (gate doc projection into the index). The tracker code follows ADR-0040 (tracker port), ADR-0031 (beads storage), ADR-0041 (tracker reminder hook), and ADR-0042 (sync). ADR-0047 covers the program stage from the tracker. ADR-0049 covers the structure signals that the coach and VALIDATE report. These ADRs anchor to `cobuilder-packaging`, so `governed_by` here stays empty. ADR-0051 plans `shared/priority-core/`, the first TypeScript library under `shared/`. It is not in code yet.
+ADR-0017 (vendored shared code and bundle compatibility), ADR-0006 (three-phase bundle self-migration), and ADR-0022 (gate doc projection into the index). The tracker code follows ADR-0040 (tracker port), ADR-0031 (beads storage), ADR-0041 (tracker reminder hook), and ADR-0042 (sync). ADR-0047 covers the program stage from the tracker. ADR-0049 covers the structure signals that the coach and VALIDATE report. These ADRs anchor to `cobuilder-packaging`, so `governed_by` here stays empty. ADR-0053 plans `shared/priority-core/`, the first TypeScript library under `shared/`. It is not in code yet.

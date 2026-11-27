@@ -21,7 +21,7 @@
     },
     {
       "option": "A long-lived reader service that every host posts turn records to",
-      "rejected_because": "The repo has no deploy step. A service that receives full transcripts weakens the per-session opt-in of ADR-0049."
+      "rejected_because": "The repo has no deploy step. A service that receives full transcripts weakens the per-session opt-in of ADR-0051."
     },
     {
       "option": "Byte-identical readings for the same transcript in every host",
@@ -49,7 +49,7 @@
     },
     {
       "option": "Leave question stops out",
-      "rejected_because": "ADR-0050 already reads question stops in Claude Code, so Pi and OMP would fall behind."
+      "rejected_because": "ADR-0052 already reads question stops in Claude Code, so Pi and OMP would fall behind."
     },
     {
       "option": "The Pi package as a sub-folder of plugins/cobuilder-priority",
@@ -79,7 +79,7 @@
     "A Claude Code adapter that changes a brief voids the 0.654 score. The 56 scored briefs must stay byte-identical",
     "The stop events differ in Pi and OMP, so a stop can be read twice or missed. Dedupe by leaf id, and show which event fired",
     "OMP bundles its own pi-tui, so pi-tui classes would force a fork. The pane uses a plain-object component",
-    "OMP fails a held tool_call after 30 seconds. The fallback is the ADR-0050 dialog with a reading beside it",
+    "OMP fails a held tool_call after 30 seconds. The fallback is the ADR-0052 dialog with a reading beside it",
     "A Pi session id sits in the header, and a branch breaks the digest chain. The priority transcript carries the session id and the leaf id",
     "The move onto the core can break the approved Claude Code plugin. Its 25 test files must pass unchanged",
     "Pi Durable is experimental, runs no Python, and has no documented push from a child to its parent",
@@ -90,8 +90,8 @@
   "testing": "Golden readings fix the card and draft text of the core, and the tests of each host read them. The Claude Code plugin tests stay green. A pytest check keeps the 56 scored briefs byte-identical. Probes run each host in a scratch session. A labelled sample scores D1 on Pi stops.",
   "reviewer_focus": [
     "The Claude Code adapter keeps the 56 scored briefs byte-identical",
-    "The Claude Code plugin keeps each behaviour of ADR-0049 and ADR-0050 while it moves onto the core",
-    "evaluate starts from the verdicts of schemas.md section 4, gives ASK on no match, and adds the two ADR-0051 guards",
+    "The Claude Code plugin keeps each behaviour of ADR-0051 and ADR-0052 while it moves onto the core",
+    "evaluate starts from the verdicts of schemas.md section 4, gives ASK on no match, and adds the two ADR-0053 guards",
     "One package loads in Pi and OMP, and only the host adapter branches on the host"
   ],
   "unknowns": [

@@ -1,7 +1,7 @@
 # Contracts: priority-dev-cc-plugin
 
 These contracts describe epics E1, E2, and E3. Each entry is a prediction from
-ADR-0049 and from the mod API of Claude Code 2.1.322, not a check.
+ADR-0051 and from the mod API of Claude Code 2.1.322, not a check.
 
 The plugin `cobuilder-priority` is a mod. `hooks/hooks.json` names one
 hooks module, `hooks/register.ts`. The plugin also ships its tests, the

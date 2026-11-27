@@ -1,4 +1,4 @@
-// The CLI runner: it starts the priority-dev CLI as a process and parses its JSON output (ADR-0049).
+// The CLI runner: it starts the priority-dev CLI as a process and parses its JSON output (ADR-0051).
 import type { PluginOptions } from 'claude-code'
 
 const MAX_SECONDS = 600

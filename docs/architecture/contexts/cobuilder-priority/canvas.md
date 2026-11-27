@@ -8,7 +8,7 @@ owner: bjoerns
 related:
   - ../../standard.md
   - "docs/architecture/contexts/cobuilder-priority/boundary.yaml"
-  - "docs/architecture/adr/ADR-0049-cobuilder-priority-reads-each-stop-of-a-live-session.md"
+  - "docs/architecture/adr/ADR-0051-cobuilder-priority-reads-each-stop-of-a-live-session.md"
 ---
 
 # Bounded Context Canvas — cobuilder-priority
@@ -86,5 +86,5 @@ flowchart LR
 
 ## Governing decisions
 
-- [ADR-0049](../../adr/ADR-0049-cobuilder-priority-reads-each-stop-of-a-live-session.md)
+- [ADR-0051](../../adr/ADR-0051-cobuilder-priority-reads-each-stop-of-a-live-session.md)
 - [ADR-0045](../../adr/ADR-0045-the-priority-dev-spike-measures-its-unknowns-probes-first.md)

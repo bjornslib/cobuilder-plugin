@@ -7,14 +7,14 @@
   "sensible": {
     "answer": "Yes. A question is the point where the agent needs the person, and the reader is silent there today.",
     "evidence": [
-      "ADR-0049"
+      "ADR-0051"
     ]
   },
   "maintainability": {
     "answer": "It helps. The new hook sits in the same module, and priority-dev gets one input.",
     "constraint_introduced": "The reader may hold a main-loop AskUserQuestion call until the person answers.",
     "evidence": [
-      "ADR-0050"
+      "ADR-0052"
     ]
   },
   "pattern": {
@@ -22,7 +22,7 @@
     "answer": "New. No plugin in this repo answers a tool call itself.",
     "duplicates": [],
     "evidence": [
-      "ADR-0049"
+      "ADR-0051"
     ]
   },
   "findings": [
@@ -30,7 +30,7 @@
       "kind": "prediction",
       "severity": "concern",
       "claim": "A hook that waits for a person may be cut off by its time budget, and the engine then opens its dialog.",
-      "evidence": "ADR-0050",
+      "evidence": "ADR-0052",
       "district": "scripts",
       "suggestion": "Run the E1 probe before any E3 slice."
     },
@@ -38,7 +38,7 @@
       "kind": "prediction",
       "severity": "concern",
       "claim": "A reading at a question is new ground for D1.",
-      "evidence": "ADR-0049",
+      "evidence": "ADR-0051",
       "district": "scripts",
       "suggestion": "Record stop_kind on each reading, so the marks split."
     },

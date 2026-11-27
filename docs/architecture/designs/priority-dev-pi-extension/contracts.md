@@ -1,7 +1,7 @@
 # Contracts: priority-dev-pi-extension
 
-These contracts add to the contracts of `priority-dev-cc-plugin` (ADR-0049)
-and `priority-ask-question` (ADR-0050). ADR-0051 holds the decision. The
+These contracts add to the contracts of `priority-dev-cc-plugin` (ADR-0051)
+and `priority-ask-question` (ADR-0052). ADR-0053 holds the decision. The
 orchestrator contracts add detail to `priority-dev/docs/design/components.md`
 sections 2 and 3.2, and to `schemas.md` sections 5 to 8. They do not replace
 them. Every entry is a prediction, not a check.
@@ -164,7 +164,7 @@ Decision = { verdict: "ALLOW" | "DENY" | "ASK", rule_id, policy_hash,
   file and the rule code.
 - The first DENY wins, then ASK, then ALLOW. No match gives ASK. A rule that
   throws gives DENY with its rule id (components.md section 3.2).
-- ADR-0051 adds two guards. An answer to a question stop
+- ADR-0053 adds two guards. An answer to a question stop
   (`stop_kind: question`) gives ASK. Any ALLOW needs a calibrated Reading,
   the newest Reading of the child, no `needs_human`, and no abstain.
 - An action has `author: "orchestrator"` or `author: "human"`, as in

@@ -22,7 +22,7 @@ allowed_dependencies:
 context_map:
   - with: priority-dev
     pattern: conformist
-    note: "Runs `uv run priority digest` and `uv run priority interpret --digest` as a process in the priority-dev folder (hooks/cli.ts, the one caller of $.process.run for the CLI), and reads their JSON output. Never imports the package (ADR-0045, ADR-0049)."
+    note: "Runs `uv run priority digest` and `uv run priority interpret --digest` as a process in the priority-dev folder (hooks/cli.ts, the one caller of $.process.run for the CLI), and reads their JSON output. Never imports the package (ADR-0045, ADR-0051)."
   - with: cobuilder-packaging
     pattern: open-host-service
     note: "marketplace.json lists the plugin. The packaging tests allow its hooks/ folder. The umbrella install writes the plugin's userConfig through priority_settings.py in cobuilder-full-lifecycle."
@@ -132,4 +132,4 @@ modules:
     rule: "Draws the reader pane and stores nothing itself. Engine-bound ($.ui, atoms)."
 
 governed_by:
-  - ADR-0049
+  - ADR-0051

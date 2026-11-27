@@ -1,5 +1,5 @@
 C4Container
-    title priority-dev-pi-extension (ADR-0051) - one Reading contract for Claude Code, Pi and OMP
+    title priority-dev-pi-extension (ADR-0053) - one Reading contract for Claude Code, Pi and OMP
 
     Person(dev, "Developer", "Runs coding agents in Claude Code, Pi and OMP")
 
@@ -11,10 +11,10 @@ C4Container
 
     Container_Boundary(core, "shared/priority-core (TypeScript)") {
         Container(coretypes, "priority-core", "TypeScript", "Reading types, card view model, draft, reader queue, pending record, ports")
-        Container(evaluate, "evaluate", "TypeScript", "Pure gate: first DENY, then ASK, then ALLOW. Rules from schemas.md section 4 plus two ADR-0051 guards")
+        Container(evaluate, "evaluate", "TypeScript", "Pure gate: first DENY, then ASK, then ALLOW. Rules from schemas.md section 4 plus two ADR-0053 guards")
     }
 
-    Container(ccplugin, "plugins/cobuilder-priority", "Claude Code host adapter", "Moves onto the core, keeps ADR-0049 and ADR-0050 behaviour")
+    Container(ccplugin, "plugins/cobuilder-priority", "Claude Code host adapter", "Moves onto the core, keeps ADR-0051 and ADR-0052 behaviour")
     Container(piext, "pi/cobuilder-priority", "Pi and OMP host adapter", "agent_settled / session_stop, priority_read tool, question hook, plain-object pane")
 
     Container_Boundary(orch, "Pi Durable orchestrator (planned, epics E8 to E10; route chosen by probe E8)") {

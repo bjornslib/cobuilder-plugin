@@ -46,4 +46,4 @@ An opt-in plugin, cobuilder-priority, ships one hooks module. A per-session swit
 
 ## Decision record
 
-ADR-0049. It amends ADR-0025 and ADR-0039.
+ADR-0051. It amends ADR-0025 and ADR-0039.

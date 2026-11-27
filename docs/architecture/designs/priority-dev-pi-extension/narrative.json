@@ -40,7 +40,7 @@
       },
       {
         "option": "A long-lived reader service that every host posts turn records to",
-        "rejected_because": "The repo has no deploy step. A service that receives full transcripts weakens the per-session opt-in of ADR-0049."
+        "rejected_because": "The repo has no deploy step. A service that receives full transcripts weakens the per-session opt-in of ADR-0051."
       },
       {
         "option": "Byte-identical readings for the same transcript in every host",
@@ -68,7 +68,7 @@
       },
       {
         "option": "Leave question stops out",
-        "rejected_because": "ADR-0050 already reads question stops in Claude Code, so Pi and OMP would fall behind."
+        "rejected_because": "ADR-0052 already reads question stops in Claude Code, so Pi and OMP would fall behind."
       },
       {
         "option": "The Pi package as a sub-folder of plugins/cobuilder-priority",
@@ -101,7 +101,7 @@
       },
       {
         "kind": "constraint",
-        "text": "ADR-0049, amended: only evaluate may allow an answer that no person pressed."
+        "text": "ADR-0051, amended: only evaluate may allow an answer that no person pressed."
       },
       {
         "kind": "risk",

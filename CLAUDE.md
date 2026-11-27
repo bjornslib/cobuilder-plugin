@@ -149,7 +149,7 @@ tests/                            pytest suite for packaging, scripts, and gates
 - Decisions live in `docs/architecture/adr/`. Read the ADR before you change
   what it decided. ADR-0016 covers the plugin split, and ADR-0017 covers
   `shared/`. ADR-0025 covers the install surface. ADR-0039 amends it for
-  the `cobuilder-memory` mod, and ADR-0049 for the `cobuilder-priority` mod.
+  the `cobuilder-memory` mod, and ADR-0051 for the `cobuilder-priority` mod.
 - The repo commits two fixtures: `.cobuilder-architect/cobuilder-harness-a103a550/`
   and `.cobuilder-architect/digital-curator-80f83abb/`. Do not delete them as
   stale cache.
@@ -173,7 +173,7 @@ tests/                            pytest suite for packaging, scripts, and gates
 5. **Narrow install surface.** Only `implement` ships agents. `implement` ships
    four hook scripts: the coach, the tracker reminder, the sync check, and the
    sync flush. The `cobuilder-memory` and `cobuilder-priority` mods each ship
-   a hooks module (ADR-0025, ADR-0039, ADR-0041, ADR-0042, ADR-0049). No
+   a hooks module (ADR-0025, ADR-0039, ADR-0041, ADR-0042, ADR-0051). No
    plugin ships an MCP server.
 6. **Never overwrite authored content.** `extract_story.py` keeps authored
    narrative fields. A data migration declares the fields it touches. Its guard

@@ -21,7 +21,7 @@ FORBIDDEN_MANIFEST_KEYS = {"agents", "hooks", "mcpServers", "mcp"}
 
 # Only implement may ship agents/ (ADR-0025). Only implement and the
 # cobuilder-memory and cobuilder-priority mods may ship hooks/ (ADR-0039,
-# ADR-0049). MCP servers stay forbidden for every plugin, including these.
+# ADR-0051). MCP servers stay forbidden for every plugin, including these.
 PLUGINS_ALLOWED_AGENTS = {"implement"}
 PLUGINS_ALLOWED_HOOKS = {"implement", "cobuilder-memory", "cobuilder-priority"}
 

@@ -1,10 +1,10 @@
 {
   "name": "priority-ask-question",
   "title": "The priority reader answers an AskUserQuestion call from its pane",
-  "adr": "ADR-0050",
+  "adr": "ADR-0052",
   "adrs": [
-    "ADR-0050",
-    "ADR-0049",
+    "ADR-0052",
+    "ADR-0051",
     "ADR-0045"
   ],
   "created": "2026-11-15",
@@ -20,7 +20,7 @@
     "The probe shows that a hook cannot hold the call open, and the fallback dialog with a reading in the pane does not work either"
   ],
   "min_work": {
-    "derived_from": "2 districts (scripts, docs), 3 ADRs (ADR-0045, ADR-0049, ADR-0025), 1 boundary rule (priority-dev only as a process)",
+    "derived_from": "2 districts (scripts, docs), 3 ADRs (ADR-0045, ADR-0051, ADR-0025), 1 boundary rule (priority-dev only as a process)",
     "alternatives_explored": 7,
     "boundary_rules_checked": true,
     "challenge_stage_run": true,

@@ -1,17 +1,17 @@
 ---
 # --- doc-gardener required frontmatter ---
-title: "ADR-0050 — The priority reader answers an AskUserQuestion call from its pane"
+title: "ADR-0052 — The priority reader answers an AskUserQuestion call from its pane"
 status: active
 type: architecture
 last_verified: 2026-11-15
 owner: bjornslib
 # --- 42010 decision-record index (schema: references/decision-records.md §2) ---
-id: ADR-0050
+id: ADR-0052
 name: "The priority reader answers an AskUserQuestion call from its pane"
 state: decided
 groups: [workflow]
-problem: "An AskUserQuestion call stops the agent until the person answers, but no Stop fires. So the reader of ADR-0049 stays silent at the point where the person needs a reading most, and the engine dialog shows the question with no reading beside it."
-decision: "With the reader on, a tool.call hook catches each main-loop AskUserQuestion call and holds it open. The pane opens with a question card built from the call input at once. In the background, the reader runs priority digest, then priority interpret with the new --open-question input, and the reading fills in beside the questions. The person's choice in the pane answers the call as the tool's result, so the engine dialog does not open. If a live probe shows that a hook cannot hold the call open, or the pane cannot open, the hook passes the call on: the dialog opens, and the pane still reads that point. This amends ADR-0049, whose reader never holds the session."
+problem: "An AskUserQuestion call stops the agent until the person answers, but no Stop fires. So the reader of ADR-0051 stays silent at the point where the person needs a reading most, and the engine dialog shows the question with no reading beside it."
+decision: "With the reader on, a tool.call hook catches each main-loop AskUserQuestion call and holds it open. The pane opens with a question card built from the call input at once. In the background, the reader runs priority digest, then priority interpret with the new --open-question input, and the reading fills in beside the questions. The person's choice in the pane answers the call as the tool's result, so the engine dialog does not open. If a live probe shows that a hook cannot hold the call open, or the pane cannot open, the hook passes the call on: the dialog opens, and the pane still reads that point. This amends ADR-0051, whose reader never holds the session."
 alternatives:
   - option: "A classic.PreToolUse hook"
     rejected_because: "It can only allow, ask, or deny a call. It cannot answer one."
@@ -32,7 +32,7 @@ forces:
   - "D1 was scored on turn-end stops only."
   - "ADR-0045 keeps priority-dev apart: the plugin calls its CLI only as a separate process."
 related_decisions:
-  - { type: amends, target: ADR-0049 }
+  - { type: amends, target: ADR-0051 }
   - { type: is-related-to, target: ADR-0045 }
 related_concerns: []
 history:
@@ -51,14 +51,14 @@ delivers:
 source_pr: null
 related:
   - "docs/architecture/designs/priority-ask-question/contracts.md"
-  - "docs/architecture/adr/ADR-0049-cobuilder-priority-reads-each-stop-of-a-live-session.md"
+  - "docs/architecture/adr/ADR-0051-cobuilder-priority-reads-each-stop-of-a-live-session.md"
 ---
 
-# ADR-0050 — The priority reader answers an AskUserQuestion call from its pane
+# ADR-0052 — The priority reader answers an AskUserQuestion call from its pane
 
 ## Context
 
-ADR-0049 reads each main-loop Stop. A Stop fires at the end of a turn.
+ADR-0051 reads each main-loop Stop. A Stop fires at the end of a turn.
 An AskUserQuestion call also stops the agent, but inside a turn, so no
 Stop fires and the reader stays silent. The engine opens its own dialog,
 and the person answers there with no reading.
@@ -96,7 +96,7 @@ opens, and the pane still reads that point.
 
 ## Consequences
 
-- The reader now holds the session at a question, which ADR-0049 never
+- The reader now holds the session at a question, which ADR-0051 never
   did. Only a person's answer, or the fallback, releases it.
 - `priority interpret` gets one new input. Eval, replay, and the
   optimiser do not use it.

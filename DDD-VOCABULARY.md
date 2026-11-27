@@ -604,7 +604,7 @@ The pane slides and fades in the direction of travel. Reduced motion turns the m
 
 ## cobuilder-priority
 
-These terms come from the `priority-dev-cc-plugin` design (ADR-0049). The plugin lives in `plugins/cobuilder-priority/`.
+These terms come from the `priority-dev-cc-plugin` design (ADR-0051). The plugin lives in `plugins/cobuilder-priority/`.
 
 <a id="live-reading"></a>
 **Live reading** (`cobuilder-priority`):
@@ -624,7 +624,7 @@ _Avoid_: label (a confirmed entry of the labelled fixture set)
 **Reader pane** (`cobuilder-priority`):
 The side pane that shows one card per live reading of the session, newest first, each with its reading marks.
 
-The next four terms come from the `priority-dev-pi-extension` design (ADR-0051).
+The next four terms come from the `priority-dev-pi-extension` design (ADR-0053).
 
 <a id="priority-core"></a>
 **Priority core** (`cobuilder-priority`):
@@ -648,7 +648,7 @@ The `priority read <session-file>` command, and the `priority_read` tool that wr
 
 <a id="priority-transcript"></a>
 **Priority transcript** (`priority-dev`):
-The harness-neutral form of one session that the brief builder reads: the dialect, the session id, the leaf id, and the active branch as human, client, agent, and tool-result records. A transcript adapter writes it (ADR-0051).
+The harness-neutral form of one session that the brief builder reads: the dialect, the session id, the leaf id, and the active branch as human, client, agent, and tool-result records. A transcript adapter writes it (ADR-0053).
 _Avoid_: turn record (a rejected name), session record (an `implement` term for the coach's session file)
 
 <a id="transcript-adapter"></a>

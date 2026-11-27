@@ -1,9 +1,9 @@
 {
   "name": "priority-dev-cc-plugin",
   "title": "A plugin reads each stop of a live session with D1",
-  "adr": "ADR-0049",
+  "adr": "ADR-0051",
   "adrs": [
-    "ADR-0049",
+    "ADR-0051",
     "ADR-0045",
     "ADR-0039",
     "ADR-0025"

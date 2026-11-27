@@ -53,7 +53,7 @@ context_map:
     note: "The umbrella plugin cobuilder-full-lifecycle imports ledger in watch_feedback.py. Its install command and setup skill run tracker.py and structure_signals by shell."
   - with: cobuilder-priority
     pattern: shared-kernel
-    note: "plugins/cobuilder-priority holds the shared symlink but imports no shared code today. It is a planned consumer of shared/priority-core (ADR-0051)."
+    note: "plugins/cobuilder-priority holds the shared symlink but imports no shared code today. It is a planned consumer of shared/priority-core (ADR-0053)."
   - with: cobuilder-memory
     pattern: shared-kernel
     note: "plugins/cobuilder-memory holds the shared symlink and imports no shared code. Its TypeScript hooks module sits outside the Python kernel."
@@ -71,7 +71,7 @@ forbidden_dependencies:
     why: "SMELL (comment only): a comment in _bundle_meta.py names the viewer file workDeck.ts, and the slice_table.py docstring lists plugins/implement/scripts/verify_gate.py and plugins/artifact/scripts/build_builds_view.py. Nothing runs from these names, but they name paths in plugins. Replace them with plugin names. A test keeps DESIGN_STAGES equal to the lanes."
 
   - target: "plugins/<name>/ or pi/<name>/ as TypeScript import (planned shared/priority-core/)"
-    why: "ADR-0051 plans shared/priority-core/, the first TypeScript library under shared/. It must stay a base layer: it imports no host engine (pi, omp, Claude Code) and no plugin, and it reaches process, store, and clock through ports. Plugins and pi/cobuilder-priority import it through the shared symlink, never the reverse. Not yet in code: no TypeScript file exists under shared/."
+    why: "ADR-0053 plans shared/priority-core/, the first TypeScript library under shared/. It must stay a base layer: it imports no host engine (pi, omp, Claude Code) and no plugin, and it reaches process, store, and clock through ports. Plugins and pi/cobuilder-priority import it through the shared symlink, never the reverse. Not yet in code: no TypeScript file exists under shared/."
 
   - target: "the bd name outside beads*.py and bd_runner.py"
     from: shared/tracker_port/config.py

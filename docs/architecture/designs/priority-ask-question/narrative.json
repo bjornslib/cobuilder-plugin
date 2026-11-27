@@ -57,7 +57,7 @@
       },
       {
         "kind": "constraint",
-        "text": "ADR-0049: the reader reads main-loop stops only."
+        "text": "ADR-0051: the reader reads main-loop stops only."
       }
     ]
   }

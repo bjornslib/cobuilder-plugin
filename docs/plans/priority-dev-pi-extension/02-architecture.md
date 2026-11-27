@@ -1,7 +1,7 @@
 # Architecture: The priority reader runs in Pi and OMP, and a coding agent can read a session
 
 Grounded in `docs/architecture/designs/priority-dev-pi-extension/contracts.md`,
-`intent.json`, and ADR-0051. The planned orchestrator adds detail to
+`intent.json`, and ADR-0053. The planned orchestrator adds detail to
 `priority-dev/docs/design/components.md` sections 2 and 3.2 and to
 `schemas.md` sections 4 to 8, and does not replace them.
 
@@ -16,7 +16,7 @@ Grounded in `docs/architecture/designs/priority-dev-pi-extension/contracts.md`,
 | `priority-dev/src/priority/cli.py` | changed | Adds `priority read`, which prints one Reading as JSON. `digest` and `interpret` keep their flags | E3 |
 | `priority-dev/calibration.json` | new | D1 score per program and dialect. `priority read` copies it into `calibrated` | E4 |
 | `shared/priority-core/` | new | TypeScript: Reading types, plain names, answer labels, card view model, draft, reader queue, pending record, ports, golden readings, later `evaluate` | E5, E9 |
-| `plugins/cobuilder-priority/hooks/` | changed | Moves onto the core. Keeps every behaviour of ADR-0049 and ADR-0050. Its 25 test files stay unchanged | E5 |
+| `plugins/cobuilder-priority/hooks/` | changed | Moves onto the core. Keeps every behaviour of ADR-0051 and ADR-0052. Its 25 test files stay unchanged | E5 |
 | `pi/cobuilder-priority/` | new | The Pi package for Pi and OMP: stop hook, pane component, commands, `priority_read` tool, question hook, settings, install manifest | E6, E7 |
 | `docs/architecture/contexts/{cobuilder-priority,shared}/boundary.yaml` | changed | Allow the host adapters to import the core. Add `pi/cobuilder-priority` | E5, E6 |
 | `tests/test_plugin_manifests.py` | unchanged | Keeps `plugins/` for Claude Code plugins only. `pi/` sits outside it | E6 |
@@ -25,7 +25,7 @@ Grounded in `docs/architecture/designs/priority-dev-pi-extension/contracts.md`,
 
 Boundaries that hold: nothing imports priority-dev, and each host calls it as a
 process (ADR-0045). The core imports no host engine (stack card `generic`,
-rule 1). Only `evaluate` may allow an answer that no person pressed (ADR-0051).
+rule 1). Only `evaluate` may allow an answer that no person pressed (ADR-0053).
 
 ## Endpoints
 

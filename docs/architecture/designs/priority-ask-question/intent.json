@@ -44,7 +44,7 @@
   ],
   "testing": "claude plugin test drives the hook through tool.call with a stub beneath it. pytest covers --open-question. A live probe records the budget and the answer shape.",
   "reviewer_focus": [
-    "The session now waits on the reader at a question, which ADR-0049 never did",
+    "The session now waits on the reader at a question, which ADR-0051 never did",
     "The fallback when the hook is cut off"
   ],
   "unknowns": [

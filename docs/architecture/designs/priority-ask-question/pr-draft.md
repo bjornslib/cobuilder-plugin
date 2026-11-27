@@ -3,7 +3,7 @@
 ## Why
 
 An AskUserQuestion call stops the agent until the person answers, but no
-Stop fires. The reader of ADR-0049 stays silent there, and the engine
+Stop fires. The reader of ADR-0051 stays silent there, and the engine
 dialog shows the question with no reading.
 
 ## What changes
@@ -18,7 +18,7 @@ dialog shows the question with no reading.
 
 ## Decision
 
-ADR-0050 amends ADR-0049.
+ADR-0052 amends ADR-0051.
 
 ## Checks
 

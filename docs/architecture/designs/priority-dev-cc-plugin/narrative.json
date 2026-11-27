@@ -35,7 +35,7 @@
     "narration": "The plugin is one hooks module beside the other plugins. It starts the priority-dev CLI as a process, so priority-dev stays apart. The store holds readings and marks, and the pane reads the store.",
     "beats": [
       { "kind": "constraint", "text": "ADR-0045: the plugin never imports priority-dev." },
-      { "kind": "decision", "text": "ADR-0049 amends ADR-0025 and ADR-0039 to let cobuilder-priority ship hooks/." },
+      { "kind": "decision", "text": "ADR-0051 amends ADR-0025 and ADR-0039 to let cobuilder-priority ship hooks/." },
       { "kind": "risk", "text": "D1 was never scored on a brief with a CURRENT RUN digest." }
     ]
   }

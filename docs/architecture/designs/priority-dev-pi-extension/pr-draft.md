@@ -8,11 +8,11 @@ The engineer now runs agents in Pi and OMP, and Pi Durable makes a durable orche
 
 ## Why this approach
 
-priority-dev reads each harness through one transcript adapter for each dialect. `priority read` prints one Reading as JSON for any agent. A shared TypeScript core holds the reading contract and a pure `evaluate`. The Claude Code plugin and a new Pi package for Pi and OMP use the core. The Pi Durable orchestrator stays planned. ADR-0051 holds the decision, and it amends ADR-0049, ADR-0050, and ADR-0016.
+priority-dev reads each harness through one transcript adapter for each dialect. `priority read` prints one Reading as JSON for any agent. A shared TypeScript core holds the reading contract and a pure `evaluate`. The Claude Code plugin and a new Pi package for Pi and OMP use the core. The Pi Durable orchestrator stays planned. ADR-0053 holds the decision, and it amends ADR-0051, ADR-0052, and ADR-0016.
 
 ## Alternatives considered
 
-See `intent.alternatives` and ADR-0051. In short: a separate extension with no shared code, flattening Pi into Claude Code JSONL, a TypeScript port of D1, a hosted reader service, an orchestrator LLM that decides alone, and three other homes for the Pi package.
+See `intent.alternatives` and ADR-0053. In short: a separate extension with no shared code, flattening Pi into Claude Code JSONL, a TypeScript port of D1, a hosted reader service, an orchestrator LLM that decides alone, and three other homes for the Pi package.
 
 ## Out of scope
 

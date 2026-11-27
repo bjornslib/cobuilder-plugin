@@ -2,7 +2,7 @@
 
 Grounded in the design record `priority-dev-pi-extension`
 (`docs/architecture/designs/priority-dev-pi-extension/intent.json`) and
-ADR-0051.
+ADR-0053.
 
 ## Problem
 

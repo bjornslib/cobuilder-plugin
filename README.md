@@ -301,7 +301,7 @@ plugins/
   cobuilder-priority/              the opt-in reader mod: a TypeScript hooks module and its tests
 ```
 
-Only `implement` ships agents. Only `implement` and the `cobuilder-memory` and `cobuilder-priority` mods ship hooks (ADR-0025, ADR-0039, ADR-0049). The `implement` plugin ships four hook scripts: the `PostToolUse` habit coach, the `SessionStart` tracker reminder (ADR-0041), the `Stop` sync check, and the `SessionEnd` sync flush (ADR-0042). No plugin ships an MCP server. The commands in each plugin are thin. The skills hold the procedures.
+Only `implement` ships agents. Only `implement` and the `cobuilder-memory` and `cobuilder-priority` mods ship hooks (ADR-0025, ADR-0039, ADR-0051). The `implement` plugin ships four hook scripts: the `PostToolUse` habit coach, the `SessionStart` tracker reminder (ADR-0041), the `Stop` sync check, and the `SessionEnd` sync flush (ADR-0042). No plugin ships an MCP server. The commands in each plugin are thin. The skills hold the procedures.
 
 ### Use the skills in another harness
 

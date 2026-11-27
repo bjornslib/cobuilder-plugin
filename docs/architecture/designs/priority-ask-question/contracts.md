@@ -1,7 +1,7 @@
 # Contracts: priority-ask-question
 
 These contracts add to the contracts of `priority-dev-cc-plugin`
-(ADR-0049). ADR-0050 holds the decision.
+(ADR-0051). ADR-0052 holds the decision.
 
 ## Epic E1: Probe
 
