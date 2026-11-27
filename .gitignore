@@ -66,3 +66,21 @@ plugins/cobuilder-memory/.claude-plugin/types/
 .beads-credential-key
 .beads/proxieddb/
 *.gate.lock*
+priority-dev/fixtures/real/
+priority-dev/reports/logs/
+.lavish/priority-dev-interpret-digest.html
+priority-dev/probes/logs/calls.jsonl
+priority-dev/probes/logs/slice-1-attempt-5-20261024/
+priority-dev/probes/programs/
+
+# Local blind-review page; holds real transcript text, never commit.
+.lavish/judge-blind-pairs.html
+.lavish/reference-review*.html
+.lavish/blind-pairs-v2.html
+.lavish/blind-pairs-v3.html
+.lavish/holdout2-reference-review.html
+.lavish/train2-reference-review.html
+.lavish/c2-holdout-report.html
+.lavish/c3-train-val-report.html
+.lavish/priority-dev-labels-review.html
+.lavish/new-data-labels-review.html

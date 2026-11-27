@@ -1,0 +1,3 @@
+{"type": "user", "uuid": "u1", "origin": null, "message": {"role": "user", "content": "Update the changelog."}}
+{"type": "assistant", "uuid": "a1", "isApiErrorMessage": true, "message": {"id": "msg_01", "role": "assistant", "model": "<synthetic>", "stop_reason": "stop_sequence", "content": [{"type": "text", "text": "Credit balance is too low."}]}}
+{"type": "assistant", "uuid": "a2", "isApiErrorMessage": true, "message": {"id": "msg_02", "role": "assistant", "model": "<synthetic>", "stop_reason": "stop_sequence", "content": [{"type": "text", "text": "No response requested."}]}}

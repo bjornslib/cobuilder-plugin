@@ -1,0 +1,42 @@
+feature: priority-dev-spike
+test_command: "uv run pytest priority-dev/tests -q"
+baseline: "none: priority-dev/ does not exist yet"
+thresholds:
+  accept: 0.90
+  investigate: 0.70
+max_attempts: 3
+models:
+  red: haiku
+  green: haiku
+  validate: sonnet
+slices:
+  - {id: 1, name: "E1 model probe", weight: 0.1}
+  - {id: 2, name: "E1 hook command and scratch-session probe", weight: 0.09}
+  - {id: 3, name: "E1 tmux paste probe", weight: 0.08}
+  - {id: 4, name: "E2 stop brief", weight: 0.09}
+  - {id: 5, name: "E2 interpret a stop", weight: 0.1}
+  - {id: 6, name: "E2 digest a run", weight: 0.06}
+  - {id: 7, name: "E2 replay report with failure drills", weight: 0.1}
+  - {id: 8, name: "E3 append and read", weight: 0.05}
+  - {id: 9, name: "E3 ingest and follow", weight: 0.06}
+  - {id: 10, name: "E3 interpret from the log", weight: 0.06}
+  - {id: 11, name: "E4 hooks and tail to the log", weight: 0.07}
+  - {id: 12, name: "E4 send a signed command", weight: 0.07}
+  - {id: 13, name: "E4 answer from a held hook", weight: 0.07}
+  - {id: 14, name: "E5 notify for a done stop", weight: 0.05}
+  - {id: 15, name: "E5 labelled fixture set", weight: 0.08}
+  - {id: 16, name: "E5 metric and baseline", weight: 0.08}
+  - {id: 17, name: "E5 one-call variant", weight: 0.06}
+  - {id: 18, name: "E5 optimiser comparison", weight: 0.08}
+  - {id: 20, name: "E6 reference payloads and judge validation", weight: 0.08}
+  - {id: 21, name: "E6 every stop reaches Pick and Fill", weight: 0.06}
+  - {id: 22, name: "E7 complete reflection evidence", weight: 0.05}
+  - {id: 23, name: "E7 whole proposals from the reflection model", weight: 0.05}
+  - {id: 24, name: "E7 general instructions only", weight: 0.05}
+  - {id: 25, name: "E7 compact stop brief", weight: 0.05}
+  - {id: 26, name: "E7 live smoke run", weight: 0.05}
+  - {id: 27, name: "E7 optimiser run C3", weight: 0.05}
+  - {id: 28, name: "E8 proposer prompt and reference material", weight: 0.05}
+  - {id: 29, name: "E8 reference and structural diff in the feedback", weight: 0.05}
+  - {id: 30, name: "E8 live smoke run of the v2 proposer", weight: 0.05}
+  - {id: 31, name: "E8 arms D1 and D2", weight: 0.05}

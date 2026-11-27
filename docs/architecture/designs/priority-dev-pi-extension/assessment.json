@@ -1,0 +1,51 @@
+{
+  "stage": "design",
+  "generated": "2026-11-25",
+  "verdict": "concerns",
+  "risk_tier": "sensitive",
+  "summary": "The design moves the reader to a harness-neutral contract at a fair cost. It reuses the decision model of priority-dev instead of a new one. Three host unknowns and the Pi Durable route are open, so probes E1 and E8 come before the work that depends on them.",
+  "sensible": {
+    "answer": "Yes. The reader judges sessions that the engineer runs, and those sessions now run in Pi and OMP. The transcript belongs in priority-dev, which owns the brief, and the host code belongs in thin adapters.",
+    "evidence": ["ADR-0045", "ADR-0051"]
+  },
+  "maintainability": {
+    "answer": "It helps. One core replaces engine-bound copies, and the golden readings lock the card text across hosts. It costs a move of an approved plugin, which its tests guard.",
+    "constraint_introduced": "Each host adapter calls priority-dev only as a process and gives cards only through the shared core. Only evaluate may allow an answer without a person.",
+    "evidence": ["ADR-0017", "ADR-0051", "ADR-0053"]
+  },
+  "pattern": {
+    "verdict": "new-valuable",
+    "answer": "New. No code in the repo targets a second harness. The transcript adapters fill the slot that adapter-host.md left for another harness. The orchestrator reuses the propose, decide, and execute split of priority-dev.",
+    "duplicates": [],
+    "evidence": ["ADR-0045", "ADR-0052"]
+  },
+  "findings": [
+    {"kind": "prediction", "severity": "concern", "claim": "A Claude Code transcript adapter that changes one brief voids the 0.654 score of D1.", "evidence": "ADR-0051", "district": "scripts", "suggestion": "Make byte-identical briefs on the 56 scored stops a check in E2."},
+    {"kind": "prediction", "severity": "concern", "claim": "The move of the approved plugin onto the core can break a working reader.", "evidence": "ADR-0051", "district": "scripts", "suggestion": "Keep every Claude Code test file unchanged, and move one module for each slice."},
+    {"kind": "prediction", "severity": "concern", "claim": "Pi and OMP fire different stop events, so a reading can run twice or not at all.", "evidence": "ADR-0053", "district": "scripts", "suggestion": "Run probe E1 first, and dedupe by leaf id."},
+    {"kind": "prediction", "severity": "concern", "claim": "An answer with no press amends ADR-0051, and a wrong rule sends text to an agent.", "evidence": "ADR-0051", "district": "docs", "suggestion": "Start from the schemas.md section 4 verdicts, where approve_gate and interrupt stay ASK, and add the two ADR-0053 guards."},
+    {"kind": "prediction", "severity": "concern", "claim": "D1 may score far below 0.654 on Pi and OMP stops, which would void the host work.", "evidence": "ADR-0051", "district": "scripts", "suggestion": "Score D1 in E4, before the core and the Pi package."},
+    {"kind": "prediction", "severity": "note", "claim": "A shared TypeScript core under shared/ reaches every plugin through its symlink, and npm does not pack a symlink.", "evidence": "ADR-0017", "district": "scripts", "suggestion": "Keep the core free of engine imports. A published Pi package carries a vendored copy of the core."},
+    {"kind": "prediction", "severity": "note", "claim": "A top-level pi/ folder is a new install surface, and no district in inventory.yaml covers pi/ or shared/.", "evidence": "ADR-0016", "district": "docs", "suggestion": "Record the layout in ADR-0053 and CLAUDE.md, and add the district at the next baseline."}
+  ],
+  "boundary_checks": [
+    {"rule": "Code under priority-dev never imports from plugins/ or shared/, and nothing imports priority-dev", "source": "ADR-0045", "result": "ok", "evidence": "The hosts call priority read as a process. The transcript adapters sit inside priority-dev."},
+    {"rule": "The core imports no host engine, and no other layer does", "source": "generic stack card, boundary rule 1", "result": "ok", "evidence": "Host APIs reach the core through ports. Rendering stays in each host adapter."},
+    {"rule": "Nothing reaches a session without a press", "source": "ADR-0051", "result": "amended", "evidence": "ADR-0053 lets the orchestrator answer only when evaluate allows the action."},
+    {"rule": "boundary_check --require on the touched paths", "source": "shared/boundary_check.py", "result": "fail", "evidence": "pi/cobuilder-priority is uncovered, because it does not exist yet. shared was stale and is now refreshed to ok. E6 adds pi/cobuilder-priority to the cobuilder-priority boundary record."},
+    {"rule": "cobuilder-priority allowed_dependencies name only the claude-code engine", "source": "docs/architecture/contexts/cobuilder-priority/boundary.yaml", "result": "amended", "evidence": "ADR-0053 adds shared/priority-core. E5 updates the record."}
+  ],
+  "delta": {
+    "districts_added": [],
+    "districts_changed": ["scripts", "docs"],
+    "edges_added": [
+      "pi/cobuilder-priority -> shared/priority-core (import)",
+      "plugins/cobuilder-priority -> shared/priority-core (import)",
+      "pi/cobuilder-priority -> priority read (process)",
+      "Pi Durable child -> orchestrator (route chosen by E8, planned)"
+    ],
+    "edges_removed": []
+  },
+  "regret_risk": "If the probes are skipped, the Pi package can read some stops twice and miss others in OMP with no sign. If the policy grows an allow rule for gates, the orchestrator sends approvals that the person never saw. The probes, the default ASK, and the authorization record carry that weight.",
+  "drift": []
+}

@@ -1,0 +1,104 @@
+{
+  "captured": "2026-11-23",
+  "source": "design",
+  "design_name": "priority-dev-pi-extension",
+  "authorship": "agent-assisted",
+  "problem": "Many coding agents run in parallel, and nothing ranks or filters what they need. No agent answers for the person when the next step is obvious. The priority reader works only in Claude Code. priority-dev reads only Claude Code transcripts, and the plugin runs on the Claude Code mod engine.",
+  "why_now": "The engineer now runs agents in Pi and OMP, and Pi Durable 1.6 with the Cloudflare PiHarness makes a durable orchestrator possible. The reading contract must become harness-neutral before a second host copies the Claude Code shapes.",
+  "approach": "Readings become harness-neutral, and each host gets a thin adapter. In priority-dev, one transcript adapter for each dialect writes a priority transcript. A new priority read command prints one Reading as JSON, and it is the agent mode. A shared TypeScript core holds the reading types, the card view, the draft, the reader queue, and a pure evaluate. The Claude Code plugin moves onto the core, and a new Pi package loads in Pi and OMP. The Pi Durable orchestrator stays planned: the advisor proposes, evaluate decides, and the actuator sends.",
+  "alternatives": [
+    {
+      "option": "A separate Pi extension with no code from the Claude Code plugin",
+      "rejected_because": "Two hand copies of the card and draft logic drift apart. The engineer chose one shared core for Claude Code, Pi, and OMP."
+    },
+    {
+      "option": "The extension flattens the Pi branch into a Claude Code JSONL file",
+      "rejected_because": "An agent outside Pi could not read a Pi session. The engineer chose transcript adapters in priority-dev, so the design stays uniform."
+    },
+    {
+      "option": "Port the D1 program to a TypeScript runner",
+      "rejected_because": "The 0.654 score holds only for its model, provider, and DSPy prompt. A second reader drifts from the first."
+    },
+    {
+      "option": "A long-lived reader service that every host posts turn records to",
+      "rejected_because": "The repo has no deploy step. A service that receives full transcripts weakens the per-session opt-in of ADR-0051."
+    },
+    {
+      "option": "Byte-identical readings for the same transcript in every host",
+      "rejected_because": "The model is not deterministic. Parity is exact from a reading to its card text, and by score from a transcript to a reading."
+    },
+    {
+      "option": "A spot check of the cards by eye",
+      "rejected_because": "It catches no drift between the hosts."
+    },
+    {
+      "option": "The orchestrator LLM decides by judgment, and its prompt is the rule",
+      "rejected_because": "The rule must be recorded and testable. The priority-dev design says that the model proposes and a pure evaluate decides."
+    },
+    {
+      "option": "A rule table only, with no LLM in the choice",
+      "rejected_because": "The engineer wants the orchestrator to judge when an answer is obvious. The gate still has the last word."
+    },
+    {
+      "option": "Control stays in Python behind a priority-dev endpoint",
+      "rejected_because": "A Durable Object runs no Python, and the actuator runs evaluate again just before each send."
+    },
+    {
+      "option": "A priority_ask tool in both hosts, with the OMP ask tool blocked",
+      "rejected_because": "The engineer chose to hook the question tool of each host, in its own data shape."
+    },
+    {
+      "option": "Leave question stops out",
+      "rejected_because": "ADR-0052 already reads question stops in Claude Code, so Pi and OMP would fall behind."
+    },
+    {
+      "option": "The Pi package as a sub-folder of plugins/cobuilder-priority",
+      "rejected_because": "Each Claude Code install would carry a Pi package that it cannot load."
+    },
+    {
+      "option": "The Pi package inside priority-dev",
+      "rejected_because": "It adds a second runtime to priority-dev, which ADR-0045 keeps as a Python leaf."
+    },
+    {
+      "option": "Build the core and the Pi package before D1 is scored on Pi stops",
+      "rejected_because": "Abort gate 3 would fire after the build is spent. The engineer took the reviewer's survivor to score D1 first, in E4."
+    },
+    {
+      "option": "A deny list stricter than schemas.md section 4",
+      "rejected_because": "The priority-dev design already sets a starting verdict for each action kind. The engineer chose two guards on top of it, not a second table."
+    }
+  ],
+  "out_of_scope": [
+    "The build of the Pi Durable orchestrator. Epics E8 to E10 stay planned until the Pi package ships",
+    "A change to D1, eval, replay, or the optimiser",
+    "A hosted reader service and a mobile client",
+    "Subagent stops in any host",
+    "Permission prompts in Pi and OMP"
+  ],
+  "risks": [
+    "A Claude Code adapter that changes a brief voids the 0.654 score. The 56 scored briefs must stay byte-identical",
+    "The stop events differ in Pi and OMP, so a stop can be read twice or missed. Dedupe by leaf id, and show which event fired",
+    "OMP bundles its own pi-tui, so pi-tui classes would force a fork. The pane uses a plain-object component",
+    "OMP fails a held tool_call after 30 seconds. The fallback is the ADR-0052 dialog with a reading beside it",
+    "A Pi session id sits in the header, and a branch breaks the digest chain. The priority transcript carries the session id and the leaf id",
+    "The move onto the core can break the approved Claude Code plugin. Its 25 test files must pass unchanged",
+    "Pi Durable is experimental, runs no Python, and has no documented push from a child to its parent",
+    "A Durable hook can replay and answer twice. The actuator keys each send on the action hash",
+    "Agent mode reads any session file. The per-session switch stays, and redaction runs before each model call",
+    "A reading takes two model calls, and a session that reads itself feeds its next brief. The brief leaves out priority read output"
+  ],
+  "testing": "Golden readings fix the card and draft text of the core, and the tests of each host read them. The Claude Code plugin tests stay green. A pytest check keeps the 56 scored briefs byte-identical. Probes run each host in a scratch session. A labelled sample scores D1 on Pi stops.",
+  "reviewer_focus": [
+    "The Claude Code adapter keeps the 56 scored briefs byte-identical",
+    "The Claude Code plugin keeps each behaviour of ADR-0051 and ADR-0052 while it moves onto the core",
+    "evaluate starts from the verdicts of schemas.md section 4, gives ASK on no match, and adds the two ADR-0053 guards",
+    "One package loads in Pi and OMP, and only the host adapter branches on the host"
+  ],
+  "unknowns": [
+    "Does exactly one stop event fire for each main-loop stop in Pi and in OMP?",
+    "Can a plain-object component draw the pane in both hosts with no pi-tui import?",
+    "Can OMP's ask call be held for minutes and answered from the pane?",
+    "How does a PiHarness child reach its orchestrator, and where does the reader run for Durable children?",
+    "How does D1 score on Pi and OMP stops?"
+  ]
+}

@@ -1,0 +1,162 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1300 680" role="img" aria-labelledby="rt-title rt-desc">
+<title id="rt-title">priority.dev runtime architecture (proposal)</title>
+<desc id="rt-desc">Runtime components of priority.dev, grouped by boundary. Nodes marked pending are proposed by the design. Each edge names its protocol.</desc>
+<style>
+.bd{fill:var(--svg-bd,none);stroke:var(--svg-bd-line,#9aa4b2);stroke-width:1.2;stroke-dasharray:6 4}
+.bt{font:600 12px system-ui,sans-serif;fill:var(--svg-muted,#5b6575);letter-spacing:.06em;text-transform:uppercase}
+.nr{fill:var(--svg-node,#ffffff);stroke:var(--svg-ink,#1f2937);stroke-width:1.4}
+.nx{fill:var(--svg-node,#ffffff);stroke:var(--svg-ink,#1f2937);stroke-width:1.4;stroke-dasharray:5 3}
+.nt{font:600 12px system-ui,sans-serif;fill:var(--svg-ink,#1f2937)}
+.ns{font:400 10.5px system-ui,sans-serif;fill:var(--svg-muted,#5b6575)}
+.pb{fill:var(--svg-pending,#f4c36a);stroke:none}
+.pt{font:700 8.5px system-ui,sans-serif;fill:#2b1d00;letter-spacing:.04em}
+.ed{fill:none;stroke:var(--svg-ink,#1f2937);stroke-width:1.3;marker-end:url(#arr)}
+.el{font:400 10px system-ui,sans-serif;fill:var(--svg-ink,#1f2937);paint-order:stroke;stroke:var(--svg-page,#ffffff);stroke-width:3.5px;stroke-linejoin:round}
+.ar{fill:var(--svg-ink,#1f2937)}
+</style>
+<defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ar" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+<g id="bound-client"><title>Client boundary: the developer's browser</title>
+<rect class="bd" x="20" y="20" width="220" height="130" rx="10"/>
+<text class="bt" x="32" y="40">client</text></g>
+<g id="bound-external"><title>External boundary: systems outside the repo</title>
+<rect class="bd" x="450" y="20" width="400" height="120" rx="10"/>
+<text class="bt" x="462" y="40">external</text></g>
+<g id="bound-api"><title>API boundary: the resident local service</title>
+<rect class="bd" x="260" y="190" width="750" height="280" rx="10"/>
+<text class="bt" x="272" y="210">api: resident local service</text></g>
+<g id="bound-data"><title>Data boundary: files and the tracker</title>
+<rect class="bd" x="260" y="500" width="740" height="150" rx="10"/>
+<text class="bt" x="272" y="520">data</text></g>
+<g id="bound-infra"><title>Infra boundary: terminal and agents</title>
+<rect class="bd" x="1050" y="190" width="230" height="280" rx="10"/>
+<text class="bt" x="1062" y="210">infra</text></g>
+<g id="n-web"><title>Web inbox: React app, ranked list</title>
+<rect class="nr" x="40" y="60" width="180" height="60" rx="12"/>
+<text class="nt" x="130.0" y="86" text-anchor="middle">Web inbox</text>
+<text class="ns" x="130.0" y="101" text-anchor="middle">React app, ranked list</text>
+<rect class="pb" x="176" y="53" width="42" height="13" rx="6"/>
+<text class="pt" x="197" y="63" text-anchor="middle">PENDING</text>
+</g>
+<g id="n-claude"><title>Claude model: advisor call</title>
+<rect class="nx" x="650" y="56" width="160" height="56" rx="12"/>
+<text class="nt" x="730.0" y="82" text-anchor="middle">Claude model</text>
+<text class="ns" x="730.0" y="97" text-anchor="middle">advisor call</text>
+</g>
+<g id="n-notify"><title>Desktop notification: Urgent items</title>
+<rect class="nx" x="465" y="56" width="170" height="56" rx="12"/>
+<text class="nt" x="550.0" y="82" text-anchor="middle">Desktop notification</text>
+<text class="ns" x="550.0" y="97" text-anchor="middle">Urgent items</text>
+<rect class="pb" x="591" y="49" width="42" height="13" rx="6"/>
+<text class="pt" x="612" y="59" text-anchor="middle">PENDING</text>
+</g>
+<g id="n-inbox-api"><title>Inbox API: HTTP and SSE</title>
+<rect class="nr" x="280" y="230" width="140" height="60" rx="12"/>
+<text class="nt" x="350.0" y="256" text-anchor="middle">Inbox API</text>
+<text class="ns" x="350.0" y="271" text-anchor="middle">HTTP and SSE</text>
+<rect class="pb" x="376" y="223" width="42" height="13" rx="6"/>
+<text class="pt" x="397" y="233" text-anchor="middle">PENDING</text>
+</g>
+<g id="n-queue"><title>Attention queue: rank, delivery plan</title>
+<rect class="nr" x="470" y="230" width="140" height="60" rx="12"/>
+<text class="nt" x="540.0" y="256" text-anchor="middle">Attention queue</text>
+<text class="ns" x="540.0" y="271" text-anchor="middle">rank, delivery plan</text>
+<rect class="pb" x="566" y="223" width="42" height="13" rx="6"/>
+<text class="pt" x="587" y="233" text-anchor="middle">PENDING</text>
+</g>
+<g id="n-advisor"><title>Advisor: short Claude call</title>
+<rect class="nr" x="660" y="230" width="140" height="60" rx="12"/>
+<text class="nt" x="730.0" y="256" text-anchor="middle">Advisor</text>
+<text class="ns" x="730.0" y="271" text-anchor="middle">short Claude call</text>
+<rect class="pb" x="756" y="223" width="42" height="13" rx="6"/>
+<text class="pt" x="777" y="233" text-anchor="middle">PENDING</text>
+</g>
+<g id="n-reducer"><title>Status reducer: events to status</title>
+<rect class="nr" x="850" y="230" width="140" height="60" rx="12"/>
+<text class="nt" x="920.0" y="256" text-anchor="middle">Status reducer</text>
+<text class="ns" x="920.0" y="271" text-anchor="middle">events to status</text>
+<rect class="pb" x="946" y="223" width="42" height="13" rx="6"/>
+<text class="pt" x="967" y="233" text-anchor="middle">PENDING</text>
+</g>
+<g id="n-actuator"><title>Actuator: policy, deny list, send</title>
+<rect class="nr" x="280" y="370" width="140" height="60" rx="12"/>
+<text class="nt" x="350.0" y="396" text-anchor="middle">Actuator</text>
+<text class="ns" x="350.0" y="411" text-anchor="middle">policy, deny list, send</text>
+<rect class="pb" x="376" y="363" width="42" height="13" rx="6"/>
+<text class="pt" x="397" y="373" text-anchor="middle">PENDING</text>
+</g>
+<g id="n-adapter"><title>Session adapter: tmux: signal source + transport</title>
+<rect class="nr" x="660" y="370" width="140" height="60" rx="12"/>
+<text class="nt" x="730.0" y="396" text-anchor="middle">Session adapter: tmux</text>
+<text class="ns" x="730.0" y="411" text-anchor="middle">signal source + transport</text>
+<rect class="pb" x="756" y="363" width="42" height="13" rx="6"/>
+<text class="pt" x="777" y="373" text-anchor="middle">PENDING</text>
+</g>
+<g id="n-tracker"><title>tracker.py + beads: workflow state</title>
+<path class="nr" d="M300,548 a90.0,8 0 0 1 180,0 v64 a90.0,8 0 0 1 -180,0 z"/>
+<path class="nr" fill="none" d="M300,548 a90.0,8 0 0 0 180,0"/>
+<text class="nt" x="390.0" y="570" text-anchor="middle">tracker.py + beads</text>
+<text class="ns" x="390.0" y="585" text-anchor="middle">workflow state</text>
+</g>
+<g id="n-policy"><title>Policy: ranks, rules, delivery</title>
+<path class="nr" d="M520,548 a90.0,8 0 0 1 180,0 v64 a90.0,8 0 0 1 -180,0 z"/>
+<path class="nr" fill="none" d="M520,548 a90.0,8 0 0 0 180,0"/>
+<text class="nt" x="610.0" y="570" text-anchor="middle">Policy</text>
+<text class="ns" x="610.0" y="585" text-anchor="middle">ranks, rules, delivery</text>
+<rect class="pb" x="656" y="533" width="42" height="13" rx="6"/>
+<text class="pt" x="677" y="543" text-anchor="middle">PENDING</text>
+</g>
+<g id="n-log"><title>Event log: JSONL, cursor keyed</title>
+<path class="nr" d="M740,548 a90.0,8 0 0 1 180,0 v64 a90.0,8 0 0 1 -180,0 z"/>
+<path class="nr" fill="none" d="M740,548 a90.0,8 0 0 0 180,0"/>
+<text class="nt" x="830.0" y="570" text-anchor="middle">Event log</text>
+<text class="ns" x="830.0" y="585" text-anchor="middle">JSONL, cursor keyed</text>
+<rect class="pb" x="876" y="533" width="42" height="13" rx="6"/>
+<text class="pt" x="897" y="543" text-anchor="middle">PENDING</text>
+</g>
+<g id="n-hook"><title>Hook script: appends hook events</title>
+<rect class="nr" x="1070" y="230" width="190" height="60"/>
+<text class="nt" x="1165.0" y="256" text-anchor="middle">Hook script</text>
+<text class="ns" x="1165.0" y="271" text-anchor="middle">appends hook events</text>
+<rect class="pb" x="1216" y="223" width="42" height="13" rx="6"/>
+<text class="pt" x="1237" y="233" text-anchor="middle">PENDING</text>
+</g>
+<g id="n-tmux"><title>tmux + Claude Code: sessions, transcripts</title>
+<rect class="nr" x="1070" y="370" width="190" height="60" rx="12"/>
+<text class="nt" x="1165.0" y="396" text-anchor="middle">tmux + Claude Code</text>
+<text class="ns" x="1165.0" y="411" text-anchor="middle">sessions, transcripts</text>
+</g>
+<path class="ed" d="M220,90 H340 V230"/>
+<text class="el" x="282" y="82" text-anchor="middle">HTTP and SSE</text>
+<path class="ed" d="M350,290 V370"/>
+<text class="el" x="358" y="333" text-anchor="start">answer command</text>
+<path class="ed" d="M470,260 H420"/>
+<text class="el" x="445" y="252" text-anchor="middle">items</text>
+<path class="ed" d="M660,260 H610"/>
+<text class="el" x="635" y="252" text-anchor="middle">escalate</text>
+<path class="ed" d="M850,260 H800"/>
+<text class="el" x="825" y="252" text-anchor="middle">verdict</text>
+<path class="ed" d="M730,230 V112"/>
+<text class="el" x="738" y="170" text-anchor="start">headless claude call (HTTPS)</text>
+<path class="ed" d="M540,230 V112"/>
+<text class="el" x="532" y="170" text-anchor="end">OS notification (Urgent)</text>
+<path class="ed" d="M690,290 L420,415"/>
+<text class="el" x="548" y="338" text-anchor="middle">decision</text>
+<path class="ed" d="M420,385 H660"/>
+<text class="el" x="600" y="378" text-anchor="middle">send command</text>
+<path class="ed" d="M800,400 H1070"/>
+<text class="el" x="935" y="392" text-anchor="middle">tmux send-keys, capture</text>
+<path class="ed" d="M1165,370 V290"/>
+<text class="el" x="1173" y="333" text-anchor="start">hook event (stdin)</text>
+<path class="ed" d="M1070,260 H1030 V580 H920"/>
+<text class="el" x="1040" y="572" text-anchor="start">fs append (hooks)</text>
+<path class="ed" d="M920,290 L880,540"/>
+<text class="el" x="940" y="524" text-anchor="start">fs read (cursor)</text>
+<path class="ed" d="M770,430 L820,540"/>
+<text class="el" x="826" y="488" text-anchor="start">fs append</text>
+<path class="ed" d="M410,430 V455 H760 V540"/>
+<text class="el" x="600" y="449" text-anchor="middle">fs append intent and effect</text>
+<path class="ed" d="M380,430 L580,540"/>
+<text class="el" x="565" y="528" text-anchor="start">fs read policy</text>
+<path class="ed" d="M320,430 L340,540"/>
+<text class="el" x="300" y="500" text-anchor="end">uv run tracker.py</text>
+</svg>

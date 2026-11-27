@@ -1,0 +1,166 @@
+diff --git a/priority-dev/src/priority/config.py b/priority-dev/src/priority/config.py
+index 3e47e15..9f74edd 100644
+--- a/priority-dev/src/priority/config.py
++++ b/priority-dev/src/priority/config.py
+@@ -25,12 +25,19 @@ _BASE_URL = {
+ # Lowest temperature the provider accepts. Mercury refuses anything under 0.5.
+ _MIN_TEMPERATURE = {"inception": 0.5}
+ 
+-# Judge defaults. The judge and the GEPA reflection LM use the NVIDIA Mistral model, not the task model.
++# Judge defaults. The judge uses the NVIDIA Mistral model, not the task model.
+ _JUDGE_DEFAULTS = {
+     "JUDGE_PROVIDER": "nvidia_nim",
+     "JUDGE_MODEL": "mistralai/mistral-large-4-1t-a52b",
+ }
+ 
++# GEPA reflection defaults. The reflection model has its own settings, so a judge override never moves it
++# to the task model. It stays the NVIDIA Mistral model unless REFLECTION_PROVIDER or REFLECTION_MODEL is set.
++_REFLECTION_DEFAULTS = {
++    "REFLECTION_PROVIDER": "nvidia_nim",
++    "REFLECTION_MODEL": "mistralai/mistral-large-4-1t-a52b",
++}
++
+ # The key each judge provider reads when JUDGE_API_KEY is not set.
+ _JUDGE_KEY = {"openrouter": "OPENROUTER_API_KEY", "nvidia_nim": "NVIDIA_API_KEY", "inception": "INCEPTION_LABS_API_KEY"}
+ 
+@@ -111,22 +118,54 @@ def judge_reasoning_effort() -> str | None:
+     return (_get("JUDGE_REASONING_EFFORT") or "").strip() or None
+ 
+ 
+-def _judge_key_reader() -> str:
+-    """The judge key from JUDGE_API_KEY, else the per-provider key. It never prints the key.
++def _role_key(own_name: str, provider_name: str) -> str:
++    """The key from `own_name`, else the per-provider key. It never prints the key.
+ 
+     A test-side stub (the suite-wide conftest guard) makes the reader raise before any
+-    file or real key is read, so no test builds a live judge model. An explicit env
++    file or real key is read, so no test builds a live judge or reflection model. An explicit env
+     value from a test still wins over the stub."""
+-    env_key = os.environ.get("JUDGE_API_KEY") or os.environ.get(_JUDGE_KEY[judge_provider()])
++    env_key = os.environ.get(own_name) or os.environ.get(_JUDGE_KEY[provider_name])
+     if env_key:
+         return env_key
+     if "judge_key" in _STUBS:
+-        raise RuntimeError("JUDGE_API_KEY is stubbed for this test and no env value is set")
+-    key = _get("JUDGE_API_KEY") or _get(_JUDGE_KEY[judge_provider()])
++        raise RuntimeError(f"{own_name} is stubbed for this test and no env value is set")
++    key = _get(own_name) or _get(_JUDGE_KEY[provider_name])
+     if key:
+         return key
+-    raise RuntimeError("JUDGE_API_KEY is not set and priority-dev/.env has no value for it")
++    raise RuntimeError(f"{own_name} is not set and priority-dev/.env has no value for it")
++
++
++def _judge_key_reader() -> str:
++    """The judge key from JUDGE_API_KEY, else the per-provider key."""
++    return _role_key("JUDGE_API_KEY", judge_provider())
++
++
++def reflection_provider() -> str:
++    """The GEPA reflection provider. One of openrouter, nvidia_nim, or inception."""
++    name = _get("REFLECTION_PROVIDER") or _REFLECTION_DEFAULTS["REFLECTION_PROVIDER"]
++    if name not in _PREFIX:
++        raise RuntimeError(f"REFLECTION_PROVIDER is {name!r}, want one of {sorted(_PREFIX)}")
++    return name
++
++
++def reflection_model() -> str:
++    """The reflection model id, with the provider prefix the provider needs."""
++    return f"{_PREFIX[reflection_provider()]}/{_get('REFLECTION_MODEL') or _REFLECTION_DEFAULTS['REFLECTION_MODEL']}"
++
++
++def reflection_base_url() -> str:
++    """The reflection endpoint override, else the provider default."""
++    return _get("REFLECTION_BASE_URL") or _BASE_URL[reflection_provider()]
++
++
++def reflection_temperature() -> float:
++    """0, raised to the lowest value the reflection provider accepts."""
++    return max(0.0, _MIN_TEMPERATURE.get(reflection_provider(), 0.0))
++
+ 
++def reflection_key() -> str:
++    """The reflection key from REFLECTION_API_KEY, else the per-provider key."""
++    return _role_key("REFLECTION_API_KEY", reflection_provider())
+ 
+ # Test-side stubs for key readers. The suite-wide conftest stubs `judge_key` so no test
+ # reads the real .env key; an explicit env value from a test still wins over the stub.
+diff --git a/priority-dev/src/priority/gepa_proposer.py b/priority-dev/src/priority/gepa_proposer.py
+index 51a0d28..3701343 100644
+--- a/priority-dev/src/priority/gepa_proposer.py
++++ b/priority-dev/src/priority/gepa_proposer.py
+@@ -4,7 +4,6 @@ from __future__ import annotations
+ from typing import Literal, get_args, get_origin
+ 
+ SCHEMA_GUARD_LINE = "Use exactly these fields. Do not invent field names."
+-MAX_PROPOSAL_CHARS = 4000
+ 
+ 
+ def _render(name: str, annotation: object) -> str:
+@@ -38,14 +37,6 @@ def _strip_guard(text: str) -> str:
+     return head.rstrip()
+ 
+ 
+-def _cap_draft(text: str, limit: int = MAX_PROPOSAL_CHARS) -> str:
+-    """The draft within the length cap, cut back to the last space."""
+-    if len(text) <= limit:
+-        return text
+-    cut = text[:limit]
+-    return cut.rsplit(" ", 1)[0] if " " in cut else cut
+-
+-
+ def guided_instruction_proposer(candidate: dict, reflective_dataset: dict,
+                                 components_to_update: list) -> dict:
+     """The GEPA instruction proposer: the default reflective flow plus a schema guard.
+@@ -54,7 +45,8 @@ def guided_instruction_proposer(candidate: dict, reflective_dataset: dict,
+     of ReflectiveExamples (Inputs, Generated Outputs, Feedback), and the components to update. It returns
+     the new instruction mapping. Each proposed instruction gains the exact output fields of ProposeStop,
+     so a drifted field name fails the shape check instead of entering the prompt. An earlier guard is
+-    stripped before the new one is added, so guards do not pile up, and each draft is capped.
++    stripped before the new one is added, so guards do not pile up. No draft is cut: an earlier 4000-character
++    cut lost the tail of every proposal and left rules unfinished.
+     """
+     from dspy.teleprompt.gepa import InstructionProposer
+ 
+@@ -63,5 +55,5 @@ def guided_instruction_proposer(candidate: dict, reflective_dataset: dict,
+         reflective_dataset=reflective_dataset,
+         components_to_update=components_to_update,
+     )
+-    return {name: _cap_draft(_strip_guard(text)) + "\n\n" + schema_guard(name)
++    return {name: _strip_guard(text) + "\n\n" + schema_guard(name)
+             for name, text in proposed.items()}
+diff --git a/priority-dev/src/priority/optimise.py b/priority-dev/src/priority/optimise.py
+index 843834e..5a91047 100644
+--- a/priority-dev/src/priority/optimise.py
++++ b/priority-dev/src/priority/optimise.py
+@@ -19,6 +19,8 @@ CLASS_BY_OPTIMISER = {"gepa": "GEPA", "miprov2": "MIPROv2", "bootstrap": "Bootst
+ OPTIMISERS = ("gepa", "miprov2", "bootstrap", "labeled")
+ REPORT_RELATIVE = Path("probes") / "optimiser-report.md"
+ PROGRAM_DIR = Path("probes") / "programs"
++REFLECTION_MAX_TOKENS = 16000
++REFLECTION_TIMEOUT = 600  # seconds; one reflection prompt holds several whole briefs
+ 
+ 
+ @dataclass(frozen=True)
+@@ -133,12 +135,17 @@ def _teleprompter_for(optimiser: str) -> object | None:
+ 
+ 
+ def _reflection_lm() -> object | None:
+-    """The judge model for GEPA reflection, or None when the key is stubbed out."""
++    """The GEPA reflection model from the REFLECTION_* settings (default: NVIDIA Mistral), never the judge
++    or the task model. None when the key is stubbed out."""
+     try:
+-        from priority.evaluation.judge import judge_lm
+-        return judge_lm(retries=3)
++        import dspy
++
++        from priority import config
++        return dspy.LM(config.reflection_model(), api_key=config.reflection_key(),
++                       api_base=config.reflection_base_url(), temperature=config.reflection_temperature(),
++                       max_tokens=REFLECTION_MAX_TOKENS, timeout=REFLECTION_TIMEOUT, num_retries=3, cache=False)
+     except (AssertionError, RuntimeError):
+-        # The made-up-world tests stub the judge key this way. Their stub teleprompter needs no model.
++        # The made-up-world tests stub the keys this way. Their stub teleprompter needs no model.
+         return None
+ 
+ 

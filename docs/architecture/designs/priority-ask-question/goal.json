@@ -1,0 +1,57 @@
+{
+  "name": "priority-ask-question",
+  "title": "The priority reader answers an AskUserQuestion call from its pane",
+  "adr": "ADR-0052",
+  "adrs": [
+    "ADR-0052",
+    "ADR-0051",
+    "ADR-0045"
+  ],
+  "created": "2026-11-15",
+  "outcome": "With the reader on, a main-loop AskUserQuestion call opens a question card in the pane at once, and the engine dialog does not open. A reading of that point fills in beside the questions. The person's choice in the pane answers the call, and the agent goes on.",
+  "done_when": [
+    "A live probe records if a tool.call hook can hold an AskUserQuestion call open for two minutes, and the exact shape of an answer that the engine accepts",
+    "priority interpret --open-question reads the questions from a file, and the reading records stop_kind question",
+    "With the reader on, a main-loop AskUserQuestion call opens the pane with each question and its options, and no dialog opens",
+    "A pick of options, or text under Other, then Send, answers the call, and the agent receives those answers",
+    "A subagent call, a call with the reader off, or a pane that cannot open lets the engine dialog open as before"
+  ],
+  "abort_if": [
+    "The probe shows that a hook cannot hold the call open, and the fallback dialog with a reading in the pane does not work either"
+  ],
+  "min_work": {
+    "derived_from": "2 districts (scripts, docs), 3 ADRs (ADR-0045, ADR-0051, ADR-0025), 1 boundary rule (priority-dev only as a process)",
+    "alternatives_explored": 7,
+    "boundary_rules_checked": true,
+    "challenge_stage_run": true,
+    "draft_review_run": false,
+    "note": "Stages 3 and 4 ran inline in this session, with no subagents."
+  },
+  "limits": {
+    "warn_after_rounds": 3,
+    "cutoff_rounds": 6
+  },
+  "epics": [
+    {
+      "id": "E1",
+      "slug": "probe",
+      "title": "Probe: hold an AskUserQuestion call open, and learn the answer shape.",
+      "outcome": "A probe record says if a hook can hold the call open while a person decides, and how an answer must look."
+    },
+    {
+      "id": "E2",
+      "slug": "open-question",
+      "title": "priority-dev: an open-question input and stop_kind.",
+      "outcome": "priority interpret reads the open questions from a file, and the reading records stop_kind question."
+    },
+    {
+      "id": "E3",
+      "slug": "answer",
+      "title": "Mod: catch the call, a question card, a background reading, and the answer.",
+      "outcome": "The pane shows the question card at once, and a Send answers the call."
+    }
+  ],
+  "stage": "review",
+  "supersedes": null,
+  "rounds": []
+}

@@ -1641,6 +1641,12 @@
         "date": "2026-10-17",
         "by": "bjornslib",
         "note": "ADR-0039 amends the install-surface rule. implement and the cobuilder-memory mod may ship hooks/. Only implement may ship agents/. This record's Decision text stays as chosen on 2026-09-27."
+      },
+      {
+        "state": "approved",
+        "date": "2026-11-13",
+        "by": "bjornslib",
+        "note": "ADR-0051 amends the install-surface rule again. The cobuilder-priority mod may also ship hooks/. Only implement may ship agents/. This record's Decision text stays as chosen on 2026-09-27."
       }
     ],
     "related": []
@@ -2831,6 +2837,12 @@
         "by": "bjornslib",
         "source": "PR #40",
         "note": "Approved by the engineer in session, after PR #40 merged on 2026-10-16."
+      },
+      {
+        "state": "approved",
+        "date": "2026-11-13",
+        "by": "bjornslib",
+        "note": "ADR-0051 extends this rule to a second opt-in mod. cobuilder-priority may also ship hooks/. This record's Decision text stays as chosen."
       }
     ],
     "related": [
@@ -3186,6 +3198,75 @@
     "related": [
       "docs/plans/beads-storage/epic-E7-design.md",
       "shared/tracker-adapter-beads.md"
+    ]
+  },
+  "ADR-0045": {
+    "id": "ADR-0045",
+    "title": "The priority-dev spike measures its unknowns, probes first",
+    "state": "decided",
+    "source_pr": null,
+    "problem": "The design of priority.dev rests on unmeasured guesses about a small model, the Claude Code hooks, and tmux. The policy and the actuator would send text into live sessions on those guesses.",
+    "decision": "A spike program of 4 epics and 13 slices, built with implement, measures each unknown. The probes come first, each unknown is a criterion in a blind rubric, and the code lives in an isolated priority-dev/ folder.",
+    "alternatives": [
+      {
+        "option": "A deterministic interpreter with no model, from hook fields and regex",
+        "rejected_because": "It retires no model unknown, and it breaks the decision to use Nemo and Inkling."
+      },
+      {
+        "option": "An evidence-grade hash chain over every record",
+        "rejected_because": "Nobody audits a spike, and the chain delays the first slices. Model id, prompt hash, and raw reply are kept without a chain."
+      },
+      {
+        "option": "The event log envelope first, as the only durable contract",
+        "rejected_because": "The envelope depends on real hook payloads and transcript lag, which the probes measure."
+      },
+      {
+        "option": "One 60-line script as the whole spike",
+        "rejected_because": "It skips the hook and tmux unknowns. It is kept as slice 1 only."
+      },
+      {
+        "option": "A claims.yaml ledger file with pass lines",
+        "rejected_because": "A hidden blind rubric already carries each measure, and a second file would drift from it."
+      },
+      {
+        "option": "A pd command-line tool and a runbook inside the spike",
+        "rejected_because": "They add polish before the unknowns are measured. Only the hook timeout and the bypass file are kept."
+      },
+      {
+        "option": "Keep the first draft order, with the hook slices last",
+        "rejected_because": "The hook and tmux results change how the adapter works, so late probes risk rework."
+      }
+    ],
+    "forces": [
+      "A slice passes only at 0.90 or better against a blind rubric (ADR-0012).",
+      "Workflow state goes through the tracker port (ADR-0040, ADR-0031).",
+      "The plugin repository is not an app, and its install surface stays narrow (ADR-0025).",
+      "The engineer chose Nemo and Inkling through OpenRouter, DSPy, no Jev, and real local fixtures."
+    ],
+    "delivers": {
+      "capability": "Each unknown of priority.dev gets a measured answer before the policy and the actuator exist.",
+      "benefit": "Later phases build on facts. A refuted claim costs a slice, not a rewrite of the actuator.",
+      "beneficiary": [
+        "developer",
+        "the-business"
+      ]
+    },
+    "body": "# ADR-0045 — The priority-dev spike measures its unknowns, probes first\n\n## Context\n\nThe design of priority.dev went through ten rounds and holds documents only. Six things are unmeasured. They include whether a small model (Nemo) fails on nested action payloads. The free Inkling tier may rate-limit a run. The Claude Code hooks may not behave as the documentation reads. A paste into a tmux pane may be lost. A wrong guess here reaches the actuator, which sends text into live sessions.\n\n## Options considered\n\n1. **A model-free interpreter.** Rejected. It retires no model unknown.\n2. **A hash chain over every record.** Rejected. Nobody audits a spike.\n3. **The event log first.** Rejected. The envelope depends on real payloads.\n4. **One script as the whole spike.** Rejected as a whole. Kept as slice 1.\n5. **A claims ledger file.** Rejected by the engineer. The blind rubrics carry the claims.\n6. **A runbook command-line tool.** Rejected for the spike. Only the timeout and the bypass file stay.\n7. **The first draft order.** Rejected by the engineer. The hook and tmux probes come early.\n8. **The chosen option.** A spike program of 4 epics and 13 slices, probes first, built with implement.\n\n## Decision\n\nThe program `priority-dev-spike` has four epics. E1 holds three probes: a model probe, a hook probe, and a tmux probe. E2 holds the stop brief, Interpret, Digest, and the replay report. E3 holds the event log. E4 holds the adapter to the log. Each unknown is a criterion in the blind rubric of its slice. A rubric scores the honesty and completeness of a report, not the size of a number.\n\nAfter slice 7, the engineer decides go or no-go from the replay report. Three merges apply. Every stored model call records its model id, prompt hash, and raw reply. Every hook exits within a few seconds on any failure, and a bypass file turns all hooks into no-ops. A failed model call ends as an Abstain with a logged reason, proved by injected failures.\n\nOut of scope: Jev, the policy, the actuator, the attention queue, the notifier, a second harness, and a real program for later phases. Later phases are planned epics until each has its own design.\n\nThe interpreter input is named the stop brief, so that slice keeps its CoBuilder meaning.\n\n## Consequences\n\n- **Positive:** The first model signal arrives in slice 1. The hook and tmux unknowns are measured before any database exists.\n- **Constraint introduced:** Code under `priority-dev/` never imports from `plugins/` or `shared/`, and the plugin tests never collect it. One module reads the model key.\n- **Negative / accepted:** The beads data of this repository holds priority.dev records. A probe slice may refute its claim and still pass its rubric.\n\n## Value delivered\n\n- **New capability:** Each unknown of priority.dev gets a measured answer before the policy and the actuator exist.\n- **Benefit:** Later phases build on facts. A refuted claim costs a slice, not a rewrite.\n- **Beneficiary:** The developer, and the business that relies on a safe actuator.\n\n## Maps to\n\nContext `cobuilder-packaging`, module `priority-dev/`. The context has no boundary rule for this folder yet. The design records that gap, and describe mode closes it once code exists.\n\n## Amendment, 2026-10-24: the models\n\nThe decision text above stays as written. It names Nemo and `inkling:free`. Slice 1 changed the choice of models:\n\n- `inkling:free` refuses direct API calls (403, \"only available on agentic harnesses\"). It cannot serve as the digest model.\n- The engineer chose `deepseek/deepseek-v4.1-flash-1017` as the interpreter model and `thinkingmachines/inkling-small` as the digest model.\n- Nemo stays as the first model that slice 1 measured. The probe report keeps its results.\n- The probe, the design record, the plan, and the rubrics now say \"interpreter model\" and \"digest model\".\n- This amendment does not change the decision that the spike measures its unknowns, probes first.\n",
+    "maps_to": {
+      "context": "cobuilder-packaging",
+      "modules": [
+        "priority-dev/"
+      ],
+      "rule": "Code under priority-dev/ never imports from plugins/ or shared/, and the plugin tests never collect it."
+    },
+    "history": [
+      {
+        "state": "decided",
+        "date": "2026-10-24"
+      }
+    ],
+    "related": [
+      "docs/architecture/designs/priority-dev-spike/goal.json"
     ]
   },
   "ADR-0046": {
@@ -3662,6 +3743,352 @@
       "docs/architecture/designs/kanban-board/contracts.md",
       "docs/architecture/designs/kanban-board/prototypes/option-d-program-drilldown.html",
       "docs/architecture/contexts/artifact/boundary.yaml"
+    ]
+  },
+  "ADR-0051": {
+    "id": "ADR-0051",
+    "title": "cobuilder-priority reads each stop of a live session",
+    "state": "approved",
+    "source_pr": null,
+    "problem": "The priority-dev interpreter improves only on recorded transcripts. The optimiser runs on old sessions no longer give useful feedback. The engineer needs readings of recent sessions that they remember, so they can judge which part of the prompt to improve next.",
+    "decision": "Ship a seventh plugin, cobuilder-priority, as an opt-in mod outside the umbrella. One hooks module reads each main-loop Stop of a session that the person switched on. It runs priority digest, then priority interpret with the D1 program, as a separate process. It stores the reading, and a pane shows it with right, wrong, and note marks. On the newest card the person selects steps, and one press sends the draft to the main session as a user prompt or puts it in the prompt box. The plugin never sends without that press. This amends ADR-0025 and ADR-0039: implement, cobuilder-memory, and cobuilder-priority may ship hooks/.",
+    "alternatives": [
+      {
+        "option": "A Stop command hook with async true, plus a mod pane that reads its files",
+        "rejected_because": "Two mechanisms meet through a data folder. One hooks module can start the process and draw the pane, so no file hand-off is necessary."
+      },
+      {
+        "option": "Interpret only, one model call per stop",
+        "rejected_because": "The engineer wants the digest of the run in the brief. The brief labels it CURRENT RUN on the live path."
+      },
+      {
+        "option": "Interpret first, then digest",
+        "rejected_because": "Interpret would read the digest of the stop before, not of this stop. The engineer chose digest first."
+      },
+      {
+        "option": "Change the PREVIOUS RUN label in every command",
+        "rejected_because": "Eval, replay, and the optimiser would see a new brief, and earlier compact-brief scores would no longer compare."
+      },
+      {
+        "option": "Read every session in every repo",
+        "rejected_because": "Each transcript goes to an outside model service. The engineer chose a per-session switch that is off by default."
+      },
+      {
+        "option": "A repo allowlist in userConfig",
+        "rejected_because": "The engineer chose a per-session switch, so each read is a choice made in that session."
+      },
+      {
+        "option": "Ship the D1 program inside the plugin",
+        "rejected_because": "priority-dev/probes/programs/ is Git-ignored. The person names the program file in userConfig."
+      },
+      {
+        "option": "API keys only in userConfig",
+        "rejected_because": "The priority-dev CLI already reads priority-dev/.env. A secret userConfig key is an optional override that the module passes in env."
+      },
+      {
+        "option": "Show the steps and carry out none",
+        "rejected_because": "The engineer wants to act on a reading. A step that the person sends is also a stronger label than a mark."
+      },
+      {
+        "option": "Carry out the selected steps with no press, or carry out each step on its own",
+        "rejected_because": "The reading comes from a model that read the transcript. Its text reaches the session only after the person reads it and presses Send or Edit."
+      },
+      {
+        "option": "Send the draft framed as a plugin message",
+        "rejected_because": "The person chose the exact text, so it is their prompt. The transcript still names the plugin as the origin."
+      },
+      {
+        "option": "Act on an interrupt step",
+        "rejected_because": "A stop has no running turn to stop."
+      },
+      {
+        "option": "Leave permission and option-pick steps out",
+        "rejected_because": "At a stop, the agent asked in its reply text, so a text answer reaches it the same as a reply."
+      },
+      {
+        "option": "Write each mark into the confirmed label files",
+        "rejected_because": "The engineer keeps the labels local. The confirmed set holds labels that the engineer confirmed, and live marks are a separate record."
+      },
+      {
+        "option": "Add cobuilder-priority to the umbrella",
+        "rejected_because": "Each turn costs two model calls on an outside service. A person must choose that."
+      },
+      {
+        "option": "A Claude Artifact page instead of a pane",
+        "rejected_because": "A page does not sit beside the session and update at each stop."
+      }
+    ],
+    "forces": [
+      "A Stop fires at the end of each turn, and turn.complete also fires for each subagent turn.",
+      "$.process.run times out after 30 seconds by default and after 10 minutes at most.",
+      "A hot reload runs register again, and the module's own variables start over. $.state and $.store stay.",
+      "ADR-0045 keeps priority-dev apart: it never imports from plugins/ or shared/, and nothing imports it.",
+      "The interpret command loads the saved digest of the session as PREVIOUS RUN.",
+      "D1 was scored on briefs with no digest (0.654 on 56 stops, probes/limit64k-report.md)."
+    ],
+    "delivers": {
+      "capability": "Each stop of a live session that the person switched on gets a D1 reading in a pane. The person marks it right or wrong, and sends the steps they choose to the session.",
+      "benefit": "The engineer judges the interpreter on sessions they remember, and the marks show which part of the prompt to improve next.",
+      "beneficiary": [
+        "developer"
+      ],
+      "enables": [
+        "An export of the live marks into the labelled set",
+        "A comparison of D1 and later programs on live stops"
+      ],
+      "addresses_problem": "P1"
+    },
+    "body": "# ADR-0051 — cobuilder-priority reads each stop of a live session\n\n## Context\n\nThe priority-dev interpreter reads one stop of a coding session. It gives a\nstatus, a priority, and the steps that a person might take next. The\noptimiser improves its prompt on recorded transcripts. The recent runs on\nold sessions no longer give useful feedback, because the engineer does not\nremember those sessions well enough to judge a reading.\n\nD1 is the best saved program. It scored 0.654 on 56 test stops, against\n0.469 for the base prompt. D1 saw no digest in those runs.\n\nADR-0025 and ADR-0039 let only `implement` and `cobuilder-memory` ship\nhooks. A reader at each stop needs a hook.\n\n## Options considered\n\nThe frontmatter lists each option with its reason. Three shaped the\ndecision most:\n\n- **A command hook plus a mod pane.** The mod API can start a process\n  and draw a pane from one module, so a second mechanism adds only a\n  file hand-off.\n- **Interpret only.** It matches the brief that D1 was scored on. The\n  engineer wants the digest in the brief, and accepts the risk.\n- **Every session.** Each transcript goes to an outside service. The\n  engineer chose a switch for each session.\n\n## Decision\n\nShip a seventh plugin, `cobuilder-priority`, as an opt-in install from\nthis marketplace, outside the umbrella.\n\n**Install surface.** The plugin is a mod. `hooks/hooks.json` names one\nhooks module. It ships the module's tests, the manifest, a type contract,\nand the `shared` symlink. It ships no `agents/` and no MCP server. This\namends ADR-0025 and ADR-0039: `implement`, `cobuilder-memory`, and\n`cobuilder-priority` may ship `hooks/`. Only `implement` may ship\n`agents/`. No plugin ships an MCP server.\n\n**The switch.** The reader is off in each new session. The command\n`/priority-on` turns it on for this session, and\n`/priority-off` turns it off. The module keeps the switch in\n`$.state`.\n\n**The reading.** A `classic.Stop` hook runs on the main loop only. When the\nswitch is on and no reading runs, it starts one reading and returns at\nonce. A reading runs two commands in the priority-dev checkout:\n`priority digest`, then `priority interpret --program <D1> --digest current`.\nEach command has a timeout. A stop that comes while a reading runs waits,\nand only the newest waiting stop runs next.\n\n**The CURRENT RUN label.** The new `--digest current` flag of\n`priority interpret` labels the saved digest `CURRENT RUN`. Without the\nflag, the brief keeps `PREVIOUS RUN`. Eval, replay, and the optimiser do\nnot change.\n\n**The store.** The module keeps each reading and each mark in `$.store`,\nkeyed by session and stop. The marks stay on this machine.\n\n**The pane.** The pane shows one card for each stop: status, priority,\nneeds-human, each step with its content, or the abstain reason. Each card\nholds `right`, `wrong`, and a note. `/priority-pane` opens the\npane.\n\n**Acting on steps.** On the newest card only, the person selects steps\nand answers the questions of an `ask_human` step. The module joins the\ndraft text of the selected steps. `Send` calls\n`$.prompt.submit({ text, asUser: true })`, and `Edit` calls\n`$.prompt.fill` so the person can change the draft first. The module\nrecords what it sent on the mark of that reading. Permission and\noption-pick steps become short text answers. An interrupt step has no\ntarget at a stop, so the pane shows it and cannot send it.\n\n**Layout.** The pane follows layout C: an agent summary from the digest at\nthe top, then the newest card, the draft block, the actions, and the\nhistory. `contracts.md` holds the layout and the wireframe.\n\n**Settings.** `userConfig` holds the priority-dev folder, the program file,\nthe timeout, and an optional secret API key. The module passes the key to\nthe process in `env`. Without the key, the CLI reads `priority-dev/.env`.\nThe umbrella install has an optional step that writes the reader settings,\nonly when the plugin is installed. The step never writes the API key.\n\n`contracts.md` in the design folder holds each command, field, and format.\n\n## Consequences\n\n- The build adds this ADR to the history of ADR-0025 and ADR-0039. It\n  updates CLAUDE.md principle 5, the plugin table, and the plugin count in\n  CLAUDE.md, README.md, and DDD-VOCABULARY.md.\n- The packaging test reads the amended rule in the slice that adds the\n  plugin folder.\n- Each stop with the switch on costs two model calls on an outside service.\n- D1 was not scored on a brief with a CURRENT RUN digest. The marks are the\n  first measure of that brief.\n- A hot reload or the end of the session can stop a reading. The store\n  keeps no partial reading.\n- Text that a model wrote from the transcript can become a user prompt.\n  The press and the visible draft are the only guard, so the pane always\n  shows the exact text before it is sent.\n- A sent draft starts a new turn, and its stop gets a new reading.\n\n## Value delivered\n\nThe engineer sees a D1 reading of each stop of a session they remember,\nbeside that session. They mark each reading, and act on the steps they\nagree with. The marks and the sent steps show which part of the prompt to\nimprove next.\n",
+    "maps_to": {
+      "context": "cobuilder-packaging",
+      "modules": [
+        "plugins/cobuilder-priority",
+        "priority-dev/src/priority/cli.py",
+        "priority-dev/src/priority/brief",
+        "tests/test_plugin_manifests.py",
+        ".claude-plugin/marketplace.json"
+      ],
+      "rule": "implement, cobuilder-memory, and cobuilder-priority may ship hooks/. Only implement may ship agents/. No plugin ships an MCP server."
+    },
+    "approved_by": "bjornslib",
+    "history": [
+      {
+        "state": "decided",
+        "date": "2026-11-11",
+        "note": "Drafted by design mode for the priority-dev-cc-plugin design. The engineer chose the name, the digest-first order with a CURRENT RUN label on the live path only, the per-session switch, opt-in, and local labels."
+      },
+      {
+        "state": "decided",
+        "date": "2026-11-12",
+        "note": "Review round 2. The engineer asked to act on the selected steps. The pane sends one draft to the main session on a press, and the pane layout is part of the design."
+      },
+      {
+        "state": "decided",
+        "date": "2026-11-12",
+        "note": "The first live run failed on empty settings. The umbrella install gets an optional step that writes pluginConfigs, only when cobuilder-priority is installed (slice E1.5)."
+      },
+      {
+        "state": "approved",
+        "date": "2026-11-13",
+        "by": "bjornslib",
+        "note": "Approved by the engineer in session, after a successful live run of the digest, the reading, and the steps."
+      },
+      {
+        "state": "approved",
+        "date": "2026-11-13",
+        "note": "Live-run feedback, slices E3.6 to E3.11, not built. The mod also draws in the AbovePrompt slot: notify messages, and a summary row when the pane is closed. A needs_human reading raises a toast. Each reading records the response labels of the agent's answer, so the marks show if the digest depends on them."
+      }
+    ],
+    "related": [
+      "docs/architecture/designs/priority-dev-cc-plugin/contracts.md",
+      "docs/architecture/contexts/priority-dev/boundary.yaml"
+    ]
+  },
+  "ADR-0052": {
+    "id": "ADR-0052",
+    "title": "The priority reader answers an AskUserQuestion call from its pane",
+    "state": "decided",
+    "source_pr": null,
+    "problem": "An AskUserQuestion call stops the agent until the person answers, but no Stop fires. So the reader of ADR-0051 stays silent at the point where the person needs a reading most, and the engine dialog shows the question with no reading beside it.",
+    "decision": "With the reader on, a tool.call hook catches each main-loop AskUserQuestion call and holds it open. The pane opens with a question card built from the call input at once. In the background, the reader runs priority digest, then priority interpret with the new --open-question input, and the reading fills in beside the questions. The person's choice in the pane answers the call as the tool's result, so the engine dialog does not open. If a live probe shows that a hook cannot hold the call open, or the pane cannot open, the hook passes the call on: the dialog opens, and the pane still reads that point. This amends ADR-0051, whose reader never holds the session.",
+    "alternatives": [
+      {
+        "option": "A classic.PreToolUse hook",
+        "rejected_because": "It can only allow, ask, or deny a call. It cannot answer one."
+      },
+      {
+        "option": "Refuse the call, so the agent asks in its reply and ends its turn",
+        "rejected_because": "The engineer wants the pane to be the only place that shows the question. The reply text would show it in the transcript too."
+      },
+      {
+        "option": "Read the point after the answer, in PostToolUse",
+        "rejected_because": "The reading would come after the person decided, so it could not help the decision."
+      },
+      {
+        "option": "Let priority-dev find the open question in the transcript",
+        "rejected_because": "When the hook fires, the tool_use may not be in the transcript yet. The call input already holds the questions, so the plugin passes them in."
+      },
+      {
+        "option": "Show the questions only when the reading arrives",
+        "rejected_because": "The agent waits during the two model calls. The person can answer from the call input at once, and the reading is extra help."
+      },
+      {
+        "option": "Catch every AskUserQuestion call, subagents too",
+        "rejected_because": "The reader reads main-loop stops only. A subagent call passes on to the engine as before."
+      }
+    ],
+    "forces": [
+      "Every hook runs under a time budget. The test kit names ten seconds. The types do not say if a hook that waits for a person is cut off.",
+      "A tool.call hook may return { result } without next, and then no dialog opens.",
+      "An AskUserQuestion call holds up to four questions, with multi-select and free text under Other.",
+      "D1 was scored on turn-end stops only.",
+      "ADR-0045 keeps priority-dev apart: the plugin calls its CLI only as a separate process."
+    ],
+    "delivers": {
+      "capability": "At an AskUserQuestion call, the pane shows the question, its options, and a reading of that point, and the person answers there.",
+      "benefit": "The person decides with a reading beside the question, and each answer becomes a label of a new kind of stop.",
+      "beneficiary": [
+        "developer"
+      ],
+      "enables": [
+        "A comparison of readings at questions and at turn ends"
+      ],
+      "addresses_problem": "P1"
+    },
+    "body": "# ADR-0052 — The priority reader answers an AskUserQuestion call from its pane\n\n## Context\n\nADR-0051 reads each main-loop Stop. A Stop fires at the end of a turn.\nAn AskUserQuestion call also stops the agent, but inside a turn, so no\nStop fires and the reader stays silent. The engine opens its own dialog,\nand the person answers there with no reading.\n\n## Options considered\n\nThe frontmatter lists each option with its reason. Two shaped the\ndecision most:\n\n- **End the turn at the call.** It needs no change in priority-dev, but\n  the question would also show in the transcript.\n- **Find the question in the transcript.** The call input already holds\n  the questions, and the transcript may lag behind the hook.\n\n## Decision\n\n**The catch.** With the reader on, a `tool.call` hook on\n`AskUserQuestion` runs for the main loop only. A subagent call passes on.\n\n**The question card.** The hook opens and focuses the pane. The card\nshows each question and its options from the call input at once.\n\n**The reading.** In the background, the reader runs `priority digest`,\nthen `priority interpret --open-question <file>`. The file holds the\nquestions. The brief marks the stop as an open question. The reading\nrecords `stop_kind: question`, and its steps fill in beside the questions.\n\n**The answer.** The person picks options or types under Other, then\npresses Send. The hook returns the answers as the tool's result. The\nagent goes on, and the dialog never opens.\n\n**The fallback.** A live probe runs first. If a hook cannot hold the\ncall open, or the pane cannot open, the hook calls `next`. The dialog\nopens, and the pane still reads that point.\n\n## Consequences\n\n- The reader now holds the session at a question, which ADR-0051 never\n  did. Only a person's answer, or the fallback, releases it.\n- `priority interpret` gets one new input. Eval, replay, and the\n  optimiser do not use it.\n- The marks can be split into turn-end stops and question stops.\n\n## Value delivered\n\nThe person decides with a reading beside the question. The engineer\ngets labels at the points where the agent needs the person most.\n",
+    "maps_to": {
+      "context": "cobuilder-packaging",
+      "modules": [
+        "plugins/cobuilder-priority",
+        "priority-dev/src/priority/cli.py",
+        "priority-dev/src/priority/brief"
+      ],
+      "rule": "The plugin calls priority-dev only as a separate process."
+    },
+    "history": [
+      {
+        "state": "decided",
+        "date": "2026-11-15",
+        "note": "Drafted by design mode for the priority-ask-question design. The engineer chose to hold the call open, the pane as the only place for the question, the dialog as the fallback, and agent-assisted authorship."
+      },
+      {
+        "state": "decided",
+        "date": "2026-11-16",
+        "note": "The live probe on Claude Code 2.1.325 showed that the engine skips a tool.call hook after 10 seconds of its own time, when it waits on a plain promise. A second probe tests a wait inside $.process.run, which the budget does not count. The choice between the hold and the fallback waits for that probe. See probe-record.md."
+      }
+    ],
+    "related": [
+      "docs/architecture/designs/priority-ask-question/contracts.md",
+      "docs/architecture/adr/ADR-0051-cobuilder-priority-reads-each-stop-of-a-live-session.md"
+    ]
+  },
+  "ADR-0053": {
+    "id": "ADR-0053",
+    "title": "The priority reader runs in Pi and OMP on a shared core and priority transcripts",
+    "state": "decided",
+    "source_pr": null,
+    "problem": "Many coding agents run in parallel, and nothing ranks what they need. The priority reader works only in Claude Code. priority-dev reads only Claude Code transcripts, and the plugin runs on the Claude Code mod engine. The fleet moves to Pi, OMP, and later Pi Durable.",
+    "decision": "priority-dev reads each harness through one transcript adapter for each dialect, which writes a priority transcript. priority read prints one Reading as JSON for any agent. A shared TypeScript core holds the reading contract and a pure evaluate. The Claude Code plugin and a new Pi package for Pi and OMP use the core. A Pi Durable orchestrator may answer for the person only when evaluate allows the action. This amends ADR-0051, ADR-0052, and ADR-0016.",
+    "alternatives": [
+      {
+        "option": "A separate Pi extension with no code from the Claude Code plugin",
+        "rejected_because": "Two hand copies of the card and draft logic drift apart. The engineer chose one shared core for Claude Code, Pi, and OMP."
+      },
+      {
+        "option": "The extension flattens the Pi branch into a Claude Code JSONL file",
+        "rejected_because": "An agent outside Pi could not read a Pi session. The engineer chose transcript adapters in priority-dev, so the design stays uniform."
+      },
+      {
+        "option": "Port the D1 program to a TypeScript runner",
+        "rejected_because": "The 0.654 score holds only for its model, provider, and DSPy prompt. A second reader drifts from the first."
+      },
+      {
+        "option": "A long-lived reader service that every host posts turn records to",
+        "rejected_because": "The repo has no deploy step. A service that receives full transcripts weakens the per-session opt-in of ADR-0051."
+      },
+      {
+        "option": "Byte-identical readings for the same transcript in every host",
+        "rejected_because": "The model is not deterministic. Parity is exact from a reading to its card text, and by score from a transcript to a reading."
+      },
+      {
+        "option": "A spot check of the cards by eye",
+        "rejected_because": "It catches no drift between the hosts."
+      },
+      {
+        "option": "The orchestrator LLM decides by judgment, and its prompt is the rule",
+        "rejected_because": "The rule must be recorded and testable. The priority-dev design says that the model proposes and a pure evaluate decides."
+      },
+      {
+        "option": "A rule table only, with no LLM in the choice",
+        "rejected_because": "The engineer wants the orchestrator to judge when an answer is obvious. The gate still has the last word."
+      },
+      {
+        "option": "Control stays in Python behind a priority-dev endpoint",
+        "rejected_because": "A Durable Object runs no Python, and the actuator runs evaluate again just before each send."
+      },
+      {
+        "option": "A priority_ask tool in both hosts, with the OMP ask tool blocked",
+        "rejected_because": "The engineer chose to hook the question tool of each host, in its own data shape."
+      },
+      {
+        "option": "Leave question stops out",
+        "rejected_because": "ADR-0052 already reads question stops in Claude Code, so Pi and OMP would fall behind."
+      },
+      {
+        "option": "The Pi package as a sub-folder of plugins/cobuilder-priority",
+        "rejected_because": "Each Claude Code install would carry a Pi package that it cannot load."
+      },
+      {
+        "option": "The Pi package inside priority-dev",
+        "rejected_because": "It adds a second runtime to priority-dev, which ADR-0045 keeps as a Python leaf."
+      },
+      {
+        "option": "Build the core and the Pi package before D1 is scored on Pi stops",
+        "rejected_because": "Abort gate 3 would fire after the build is spent. The engineer took the reviewer's survivor to score D1 first, in E4."
+      },
+      {
+        "option": "A deny list stricter than schemas.md section 4",
+        "rejected_because": "The priority-dev design already sets a starting verdict for each action kind. The engineer chose two guards on top of it, not a second table."
+      }
+    ],
+    "forces": [
+      "brief/transcript.py reads only the Claude Code JSONL shape. A Pi or OMP session is a tree of entries with a session header.",
+      "D1 scored 0.654 on 56 Claude Code stops. No score exists for Pi or OMP stops.",
+      "OMP loads a Pi extension unchanged. It rewrites the Pi import names and reads the pi manifest key.",
+      "Pi fires agent_settled at a stop. OMP fires session_stop. An event that a host does not know never fires and raises no error.",
+      "Pi has no question tool. OMP has a built-in ask tool, and its tool_call handlers fail closed after 30 seconds.",
+      "OMP bundles its own pi-tui, so a pi-tui component class would force a fork.",
+      "Pi Durable 1.6 is experimental. Its extensions are a separate model, a Worker runs no Python, and no push from a child to its parent is documented.",
+      "tests/test_plugin_manifests.py requires a Claude Code manifest in each folder under plugins/.",
+      "priority-dev/docs/design/components.md section 2: the interpreter proposes, a pure evaluate decides, and the actuator executes and checks again."
+    ],
+    "delivers": {
+      "capability": "The priority reader works in Claude Code, Pi, and OMP from one contract. Any coding agent can read a session and get the cards as JSON.",
+      "benefit": "The engineer gets readings for the sessions they now run, and a later orchestrator can act on the same cards under a tested rule.",
+      "beneficiary": [
+        "developer"
+      ],
+      "enables": [
+        "A Pi Durable orchestrator that answers obvious cards and notifies the person about the rest",
+        "A reading for any harness that gets a transcript adapter"
+      ],
+      "addresses_problem": "P1"
+    },
+    "body": "# ADR-0053 — The priority reader runs in Pi and OMP on a shared core and priority transcripts\n\n## Context\n\nThe priority reader of ADR-0051 reads each main-loop stop of a Claude Code\nsession. ADR-0052 adds question stops. Two parts tie the reader to Claude\nCode. The brief builder in priority-dev reads only Claude Code transcripts.\nThe plugin runs on the Claude Code mod engine, and only three of its files\nare free of the engine.\n\nThe engineer now runs agents in Pi and OMP. Pi Durable 1.6 and the\nCloudflare PiHarness make a durable orchestrator possible. The priority-dev\ndesign already names the parts of that orchestrator: an interpreter that\nproposes, a policy that decides, an actuator that sends, an attention queue,\nand notifiers (`priority-dev/docs/design/components.md`, `schemas.md`).\n\n## Options considered\n\nThe frontmatter lists each option with its reason. Four shaped the decision:\n\n1. **A separate extension with no shared code.** It keeps the Claude Code\n   plugin untouched, but two copies of the card text drift.\n2. **Flatten Pi into Claude Code JSONL in the extension.** priority-dev does\n   not change, but no agent outside Pi can read a Pi session.\n3. **A TypeScript port of D1.** It removes Python from the path, but the\n   score of D1 does not carry over to a new model call.\n4. **The chosen option.** Transcript adapters in priority-dev, one shared\n   core, thin host adapters, and an orchestrator under a pure evaluate.\n\n## Decision\n\n**Priority transcript.** priority-dev gets one transcript adapter for each\nharness dialect: `claude-code` and `pi`. The `pi` adapter also reads OMP\nsessions. Each adapter turns a session file into a priority transcript. That\nis the active branch as an ordered list of human, client, agent, and tool\nresult records, plus the session id, the leaf id, and the dialect. The brief\nbuilder reads only the priority transcript. The `claude-code` adapter must\ngive byte-identical briefs on the 56 scored stops.\n\n**Agent mode.** The new command `priority read <session-file>` runs the\ndigest, then the interpretation, and prints one Reading as JSON. The Reading\nholds the digest and the cards. Any coding agent, any host adapter, and the\norchestrator use this command. Redaction runs inside the brief builder, as\ntoday. The reader switch gates only the host hooks. A call of `priority read`\nis an explicit choice, so the call is the opt-in. The next brief leaves out\neach earlier reading: a `priority_read` tool result in the `pi` dialect, and\na Bash call of `priority read` in the `claude-code` dialect.\n\n**Shared core.** `shared/priority-core/` holds the Reading types, the plain\nnames, the answer labels, the card view model, the draft text, the reader\nqueue, the pending record, and `evaluate`. The core imports no host engine.\nIt reaches the process, the store, and the clock through ports. The core\nreaches each plugin through the `shared` symlink of ADR-0017.\n\n**Host adapters.** `plugins/cobuilder-priority` moves onto the core and keeps\neach behaviour of ADR-0051 and ADR-0052. A new Pi package,\n`pi/cobuilder-priority`, loads in Pi and OMP with no fork. It catches a stop\non `agent_settled` (Pi) and `session_stop` (OMP), and it dedupes by leaf id.\nIt draws the pane with a plain-object component that imports no pi-tui.\nIt registers the `priority_read` tool, which returns the Reading in\n`details`. Probe E1 confirms each host fact before the slices that depend on\nit. The Pi package has its own install contract: a `pi` manifest key, the\ninstall command of each host, and one settings file for `priority_dev_dir`,\n`program`, and `timeout_seconds`. In the repo it reaches the core through a\n`shared` symlink. A published copy carries a vendored copy of the core,\nbecause npm does not pack a symlink. This amends the `cobuilder-priority`\nboundary record, which today allows only the Claude Code engine.\n\n**Parity.** Parity is exact from a Reading to its card and draft text. One\nset of golden Readings runs in the tests of both host adapters. Parity from\na transcript to a Reading is a score. Epic E4 scores D1 on a labelled sample\nof Pi and OMP stops before any host code exists. Its result goes into a\ncalibration file in priority-dev, keyed by program and dialect, and\n`priority read` copies it into the `calibrated` field of each Reading.\n\n**Questions.** Each host adapter hooks the question tool of its host, in that\ntool's data shape. In Pi, the package supplies an `AskUserQuestion` tool in\nthe Claude Code shape. In OMP, the hook targets the built-in `ask` tool and\nmaps its `questions[]` input to the question file of `--open-question`. An\n`ask` call with only an HTML form gets no question reading. In Pi, when the\nhold fails, the host dialog opens and the reading shows beside it, as in\nADR-0052. In OMP, when probe E1 shows that the `ask` call cannot be held, the\nreader does not support OMP question stops. The OMP dialog opens as usual,\nand the reader adds nothing to it.\n\n**Orchestrator.** A Pi Durable orchestrator runs as planned epics E8 to E10.\nIt adds detail to the priority-dev design and does not replace it. Probe E8\npicks the route from a child to the orchestrator and to a reader, because a\nWorker runs no Python and Pi Durable documents no push from a child. The\nfirst candidate is a container child that runs the real Pi agent with this\nPi package. A native Pi Durable extension is the second, and its\n`api.entries` transcript would be a third dialect. The orchestrator model\nproposes an answer or a notification. `evaluate(action, state)` in the core\ndecides. The first DENY wins, then ASK, then ALLOW, and no match gives ASK.\nThe starting verdicts are the ones in `schemas.md` section 4. ADR-0053 adds\ntwo guards. An answer to a question stop gives ASK. Any ALLOW needs a\ncalibrated, newest Reading with no `needs_human` and no abstain. The\nactuator writes the intent, runs `evaluate` again, sends with `submit`,\n`steer`, or `signal`, and writes the effect. Its idempotency key is the\naction hash. ASK and DENY open an attention item, which a notifier sends at\nthe level that `schemas.md` section 7 sets.\n\n**Layout.** A new top-level `pi/` folder holds Pi packages. `plugins/` stays\nfor Claude Code plugins only. This amends ADR-0016.\n\n**Out of scope.** The build of the orchestrator, a change to D1 or to the\noptimiser, a hosted reader service, subagent stops, and permission prompts in\nPi and OMP.\n\n## Consequences\n\n- **Positive:** One contract serves Claude Code, Pi, and OMP. Any agent can\n  read a session with `priority read`. The orchestrator reuses a decision\n  model that priority-dev already designed.\n- **Constraint introduced:** A host adapter calls priority-dev only as a\n  process, and it gives cards only through the shared core. Only `evaluate`\n  may allow an answer that no person pressed.\n- **Negative / accepted:**\n  - The approved Claude Code plugin moves onto the core. Its 25 test files\n    must pass unchanged.\n  - `shared/` carries TypeScript for the first time, and each plugin gets it\n    through the symlink.\n  - Pi Durable is experimental. The orchestrator epics pin its minor version\n    and open with a probe.\n  - Readings in Pi and OMP stay uncalibrated until epic E4 scores them.\n- This record amends ADR-0051: an answer may reach a session with no press\n  when `evaluate` allows it. An authorization record then names the actor,\n  the rule id, the policy hash, the action hash, the state digest, and the\n  draft hash. It amends ADR-0052: the question hook targets the question tool\n  of each host. It amends ADR-0016: a top-level `pi/` folder holds Pi\n  packages. It amends the `cobuilder-priority` boundary record: the host\n  adapters may import `shared/priority-core`.\n- The build updates `CLAUDE.md`, `README.md`, and the layout, because the\n  repo gains a second install surface.\n\n## Value delivered\n\n- **New capability:** The priority reader works in Claude Code, Pi, and OMP\n  from one contract, and any coding agent can read a session as JSON.\n- **Benefit:** The engineer gets readings for the sessions they now run. A\n  later orchestrator can act on the same cards under a tested rule.\n- **Beneficiary:** developer.\n\n## Maps to\n\nContext `cobuilder-priority`, modules `shared/priority-core`,\n`plugins/cobuilder-priority`, and `pi/cobuilder-priority`. Context\n`priority-dev`, modules `priority-dev/src/priority/brief` and\n`priority-dev/src/priority/cli.py`. See the boundary records of both\ncontexts.\n",
+    "maps_to": {
+      "context": "cobuilder-priority",
+      "modules": [
+        "shared/priority-core",
+        "plugins/cobuilder-priority",
+        "pi/cobuilder-priority",
+        "priority-dev/src/priority/brief",
+        "priority-dev/src/priority/cli.py"
+      ],
+      "rule": "A host adapter calls priority-dev only as a process, and it gives cards only through the shared core. Only evaluate may allow an answer that no person pressed."
+    },
+    "history": [
+      {
+        "state": "decided",
+        "date": "2026-11-25",
+        "note": "Drafted by design mode for the priority-dev-pi-extension design. The engineer chose transcript adapters, split parity, a shared TypeScript core, propose and gate with evaluate in the core, a question hook for each host, and a top-level pi/ folder."
+      },
+      {
+        "state": "decided",
+        "date": "2026-11-25",
+        "note": "Review round 1 (draft review 0.68). The engineer took the survivor that scores D1 first (E4), named a container child the first E8 route, and set the starting policy to schemas.md section 4 with two guards."
+      },
+      {
+        "state": "decided",
+        "date": "2026-11-25",
+        "note": "Gate 2b feedback. If probe E1 shows that OMP cannot hold its ask call, OMP question stops are not supported. The engineer rejected a read-only card beside the OMP dialog."
+      }
+    ],
+    "related": [
+      "docs/architecture/designs/priority-dev-pi-extension/contracts.md",
+      "docs/architecture/contexts/cobuilder-priority/boundary.yaml",
+      "docs/architecture/contexts/priority-dev/boundary.yaml",
+      "priority-dev/docs/design/components.md",
+      "priority-dev/docs/design/schemas.md"
     ]
   }
 }

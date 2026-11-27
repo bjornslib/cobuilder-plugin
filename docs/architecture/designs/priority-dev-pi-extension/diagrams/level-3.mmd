@@ -1,0 +1,97 @@
+classDiagram
+    class TranscriptAdapter {
+        <<priority-dev, dialects claude-code and pi>>
+        +dialect string
+        +toPriorityTranscript(sessionFile) PriorityTranscript
+    }
+    class PriorityTranscript {
+        +sessionId string
+        +leafId string
+        +dialect string
+        +records list
+    }
+    class BriefBuilder {
+        <<priority/brief>>
+        +build(PriorityTranscript) Brief
+    }
+    class PriorityReadCommand {
+        <<priority/cli.py>>
+        +read(sessionFile) Reading
+    }
+    class Reading {
+        <<priority-core type>>
+        +digest Digest
+        +cards list
+        +calibrated bool (from priority-dev calibration.json)
+    }
+    class CardViewModel {
+        +fromReading(Reading) Card
+        +plainNames() void
+        +answerLabels() void
+    }
+    class Draft {
+        +text(Card) string
+    }
+    class ReaderQueue {
+        +enqueue(stop) void
+        +dedupeByLeafId() void
+    }
+    class PendingRecord {
+        +store port
+    }
+    class Ports {
+        <<process, store, clock>>
+    }
+    class Evaluate {
+        <<pure>>
+        +evaluate(action, state) Decision
+    }
+    class CCHostAdapter {
+        <<plugins/cobuilder-priority>>
+        +onStop() void
+    }
+    class PiHostAdapter {
+        <<pi/cobuilder-priority>>
+        +onAgentSettled() void
+        +onSessionStop() void
+        +priority_read tool
+        +questionHook() void
+    }
+    class Actuator {
+        <<planned>>
+        +send(action) void
+        +idempotencyKey actionHash
+    }
+    class Advisor {
+        <<planned>>
+        +propose(Reading) Action
+    }
+    class AttentionNotifier {
+        <<planned>>
+        +open(item) void
+        +notify(level) void
+    }
+
+    TranscriptAdapter --> PriorityTranscript : writes
+    BriefBuilder --> PriorityTranscript : reads only
+    PriorityReadCommand --> TranscriptAdapter : selects by dialect
+    PriorityReadCommand --> BriefBuilder : builds brief via
+    PriorityReadCommand --> Reading : prints as JSON
+    ReaderQueue --> Ports : process, store, clock
+    ReaderQueue --> PriorityReadCommand : runs as process
+    ReaderQueue --> Reading : receives
+    CardViewModel --> Reading : renders
+    Draft --> CardViewModel : uses
+    PendingRecord --> Ports : store
+    CCHostAdapter --> ReaderQueue : uses
+    CCHostAdapter --> CardViewModel : uses
+    PiHostAdapter --> ReaderQueue : uses
+    PiHostAdapter --> CardViewModel : uses
+    Advisor --> Reading : reads
+    Advisor --> Evaluate : proposes to
+    Actuator --> Evaluate : checks again
+    Evaluate --> AttentionNotifier : ASK or DENY
+    Actuator --> PendingRecord : writes intent and effect
+
+    note for Evaluate "Verdicts from schemas.md section 4<br>Guards: question stop gives ASK<br>ALLOW needs calibrated newest Reading, no needs_human, no abstain"
+    note for Actuator "Planned: Pi Durable orchestrator, epics E8 to E10<br>Child route chosen by probe E8"

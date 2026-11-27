@@ -1,0 +1,11 @@
+HUMAN ASKED:
+Move the config loaders to the new format.
+RUN:
+[tool Bash] {"command": "grep -rn load_config src"}
+[result] src/a.py:3
+src/b.py:9
+src/c.py:14
+FINAL REPLY:
+I moved two of the three loaders. I will do the last one next.
+CLIENT MESSAGE:
+You have reached the usage limit. It resets at 3pm.

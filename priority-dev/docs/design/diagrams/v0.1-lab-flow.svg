@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1300 470" role="img" aria-labelledby="lab-t lab-d">
+<title id="lab-t">priority.dev v0.1 lab flow</title><desc id="lab-d">The v0.1 lab reads local transcripts, builds typed events, runs the cascade, compares it with labels, and writes a go or no-go report.</desc>
+<style>
+.bd{fill:var(--svg-bd,none);stroke:var(--svg-bd-line,#9aa4b2);stroke-width:1.2;stroke-dasharray:6 4}
+.bt{font:600 12px system-ui,sans-serif;fill:var(--svg-muted,#5b6575);letter-spacing:.06em;text-transform:uppercase}
+.nr{fill:var(--svg-node,#ffffff);stroke:var(--svg-ink,#1f2937);stroke-width:1.4}
+.nh{fill:var(--svg-hi,#dcecef);stroke:var(--svg-ink,#1f2937);stroke-width:1.8}
+.nx{fill:var(--svg-node,#ffffff);stroke:var(--svg-ink,#1f2937);stroke-width:1.4;stroke-dasharray:5 3}
+.nt{font:600 13px system-ui,sans-serif;fill:var(--svg-ink,#1f2937)}
+.ns{font:400 11px system-ui,sans-serif;fill:var(--svg-muted,#5b6575)}
+.ed{fill:none;stroke:var(--svg-ink,#1f2937);stroke-width:1.4;marker-end:url(#arr)}
+.el{font:400 11px system-ui,sans-serif;fill:var(--svg-ink,#1f2937);paint-order:stroke;stroke:var(--svg-page,#ffffff);stroke-width:3.5px;stroke-linejoin:round}
+.ar{fill:var(--svg-ink,#1f2937)}
+</style>
+<defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ar" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+<g id="bound-lab"><title>Everything runs on your Mac, with no service and no Docker</title><rect class="bd" x="20" y="20" width="1260" height="430" rx="10"/><text class="bt" x="32" y="40">v0.1 lab: on your Mac, no service, no Docker, no sending</text></g>
+<g id="n-tr"><title>Local transcripts: ~/.claude/projects/*/*.jsonl</title><rect class="nr" x="40" y="70" width="210" height="64" rx="12"/><text class="nt" x="145.0" y="97" text-anchor="middle">Local transcripts</text><text class="ns" x="145.0" y="115" text-anchor="middle">~/.claude/projects/*/*.jsonl</text></g>
+<g id="n-rd"><title>Reader and segmenter: tolerant parse, slice at turn end</title><rect class="nr" x="290" y="70" width="220" height="64" rx="12"/><text class="nt" x="400.0" y="97" text-anchor="middle">Reader and segmenter</text><text class="ns" x="400.0" y="115" text-anchor="middle">tolerant parse, slice at turn end</text></g>
+<g id="n-ev"><title>Typed events: schema v0 (Pydantic)</title><rect class="nr" x="550" y="70" width="190" height="64" rx="12"/><text class="nt" x="645.0" y="97" text-anchor="middle">Typed events</text><text class="ns" x="645.0" y="115" text-anchor="middle">schema v0 (Pydantic)</text></g>
+<g id="n-red"><title>Redaction: secret scan before any call</title><rect class="nr" x="780" y="70" width="200" height="64" rx="12"/><text class="nt" x="880.0" y="97" text-anchor="middle">Redaction</text><text class="ns" x="880.0" y="115" text-anchor="middle">secret scan before any call</text></g>
+<g id="n-cas"><title>Cascade: Jev first, then language model</title><rect class="nh" x="1020" y="70" width="240" height="64" rx="12"/><text class="nt" x="1140.0" y="97" text-anchor="middle">Cascade</text><text class="ns" x="1140.0" y="115" text-anchor="middle">Jev first, then language model</text></g>
+<path class="ed" d="M250,102 H290"/>
+<text class="el" x="270" y="94" text-anchor="middle">read-only</text>
+<path class="ed" d="M510,102 H550"/>
+<path class="ed" d="M740,102 H780"/>
+<path class="ed" d="M980,102 H1020"/>
+<g id="n-hist"><title>Labels from history: what the human did next</title><rect class="nr" x="290" y="250" width="220" height="64" rx="12"/><text class="nt" x="400.0" y="277" text-anchor="middle">Labels from history</text><text class="ns" x="400.0" y="295" text-anchor="middle">what the human did next</text></g>
+<g id="n-hand"><title>Labels by hand: you label ~150 slices</title><rect class="nr" x="550" y="250" width="190" height="64" rx="12"/><text class="nt" x="645.0" y="277" text-anchor="middle">Labels by hand</text><text class="ns" x="645.0" y="295" text-anchor="middle">you label ~150 slices</text></g>
+<g id="n-pred"><title>Predictions: typed fields, evidence, confidence</title><rect class="nr" x="1020" y="250" width="240" height="64" rx="12"/><text class="nt" x="1140.0" y="277" text-anchor="middle">Predictions</text><text class="ns" x="1140.0" y="295" text-anchor="middle">typed fields, evidence, confidence</text></g>
+<g id="n-eval"><title>Evaluator: error rates, cost, latency</title><rect class="nh" x="780" y="250" width="200" height="64" rx="12"/><text class="nt" x="880.0" y="277" text-anchor="middle">Evaluator</text><text class="ns" x="880.0" y="295" text-anchor="middle">error rates, cost, latency</text></g>
+<g id="n-rep"><title>Go or no-go report: metrics, schema gaps, decision</title><rect class="nr" x="780" y="360" width="200" height="64" rx="12"/><text class="nt" x="880.0" y="387" text-anchor="middle">Go or no-go report</text><text class="ns" x="880.0" y="405" text-anchor="middle">metrics, schema gaps, decision</text></g>
+<path class="ed" d="M1140,134 V250"/>
+<text class="el" x="1148" y="196" text-anchor="start">typed answers</text>
+<path class="ed" d="M1020,282 H980"/>
+<path class="ed" d="M400,134 V250"/>
+<text class="el" x="408" y="196" text-anchor="start">free labels</text>
+<path class="ed" d="M645,134 V250"/>
+<path class="ed" d="M510,282 H550"/>
+<path class="ed" d="M740,282 H780"/>
+<path class="ed" d="M880,314 V360"/>
+<text class="ns" x="40" y="436" text-anchor="start">Data stays on your Mac and Git ignores it. Only redacted text goes to Jev and to OpenRouter.</text>
+</svg>

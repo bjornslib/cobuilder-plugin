@@ -1,0 +1,78 @@
+classDiagram
+    class StopBrief {
+        +items list~RunItem~
+        +previous RunDigest
+    }
+    class RunItem {
+        <<abstract>>
+    }
+    class AssistantText {
+        +message_id str
+        +text str
+    }
+    class ToolExchange {
+        +call dict
+        +full_result str
+    }
+    class RunDigest {
+        +summary str
+    }
+    class BriefBuilder {
+        +build(transcript) StopBrief
+    }
+    class Interpreter {
+        +interpret(brief) Interpretation
+    }
+    class DigestRun {
+        +run(brief) RunDigest
+    }
+    class Facts {
+        +status str
+        +needs_human bool
+        +answer_class str
+        +risk str
+        +priority_hint str
+    }
+    class Proposal {
+        +steps list~Action~
+    }
+    class Action {
+        <<abstract>>
+        +evidence_quote str
+        +session_id str
+        +confidence float
+    }
+    class Question {
+        +card str
+    }
+    class Abstain {
+        +reason str
+    }
+    class Interpretation {
+        +facts Facts
+    }
+    class InterpreterCall {
+        +stage str
+        +model_id str
+        +prompt_hash str
+        +rendered_input str
+        +raw_reply str
+        +output_json str
+    }
+
+    RunItem <|-- AssistantText
+    RunItem <|-- ToolExchange
+    StopBrief *-- RunItem
+    StopBrief o-- RunDigest : previous, optional
+    BriefBuilder --> StopBrief : builds
+    DigestRun --> RunDigest : returns
+    Interpreter --> Interpretation : returns
+    Interpreter --> InterpreterCall : stores each call
+    DigestRun --> InterpreterCall : stores
+    Interpretation *-- Facts
+    Interpretation o-- Proposal : advice, 1 step
+    Interpretation o-- Question : optional card
+    Interpretation o-- Abstain : or abstain
+    Proposal *-- Action : 1 to 3 steps
+
+    note for Action "Code checks evidence_quote<br>is a substring of the Stop brief"

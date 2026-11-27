@@ -1,0 +1,63 @@
+{
+  "stage": "design",
+  "verdict": "sound",
+  "risk_tier": "medium",
+  "regret_risk": "If the spike ships as written, the team keeps a priority-dev/ folder with its own Python project inside a plugin repository that is not an app, and 13 slices of one program in its tracker. The cost is a folder to move later. The gain is measured facts before the policy and the actuator exist.",
+  "summary": "The design turns the open questions of priority.dev into 13 slices in 4 epics, ordered so that the cheapest probes of the largest unknowns come first. The three probes and the stop brief come before the log. Each unknown is a criterion in a blind rubric.",
+  "constraint_introduced": "Code under priority-dev/ never imports from plugins/ or shared/, and the plugin tests never collect it. Only one module reads OPENROUTER_API_KEY.",
+  "findings": [
+    {
+      "kind": "prediction",
+      "id": "F1",
+      "severity": "medium",
+      "title": "priority-dev/ has no bounded context yet",
+      "detail": "boundary_check reports priority-dev/ as uncovered. A canvas and a boundary record need code to verify against, so describe mode waits until slice 4 exists. Until then the constraint above is the only boundary.",
+      "cites": [
+        "ADR-0017",
+        "ADR-0025"
+      ]
+    },
+    {
+      "kind": "prediction",
+      "id": "F2",
+      "severity": "medium",
+      "title": "An application sits in a repository that is not an app",
+      "detail": "The plugin tests must not collect priority-dev/, and the install surface must not grow. A separate pyproject.toml inside priority-dev/ and a rule that no plugin imports it keep the two apart.",
+      "cites": [
+        "ADR-0016",
+        "ADR-0025"
+      ]
+    },
+    {
+      "kind": "prediction",
+      "id": "F3",
+      "severity": "info",
+      "title": "Programs go through the tracker port",
+      "detail": "The program is seeded from goal.json and 04-slices.md with tracker.py, so no state is hand-edited. The beads data of this repository then holds priority-dev records. The engineer accepted this.",
+      "cites": [
+        "ADR-0040",
+        "ADR-0031"
+      ]
+    },
+    {
+      "kind": "prediction",
+      "id": "F4",
+      "severity": "medium",
+      "title": "The 0.90 gate fits a probe only through its rubric",
+      "detail": "A probe slice may refute its claim and still be correct. The blind rubric therefore scores the honesty and completeness of the report, not the size of the number.",
+      "cites": [
+        "ADR-0012"
+      ]
+    },
+    {
+      "kind": "prediction",
+      "id": "F5",
+      "severity": "medium",
+      "title": "The model key must have one reader",
+      "detail": "The key lives in the environment and a single settings module reads it. The same rule as the stack card for a Python service holds: environment variables cross into code in one place only.",
+      "cites": [
+        "stack:python-fastapi boundary rule 4"
+      ]
+    }
+  ]
+}

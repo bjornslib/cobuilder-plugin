@@ -1,0 +1,16 @@
+feature: priority-ask-question
+test_command: "claude plugin test priority-dev/probes/ask-hold"
+baseline: "none: priority-dev/probes/ask-hold/ does not exist yet"
+thresholds:
+  accept: 0.90
+  investigate: 0.70
+max_attempts: 3
+models:
+  red: haiku
+  green: haiku
+  validate: sonnet
+slices:
+  - {id: 1, name: "E1 probe mod", weight: 0.4}
+  - {id: 2, name: "E1 probe record", weight: 0.3}
+  - {id: 3, name: "E2 open-question input", weight: 0.3}
+  - {id: 4, name: "E3 question in the reader", weight: 1.0, test_command: "claude plugin test plugins/cobuilder-priority"}

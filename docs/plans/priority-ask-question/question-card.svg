@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="780" viewBox="0 0 640 780" font-family="'JetBrains Mono','SF Mono',Menlo,monospace" font-size="13">
+  <title>Priority reader: the AskUserQuestion card</title>
+  <rect width="640" height="780" fill="#0b0f14"/>
+
+  <!-- Frame A: the question card -->
+  <text x="20" y="28" fill="#6b7480" font-size="11">A · AN AGENT QUESTION, HELD IN THE PANE</text>
+  <rect x="20" y="40" width="600" height="420" fill="#11161d" stroke="#2a313b"/>
+
+  <!-- Row 1: header -->
+  <text x="36" y="66" fill="#e6e6e6" font-weight="bold">Priority reader</text>
+  <text x="172" y="66" fill="#3fb950">● on</text>
+  <text x="222" y="66" fill="#6b7480">5 readings</text>
+  <text x="330" y="66" fill="#e3b341">⠹ reading…</text>
+  <!-- Row 2: keys -->
+  <text x="36" y="88" fill="#39c5cf">s</text><text x="48" y="88" fill="#e6e6e6">Send</text>
+  <text x="92" y="88" fill="#6b7480">·</text>
+  <text x="108" y="88" fill="#4d5561">e Edit</text>
+  <text x="166" y="88" fill="#6b7480">·</text>
+  <text x="182" y="88" fill="#3fb950">r</text><text x="194" y="88" fill="#e6e6e6">Right</text>
+  <text x="246" y="88" fill="#6b7480">·</text>
+  <text x="262" y="88" fill="#f85149">w</text><text x="274" y="88" fill="#e6e6e6">Wrong</text>
+  <text x="326" y="88" fill="#6b7480">·</text>
+  <text x="342" y="88" fill="#e6e6e6">m Hide summary</text>
+  <line x1="36" y1="100" x2="604" y2="100" stroke="#2a313b"/>
+
+  <!-- Question 1 -->
+  <text x="36" y="126" fill="#e6e6e6" font-weight="bold">1. Which store keeps the marks?</text>
+  <rect x="500" y="113" width="58" height="18" fill="none" stroke="#39c5cf"/>
+  <text x="508" y="126" fill="#39c5cf" font-size="11">Store</text>
+  <text x="52" y="148" fill="#39c5cf">[•] $.store</text>
+  <text x="200" y="148" fill="#6b7480">Keeps marks per plugin</text>
+  <text x="52" y="168" fill="#e6e6e6">[ ] JSONL file</text>
+  <text x="200" y="168" fill="#6b7480">One file per session</text>
+  <text x="52" y="188" fill="#6b7480">Other: ________________</text>
+
+  <!-- Question 2 -->
+  <text x="36" y="222" fill="#e6e6e6" font-weight="bold">2. Which checks run on save?</text>
+  <text x="300" y="222" fill="#6b7480">(several)</text>
+  <rect x="500" y="209" width="58" height="18" fill="none" stroke="#39c5cf"/>
+  <text x="506" y="222" fill="#39c5cf" font-size="11">Checks</text>
+  <text x="52" y="244" fill="#39c5cf">[x] Unit</text>
+  <text x="52" y="264" fill="#39c5cf">[x] E2E</text>
+  <text x="52" y="284" fill="#e6e6e6">[ ] Lint</text>
+  <text x="52" y="304" fill="#6b7480">Other: ________________</text>
+
+  <!-- What will be sent -->
+  <rect x="36" y="326" width="568" height="118" fill="#0f2a2e" stroke="#39c5cf" stroke-width="2"/>
+  <text x="50" y="350" fill="#39c5cf" font-weight="bold">┌ ▸ WHAT WILL BE SENT ─────────</text>
+  <rect x="50" y="362" width="540" height="48" fill="#0b0f14" stroke="#2a313b"/>
+  <text x="62" y="381" fill="#e6e6e6">Which store keeps the marks? → $.store</text>
+  <text x="62" y="400" fill="#e6e6e6">Which checks run on save? → Unit, E2E</text>
+  <text x="50" y="432" fill="#6b7480">Source: 2 answers</text>
+
+  <!-- Frame B: the same block for a turn-end stop -->
+  <text x="20" y="500" fill="#6b7480" font-size="11">B · THE SAME BLOCK FOR A TURN-END STOP</text>
+  <rect x="20" y="512" width="600" height="150" fill="#11161d" stroke="#2a313b"/>
+  <rect x="36" y="528" width="568" height="118" fill="#0f2a2e" stroke="#39c5cf" stroke-width="2"/>
+  <text x="50" y="552" fill="#39c5cf" font-weight="bold">┌ ▸ WHAT WILL BE SENT ─────────</text>
+  <rect x="50" y="564" width="540" height="48" fill="#0b0f14" stroke="#2a313b"/>
+  <text x="62" y="583" fill="#e6e6e6">Run the migration before the tests, then</text>
+  <text x="62" y="602" fill="#e6e6e6">re-run the suite.</text>
+  <text x="50" y="634" fill="#6b7480">Source: step 1 Reply</text>
+
+  <!-- Frame C: empty state -->
+  <text x="20" y="696" fill="#6b7480" font-size="11">C · NOTHING CHOSEN YET</text>
+  <rect x="36" y="706" width="568" height="56" fill="#11161d" stroke="#2a313b"/>
+  <text x="50" y="728" fill="#6b7480" font-weight="bold">┌ ▸ WHAT WILL BE SENT ─────────</text>
+  <text x="50" y="750" fill="#6b7480">Provide your response</text>
+</svg>

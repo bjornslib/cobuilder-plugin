@@ -1,0 +1,7 @@
+HUMAN ASKED:
+Rename the helper module.
+RUN:
+[tool Bash] {"command": "git mv helper.py tools.py"}
+[result] 
+FINAL REPLY:
+The helper module is now tools.py.

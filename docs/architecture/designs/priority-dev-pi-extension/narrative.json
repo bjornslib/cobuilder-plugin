@@ -1,0 +1,116 @@
+{
+  "intent": {
+    "tagline": "One reader contract for Claude Code, Pi, and OMP",
+    "narration": "The priority reader works only in Claude Code today. With this change, priority-dev reads each harness through a transcript adapter, one core draws the same cards in every host, and any agent can read a session as JSON."
+  },
+  "problem_solution": {
+    "problem": "Many coding agents run in parallel, and nothing ranks or filters what they need. No agent answers for the person when the next step is obvious. The priority reader works only in Claude Code. priority-dev reads only Claude Code transcripts, and the plugin runs on the Claude Code mod engine.",
+    "solution": "Transcript adapters write a priority transcript, priority read prints a Reading, a shared core gives the cards, and thin host adapters run in Claude Code, Pi, and OMP. A planned orchestrator answers only when evaluate allows it.",
+    "narration": "The model proposes, and only a pure evaluate lets an answer reach an agent with no press.",
+    "beats": [
+      {
+        "kind": "problem",
+        "text": "priority-dev reads only Claude Code transcripts, and the plugin runs only on the Claude Code engine."
+      },
+      {
+        "kind": "decision",
+        "text": "One transcript adapter for each dialect, and one shared TypeScript core for all hosts."
+      },
+      {
+        "kind": "decision",
+        "text": "The orchestrator proposes, evaluate decides, and the actuator sends, as the priority-dev design says."
+      },
+      {
+        "kind": "risk",
+        "text": "The stop events, the pane, and the question hold differ by host, so probe E1 runs first."
+      }
+    ],
+    "alternatives": [
+      {
+        "option": "A separate Pi extension with no code from the Claude Code plugin",
+        "rejected_because": "Two hand copies of the card and draft logic drift apart. The engineer chose one shared core for Claude Code, Pi, and OMP."
+      },
+      {
+        "option": "The extension flattens the Pi branch into a Claude Code JSONL file",
+        "rejected_because": "An agent outside Pi could not read a Pi session. The engineer chose transcript adapters in priority-dev, so the design stays uniform."
+      },
+      {
+        "option": "Port the D1 program to a TypeScript runner",
+        "rejected_because": "The 0.654 score holds only for its model, provider, and DSPy prompt. A second reader drifts from the first."
+      },
+      {
+        "option": "A long-lived reader service that every host posts turn records to",
+        "rejected_because": "The repo has no deploy step. A service that receives full transcripts weakens the per-session opt-in of ADR-0051."
+      },
+      {
+        "option": "Byte-identical readings for the same transcript in every host",
+        "rejected_because": "The model is not deterministic. Parity is exact from a reading to its card text, and by score from a transcript to a reading."
+      },
+      {
+        "option": "A spot check of the cards by eye",
+        "rejected_because": "It catches no drift between the hosts."
+      },
+      {
+        "option": "The orchestrator LLM decides by judgment, and its prompt is the rule",
+        "rejected_because": "The rule must be recorded and testable. The priority-dev design says that the model proposes and a pure evaluate decides."
+      },
+      {
+        "option": "A rule table only, with no LLM in the choice",
+        "rejected_because": "The engineer wants the orchestrator to judge when an answer is obvious. The gate still has the last word."
+      },
+      {
+        "option": "Control stays in Python behind a priority-dev endpoint",
+        "rejected_because": "A Durable Object runs no Python, and the actuator runs evaluate again just before each send."
+      },
+      {
+        "option": "A priority_ask tool in both hosts, with the OMP ask tool blocked",
+        "rejected_because": "The engineer chose to hook the question tool of each host, in its own data shape."
+      },
+      {
+        "option": "Leave question stops out",
+        "rejected_because": "ADR-0052 already reads question stops in Claude Code, so Pi and OMP would fall behind."
+      },
+      {
+        "option": "The Pi package as a sub-folder of plugins/cobuilder-priority",
+        "rejected_because": "Each Claude Code install would carry a Pi package that it cannot load."
+      },
+      {
+        "option": "The Pi package inside priority-dev",
+        "rejected_because": "It adds a second runtime to priority-dev, which ADR-0045 keeps as a Python leaf."
+      },
+      {
+        "option": "Build the core and the Pi package before D1 is scored on Pi stops",
+        "rejected_because": "Abort gate 3 would fire after the build is spent. The engineer took the reviewer's survivor to score D1 first, in E4."
+      },
+      {
+        "option": "A deny list stricter than schemas.md section 4",
+        "rejected_because": "The priority-dev design already sets a starting verdict for each action kind. The engineer chose two guards on top of it, not a second table."
+      }
+    ]
+  },
+  "architecture": {
+    "narration": "priority-dev stays a process behind priority read. The core holds the contract and evaluate, and each host adapter holds only host code.",
+    "beats": [
+      {
+        "kind": "constraint",
+        "text": "ADR-0045: nothing imports priority-dev, and the hosts call it as a process."
+      },
+      {
+        "kind": "constraint",
+        "text": "ADR-0017: the core reaches each plugin through the shared symlink."
+      },
+      {
+        "kind": "constraint",
+        "text": "ADR-0051, amended: only evaluate may allow an answer that no person pressed."
+      },
+      {
+        "kind": "risk",
+        "text": "Pi Durable is experimental and runs no Python. Probe E8 picks the route, and a container child that runs this Pi package is its first candidate."
+      },
+      {
+        "kind": "decision",
+        "text": "E4 scores D1 on Pi and OMP stops before any host code, so abort gate 3 fires early."
+      }
+    ]
+  }
+}

@@ -12,7 +12,7 @@ related:
 
 # Bounded Context Canvas — shared
 
-> Documents `shared/` to the [Architecture Documentation Standard](../../standard.md). Grounded in code as of 2026-11-14 (commit `158ad7c`). Full treatment. 17 top-level Python files, 40 Python files in `tracker_port/`, 27 Python files in `structure/`, four reference documents, and two shared skills. Six symlinks (`plugins/<name>/shared`) point here.
+> Documents `shared/` to the [Architecture Documentation Standard](../../standard.md). Grounded in code as of 2026-11-14 (commit `158ad7c`). Full treatment. 17 top-level Python files, 40 Python files in `tracker_port/`, 27 Python files in `structure/`, four reference documents, and two shared skills. Seven symlinks (`plugins/<name>/shared`) point here.
 
 ## 1. Name & purpose
 
@@ -30,7 +30,7 @@ related:
 | [**Vendoring**](../../../../DDD-VOCABULARY.md#vendoring) | The symlink of `shared/` into each plugin root (ADR-0017). |
 | [**Bundle**](../../../../DDD-VOCABULARY.md#bundle) | The directory whose version, layout, and index this context owns. |
 | [**Script**](../../../../DDD-VOCABULARY.md#script) | A PEP 723 file. Here it can also be a module that plugins import. |
-| [**Plugin**](../../../../DDD-VOCABULARY.md#plugin) | A consumer. Six plugins hold the symlink, and five of them use it. |
+| [**Plugin**](../../../../DDD-VOCABULARY.md#plugin) | A consumer. Seven plugins hold the symlink. Five import or run shared code. `cobuilder-memory` and `cobuilder-priority` import none today. |
 | [**Prose budget**](../../../../DDD-VOCABULARY.md#prose-budget) | The word caps in `prose_budget.py`. `verify_bundle.py` fails a bundle past twice the cap. |
 | [**Stale boundary**](../../../../DDD-VOCABULARY.md#stale-boundary) | A context that `boundary_check.py` lists. |
 | [**Tracker port**](../../../../DDD-VOCABULARY.md#tracker-port) | The interface in `tracker_port/port.py`. The glossary assigns it to `cobuilder-packaging`, but the code lives here. |
@@ -59,7 +59,7 @@ related:
 | implement | Import `slice_table`, `gate_status`, and `tracker_port.reader` in `verify_gate.py`. Import `structure_signals` and `structure.keys` in `structure_runner.py`. Shell: `build_index`, `tracker`, and `structure_evidence` in VALIDATE. The tracker hook scripts run `tracker.py` by subprocess |
 | architect | Shell only: `build_index`, `migrate_bundle`, `prose_budget`, `boundary_check`, `validate_decision_state`, `habit_smells`, `tracker`, and `structure_evidence` in architect review mode |
 | cobuilder-packaging | `watch_feedback.py` imports `ledger`. The install command and setup skill run `tracker.py` and `structure_signals` |
-| cobuilder-memory | Holds the symlink. It imports and runs nothing from `shared/`. |
+| cobuilder-memory, cobuilder-priority | Symlink only. No import or shell call today. `cobuilder-priority` is a planned consumer of `shared/priority-core/` (ADR-0053) |
 
 ## 6. Outbound communication (dependencies + integration pattern)
 
@@ -187,6 +187,12 @@ flowchart LR
 6. **The glossary puts the tracker terms in the wrong context.** `DDD-VOCABULARY.md` assigns Tracker port, Tracker adapter, Projector, and Tracker CLI to `cobuilder-packaging`. The code is in `shared/`. Move the terms or document the split.
 7. **A plugin path names the cache in code.** `shared/structure/boundary.py` line 22 sets `CACHE_PREFIX = "plugins/cache/"`, and line 145 skips any reference that starts with it. This is code, not a comment, and it is the same coupling as smell 1. ADR candidate: pass the prefix in from the caller.
 
+## Open items
+
+- **ADR-0053 plans `shared/priority-core/`, the first TypeScript library under `shared/`.** The ADR (frontmatter `status: active`, `state: decided`) puts the Reading types, the card view model, the reader queue, and `evaluate` there. `plugins/cobuilder-priority` and `pi/cobuilder-priority` import it through the `shared` symlink. No TypeScript file exists under `shared/` today, and neither `plugins/cobuilder-priority` nor `pi/` imports shared code yet. When the library lands, give it its own module in `boundary.yaml` with `allowed_outbound: []`, because the ADR says it imports no host engine, and add `cobuilder-priority` and the Pi package to its `allowed_inbound`. The base-layer rule then also covers TypeScript (see `forbidden_dependencies`).
+- **ADR candidates from this run:** smells 1 and 2 above, still open. Smell 3 follows smell 1. No new violation: `tracker_port/`, `habit_smells.py`, and the other files added since 2026-10-08 import only the standard library, PyYAML, and sibling shared modules.
+- `governed_by` stays empty. ADR-0017 and ADR-0040 anchor to `cobuilder-packaging`.
+
 ## Governing decisions
 
-ADR-0017 (vendored shared code and bundle compatibility), ADR-0006 (three-phase bundle self-migration), and ADR-0022 (gate doc projection into the index). The tracker code follows ADR-0040 (tracker port), ADR-0031 (beads storage), ADR-0041 (tracker reminder hook), and ADR-0042 (sync). ADR-0047 covers the program stage from the tracker. ADR-0049 covers the structure signals that the coach and VALIDATE report. These ADRs anchor to `cobuilder-packaging`, so `governed_by` here stays empty.
+ADR-0017 (vendored shared code and bundle compatibility), ADR-0006 (three-phase bundle self-migration), and ADR-0022 (gate doc projection into the index). The tracker code follows ADR-0040 (tracker port), ADR-0031 (beads storage), ADR-0041 (tracker reminder hook), and ADR-0042 (sync). ADR-0047 covers the program stage from the tracker. ADR-0049 covers the structure signals that the coach and VALIDATE report. These ADRs anchor to `cobuilder-packaging`, so `governed_by` here stays empty. ADR-0053 plans `shared/priority-core/`, the first TypeScript library under `shared/`. It is not in code yet.

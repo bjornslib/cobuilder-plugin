@@ -1,0 +1,19 @@
+%% Runtime: one AskUserQuestion call, from the catch to the answer.
+sequenceDiagram
+    participant S as Session (agent)
+    participant H as Question hook
+    participant P as Pane
+    participant R as priority-dev CLI
+    participant E as Engineer
+    S->>H: tool.call AskUserQuestion
+    alt reader off, subagent, or pane cannot open
+        H->>S: next(e), the dialog opens
+    else main loop, reader on
+        H->>P: open and focus, question card
+        H->>R: digest, then interpret --open-question
+        E->>P: picks options, types Other
+        R-->>P: reading, stop_kind question
+        E->>P: Send
+        P->>H: answers
+        H->>S: { result } with the answers
+    end

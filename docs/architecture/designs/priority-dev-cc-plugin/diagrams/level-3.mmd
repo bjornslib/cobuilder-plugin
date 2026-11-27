@@ -1,0 +1,77 @@
+%% Classes: the data types and the module functions of cobuilder-priority.
+%% Names follow contracts.md. They are design names, not code names.
+classDiagram
+    class Settings {
+        +String priority_dev_dir
+        +String program
+        +Number timeout_seconds
+        +String llm_api_key
+    }
+
+    class SessionState {
+        +Boolean switch
+        +Stop queue
+        +Boolean running
+    }
+
+    class Stop {
+        +String sessionId
+        +String transcriptPath
+        +String at
+    }
+
+    class Reading {
+        +String sessionId
+        +Int stop
+        +String at
+        +String repo
+        +String program
+        +String brief
+        +String state
+        +ReadingResult result
+        +String error
+        +Int ms
+    }
+
+    class ReadingResult {
+        +String status
+        +Boolean needs_human
+        +String priority
+        +List steps
+        +Abstain abstain
+    }
+
+    class Abstain {
+        +String reason
+        +String detail
+    }
+
+    class Mark {
+        +String verdict
+        +String note
+        +String at
+    }
+
+    class HooksModule {
+        +onStop(e, next)
+        +runReading(stop)
+        +renderPane()
+        +commandOn()
+        +commandOff()
+        +commandPane()
+    }
+
+    HooksModule ..> Settings : reads userConfig
+    HooksModule --> SessionState : keeps in $.state
+    SessionState "1" o-- "0..1" Stop : one waiting stop
+    HooksModule ..> Stop : onStop queues
+    HooksModule ..> Reading : runReading stores
+    Reading "1" *-- "0..1" ReadingResult : done
+    ReadingResult "1" *-- "0..1" Abstain : abstains
+    Reading "1" o-- "0..1" Mark : marked by the engineer
+    HooksModule ..> Mark : renderPane writes
+
+    note for Settings "No field is required.<br>timeout_seconds defaults to 180, cap 600.<br>llm_api_key is sensitive, passed as LLM_API_KEY."
+    note for SessionState "A newer stop replaces the waiting stop.<br>A reload clears the queue and the busy flag. A reading in flight still stores its result."
+    note for Reading "$.store key readings:session id, in order.<br>brief is digest-current, digest-previous, or no-digest. state is done or failed."
+    note for Mark "$.store key marks:session id, by reading number.<br>verdict is right, wrong, or null."

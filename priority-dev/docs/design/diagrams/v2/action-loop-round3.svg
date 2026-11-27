@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1300 420" role="img" aria-labelledby="loop-t loop-d">
+<title id="loop-t">priority.dev action loop</title><desc id="loop-d">The interpreter proposes, the actuator attempts, the policy accepts or rejects, and a rejection goes to the human through the attention queue.</desc>
+<style>
+.bd{fill:var(--svg-bd,none);stroke:var(--svg-bd-line,#9aa4b2);stroke-width:1.2;stroke-dasharray:6 4}
+.bt{font:600 12px system-ui,sans-serif;fill:var(--svg-muted,#5b6575);letter-spacing:.06em;text-transform:uppercase}
+.nr{fill:var(--svg-node,#ffffff);stroke:var(--svg-ink,#1f2937);stroke-width:1.4}
+.nh{fill:var(--svg-hi,#dcecef);stroke:var(--svg-ink,#1f2937);stroke-width:1.8}
+.nx{fill:var(--svg-node,#ffffff);stroke:var(--svg-ink,#1f2937);stroke-width:1.4;stroke-dasharray:5 3}
+.nt{font:600 13px system-ui,sans-serif;fill:var(--svg-ink,#1f2937)}
+.ns{font:400 11px system-ui,sans-serif;fill:var(--svg-muted,#5b6575)}
+.ed{fill:none;stroke:var(--svg-ink,#1f2937);stroke-width:1.4;marker-end:url(#arr)}
+.el{font:400 11px system-ui,sans-serif;fill:var(--svg-ink,#1f2937);paint-order:stroke;stroke:var(--svg-page,#ffffff);stroke-width:3.5px;stroke-linejoin:round}
+.ar{fill:var(--svg-ink,#1f2937)}
+</style>
+<defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ar" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+<g id="n-int"><title>Interpreter: writes a proposal</title><rect class="nr" x="30" y="150" width="190" height="64" rx="12"/><text class="nt" x="125.0" y="177" text-anchor="middle">Interpreter</text><text class="ns" x="125.0" y="195" text-anchor="middle">writes a proposal</text></g>
+<g id="n-att"><title>Actuator: makes an attempt, sends nothing</title><rect class="nh" x="290" y="150" width="220" height="64" rx="12"/><text class="nt" x="400.0" y="177" text-anchor="middle">Actuator</text><text class="ns" x="400.0" y="195" text-anchor="middle">makes an attempt, sends nothing</text></g>
+<g id="n-pol"><title>Policy engine: accept or reject, deny list inside</title><rect class="nh" x="580" y="150" width="230" height="64" rx="12"/><text class="nt" x="695.0" y="177" text-anchor="middle">Policy engine</text><text class="ns" x="695.0" y="195" text-anchor="middle">accept or reject, deny list inside</text></g>
+<g id="n-exe"><title>Actuator: sends, records the effect</title><rect class="nr" x="880" y="50" width="200" height="64" rx="12"/><text class="nt" x="980.0" y="77" text-anchor="middle">Actuator</text><text class="ns" x="980.0" y="95" text-anchor="middle">sends, records the effect</text></g>
+<g id="n-ses"><title>Session: tmux pane</title><rect class="nx" x="1130" y="50" width="140" height="64" rx="12"/><text class="nt" x="1200.0" y="77" text-anchor="middle">Session</text><text class="ns" x="1200.0" y="95" text-anchor="middle">tmux pane</text></g>
+<g id="n-que"><title>Attention queue: item with the reason</title><rect class="nr" x="880" y="250" width="200" height="64" rx="12"/><text class="nt" x="980.0" y="277" text-anchor="middle">Attention queue</text><text class="ns" x="980.0" y="295" text-anchor="middle">item with the reason</text></g>
+<g id="n-hum"><title>You: answer in the inbox</title><rect class="nx" x="1130" y="250" width="140" height="64" rx="12"/><text class="nt" x="1200.0" y="277" text-anchor="middle">You</text><text class="ns" x="1200.0" y="295" text-anchor="middle">answer in the inbox</text></g>
+<path class="ed" d="M220,182 H290"/>
+<text class="el" x="255" y="174" text-anchor="middle">proposal</text>
+<path class="ed" d="M510,182 H580"/>
+<text class="el" x="545" y="174" text-anchor="middle">attempt</text>
+<path class="ed" d="M810,170 L880,90"/>
+<text class="el" x="856" y="142" text-anchor="end">accept</text>
+<path class="ed" d="M810,194 L880,274"/>
+<text class="el" x="856" y="246" text-anchor="end">reject</text>
+<path class="ed" d="M1080,82 H1130"/>
+<text class="el" x="1105" y="74" text-anchor="middle">send</text>
+<path class="ed" d="M1080,282 H1130"/>
+<path class="ed" d="M1200,314 V372 H400 V214"/>
+<text class="el" x="800" y="364" text-anchor="middle">your answer becomes a new attempt</text>
+<text class="ns" x="30" y="410" text-anchor="start">The policy decides before any send. Each step writes an event, so the log shows the attempt, the decision, and the effect.</text>
+</svg>

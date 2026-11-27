@@ -1,0 +1,209 @@
+"""The readers of the model settings. No other module reads the names below."""
+from __future__ import annotations
+
+import os
+import sys
+from pathlib import Path
+
+ENV_PATH = Path(__file__).resolve().parents[2] / ".env"
+
+_DEFAULTS = {
+    "LLM_PROVIDER": "inception",
+    "LLM_MODEL": "mercury-3",
+}
+
+# LiteLLM provider prefixes. Only these providers are supported.
+_PREFIX = {"openrouter": "openrouter", "nvidia_nim": "nvidia_nim", "inception": "openai"}
+
+# Reflection-only providers. Meta serves Muse Wonder through the Responses API.
+_REFLECTION_PREFIX = {**_PREFIX, "meta": "openai"}
+
+# Endpoint override per provider. LiteLLM knows none of these except openrouter.
+_BASE_URL = {
+    "openrouter": "https://openrouter.ai/api/v1",
+    "nvidia_nim": "https://integrate.api.nvidia.com/v1",
+    "inception": "https://api.inceptionlabs.ai/v1",
+    "meta": "https://api.meta.ai/v1",
+}
+
+# Lowest temperature the provider accepts. Mercury refuses anything under 0.5.
+_MIN_TEMPERATURE = {"inception": 0.5}
+
+# Judge defaults. The judge uses the NVIDIA Mistral model, not the task model.
+_JUDGE_DEFAULTS = {
+    "JUDGE_PROVIDER": "nvidia_nim",
+    "JUDGE_MODEL": "mistralai/mistral-large-4-1t-a52b",
+}
+
+# GEPA reflection defaults. The reflection model has its own settings, so a judge override never moves it
+# to the task model. It stays the NVIDIA Mistral model unless REFLECTION_PROVIDER or REFLECTION_MODEL is set.
+_REFLECTION_DEFAULTS = {
+    "REFLECTION_PROVIDER": "nvidia_nim",
+    "REFLECTION_MODEL": "mistralai/mistral-large-4-1t-a52b",
+}
+
+# The key each provider reads when its role key is not set.
+_JUDGE_KEY = {"openrouter": "OPENROUTER_API_KEY", "nvidia_nim": "NVIDIA_API_KEY", "inception": "INCEPTION_LABS_API_KEY", "meta": "META_API_KEY"}
+
+
+def _get(name: str) -> str | None:
+    value = os.environ.get(name)
+    if value is None and ENV_PATH.is_file():
+        for line in ENV_PATH.read_text().splitlines():
+            key, _, val = line.partition("=")
+            if key.strip() == name:
+                value = val.strip().strip("\"'")
+    return value
+
+
+def provider() -> str:
+    """The model provider. One of openrouter, nvidia_nim, or inception."""
+    name = _get("LLM_PROVIDER") or _DEFAULTS["LLM_PROVIDER"]
+    if name not in _PREFIX:
+        raise RuntimeError(f"LLM_PROVIDER is {name!r}, want one of {sorted(_PREFIX)}")
+    return name
+
+
+def model() -> str:
+    """The full LiteLLM model id, with the provider prefix the provider needs."""
+    return f"{_PREFIX[provider()]}/{_get('LLM_MODEL') or _DEFAULTS['LLM_MODEL']}"
+
+
+def base_url() -> str:
+    """The endpoint override, else the provider default."""
+    return _get("LLM_BASE_URL") or _BASE_URL[provider()]
+
+
+def temperature() -> float:
+    """0, raised to the lowest value the provider accepts."""
+    return max(0.0, _MIN_TEMPERATURE.get(provider(), 0.0))
+
+
+def load_key() -> str:
+    """The key from the environment, else from priority-dev/.env. It never prints the key."""
+    key = _get("LLM_API_KEY")
+    if not key and provider() == "inception":
+        key = _get("INCEPTION_LABS_API_KEY")
+    if not key:
+        raise RuntimeError("LLM_API_KEY is not set and priority-dev/.env has no value for it")
+    return key
+
+
+def load_nvidia_key() -> str:
+    """The old NVIDIA reader. It now returns the active key, whatever the provider is."""
+    return load_key()
+
+
+def judge_provider() -> str:
+    """The judge provider. One of openrouter, nvidia_nim, or inception."""
+    name = _get("JUDGE_PROVIDER") or _JUDGE_DEFAULTS["JUDGE_PROVIDER"]
+    if name not in _PREFIX:
+        raise RuntimeError(f"JUDGE_PROVIDER is {name!r}, want one of {sorted(_PREFIX)}")
+    return name
+
+
+def judge_model() -> str:
+    """The judge model id, with the provider prefix the provider needs."""
+    return f"{_PREFIX[judge_provider()]}/{_get('JUDGE_MODEL') or _JUDGE_DEFAULTS['JUDGE_MODEL']}"
+
+
+def judge_base_url() -> str:
+    """The judge endpoint override, else the provider default."""
+    return _get("JUDGE_BASE_URL") or _BASE_URL[judge_provider()]
+
+
+def judge_temperature() -> float:
+    """0, raised to the lowest value the judge provider accepts."""
+    return max(0.0, _MIN_TEMPERATURE.get(judge_provider(), 0.0))
+
+
+def judge_reasoning_effort() -> str | None:
+    """The judge `reasoning_effort` from JUDGE_REASONING_EFFORT, else None. The provider checks the value."""
+    return (_get("JUDGE_REASONING_EFFORT") or "").strip() or None
+
+
+def _role_key(own_name: str, provider_name: str) -> str:
+    """The key from `own_name`, else the per-provider key. It never prints the key.
+
+    A test-side stub (the suite-wide conftest guard) makes the reader raise before any
+    file or real key is read, so no test builds a live judge or reflection model. An explicit env
+    value from a test still wins over the stub."""
+    env_key = os.environ.get(own_name) or os.environ.get(_JUDGE_KEY[provider_name])
+    if env_key:
+        return env_key
+    if "judge_key" in _STUBS:
+        raise RuntimeError(f"{own_name} is stubbed for this test and no env value is set")
+    key = _get(own_name) or _get(_JUDGE_KEY[provider_name])
+    if key:
+        return key
+    raise RuntimeError(f"{own_name} is not set and priority-dev/.env has no value for it")
+
+
+def _judge_key_reader() -> str:
+    """The judge key from JUDGE_API_KEY, else the per-provider key."""
+    return _role_key("JUDGE_API_KEY", judge_provider())
+
+
+def reflection_provider() -> str:
+    """The GEPA reflection provider. One of openrouter, nvidia_nim, inception, or meta."""
+    name = _get("REFLECTION_PROVIDER") or _REFLECTION_DEFAULTS["REFLECTION_PROVIDER"]
+    if name not in _REFLECTION_PREFIX:
+        raise RuntimeError(f"REFLECTION_PROVIDER is {name!r}, want one of {sorted(_REFLECTION_PREFIX)}")
+    return name
+
+
+def reflection_model() -> str:
+    """The reflection model id, with the provider prefix the provider needs."""
+    return f"{_REFLECTION_PREFIX[reflection_provider()]}/{_get('REFLECTION_MODEL') or _REFLECTION_DEFAULTS['REFLECTION_MODEL']}"
+
+
+def reflection_base_url() -> str:
+    """The reflection endpoint override, else the provider default."""
+    return _get("REFLECTION_BASE_URL") or _BASE_URL[reflection_provider()]
+
+
+def reflection_temperature() -> float:
+    """1.0 for meta, which Muse Wonder needs. Otherwise 0, raised to the lowest value the provider accepts."""
+    if reflection_provider() == "meta":
+        return 1.0
+    return max(0.0, _MIN_TEMPERATURE.get(reflection_provider(), 0.0))
+
+
+def reflection_model_type() -> str:
+    """The DSPy model type. Meta serves only the Responses API; the other providers take chat."""
+    return "responses" if reflection_provider() == "meta" else "chat"
+
+
+# lm15 has a door for these prefixes. NVIDIA has none, so its calls take the default engine, which uses LiteLLM.
+_LM15_PREFIXES = {"openai", "openrouter"}
+
+
+def reflection_engine() -> str:
+    """The DSPy engine: lm15 for a prefix it has a door for, else auto, which hands the call to LiteLLM."""
+    return "lm15" if _REFLECTION_PREFIX[reflection_provider()] in _LM15_PREFIXES else "auto"
+
+
+def reflection_key() -> str:
+    """The reflection key from REFLECTION_API_KEY, else the per-provider key."""
+    return _role_key("REFLECTION_API_KEY", reflection_provider())
+
+
+# Test-side stubs for key readers. The suite-wide conftest stubs `judge_key` so no test
+# reads the real .env key; an explicit env value from a test still wins over the stub.
+_STUBS: dict = {}
+
+class _ConfigModule(type(sys.modules[__name__])):
+    """The config module class. `judge_key` is a data descriptor: a test-side
+    `monkeypatch.setattr(config, "judge_key", stub)` is recorded in `_STUBS` instead of
+    replacing the reader, so env values stay live and the suite stub still blocks the real key."""
+
+    @property
+    def judge_key(self):
+        return _judge_key_reader
+
+    @judge_key.setter
+    def judge_key(self, value):
+        _STUBS["judge_key"] = value
+
+
+sys.modules[__name__].__class__ = _ConfigModule

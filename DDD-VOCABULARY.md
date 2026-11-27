@@ -16,9 +16,9 @@ How to use this glossary:
 
 <a id="plugin"></a>
 **Plugin** (`cobuilder-packaging`):
-The single installable unit, declared in a `.claude-plugin/plugin.json` manifest. Six plugins exist today under `plugins/`.
+The single installable unit, declared in a `.claude-plugin/plugin.json` manifest. Seven plugins exist today under `plugins/`.
 
-They are `architect`, `pr`, `artifact`, `implement`, the umbrella `cobuilder-full-lifecycle`, and the opt-in mod `cobuilder-memory`.
+They are `architect`, `pr`, `artifact`, `implement`, the umbrella `cobuilder-full-lifecycle`, and the opt-in mods `cobuilder-memory` and `cobuilder-priority`.
 
 <a id="command"></a>
 **Command** (`cobuilder-packaging`):
@@ -43,7 +43,7 @@ Its path is either `<target>/.cobuilder-architect/self/` or `<hub>/.cobuilder-ar
 
 <a id="vendoring"></a>
 **Vendoring** (`cobuilder-packaging`):
-The mechanism that shares code between the six plugins. ADR-0017 decides it.
+The mechanism that shares code between the seven plugins. ADR-0017 decides it.
 
 A `shared/` directory at the marketplace root links into each plugin root. The install cache stores the real files, not the links.
 
@@ -601,6 +601,184 @@ The direction of a move between the depths of the viewer: forward, back, or none
 _Avoid_: transition (the word for any route change)
 
 The pane slides and fades in the direction of travel. Reduced motion turns the motion off.
+
+## cobuilder-priority
+
+These terms come from the `priority-dev-cc-plugin` design (ADR-0051). The plugin lives in `plugins/cobuilder-priority/`.
+
+<a id="live-reading"></a>
+**Live reading** (`cobuilder-priority`):
+What `priority interpret` prints for one main-loop stop of a live session, stored with the stop number, the program, and the brief shape. The plugin shows it and carries out none of its steps.
+_Avoid_: replay result (a reading of a recorded transcript), prediction (the assessment word for a design claim)
+
+<a id="reader-switch"></a>
+**Reader switch** (`cobuilder-priority`):
+The per-session value that `/priority-on` and `/priority-off` set. It is off in each new session, and a stop with the switch off starts no process.
+
+<a id="reading-mark"></a>
+**Reading mark** (`cobuilder-priority`):
+The person's verdict on one live reading, `right` or `wrong`, with a note, kept in `$.store` on this machine. It is not a confirmed label.
+_Avoid_: label (a confirmed entry of the labelled fixture set)
+
+<a id="reader-pane"></a>
+**Reader pane** (`cobuilder-priority`):
+The side pane that shows one card per live reading of the session, newest first, each with its reading marks.
+
+The next four terms come from the `priority-dev-pi-extension` design (ADR-0053).
+
+<a id="priority-core"></a>
+**Priority core** (`cobuilder-priority`):
+The shared TypeScript library in `shared/priority-core/` that holds the Reading contract, the card view model, the draft text, the reader queue, and `evaluate`. It imports no host engine.
+_Avoid_: shared code (a vague word for any file under `shared/`)
+
+<a id="host-adapter"></a>
+**Host adapter** (`cobuilder-priority`):
+The thin code that connects the priority core to one harness: `plugins/cobuilder-priority` for Claude Code, and `pi/cobuilder-priority` for Pi and OMP. It holds the stop hook, the pane, and the question hook of its host.
+_Avoid_: tracker adapter (a `cobuilder-packaging` term), transcript adapter (the `priority-dev` reader of one transcript dialect)
+
+<a id="golden-reading"></a>
+**Golden reading** (`cobuilder-priority`):
+A fixture that holds one Reading, a selection, the expected card view, and the expected draft text. The tests of each host adapter read every golden reading, so the card text cannot drift between hosts.
+
+<a id="agent-mode"></a>
+**Agent mode** (`cobuilder-priority`):
+The `priority read <session-file>` command, and the `priority_read` tool that wraps it, which give a coding agent one Reading as JSON. It draws no UI.
+
+## priority-dev
+
+<a id="priority-transcript"></a>
+**Priority transcript** (`priority-dev`):
+The harness-neutral form of one session that the brief builder reads: the dialect, the session id, the leaf id, and the active branch as human, client, agent, and tool-result records. A transcript adapter writes it (ADR-0053).
+_Avoid_: turn record (a rejected name), session record (an `implement` term for the coach's session file)
+
+<a id="transcript-adapter"></a>
+**Transcript adapter** (`priority-dev`):
+The code in priority-dev that reads one transcript dialect, `claude-code` or `pi`, and writes a priority transcript. The `pi` dialect covers Pi and OMP sessions.
+_Avoid_: session adapter (the wider priority-dev part that also sends commands), host adapter (a `cobuilder-priority` term)
+
+<a id="stop-brief"></a>
+**Stop brief** (`priority-dev`):
+The exact input that the interpreter reads for one stop of a coding session: the run in order, with each tool result in full, and a digest of the run before, or of this run under `--digest current`. Code builds it from the transcript and stores it once.
+_Avoid_: slice, turn slice (a Slice in `implement` is a vertical unit of build work, scored by a validator)
+
+<a id="interpreter"></a>
+**Interpreter** (`priority-dev`):
+The dspy module that reads one stop brief and returns a status, a priority, needs-human, and the steps, or an Abstain. A saved program, such as D1, sets its prompt.
+
+<a id="label"></a>
+**Label** (`priority-dev`):
+The reference answer for one stop in the labelled fixture set, confirmed by the engineer. Eval and the optimiser score the interpreter against it.
+_Avoid_: mark (a reading mark of `cobuilder-priority`, which is not confirmed)
+
+<a id="abstain"></a>
+**Abstain** (`priority-dev`):
+The result of the interpreter when it proposes nothing, with a reason such as `quote_not_in_brief` or `model_error`. The inbox then gets an `ask_human` item, and no failure ends in silence.
+_Avoid_: fallback, error result
+<a id="ask"></a>
+**Ask** (`priority-dev`):
+The human request before the selected stop. The builder skips a bare `continue` when an earlier human request exists.
+
+<a id="client-message"></a>
+**Client message** (`priority-dev`):
+A synthetic assistant error record after a real stop. The stop brief shows its text in `CLIENT MESSAGE:` and sets `stop_source` to `client_error`.
+<a id="exchange"></a>
+**Exchange** (`priority-dev`):
+An exchange is a tool call and its matching result in a run. The brief keeps the last three exchanges in full.
+
+
+
+<a id="brief-size-budget"></a>
+**Brief size budget** (`priority-dev`):
+The maximum character count of rendered stop-brief text that the interpreter reads, prompt instructions excluded. Over-limit briefs return `brief_too_large`.
+
+<a id="probe"></a>
+**Probe** (`priority-dev`):
+A build slice whose end state is a measured answer to one unknown, in a committed report. Its blind rubric scores the honesty and completeness of the report, not the size of the number.
+_Avoid_: spike slice
+
+<a id="optimiser-run"></a>
+**Optimiser run** (`priority-dev`):
+One `optimizer.compile(...)` call: the whole GEPA search, from the seed program to the saved best candidate. Named "optimiser run" because a bare "run" is the agent's work in a stop brief.
+_Avoid_: run (alone), training run
+
+<a id="seed-program"></a>
+**Seed program** (`priority-dev`):
+The program that an optimiser run starts from, loaded with `--seed-program`. Arm C2 had the arm C program as its seed program.
+_Avoid_: starting point
+
+<a id="candidate"></a>
+**Candidate** (`priority-dev`):
+One version of the interpreter program inside an optimiser run. Candidates differ only in the instruction of the `propose` predictor.
+_Avoid_: prompt, program (for one version inside a run)
+
+<a id="training-stops"></a>
+**Training stops** (`priority-dev`):
+The stops in the `train` part of the manifest. An optimiser run splits them by session into its trainset and its valset.
+_Avoid_: training data
+
+<a id="trainset"></a>
+**Trainset** (`priority-dev`):
+The training stops that GEPA samples minibatches from, to find failures and write new instructions. DSPy term.
+_Avoid_: reflection set
+
+<a id="valset"></a>
+**Valset** (`priority-dev`):
+The training stops that score each kept candidate in full, build the Pareto front, and choose the best candidate. It is a DSPy term, set by `--val-sessions`.
+_Avoid_: selection set, validation examples
+
+<a id="test-set"></a>
+**Test set** (`priority-dev`):
+Stops that no optimiser run sees, which compare the arms after the optimiser run. Test set 1 holds the first 30 stops, and test set 2 holds the 26 stops from three other repositories.
+_Avoid_: holdout, holdout 1, holdout 2
+
+<a id="minibatch"></a>
+**Minibatch** (`priority-dev`):
+The small sample of the trainset that one mutation runs, set by `reflection_minibatch_size`. DSPy term.
+_Avoid_: subsample, batch
+
+<a id="rollout"></a>
+**Rollout** (`priority-dev`):
+One task-model call on one stop plus one judge score, which DSPy also calls a metric call. The budget of an optimiser run counts rollouts.
+_Avoid_: sample
+
+<a id="full-evaluation"></a>
+**Full evaluation** (`priority-dev`):
+One candidate scored on every stop of the valset.
+_Avoid_: full eval, valset pass
+
+<a id="mutation"></a>
+**Mutation** (`priority-dev`):
+One cycle of an optimiser run: select a parent candidate, run a minibatch, reflect, propose a new instruction, and test it on the same minibatch. The DSPy log calls it an iteration.
+_Avoid_: iteration, epoch
+
+<a id="pareto-front"></a>
+**Pareto front** (`priority-dev`):
+The candidates that score best on at least one valset stop. GEPA picks the parent of the next mutation from it.
+
+<a id="candidate-merge"></a>
+**Candidate merge** (`priority-dev`):
+A new candidate that GEPA builds from two candidates that do well on different valset stops (`use_merge`). Not a Git merge.
+_Avoid_: merge (alone)
+
+<a id="task-model"></a>
+**Task model** (`priority-dev`):
+The model that runs the interpreter program on a stop.
+_Avoid_: student, LM (alone)
+
+<a id="judge"></a>
+**Judge** (`priority-dev`):
+The model that scores a proposal against the reference payload of a stop and writes notes. It is the metric of the eval and of GEPA.
+_Avoid_: grader
+
+<a id="reflection-model"></a>
+**Reflection model** (`priority-dev`):
+The model that reads the results of a minibatch and writes a new instruction. It has its own settings, and it is never the task model.
+_Avoid_: teacher, proposer model
+
+<a id="arm"></a>
+**Arm** (`priority-dev`):
+One interpreter program that a comparison scores on the test set, such as A (the unmodified prompt), C, or C2.
+_Avoid_: variant (for a compared program)
 
 ## Cross-cutting
 

@@ -1,0 +1,285 @@
+"""The priority command line interface."""
+from __future__ import annotations
+
+import argparse
+import json
+import logging
+import sys
+import time
+from pathlib import Path
+
+from priority.brief import StopBrief, build_brief
+from priority.brief.questions import QuestionFileError, load_open_questions
+from priority.digest_store import load_digest, save_digest
+from priority.replay import options
+from priority.valset import METHODS, ValsetSize
+
+PREDICTION_FIELDS = ("status", "needs_human", "priority", "steps", "abstain")
+
+
+DIGEST_ATTEMPTS = 3  # the most runs of the Digest call for one stop
+RETRY_REASONS = ("invalid_output", "model_error")
+RETRY_PAUSE_SECONDS = 2  # the pause before the second attempt, doubled before the third, so a rate limit can clear
+
+DIGEST_LABELS = {"previous": "PREVIOUS RUN", "current": "CURRENT RUN"}
+
+
+def interpret(transcript: Path, stop: int | None, log_dir: Path | None, program: Path | None,
+              digest: str = "previous", open_question: Path | None = None) -> int:
+    """Build the brief, run the interpreter, and print the Prediction fields as one JSON object.
+
+    A saved program loads into the interpreter before the one model call. An Abstain also exits with 0.
+    A bad question file ends with one line on stderr, before the model call."""
+    if program is not None and not program.is_file():
+        print(f"interpret failed: no program file at {program}")
+        return 1
+    questions = None
+    if open_question is not None:
+        try:
+            questions = load_open_questions(open_question)
+        except QuestionFileError as exc:
+            print(f"interpret failed: {exc}", file=sys.stderr)
+            return 1
+    from priority import interpreter  # a lazy import: only this command needs dspy and the key
+
+    brief = build_brief(transcript, stop=stop, previous=load_digest(log_dir, transcript.stem),
+                        digest_label=DIGEST_LABELS[digest], open_questions=questions)
+    if isinstance(brief, StopBrief):
+        model = interpreter.Interpreter(interpreter.interpreter_lm(), log_dir=log_dir, session_id=transcript.stem)
+        if program is not None:
+            try:
+                model.load(str(program))
+            except Exception as exc:  # noqa: BLE001 (a corrupt file may raise anything)
+                print(f"interpret failed: cannot load program {program}: {exc}")
+                return 1
+        result = model(brief_text=brief.for_model())
+        fields = {name: result[name] for name in PREDICTION_FIELDS}
+    else:
+        abstain = {"reason": brief.reason, "detail": brief.detail, "raw": ""}
+        fields = {"status": None, "needs_human": None, "priority": None, "steps": [], "abstain": abstain}
+    fields["stop_kind"] = "question" if questions else "turn_end"
+    print(json.dumps(fields, indent=2))
+    return 0
+
+
+def digest(transcript: Path, stop: int | None, log_dir: Path | None) -> int:
+    """Build the brief with the digest model as the shrink model, digest it, and print one JSON object."""
+    from priority import interpreter  # a lazy import: only this command needs dspy and the key
+
+    lm = interpreter.digest_lm()
+    brief = build_brief(transcript, stop=stop, shrink_lm=lm, log_dir=log_dir,
+                        previous=load_digest(log_dir, transcript.stem))
+    if isinstance(brief, StopBrief):
+        for attempt in range(DIGEST_ATTEMPTS):
+            if attempt:
+                time.sleep(RETRY_PAUSE_SECONDS * 2 ** (attempt - 1))
+            result = interpreter.DigestRun(lm, log_dir=log_dir)(brief)
+            if getattr(result, "reason", None) not in RETRY_REASONS:
+                break
+        if log_dir is not None and isinstance(result, interpreter.RunDigest):
+            save_digest(log_dir, transcript.stem, result)
+    else:
+        result = interpreter.Abstain(reason=brief.reason, detail=brief.detail)
+    print(result.model_dump_json(indent=2))
+    return 0
+
+
+def fixtures_check(args: argparse.Namespace) -> int:
+    """Check the labelled fixture set: labels, split, manifest cover, git ignore."""
+    from priority.evaluation import check
+
+    return check.run(args.manifest, args.labels, args.real_dir)
+
+
+def eval_split(args: argparse.Namespace) -> int:
+    """Score one split of the labelled set against the interpreter."""
+    from priority.evaluation import runner  # a lazy import: only this command needs dspy and the key
+
+    threads = getattr(args, "threads", None)
+    if threads is not None:
+        threads = max(1, min(int(threads), runner.MAX_THREADS))
+    brief = getattr(args, "brief", "full")
+    digest_dir = getattr(args, "digest_dir", None)
+    if brief == "compact" and digest_dir is None:
+        print("eval failed: --brief compact needs --digest-dir")
+        return 1
+    return runner.run(args.manifest, args.labels, args.real_dir, args.split, args.log_dir,
+                      program=args.program, threads=threads,
+                      digest_dir=digest_dir if brief == "compact" else None)
+
+
+def optimise_run(args: argparse.Namespace) -> int:
+    """Compile the interpreter with one optimiser, or give it labelled demos, on train sessions only."""
+    from priority import optimise  # a lazy import: only this command needs dspy
+
+    return optimise.run(args.manifest, args.labels, args.real_dir,
+                        args.optimiser, args.budget, args.seed,
+                        minibatch=getattr(args, "minibatch", None),
+                        threads=getattr(args, "threads", None),
+                        size=ValsetSize(sessions=getattr(args, "val_sessions", None),
+                                        stops=getattr(args, "val_stops", None)),
+                        method=getattr(args, "valset", "stratified"),
+                        proposer=getattr(args, "proposer", "v2"),
+                        seed_program=getattr(args, "seed_program", None),
+                        tag=getattr(args, "tag", None),
+                        gepa_log_dir=getattr(args, "gepa_log_dir", None))
+
+
+def judge_check(args: argparse.Namespace) -> int:
+    """Measure the judge against the human picks, the closed-field probe, and repeat flips."""
+    from priority.evaluation import judge_check as check  # a lazy import: only this command needs dspy
+    from priority.evaluation.metric import JudgeFailure
+
+    try:
+        return check.run(args.pairs, args.labels, args.real_dir, args.repeats, args.checkpoint)
+    except JudgeFailure as failure:
+        print(f"judge-check failed: {failure}. The check stopped.")
+        return 1
+
+
+def replay(args: argparse.Namespace) -> int:
+    """Replay each transcript of a folder, and write the report. Each model error ends as an Abstain."""
+    from priority.replay import runner  # a lazy import: only this command needs dspy and the key
+
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
+    return runner.run(args.fixtures, args.out, args.log_dir or args.out, args.adapters, args.concurrency, args.goal)
+
+
+def main(argv: list[str] | None = None) -> int:
+    """Run the priority CLI."""
+    if argv is None:
+        argv = sys.argv[1:]
+
+    parser = argparse.ArgumentParser(prog="priority", description="priority.dev CLI")
+    subparsers = parser.add_subparsers(dest="command")
+
+    brief_parser = subparsers.add_parser("brief", help="Build a stop brief from a transcript")
+    brief_parser.add_argument("transcript", type=Path, help="Path to transcript JSONL")
+    brief_parser.add_argument("--stop", type=int, default=None, help="1-based stop number")
+
+    for name, text in (("interpret", "Interpret a stop of a transcript"), ("digest", "Digest a stop of a transcript")):
+        model_parser = subparsers.add_parser(name, help=text)
+        model_parser.add_argument("transcript", type=Path, help="Path to transcript JSONL")
+        model_parser.add_argument("--stop", type=int, default=None, help="1-based stop number")
+        model_parser.add_argument("--log-dir", type=Path, default=None, help="Folder for calls.jsonl and digests")
+    subparsers.choices["interpret"].add_argument("--program", type=Path, default=None,
+                                                 help="A saved program to load before the model call")
+    subparsers.choices["interpret"].add_argument("--digest", choices=tuple(DIGEST_LABELS), default="previous",
+                                                 help="Whether the stored digest is of the run before or of this run")
+    subparsers.choices["interpret"].add_argument("--open-question", type=Path, default=None,
+                                                 help="A JSON list of open questions in the AskUserQuestion input shape")
+
+    replay_parser = subparsers.add_parser("replay", help="Replay the last stop of each transcript of a folder")
+    replay_parser.add_argument("fixtures", type=Path, help="Folder with the transcripts (*.jsonl, at any depth)")
+    replay_parser.add_argument("--out", type=Path, default=options.DEFAULT_OUT, help="Folder for report.md and results.jsonl")
+    replay_parser.add_argument("--log-dir", type=Path, default=None, help="Folder for the call rows (default: --out)")
+    replay_parser.add_argument("--adapters", type=options.parse_adapters, default=options.ADAPTERS,
+                               help="Adapters in report order (default: json,chat)")
+    replay_parser.add_argument("--concurrency", type=options.positive_int, default=options.DEFAULT_CONCURRENCY,
+                               help="Stops in flight at once on the interpreter model (default: 5)")
+    replay_parser.add_argument("--goal", type=Path, default=options.DEFAULT_GOAL, help="goal.json with the abort_if list")
+
+    fixtures_parser = subparsers.add_parser("fixtures", help="Work with the labelled fixture set")
+    fixtures_sub = fixtures_parser.add_subparsers(dest="fixtures_command")
+    check_parser = fixtures_sub.add_parser("check", help="Verify the labels, the split, and the git ignore")
+    check_parser.add_argument("--manifest", type=Path, default=Path("fixtures/set-manifest.json"),
+                              help="Manifest with session ids and stop numbers")
+    check_parser.add_argument("--labels", type=Path, default=Path("fixtures/real/labels-confirmed.json"),
+                              help="Confirmed labels file")
+    check_parser.add_argument("--real-dir", type=Path, default=Path("fixtures/real"),
+                              help="Folder with the real sessions, must be Git-ignored")
+    eval_parser = subparsers.add_parser("eval", help="Score one split of the labelled set")
+    eval_parser.add_argument("--split", default="train", choices=("train", "holdout", "all"),
+                             help="The split to score (default: train)")
+    eval_parser.add_argument("--manifest", type=Path, default=Path("fixtures/set-manifest.json"),
+                             help="Manifest with session ids and stop numbers")
+    eval_parser.add_argument("--labels", type=Path, default=Path("fixtures/real/labels-confirmed.json"),
+                             help="Confirmed labels file")
+    eval_parser.add_argument("--real-dir", type=Path, default=Path("fixtures/real"),
+                             help="Folder with the real sessions, must be Git-ignored")
+    eval_parser.add_argument("--log-dir", type=Path, default=Path("reports/logs"),
+                             help="Folder for the stored call rows (default: reports/logs)")
+    eval_parser.add_argument("--program", type=Path, default=None,
+                             help="A saved program to load before scoring. Its demo stops are not scored")
+    eval_parser.add_argument("--threads", type=int, default=None,
+                             help="Stops scored in flight at once, clamped to 1..6 (default: 1)")
+    eval_parser.add_argument("--brief", default="full", choices=("full", "compact"),
+                             help="The brief the task model reads: full, or compact (one digest per stop; default: full)")
+    eval_parser.add_argument("--digest-dir", type=Path, default=None,
+                             help="Folder for the cached digests of a compact run (required with --brief compact)")
+    optimise_parser = subparsers.add_parser("optimise", help="Compile the interpreter on the train sessions")
+    optimise_parser.add_argument("--optimiser", default="gepa", choices=("gepa", "miprov2", "bootstrap", "labeled"),
+                                 help="The optimiser to compile with, or labeled for picked demos (default: gepa)")
+    optimise_parser.add_argument("--budget", type=int, default=5,
+                                 help="The optimiser candidate budget (default: 5)")
+    optimise_parser.add_argument("--seed", type=int, default=7,
+                                 help="The optimiser seed (default: 7)")
+    optimise_parser.add_argument("--proposer", default="v2", choices=("v1", "v2"),
+                                 help="The GEPA instruction proposer: v2 adds the base prompt and the schema "
+                                      "reference, v1 is the E7 proposer (default: v2)")
+    optimise_parser.add_argument("--minibatch", type=int, default=None,
+                                 help="GEPA reflection minibatch size (default: GEPA's own default)")
+    optimise_parser.add_argument("--threads", type=int, default=None,
+                                 help="GEPA threads (default: GEPA's own default)")
+    optimise_parser.add_argument("--val-sessions", type=int, default=None,
+                                 help="Train sessions carved as the GEPA valset (default: 1; not with --val-stops)")
+    optimise_parser.add_argument("--val-stops", type=int, default=None,
+                                 help="Stops the GEPA valset must reach or pass (not with --val-sessions)")
+    optimise_parser.add_argument("--valset", choices=METHODS, default="stratified",
+                                 help="GEPA valset pick: stratified (default, by repository and kind) or neighbours (old run of ids)")
+    optimise_parser.add_argument("--manifest", type=Path, default=Path("fixtures/set-manifest.json"),
+                                 help="Manifest with session ids and stop numbers")
+    optimise_parser.add_argument("--labels", type=Path, default=Path("fixtures/real/labels-confirmed.json"),
+                                 help="Confirmed labels file")
+    optimise_parser.add_argument("--real-dir", type=Path, default=Path("fixtures/real"),
+                                 help="Folder with the real sessions, must be Git-ignored")
+    optimise_parser.add_argument("--seed-program", type=Path, default=None,
+                                 help="A saved program file to load as the compile student")
+    optimise_parser.add_argument("--tag", default=None,
+                                 help="Text inserted into the saved program name, as <optimiser>-<tag>-budget... (default: none)")
+    optimise_parser.add_argument("--gepa-log-dir", type=Path, default=None,
+                                 help="GEPA reflection and candidate records folder (default: the run's log folder)")
+    judge_check_parser = subparsers.add_parser("judge-check", help="Measure the judge against the agreement bar")
+    judge_check_parser.add_argument("--pairs", type=Path, required=True,
+                                    help="Pairs file: two payload lists per stop and the human pick")
+    judge_check_parser.add_argument("--labels", type=Path, default=Path("fixtures/real/labels-confirmed.json"),
+                                    help="Confirmed labels file with the reference payloads")
+    judge_check_parser.add_argument("--real-dir", type=Path, default=Path("fixtures/real"),
+                                    help="Folder with the real sessions, must be Git-ignored")
+    judge_check_parser.add_argument("--repeats", type=int, default=2,
+                                    help="Judge calls per side of each pair (default: 2)")
+    judge_check_parser.add_argument("--checkpoint", type=Path, default=None,
+                                    help="JSONL file that keeps each finished pair and probe copy, and resumes from it")
+
+    args = parser.parse_args(argv)
+    if args.command == "brief":
+        res = build_brief(args.transcript, stop=args.stop)
+        if isinstance(res, StopBrief):
+            print(res.for_model())
+        else:
+            print(res.reason)
+        return 0
+    if args.command == "interpret":
+        return interpret(args.transcript, args.stop, args.log_dir, args.program, args.digest, args.open_question)
+    if args.command == "digest":
+        return digest(args.transcript, args.stop, args.log_dir)
+
+    if args.command == "replay":
+        return replay(args)
+    if args.command == "eval":
+        return eval_split(args)
+    if args.command == "optimise":
+        return optimise_run(args)
+    if args.command == "judge-check":
+        return judge_check(args)
+
+    if args.command == "fixtures" and args.fixtures_command == "check":
+        return fixtures_check(args)
+
+
+    parser.print_help()
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

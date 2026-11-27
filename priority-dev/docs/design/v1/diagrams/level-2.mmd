@@ -1,0 +1,42 @@
+sequenceDiagram
+    participant Agent as Agent session (tmux)
+    participant Adapter as Session adapter
+    participant Log as Event log
+    participant Reducer as StatusReducer
+    participant Advisor as Advisor (headless claude)
+    participant Actuator as Actuator
+    participant Planner as DeliveryPlanner
+    participant Inbox as Web inbox
+    participant Dev as Developer
+
+    Agent->>Adapter: hook event turn_ended with a question
+    Adapter->>Log: append SessionEvent (session_id, cursor, kind turn_ended)
+    Log->>Reducer: read from last acked cursor
+    Reducer->>Reducer: status turn_ended
+    Reducer->>Advisor: last turn as untrusted data
+    Advisor-->>Reducer: Verdict and Decision
+
+    alt Malformed advisor reply (fail closed)
+        Reducer->>Planner: escalate with evidence, never drop
+    else Decision action answer, policy and deny list pass
+        Reducer->>Actuator: Decision (rule_id, risk_tier, reply)
+        Actuator->>Actuator: check policy, HardDenyList, shape, confidence
+        Actuator->>Log: write Intent (intent_id)
+        Actuator->>Adapter: Command send_text
+        Adapter->>Agent: tmux send-keys
+        Actuator->>Log: record Effect and ledger entry with rule_id
+    else Decision escalate, class Urgent
+        Reducer->>Planner: escalate with options and recommended answer
+        Planner->>Dev: desktop notification at once
+        Planner->>Inbox: ranked item
+    else Decision escalate, lower class
+        Reducer->>Planner: escalate with options and recommended answer
+        Planner->>Planner: wait for batch window
+        Planner->>Inbox: ranked item at the window
+        Dev->>Inbox: answers
+        Inbox->>Actuator: reply
+        Actuator->>Log: write Intent
+        Actuator->>Adapter: Command send_text
+        Adapter->>Agent: tmux send-keys
+        Actuator->>Log: record Effect and ledger entry
+    end

@@ -1,0 +1,47 @@
+{
+  "name": "priority-dev-pi-extension",
+  "title": "The priority reader runs in Pi and OMP, and a coding agent can read a session",
+  "adr": "ADR-0053",
+  "adrs": ["ADR-0053", "ADR-0051", "ADR-0052", "ADR-0045", "ADR-0016", "ADR-0017"],
+  "created": "2026-11-23",
+  "outcome": "The cobuilder-priority digest and action cards run as a Pi extension. It behaves the same as the Claude Code plugin in both Pi and OMP. A coding agent can run the digest and get the action cards back as a structured response. Later, a Pi Durable orchestrator gets the digest and cards each time a hook fires in a harness it started.",
+  "done_when": [
+    "One Pi package loads in Pi and in OMP with no fork, and gives the same card and draft text as plugins/cobuilder-priority for the same reading",
+    "A coding agent runs priority read on a Claude Code or Pi session file and gets the digest and the cards as JSON, not as rendered UI",
+    "Designed as planned epics, not built: a Pi Durable orchestrator, using PiHarness, starts a child agent and gets the digest and cards when the child's hooks fire",
+    "The orchestrator answers a card for the user or notifies the user, and the decision rule is a pure evaluate with table tests"
+  ],
+  "abort_if": [
+    "A probe shows that one Pi package cannot catch a main-loop stop exactly once in both Pi and OMP",
+    "A probe shows that neither host can hold a question tool open while the person answers in the pane",
+    "On a labelled sample of Pi or OMP stops, D1 scores clearly below the Claude Code baseline of 0.654",
+    "Pi Durable cannot deliver a child event to its orchestrator by any route. This pauses epics E8 to E10, not the Pi package"
+  ],
+  "min_work": {
+    "derived_from": "3 districts (scripts, commands, docs), 6 ADRs (ADR-0016, ADR-0017, ADR-0025, ADR-0045, ADR-0051, ADR-0052), 2 contexts (cobuilder-priority, priority-dev), generic stack card rule 1",
+    "alternatives_explored": 15,
+    "boundary_rules_checked": true,
+    "challenge_stage_run": true,
+    "draft_review_run": true
+  },
+  "limits": {"warn_after_rounds": 3, "cutoff_rounds": 6},
+  "epics": [
+    {"id": "E1", "slug": "host-probe", "title": "Probe: the stop events, the pane, the question hold, and the session header in Pi and OMP.", "outcome": "A probe record answers unknowns 1 to 3 for each host, and confirms the OMP session header.", "branch": "design/priority-dev-pi-extension", "pr": null, "state": "planned"},
+    {"id": "E2", "slug": "priority-transcript", "title": "priority-dev: transcript adapters for claude-code and pi, and the priority transcript.", "outcome": "The 56 scored briefs stay byte-identical, and a Pi or OMP session gives a brief.", "branch": "design/priority-dev-pi-extension", "pr": null, "state": "planned"},
+    {"id": "E3", "slug": "priority-read", "title": "priority-dev: priority read prints one Reading as JSON.", "outcome": "A coding agent runs priority read on a Claude Code or Pi session and gets the digest and the cards as JSON.", "branch": "design/priority-dev-pi-extension", "pr": null, "state": "planned"},
+    {"id": "E4", "slug": "pi-calibration", "title": "Score D1 on a labelled sample of Pi and OMP stops, before any host code.", "outcome": "A score report writes the calibration file of priority-dev, or abort gate 3 stops the design.", "branch": "design/priority-dev-pi-extension", "pr": null, "state": "planned"},
+    {"id": "E5", "slug": "priority-core", "title": "The shared TypeScript core, and the Claude Code plugin on it.", "outcome": "The Claude Code tests pass unchanged, the golden readings give the same card and draft text, and the boundary records cover the core.", "branch": "design/priority-dev-pi-extension", "pr": null, "state": "planned"},
+    {"id": "E6", "slug": "pi-reader", "title": "Pi package: install, settings, the switch, the stop reading, the pane, the marks, Send, and the priority_read tool.", "outcome": "In Pi and OMP, a stop gives a card in the pane, Send submits the draft, and the boundary record covers pi/cobuilder-priority.", "branch": "design/priority-dev-pi-extension", "pr": null, "state": "planned"},
+    {"id": "E7", "slug": "pi-questions", "title": "The question hook for the question tool of each host.", "outcome": "In Pi, a main-loop question opens a question card, and Send answers it. In OMP this holds only when probe E1 shows the hold works. Otherwise OMP question stops are not supported.", "branch": "design/priority-dev-pi-extension", "pr": null, "state": "planned"},
+    {"id": "E8", "slug": "orchestrator-probe", "title": "Probe: the route from a PiHarness child to its orchestrator and to a reader.", "outcome": "A probe record names one working route. A container child that runs the Pi package is the first candidate.", "branch": "design/priority-dev-pi-extension", "pr": null, "state": "planned"},
+    {"id": "E9", "slug": "policy-core", "title": "evaluate and the rules file from schemas.md section 4, with the two ADR-0053 guards, in the core.", "outcome": "Table tests over the golden readings pass, and each decision records the rule id, the policy hash, the action hash, and the state digest.", "branch": "design/priority-dev-pi-extension", "pr": null, "state": "planned"},
+    {"id": "E10", "slug": "orchestrator", "title": "Pi Durable orchestrator: the child hook, the advisor, the actuator, and notifications.", "outcome": "The orchestrator answers an allowed card in a child, or notifies the person, and records the decision.", "branch": "design/priority-dev-pi-extension", "pr": null, "state": "planned"}
+  ],
+  "stage": "approved",
+  "supersedes": null,
+  "rounds": [
+    {"n": 1, "changed": true, "feedback_class": "material", "note": "Draft review 0.68. The engineer took survivor S1 (score D1 first, now E4), named S2 the first E8 candidate, and set the starting policy to schemas.md section 4 with two guards. Record fixes F1 to F11."},
+    {"n": 2, "changed": false, "feedback_class": "approved", "note": "The engineer approved the draft and chose one pull request."},
+    {"n": 3, "changed": true, "feedback_class": "cosmetic", "note": "Gate 2b feedback: OMP question stops are not supported when the ask call cannot be held. No read-only fallback card."}
+  ]
+}

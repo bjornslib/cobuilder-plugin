@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Mockup 1: the reader pane in a Pi or OMP session</title>
+<style>
+  :root { --bg:#1e1e1e; --fg:#d4d4d4; --dim:#7a7a7a; --accent:#4fc1ff; --ok:#6a9955; --warn:#d7ba7d; --err:#f14c4c; --pri:#c0392b; }
+  body { margin:0; background:#2b2b2b; font-family: ui-monospace, Menlo, monospace; color:var(--fg); }
+  .term { width: 1180px; margin: 24px auto; background: var(--bg); border-radius: 8px; padding: 12px 14px; box-shadow: 0 6px 24px rgba(0,0,0,.4); }
+  .row { display:flex; gap:12px; }
+  pre { margin:0; font: 13px/1.45 ui-monospace, Menlo, monospace; white-space: pre; }
+  .transcript { flex: 1; color: var(--fg); }
+  .pane { width: 470px; border: 1px solid var(--accent); padding: 4px 8px; }
+  .dim { color: var(--dim); } .acc { color: var(--accent); } .ok { color: var(--ok); }
+  .warn { color: var(--warn); } .err { color: var(--err); }
+  .pri { background: var(--pri); color: #fff; padding: 0 3px; }
+  .inv { background: var(--fg); color: var(--bg); }
+  .band { color: var(--warn); margin-top: 8px; }
+  .editor { border-top: 1px solid #444; margin-top: 4px; padding-top: 4px; }
+  .status { color: var(--dim); border-top: 1px solid #444; margin-top: 4px; padding-top: 4px; }
+  .caption { width:1180px; margin: 0 auto 32px; color:#bbb; font: 14px/1.5 system-ui, sans-serif; }
+</style>
+</head>
+<body>
+<div class="term">
+  <div class="row">
+<pre class="transcript"><span class="dim">user</span>
+Add the marks table and run the tests.
+
+<span class="dim">assistant</span>
+I added a migration for hindsight_marks and ran
+the suite. 3 tests fail because the table is
+missing in the test database.
+
+<b>Summary</b>
+The migration exists, but the test database does
+not have it yet.
+
+<b>Decisions and questions</b>
+- Which store keeps the marks: the session file,
+  or a JSONL file?
+</pre>
+<pre class="pane"><b>Priority reader</b>  <span class="ok">● on</span>  <span class="dim">4 readings</span>
+ <span class="acc">s Send</span>  e Edit  <span class="ok">r Right</span>  <span class="err">w Wrong</span>  m Hide summary
+──────────────────────────────────────────────────────
+┌ ▾ Agent completed ────────────────────────────────┐
+│ Added a migration for hindsight_marks. 3 tests    │
+│ fail because the test database lacks the table.   │
+│ <span class="dim">Decisions</span>                                         │
+│ <span class="dim">· Keep the migration in the main schema</span>           │
+└───────────────────────────────────────────────────┘
+<b>#4 14:32</b>  <span class="pri">P1 High</span>  <span class="err">Blocked</span>  <span class="warn">needs you</span>  <span class="dim">uncalibrated</span>
+<span class="dim">Proposed steps (1–9 to select)</span>
+<span class="acc">╭───────────────────────────────────────────────────╮</span>
+<span class="acc">│</span> <span class="inv">[x] 1. Reply                                     </span> <span class="acc">│</span>
+<span class="acc">│</span>     "Run the migration on the test database."     <span class="acc">│</span>
+<span class="acc">╰───────────────────────────────────────────────────╯</span>
+[ ] 2. Continue until: tests pass (5 turns, 20 min)
+<span class="dim">Open items</span>
+<span class="dim">· The test database has no marks table</span>
+    <b>3. You decide</b>
+    <span class="warn">"Which store keeps the marks?"</span>
+    [•] session file   [ ] JSONL file
+    <span class="dim">Other: o to type</span>
+<span class="dim">[-] 4. Stop the turn (no target at a stop)</span>
+<span class="acc">╭ ▸ WHAT WILL BE SENT ──────────────────────────────╮</span>
+<span class="acc">│</span> Run the migration on the test database.           <span class="acc">│</span>
+<span class="acc">│</span>                                                   <span class="acc">│</span>
+<span class="acc">│</span> Which store keeps the marks? → session file       <span class="acc">│</span>
+<span class="acc">│</span> <span class="dim">Source: steps 1, 3</span>                                <span class="acc">│</span>
+<span class="acc">╰───────────────────────────────────────────────────╯</span>
+<span class="dim">History</span>
+#3 14:20 Still working  P3 Low                     <span class="ok">✓</span>
+#2 14:11 Done  P4 Can wait                         <span class="err">✗</span>
+<span class="dim">Note: n to write</span>
+</pre>
+  </div>
+<pre class="band">Notification: The migration file is ready for review.</pre>
+<pre class="editor">› <span class="dim">(editor keeps the keyboard until alt+p)</span></pre>
+<pre class="status">Priority reader · #4 ready · needs you</pre>
+</div>
+<p class="caption"><b>Mockup 1, the reader pane.</b> A Pi or OMP session at 110 columns or more. The pane is an
+overlay on the right, 60 columns wide, and has the focus (accent border). The card, the
+plain names, and the draft text are the same as in the Claude Code pane (layout C). The
+notify row sits above the editor, and the status line sits under it. This is a picture at
+rest; <code>interaction-design.md</code> holds every state and transition.</p>
+</body>
+</html>

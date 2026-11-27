@@ -159,3 +159,17 @@ def test_files_adapter_round_trip(tmp_path: Path) -> None:
         got_rec = got[slice_id]
         assert got_rec.lifecycle == want_rec.lifecycle, slice_id
         assert got_rec.envelope.get("score") == want_rec.envelope.get("score"), slice_id
+
+
+def test_escaped_pipe_in_ends_with_does_not_skip_tracker_state(tmp_path: Path) -> None:
+    plans_root = _copy_plans(tmp_path)
+    path = plans_root / PROGRAM / SLICES
+    text = path.read_text(encoding="utf-8")
+    text = text.replace("Programs list from the tree", r"Programs \| list from the tree", 1)
+    path.write_text(text, encoding="utf-8")
+
+    _run(plans_root)
+
+    row = next(line for line in path.read_text(encoding="utf-8").splitlines() if line.startswith("| 1 |"))
+    assert r"Programs \| list from the tree" in row
+    assert "| 0.917 | done |" in row

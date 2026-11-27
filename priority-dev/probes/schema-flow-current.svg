@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 440" role="img" aria-label="Current flow">
+<defs><marker id="c1" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="none" stroke="#444"/></marker></defs>
+<g font-family="system-ui, sans-serif" font-size="12" text-anchor="middle" fill="#111">
+<rect x="10" y="20" width="170" height="80" rx="6" fill="none" stroke="#444"/>
+<text x="95" y="42" font-weight="bold">labels.py</text><text x="95" y="60">load_labels()</text><text x="95" y="76">match_session_key()</text>
+<rect x="210" y="20" width="150" height="80" rx="6" fill="none" stroke="#444"/>
+<text x="285" y="42" font-weight="bold">split.py</text><text x="285" y="60">split()</text><text x="285" y="76">by session</text>
+<rect x="390" y="20" width="180" height="80" rx="6" fill="none" stroke="#444"/>
+<text x="480" y="42" font-weight="bold">optimise.py</text><text x="480" y="60">build_trainset()</text><text x="480" y="76">brief_text + final_text</text>
+<rect x="600" y="20" width="180" height="80" rx="6" fill="none" stroke="#444" stroke-dasharray="5,4"/>
+<text x="690" y="42" font-weight="bold">optimise.py</text><text x="690" y="60">gepa_feedback()</text><text x="690" y="76">plain_score()</text>
+<rect x="10" y="150" width="150" height="100" rx="6" fill="none" stroke="#444"/>
+<text x="85" y="172" font-weight="bold">brief.py</text><text x="85" y="190">build_brief()</text><text x="85" y="208" font-size="11">transcript → StopBrief</text><text x="85" y="224" font-size="11">text + final reply</text>
+<rect x="185" y="150" width="150" height="100" rx="6" fill="none" stroke="#444"/>
+<text x="260" y="172" font-weight="bold">module.py</text><text x="260" y="190">forward()</text><text x="260" y="208" font-size="11">triage → pick → fill</text><text x="260" y="224" font-size="11">→ card via dspy</text>
+<rect x="360" y="150" width="150" height="100" rx="6" fill="none" stroke="#444"/>
+<text x="435" y="172" font-weight="bold">signatures.py</text><text x="435" y="190">TriageLM, PickStep,</text><text x="435" y="206">FILL, WriteCard</text><text x="435" y="224" font-size="11">declare fields</text>
+<rect x="535" y="150" width="150" height="100" rx="6" fill="none" stroke="#444"/>
+<text x="610" y="172" font-weight="bold">models.py</text><text x="610" y="190">Interpretation</text><text x="610" y="208" font-size="11">facts + advice +</text><text x="610" y="224" font-size="11">abstained</text>
+<rect x="710" y="150" width="150" height="100" rx="6" fill="none" stroke="#444"/>
+<text x="785" y="172" font-weight="bold">checks.py</text><text x="785" y="190">check_steps()</text><text x="785" y="208" font-size="11">kind gate; only an</text><text x="785" y="224" font-size="11">empty quote abstains</text>
+<rect x="10" y="300" width="170" height="100" rx="6" fill="none" stroke="#444"/>
+<text x="95" y="322" font-weight="bold">runner.py</text><text x="95" y="340">to_prediction()</text><text x="95" y="358" font-size="11">flat dict; drops</text><text x="95" y="374" font-size="11">payload fields</text>
+<rect x="210" y="300" width="200" height="100" rx="6" fill="none" stroke="#444"/>
+<text x="310" y="322" font-weight="bold">metric.py</text><text x="310" y="340">components() → score()</text><text x="310" y="358" font-size="11">facts .50 steps .40</text><text x="310" y="374" font-size="11">validity .10 = 1.00</text>
+<rect x="440" y="300" width="180" height="100" rx="6" fill="none" stroke="#444"/>
+<text x="530" y="322" font-weight="bold">runner.py</text><text x="530" y="340">per-stop rows →</text><text x="530" y="358" font-size="11">session means →</text><text x="530" y="374" font-size="11">arm means</text>
+</g>
+<g stroke="#444" stroke-width="1.5" fill="none" marker-end="url(#c1)">
+<line x1="180" y1="60" x2="208" y2="60"/>
+<line x1="360" y1="60" x2="388" y2="60"/>
+<line x1="480" y1="100" x2="480" y2="148"/>
+<line x1="690" y1="100" x2="690" y2="148"/>
+<line x1="160" y1="200" x2="183" y2="200"/>
+<line x1="335" y1="200" x2="358" y2="200"/>
+<line x1="510" y1="200" x2="533" y2="200"/>
+<line x1="685" y1="200" x2="708" y2="200"/>
+<line x1="785" y1="250" x2="785" y2="298"/>
+<line x1="180" y1="350" x2="208" y2="350"/>
+<line x1="410" y1="350" x2="438" y2="350"/>
+</g>
+</svg>

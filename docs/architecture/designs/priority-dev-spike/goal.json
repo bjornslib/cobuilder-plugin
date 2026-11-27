@@ -1,0 +1,129 @@
+{
+  "name": "priority-dev-spike",
+  "title": "The first spikes of priority.dev measure its riskiest unknowns",
+  "adr": "ADR-0045",
+  "adrs": [
+    "ADR-0045",
+    "ADR-0040",
+    "ADR-0031",
+    "ADR-0012"
+  ],
+  "created": "2026-10-24",
+  "outcome": "On recorded transcripts, priority-dev digests a run with the digest model and interprets it with the interpreter model into an Interpretation or an Abstain. Probes show what the hooks and the pane do. A replay report states the valid-output and quote-found rates, and each injected failure ends as an Abstain.",
+  "done_when": [
+    "a replay over the redacted fixtures writes a report with the valid-output rate, the quote-found rate, the abstain reasons, and the characters, seconds, and cost for each stage",
+    "each injected failure (rate limit, malformed JSON, empty quote, timeout) ends as an Abstain with a logged reason",
+    "the hook probe and the tmux probe reports state a measured answer for each unknown in adapter-host.md section 7",
+    "a Stop event from a scratch session reaches the event log and leads to a stored digest and interpretation"
+  ],
+  "abort_if": [
+    "the interpreter model returns valid, grounded output on too few real stops to build on, and the digest model cannot digest either",
+    "a hook in a live session cannot be made safe: it blocks the session and the bypass file does not release it"
+  ],
+  "min_work": {
+    "derived_from": "6 divergent frames, 1 critic, 3 challenges, 1 draft review, 0 colliding ADRs, 1 uncovered path",
+    "alternatives_explored": 7,
+    "boundary_rules_checked": true,
+    "challenge_stage_run": true,
+    "draft_review_run": true
+  },
+  "limits": {
+    "warn_after_rounds": 3,
+    "cutoff_rounds": 6
+  },
+  "epics": [
+    {
+      "id": "E1",
+      "slug": "probes",
+      "title": "Probes: a model probe, a hook probe, and a tmux probe in a scratch session.",
+      "outcome": "Each unknown of the model, the hooks, and the pane has a measured answer in a committed report.",
+      "branch": "design/priority-dev-spike",
+      "pr": null,
+      "state": "planned"
+    },
+    {
+      "id": "E2",
+      "slug": "interpreter",
+      "title": "Interpreter: the stop brief, Triage, Pick, Fill, Card, Digest, and the replay report.",
+      "outcome": "A replay over the fixtures gives a report, and each injected failure ends as an Abstain with a reason.",
+      "branch": "design/priority-dev-spike",
+      "pr": null,
+      "state": "planned"
+    },
+    {
+      "id": "E3",
+      "slug": "event-log",
+      "title": "Event log: Postgres 17 with append, read, ingest, follow, and an interpreter service.",
+      "outcome": "A run.stopped event in the log leads to a stored digest and interpretation.",
+      "branch": "design/priority-dev-spike",
+      "pr": null,
+      "state": "planned"
+    },
+    {
+      "id": "E4",
+      "slug": "adapter-to-log",
+      "title": "Adapter to the log: hooks and tail through a spool, a signed send, and an answer from a held hook.",
+      "outcome": "A real stop reaches the log, and a signed command reaches the pane and is confirmed.",
+      "branch": "design/priority-dev-spike",
+      "pr": null,
+      "state": "planned"
+    },
+    {
+      "id": "E5",
+      "slug": "labelled-prompts",
+      "title": "Labelled prompts: a labelled fixture set, a metric, a baseline, a one-call variant, and a DSPy optimiser comparison.",
+      "outcome": "A held-out score shows whether an optimiser improves the interpreter over its baseline.",
+      "branch": "design/priority-dev-spike",
+      "pr": null,
+      "state": "planned"
+    },
+    {
+      "id": "E6",
+      "slug": "judge-scored-payloads",
+      "title": "Judge-scored payloads: reference payloads, a judge that grades meaning, and one typed call.",
+      "outcome": "A judge that clears its agreement bar scores each proposed payload against an engineer-confirmed reference.",
+      "branch": "design/priority-dev-spike",
+      "pr": null,
+      "state": "planned"
+    },
+    {
+      "id": "E7",
+      "slug": "gepa-gaps",
+      "title": "GEPA gaps: complete reflection evidence, whole proposals, general instructions, a compact stop brief, and optimiser run C3.",
+      "outcome": "An optimiser run gives the reflection model complete evidence, and arm C3 is compared with arm A on the test set.",
+      "branch": "design/priority-dev-spike",
+      "pr": null,
+      "state": "planned"
+    },
+    {
+      "id": "E8",
+      "slug": "instruction-proposer",
+      "title": "Instruction proposer: a new base prompt, a schema reference, the reference answer and a structural diff for the reflection model, and arms D1 and D2.",
+      "outcome": "Two arms that differ only in the proposer are compared with arm A on the test set.",
+      "branch": "design/priority-dev-spike",
+      "pr": null,
+      "state": "planned"
+    }
+  ],
+  "later_programs": [
+    {
+      "name": "priority-dev-phase-a",
+      "state": "planned",
+      "note": "Policy, actuator, attention queue, and notifier. A real program is seeded when that phase has its own design."
+    }
+  ],
+  "stage": "approved",
+  "supersedes": null,
+  "rounds": [
+    {
+      "n": 1,
+      "changed": true,
+      "feedback_class": "material"
+    },
+    {
+      "n": 2,
+      "changed": true,
+      "feedback_class": "cosmetic"
+    }
+  ]
+}

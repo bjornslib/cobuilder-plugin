@@ -1,0 +1,55 @@
+{
+  "captured": "2026-11-15",
+  "source": "design",
+  "design_name": "priority-ask-question",
+  "authorship": "agent-assisted",
+  "problem": "An AskUserQuestion call stops the agent until the person answers, but no Stop fires. The reader stays silent where the person needs a reading most, and the engine dialog shows the question alone.",
+  "why_now": "The reader works at turn ends, and the engineer saw in live use that questions slip past it.",
+  "approach": "A tool.call hook holds each main-loop AskUserQuestion call. The pane shows a question card from the call input at once. A background reading with an open-question input fills in. Send returns the answers as the tool's result. A probe runs first, and the dialog is the fallback.",
+  "alternatives": [
+    {
+      "option": "A classic.PreToolUse hook",
+      "rejected_because": "It can only allow, ask, or deny a call. It cannot answer one."
+    },
+    {
+      "option": "Refuse the call, so the agent asks in its reply and ends its turn",
+      "rejected_because": "The engineer wants the pane to be the only place that shows the question."
+    },
+    {
+      "option": "Read the point after the answer, in PostToolUse",
+      "rejected_because": "The reading would come after the person decided."
+    },
+    {
+      "option": "Let priority-dev find the open question in the transcript",
+      "rejected_because": "The transcript may lag behind the hook. The call input already holds the questions."
+    },
+    {
+      "option": "Show the questions only when the reading arrives",
+      "rejected_because": "The agent waits during two model calls. The person can answer from the call input at once."
+    },
+    {
+      "option": "Catch subagent calls too",
+      "rejected_because": "The reader reads main-loop stops only."
+    }
+  ],
+  "out_of_scope": [
+    "Permission prompts and other dialogs",
+    "Subagent calls",
+    "A change to eval, replay, or the optimiser"
+  ],
+  "risks": [
+    "A hook may be cut off after its time budget, about ten seconds in the test kit",
+    "D1 was scored on turn-end stops only, so a reading at a question may be weaker",
+    "An answer with multi-select or Other text may not fit the tool's output schema"
+  ],
+  "testing": "claude plugin test drives the hook through tool.call with a stub beneath it. pytest covers --open-question. A live probe records the budget and the answer shape.",
+  "reviewer_focus": [
+    "The session now waits on the reader at a question, which ADR-0051 never did",
+    "The fallback when the hook is cut off"
+  ],
+  "unknowns": [
+    "Can a tool.call hook wait minutes for a person?",
+    "Is the tool_use in the transcript when the hook fires?",
+    "What answer shape does the engine accept?"
+  ]
+}

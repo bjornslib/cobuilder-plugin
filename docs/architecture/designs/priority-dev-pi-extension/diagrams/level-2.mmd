@@ -1,0 +1,47 @@
+sequenceDiagram
+    participant Person as Developer
+    participant Host as Host adapter (pi/cobuilder-priority)
+    participant Queue as priority-core reader queue
+    participant CLI as priority read (cli.py)
+    participant TA as transcript adapter (pi)
+    participant Brief as priority/brief
+    participant View as priority-core card view
+    participant Pane as Pane (plain object)
+
+    Note over Host,Pane: Built now - one main-loop stop in OMP or Pi
+    Host->>Host: Stop event (agent_settled in Pi, session_stop in OMP)
+    Host->>Queue: Enqueue stop, dedupe by leaf id
+    Queue->>CLI: uv run priority read <session-file>
+    CLI->>TA: Read session file
+    TA-->>CLI: Priority transcript (session id, leaf id, dialect)
+    CLI->>Brief: Build brief from priority transcript
+    Brief-->>CLI: Brief
+    CLI->>CLI: Digest, then interpret (two model calls)
+    CLI-->>Queue: Reading JSON (calibrated false for Pi and OMP)
+    Queue->>View: Reading
+    View-->>Pane: Card text and draft
+    Pane-->>Person: Show card
+    Person->>Pane: Press Send
+    Pane->>Host: Draft accepted
+    Host->>Host: sendUserMessage(draft)
+
+    Note over Host,Pane: PLANNED (epics E8 to E10) - Pi Durable orchestrator. Candidate 1: container child runs pi/cobuilder-priority, its stop hook runs priority read locally, then child.reading over DO RPC. Candidate 2: native extension afterRun
+    participant Child as child agent, form chosen by E8 (planned)
+    participant Orch as Orchestrator (planned)
+    participant Adv as advisor (planned)
+    participant Eval as evaluate (priority-core)
+    participant Act as actuator (planned)
+    participant Att as attention + notifier (planned)
+
+    Child->>Orch: child sends child.reading (route by E8)
+    Orch->>Adv: Reading
+    Adv-->>Orch: Proposed action
+    Orch->>Eval: evaluate(action, state)
+    alt ALLOW (schemas.md section 4 rule, plus guards: not a question stop, calibrated newest Reading, no needs_human, no abstain)
+        Eval-->>Act: ALLOW
+        Act->>Eval: evaluate again just before send
+        Act->>Child: submit or steer, keyed by action hash
+    else ASK or DENY
+        Eval-->>Att: Open attention item
+        Att-->>Person: Notify at the schemas.md level
+    end

@@ -1,0 +1,74 @@
+{
+  "stage": "design",
+  "generated": "2026-11-15",
+  "verdict": "concerns",
+  "risk_tier": "sensitive",
+  "summary": "The design closes a real gap at a small build cost, but it rests on one engine unknown. The probe in E1 must pass before E3 holds a call.",
+  "sensible": {
+    "answer": "Yes. A question is the point where the agent needs the person, and the reader is silent there today.",
+    "evidence": [
+      "ADR-0051"
+    ]
+  },
+  "maintainability": {
+    "answer": "It helps. The new hook sits in the same module, and priority-dev gets one input.",
+    "constraint_introduced": "The reader may hold a main-loop AskUserQuestion call until the person answers.",
+    "evidence": [
+      "ADR-0052"
+    ]
+  },
+  "pattern": {
+    "verdict": "new-valuable",
+    "answer": "New. No plugin in this repo answers a tool call itself.",
+    "duplicates": [],
+    "evidence": [
+      "ADR-0051"
+    ]
+  },
+  "findings": [
+    {
+      "kind": "prediction",
+      "severity": "concern",
+      "claim": "A hook that waits for a person may be cut off by its time budget, and the engine then opens its dialog.",
+      "evidence": "ADR-0052",
+      "district": "scripts",
+      "suggestion": "Run the E1 probe before any E3 slice."
+    },
+    {
+      "kind": "prediction",
+      "severity": "concern",
+      "claim": "A reading at a question is new ground for D1.",
+      "evidence": "ADR-0051",
+      "district": "scripts",
+      "suggestion": "Record stop_kind on each reading, so the marks split."
+    },
+    {
+      "kind": "prediction",
+      "severity": "note",
+      "claim": "The transcript may not hold the tool_use when the hook fires.",
+      "evidence": "ADR-0045",
+      "district": "scripts",
+      "suggestion": "Pass the questions to priority-dev in a file."
+    }
+  ],
+  "boundary_checks": [
+    {
+      "rule": "The plugin calls priority-dev only as a separate process",
+      "source": "ADR-0045",
+      "result": "ok",
+      "evidence": "The plugin writes a file and passes its path to priority interpret."
+    }
+  ],
+  "delta": {
+    "districts_added": [],
+    "districts_changed": [
+      "scripts"
+    ],
+    "edges_added": [
+      "cobuilder-priority -> AskUserQuestion tool call (tool.call hook)"
+    ],
+    "edges_removed": []
+  },
+  "regret_risk": "If the budget cuts the hook off and nobody tests the fallback, a question could wait with no dialog. E1 and the fallback slice prevent that.",
+  "drift": []
+}

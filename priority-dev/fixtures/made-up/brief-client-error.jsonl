@@ -1,0 +1,5 @@
+{"type": "user", "uuid": "u1", "origin": null, "message": {"role": "user", "content": "Move the config loaders to the new format."}}
+{"type": "assistant", "uuid": "a1", "message": {"id": "msg_01", "role": "assistant", "model": "claude-test-1", "stop_reason": "tool_use", "content": [{"type": "tool_use", "id": "toolu_01", "name": "Bash", "input": {"command": "grep -rn load_config src"}}]}}
+{"type": "user", "uuid": "u2", "message": {"role": "user", "content": [{"type": "tool_result", "tool_use_id": "toolu_01", "content": "src/a.py:3\nsrc/b.py:9\nsrc/c.py:14", "is_error": false}]}}
+{"type": "assistant", "uuid": "a2", "message": {"id": "msg_02", "role": "assistant", "model": "claude-test-1", "stop_reason": "end_turn", "content": [{"type": "text", "text": "I moved two of the three loaders. I will do the last one next."}]}}
+{"type": "assistant", "uuid": "a3", "isApiErrorMessage": true, "message": {"id": "msg_03", "role": "assistant", "model": "<synthetic>", "stop_reason": "stop_sequence", "content": [{"type": "text", "text": "You have reached the usage limit. It resets at 3pm."}]}}

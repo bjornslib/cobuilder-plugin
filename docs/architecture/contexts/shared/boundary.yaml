@@ -24,6 +24,9 @@ public_interface:
   - gate_status
   - slice_table
   - tracker_port.reader
+  - tracker_port.projector
+  - tracker_port.TrackerPort
+  - tracker_port.TrackerRecord
   - "scripts run by shell: build_index.py, migrate_bundle.py, verify_bundle.py, boundary_check.py, prose_budget.py, validate_decision_state.py, migrate_png_assets_to_webp.py, tracker.py, habit_smells.py, strip_goal_stage.py"
   - "structure_signals.py and structure_evidence.py, run by shell"
   - structure.keys.finding_key
@@ -48,6 +51,12 @@ context_map:
   - with: cobuilder-packaging
     pattern: shared-kernel
     note: "The umbrella plugin cobuilder-full-lifecycle imports ledger in watch_feedback.py. Its install command and setup skill run tracker.py and structure_signals by shell."
+  - with: cobuilder-priority
+    pattern: shared-kernel
+    note: "plugins/cobuilder-priority holds the shared symlink but imports no shared code today. It is a planned consumer of shared/priority-core (ADR-0053)."
+  - with: cobuilder-memory
+    pattern: shared-kernel
+    note: "plugins/cobuilder-memory holds the shared symlink and imports no shared code. Its TypeScript hooks module sits outside the Python kernel."
 
 forbidden_dependencies:
   - target: "plugins/<name>/ as Python import"
@@ -60,6 +69,9 @@ forbidden_dependencies:
   - target: "plugins/artifact/viewer/src/shell/workDeck.ts and plugin script paths"
     from: shared (_bundle_meta.py:32, slice_table.py:23-24)
     why: "SMELL (comment only): a comment in _bundle_meta.py names the viewer file workDeck.ts, and the slice_table.py docstring lists plugins/implement/scripts/verify_gate.py and plugins/artifact/scripts/build_builds_view.py. Nothing runs from these names, but they name paths in plugins. Replace them with plugin names. A test keeps DESIGN_STAGES equal to the lanes."
+
+  - target: "plugins/<name>/ or pi/<name>/ as TypeScript import (planned shared/priority-core/)"
+    why: "ADR-0053 plans shared/priority-core/, the first TypeScript library under shared/. It must stay a base layer: it imports no host engine (pi, omp, Claude Code) and no plugin, and it reaches process, store, and clock through ports. Plugins and pi/cobuilder-priority import it through the shared symlink, never the reverse. Not yet in code: no TypeScript file exists under shared/."
 
   - target: "the bd name outside beads*.py and bd_runner.py"
     from: shared/tracker_port/config.py
@@ -109,6 +121,7 @@ modules:
     allowed_outbound: []
     rule: "Leaf: standard library, and ulid when present. Imported by artifact serve_bundle.py and by the umbrella watch_feedback.py."
 
+
   - id: gate-parsers
     path: shared
     members: [gate_status.py, slice_table.py]
@@ -131,6 +144,14 @@ modules:
     allowed_inbound: [index-and-verify, migration, tracker-cli]
     allowed_outbound: [bundle-meta, gate-parsers]
     rule: "The tracker port, its adapters (beads, files, fake), the projector, and the sync worker. Outside shared it is reached by import only through tracker_port.reader (verify_gate.py, build_builds_view.py). Imports of shared modules are limited to _bundle_meta (DESIGN_STAGES), gate_status, and slice_table. The bd command runs only in bd_runner.py, and bd sync runs only in BeadsAdapter.sync (see forbidden_dependencies for the two wording gaps). config.py is the one factory that builds a BeadsAdapter, a FilesAdapter, or a FakeAdapter."
+
+  - id: tracker-port
+    path: shared/tracker_port
+    members: [tracker.py, "tracker_port/*.py"]
+    public_interface: ["tracker_port.reader", "tracker_port.projector", "tracker_port.TrackerPort", "tracker_port.TrackerRecord", "tracker_port.FakeAdapter", "tracker.py operations"]
+    allowed_inbound: [index-and-verify]
+    allowed_outbound: [bundle-meta, gate-parsers]
+    rule: "ADR-0040. Only the beads adapter (beads*.py, bd_runner.py) names bd. Imports gate_status, slice_table, and _bundle_meta (cli_operations.py) by bare name, and PyYAML (config.py). Imported by build_index.py and, through the symlink, by artifact build_builds_view.py and implement verify_gate.py. Run by shell as tracker.py."
 
   - id: shared-skills
     path: shared/skills

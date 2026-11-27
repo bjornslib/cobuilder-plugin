@@ -1,0 +1,116 @@
+classDiagram
+    class SignalSource {
+        <<interface>>
+        +events(after_cursor) SessionEvent
+    }
+    class Transport {
+        <<interface>>
+        +send(command) Effect
+    }
+    class SessionAdapter {
+        <<interface>>
+        +signal_source SignalSource
+        +transport Transport
+    }
+    class TmuxAdapter {
+        +hooks and transcript file
+        +screen read fallback
+        +tmux send-keys
+    }
+    class SessionEvent {
+        +session_id string
+        +cursor int
+        +ts time
+        +kind string
+        +ref string
+    }
+    class EventLog {
+        +append(event) void
+        +read_from(cursor) SessionEvent
+    }
+    class StatusReducer {
+        +reduce(events) status
+    }
+    class Advisor {
+        +judge(turn, policy) Verdict
+    }
+    class Verdict {
+        +session_id string
+        +cursor int
+        +policy_version string
+        +status string
+        +attention_kind string
+        +question string
+        +evidence string
+        +confidence float
+    }
+    class Decision {
+        +action string
+        +reply string
+        +rule_id string
+        +risk_tier string
+        +rationale string
+    }
+    class Policy {
+        +project_rank
+        +priority_classes
+        +allowed_action_classes
+        +delivery_rules
+    }
+    class HardDenyList {
+        <<code, fixed>>
+        +denies(command) bool
+    }
+    class Actuator {
+        +act(decision) Effect
+    }
+    class Intent {
+        +intent_id string
+        +kind string
+        +session_id string
+    }
+    class Effect {
+        +intent_id string
+    }
+    class LedgerEntry {
+        +rule_id string
+        +evidence string
+        +intent Intent
+        +effect Effect
+    }
+    class AttentionQueue {
+        +rank(items) list
+    }
+    class DeliveryPlanner {
+        +plan(item) delivery
+    }
+    class PriorityClass {
+        <<enumeration>>
+        Urgent
+        High
+        Medium
+        Low
+    }
+
+    SessionAdapter *-- SignalSource : half
+    SessionAdapter *-- Transport : half
+    TmuxAdapter ..|> SessionAdapter : implements
+    SignalSource --> SessionEvent : produces
+    EventLog o-- SessionEvent : stores
+    StatusReducer --> EventLog : reads
+    StatusReducer --> Advisor : calls at turn_ended
+    Advisor --> Verdict : produces
+    Advisor --> Decision : produces
+    Actuator --> Decision : consumes
+    Actuator --> Policy : checks
+    Actuator --> HardDenyList : checks
+    Actuator --> Intent : writes
+    Actuator --> Effect : records
+    Actuator --> Transport : sends through
+    Actuator --> EventLog : writes
+    LedgerEntry --> Intent : joins
+    LedgerEntry --> Effect : joins
+    Decision --> AttentionQueue : escalate
+    AttentionQueue --> DeliveryPlanner : uses
+    AttentionQueue --> Policy : reads rank
+    DeliveryPlanner --> PriorityClass : plans by
